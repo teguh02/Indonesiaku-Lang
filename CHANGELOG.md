@@ -7,6 +7,16 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Rilis
+
+- **Paket Linux v1.2.0, v1.3.0, dan v1.3.1 ditarik** dari GitHub Releases.
+  Binernya gagal dijalankan dengan `CPU ISA level is lower than required`
+  (keluar kode 127) karena dibangun tanpa `-march=x86-64`, sehingga menuntut
+  `x86-64-v3` (AVX2) dan ditolak loader pada CPU lama serta banyak VPS/KVM.
+  Diverifikasi dengan menjalankan tiap biner, bukan membaca workflow. Paket
+  Windows dan macOS ketiga rilis itu diuji baik dan tetap tersedia. Perbaikan
+  sudah ada sejak v1.3.2; pengguna Linux memakai v1.4.0.
+
 ### Perkakas
 
 - Ekstensi VS Code menjalankan language server LSP untuk diagnostics sintaks
