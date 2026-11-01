@@ -1,0 +1,2 @@
+# Batas waktu dengan tipe salah harus gagal, bukan diam-diam diabaikan.
+soket_batas_waktu("bukan soket", "bukan angka")

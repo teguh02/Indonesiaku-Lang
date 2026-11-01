@@ -1,0 +1,4 @@
+soket_batas_waktu() memerlukan (soket, angka)
+[baris 2, kolom 47] dalam skrip
+    …batas_waktu("bukan soket", "bukan angka")
+                                             ^
