@@ -48,14 +48,26 @@ periksa "subdirektori" "halo dari subdirektori" \
 
 # Inti tes: berkas biner harus identik byte-per-byte. Content-Length yang
 # dihitung ulang sebagai UTF-8 akan merusak ini.
-HARAP_MD5="$(md5sum tests/bantu/aset/titik.png | cut -d' ' -f1)"
-DAPAT_MD5="$(curl -s --max-time 5 "$U/statis/titik.png" | md5sum | cut -d' ' -f1)"
+# md5sum (GNU) tidak ada di macOS, yang memakai `md5 -q`. Tanpa penjagaan
+# ini kedua sisi perbandingan sama-sama kosong dan tesnya lolos palsu.
+if command -v md5sum >/dev/null 2>&1; then
+    md5_dari() { md5sum | cut -d' ' -f1; }
+elif command -v md5 >/dev/null 2>&1; then
+    md5_dari() { md5 -q; }
+else
+    echo "  GAGAL tidak ada md5sum maupun md5 untuk memeriksa berkas biner"
+    GAGAL=1
+    md5_dari() { echo "TIDAK_ADA_ALAT"; }
+fi
+
+HARAP_MD5="$(md5_dari < tests/bantu/aset/titik.png)"
+DAPAT_MD5="$(curl -s --max-time 5 "$U/statis/titik.png" | md5_dari)"
 periksa "PNG biner utuh (md5)" "$HARAP_MD5" "$DAPAT_MD5"
 
 periksa "PNG Content-Type" "image/png" \
     "$(curl -s --max-time 5 -o /dev/null -w '%{content_type}' "$U/statis/titik.png")"
 
-periksa "PNG Content-Length" "$(stat -c%s tests/bantu/aset/titik.png)" \
+periksa "PNG Content-Length" "$(wc -c < tests/bantu/aset/titik.png | tr -d ' ')" \
     "$(curl -s --max-time 5 -o /dev/null -w '%{size_download}' "$U/statis/titik.png")"
 
 periksa "berkas tak ada -> 404" "404" \
