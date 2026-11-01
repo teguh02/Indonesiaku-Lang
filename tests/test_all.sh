@@ -189,6 +189,18 @@ if [ -f tests/web_router_server.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Penyajian berkas statis: yang dibuktikan di sini adalah berkas BINER sampai
+# utuh dan percobaan traversal ditolak oleh server yang benar-benar berjalan.
+if [ -f tests/web_statis_server.sh ]; then
+    echo ""
+    if bash tests/web_statis_server.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES web-statis"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Mengikuti pengalihan HTTP perlu server sungguhan: klien memblokir saat
 # menunggu balasan, jadi tidak bisa diuji dalam satu proses.
 if [ -f tests/http_pengalihan_server.sh ]; then

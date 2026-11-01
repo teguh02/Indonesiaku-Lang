@@ -20,7 +20,7 @@ const BUILTINS = [
   "huruf_kecil", "id", "input", "isi_direktori", "iter", "jalur_indk", "jam", "jenis", "jumlah",
   "kamus", "karakter", "ke_angka", "ke_bulat", "ke_desimal", "ke_logika", "ke_teks", "keluar",
   "kunci", "lanjutkan", "lantai", "lingkungan", "max", "md5", "min", "oktal", "ord", "pangkat",
-  "panjang", "pasangkan", "peta", "potong", "punya", "punya_atribut", "radian", "rentang", "repr",
+  "panjang", "panjang_byte", "pasangkan", "peta", "potong", "punya", "punya_atribut", "radian", "rentang", "repr",
   "saring", "semua", "sha1", "sha256", "sha512", "sin", "sisip", "soket_baca", "soket_dengar",
   "soket_sambung", "soket_terima", "soket_tulis", "soket_tutup", "tambah", "tambah_berkas", "tan",
   "tanggal", "terbalik", "terurut", "tulis", "tulis_galat", "tulis_semua", "tupel", "turunan_dari",

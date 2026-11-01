@@ -482,7 +482,11 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 4. [x] Tambahkan parsing application/json, application/x-www-form-urlencoded, multipart/form-data, file upload streaming dan batas ukuran/bentuk input (**WEB-02**).
    - Selesai 1.4.0: `req["json"]`, `req["form"]`, `req["berkas"]` terisi sesuai `Content-Type`; multipart termasuk unggahan berkas; batas ukuran bawaan 1 MB dijawab 413 berdasarkan `Content-Length` sebelum data dikumpulkan. `chunked` ditolak 411, JSON rusak 400.
    - Catatan: "streaming" di sini berarti badan dibaca bertahap dari soket sampai `Content-Length` terpenuhi (`web.baca_permintaan()`), bukan ditulis bertahap ke disk. Berkas unggahan ditahan di memori dan dibatasi `maks_badan`; penulisan langsung ke disk untuk unggahan besar belum ada.
-5. [ ] Implementasikan static file handler untuk CSS, JavaScript, gambar dan aset lain, MIME yang benar, cache header, penolakan traversal serta symlink berbahaya (**WEB-03**). Ini **bukan** template HTML.
+5. [x] Implementasikan static file handler untuk CSS, JavaScript, gambar dan aset lain, MIME yang benar, cache header, penolakan traversal serta symlink berbahaya (**WEB-03**). Ini **bukan** template HTML.
+   - Selesai 1.5.0: `app.statis(prefiks, akar)` di `pustaka/web.idk`. Hanya `GET`/`HEAD` (lainnya 405 dengan `Allow`), direktori tidak pernah didaftar isinya, MIME dari ekstensi (tak dikenal → `application/octet-stream`) plus `X-Content-Type-Options: nosniff`, `ETag` lemah dengan `If-None-Match` → 304. Traversal ditolak **setelah** dekode persen (`%2e%2e` setara `../`), backslash diperlakukan sebagai pemisah, byte NUL ditolak; path ber-`..` ditolak seluruhnya, bukan dinaikkan satu level. Diuji lewat HTTP sungguhan (`tests/web_statis_server.sh`, 24 pemeriksaan curl) termasuk md5 berkas biner.
+   - Prasyarat yang ikut diperbaiki: builtin `panjang_byte()`. `_http_panjang_byte()` sebelumnya menghitung ulang lebar UTF-8 per karakter, sehingga `Content-Length` badan biner salah (berkas 5 byte dijawab 6) dan byte non-UTF-8 hilang dari iterasi.
+   - Symlink: ditemukan bocor saat pengujian (tautan di dalam akar menyajikan berkas di luarnya, HTTP 200) lalu ditutup dengan builtin `_jalur_nyata()` — jalur nyata berkas harus berada di bawah jalur nyata akar. Ada tes regresinya.
+   - Belum: `Last-Modified` tidak dikirim karena `format_tanggal()` hanya punya waktu lokal, bukan GMT; `Range`/unduhan sebagian belum didukung.
 6. [ ] Rancang concurrency yang terukur, batas koneksi/thread/worker, timeout, backpressure, shutdown aman dan log terstruktur (**WEB-07**). Mulai dengan model sederhana yang dapat diuji dan ditingkatkan; jangan langsung mengklaim setara server produksi.
 7. [ ] Buat contoh CRUD API memakai database Fase 10, uji dengan curl, serta CI untuk slow client, request berukuran besar, malformed HTTP, upload, redirect, sertifikat kedaluwarsa/tidak cocok, race/resource leak dan graceful shutdown.
 8. [ ] Dokumentasikan deployment dengan Docker/reverse proxy TLS, isolasi proses, pembatasan resource dan risiko membuka port secara publik.
@@ -888,7 +892,7 @@ kalkulator-indonesiaku/
 |---|---|---|
 | 9 | LSP dan dukungan editor | ✅ selesai (v1.4.0) |
 | 10 | SQLite, MySQL/MariaDB, PostgreSQL | 🟨 sebagian — SQLite lengkap (BLOB, batas tunggu); MySQL/PostgreSQL terblokir pustaka klien eksternal |
-| 11 | HTTP/HTTPS dan backend server | 🟨 sebagian — modul `web` (routing, middleware, parsing badan) jalan; HTTPS/TLS belum |
+| 11 | HTTP/HTTPS dan backend server | 🟨 sebagian — modul `web` (routing, middleware, parsing badan, berkas statis) jalan; HTTPS/TLS dan concurrency belum |
 | 12 | Server-Side Rendering / HTML template | ⬜ belum |
 | 13 | Session, keamanan, login dan otorisasi | ⬜ belum |
 | 14 | Package manager dan developer tooling | ⬜ belum |

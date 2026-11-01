@@ -32,6 +32,7 @@ Value nativeFnBuatDirektori(int argCount, Value* args);    // buat_direktori(jal
 Value nativeFnHapusDirektori(int argCount, Value* args);   // hapus_direktori(jalur)
 Value nativeFnJalurIndk(int argCount, Value* args);        // jalur_indk()
 Value nativeFnInfoJalur(int argCount, Value* args);        // _info_jalur(jalur)
+Value nativeFnJalurNyata(int argCount, Value* args);       // _jalur_nyata(jalur)
 Value nativeFnJalankanProses(int argCount, Value* args);   // _jalankan_proses(perintah, masukan)
 
 #endif

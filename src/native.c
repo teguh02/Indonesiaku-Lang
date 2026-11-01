@@ -614,6 +614,23 @@ Value nativeFnId(int argCount, Value* args) {
 // FUNGSI STRING - IMPLEMENTASI
 // ============================================================================
 
+// panjang_byte(teks) -> jumlah BYTE, bukan karakter.
+// panjang() mengembalikan charCount (jumlah titik kode). Content-Length HTTP
+// dan soket_tulis() bekerja dalam byte, dan untuk badan biner keduanya tidak
+// sama: menghitung ulang lebar UTF-8 per karakter di level .idk salah dua kali
+// (byte non-UTF-8 hilang dari iterasi, byte >= 0x80 dihitung dua kali).
+Value nativeFnPanjangByte(int argCount, Value* args) {
+    if (argCount != 1) {
+        nativeRaise("panjang_byte() memerlukan 1 argumen (teks)");
+        return NUMBER_VAL(0);
+    }
+    if (!IS_STRING(args[0])) {
+        nativeRaise("panjang_byte() hanya menerima teks");
+        return NUMBER_VAL(0);
+    }
+    return INT_VAL(AS_STRING(args[0])->length);
+}
+
 Value nativeFnPanjang(int argCount, Value* args) {
     if (argCount != 1) {
         nativeRaise("panjang() memerlukan 1 argumen");

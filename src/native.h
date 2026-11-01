@@ -72,6 +72,7 @@ Value nativeFnId(int argCount, Value* args);              // id(x)
 
 // panjang(teks) - Mengembalikan panjang string
 Value nativeFnPanjang(int argCount, Value* args);
+Value nativeFnPanjangByte(int argCount, Value* args);
 
 // huruf_besar(teks) - Ubah ke huruf besar
 Value nativeFnHurofBesar(int argCount, Value* args);

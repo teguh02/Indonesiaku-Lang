@@ -1,0 +1,4 @@
+panjang_byte() hanya menerima teks
+[baris 2, kolom 23] dalam skrip
+    cetak(panjang_byte(123))
+                          ^

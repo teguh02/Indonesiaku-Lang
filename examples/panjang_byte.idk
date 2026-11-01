@@ -1,0 +1,18 @@
+# panjang() menghitung KARAKTER, panjang_byte() menghitung BYTE.
+# Keduanya sama untuk ASCII dan berbeda begitu ada karakter multi-byte.
+# Content-Length HTTP dan soket_tulis() bekerja dalam byte, jadi pembedaan
+# ini menentukan benar-tidaknya respons berisi gambar atau teks non-ASCII.
+
+cetak(panjang("halo"))
+cetak(panjang_byte("halo"))
+
+# "é" dan "ú" masing-masing 2 byte dalam UTF-8.
+cetak(panjang("Indonesiakú"))
+cetak(panjang_byte("Indonesiakú"))
+
+# Emoji: 1 karakter, 4 byte.
+cetak(panjang("ayo 🚀"))
+cetak(panjang_byte("ayo 🚀"))
+
+# Teks kosong.
+cetak(panjang_byte(""))
