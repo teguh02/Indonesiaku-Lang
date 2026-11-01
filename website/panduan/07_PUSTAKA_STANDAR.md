@@ -150,6 +150,7 @@ menimbulkan `GalatNilai`.
 | Fungsi | Deskripsi |
 |--------|-----------|
 | `panjang(x)` | Panjang teks (karakter), list, kamus, atau rentang. Mengembalikan `bulat` |
+| `panjang_byte(teks)` | Panjang teks dalam **byte**, bukan karakter. Mengembalikan `bulat` |
 | `rentang([awal,] akhir[, langkah])` | Deret bilangan bulat malas: `rentang(5)` → 0, 1, 2, 3, 4. Dipakai di `untuk`, bisa `panjang()`, `r[i]`, `x dalam r` |
 | `huruf_besar(s)` | Ubah ke huruf kapital |
 | `huruf_kecil(s)` | Ubah ke huruf kecil |
@@ -162,6 +163,21 @@ menimbulkan `GalatNilai`.
 Panjang, indeks, `karakter`, dan `potong` menghitung **karakter**, bukan byte,
 sehingga teks beraksen dan emoji aman: `panjang("héllo") == 5`,
 `"café"[3] == "é"`.
+
+Bila yang dibutuhkan adalah jumlah **byte** — misalnya mengisi `Content-Length`
+sebuah respons HTTP atau menghitung data yang akan dikirim lewat soket — pakai
+`panjang_byte()`:
+
+```indonesiaku
+cetak(panjang("héllo"))         # 5 karakter
+cetak(panjang_byte("héllo"))    # 6 byte: "é" memakan 2 byte
+```
+
+Pembedaan ini penting untuk data biner. Teks di Indonesiaku menyimpan byte apa
+adanya, jadi `baca_semua()` sebuah berkas PNG menghasilkan teks yang utuh,
+tetapi jumlah karakternya lebih kecil daripada ukuran berkasnya. Menghitung
+ulang lebar UTF-8 per karakter **tidak** menghasilkan ukuran yang benar untuk
+isi seperti itu — `panjang_byte()` mengembalikan ukuran byte yang sebenarnya.
 
 Pengindeksan string juga tersedia: `teks[i]` mengembalikan karakter ke-`i`
 (string bersifat immutable — tidak dapat diubah lewat indeks).
@@ -878,6 +894,7 @@ gelung soket yang sudah ada tetap dipakai.
 |---|---|
 | `web.Aplikasi()` | Buat aplikasi |
 | `app.rute(metode, pola, penangan)` | Daftarkan rute; `:nama` menjadi parameter URL |
+| `app.statis(prefiks, akar)` | Sajikan berkas di `akar` pada URL berawalan `prefiks` |
 | `app.gunakan(mw)` | Middleware `mw(req, teruskan)` |
 | `app.galat(penangan)` | Timpa respons 500 bawaan dengan `penangan(req, e)` |
 | `app.tangani(mentah)` | Teks request → teks respons |
@@ -899,6 +916,43 @@ app.gunakan(fungsi(req, teruskan) {
     kembalikan teruskan(req)
 })
 ```
+
+#### Berkas statis
+
+`app.statis(prefiks, akar)` menyajikan CSS, JavaScript, gambar, dan font dari
+disk. Berkas biner sampai utuh: `Content-Length` dihitung dengan
+`panjang_byte()`, bukan dari jumlah karakter.
+
+```indonesiaku-takjalan
+impor web
+
+variabel app = web.Aplikasi()
+app.statis("/statis", "aset")     # GET /statis/gaya.css -> aset/gaya.css
+```
+
+Perilaku yang dijamin:
+
+| Hal | Perilaku |
+|---|---|
+| Metode | Hanya `GET` dan `HEAD`; lainnya **405** dengan `Allow: GET, HEAD` |
+| `HEAD` | Header identik dengan `GET`, tanpa badan |
+| Berkas tak ada, direktori, atau tak terbaca | **404** dengan pesan yang sama |
+| Daftar isi direktori | Tidak pernah ditampilkan |
+| `Content-Type` | Dari ekstensi; tak dikenal → `application/octet-stream` |
+| Cache | `ETag` lemah; `If-None-Match` yang cocok → **304** |
+| Keamanan | `X-Content-Type-Options: nosniff` selalu dikirim |
+
+**Keamanan jalur.** Segmen `..` ditolak **setelah** dekode persen, jadi
+`%2e%2e%2f` tertutup serapat `../`; backslash diperlakukan sebagai pemisah
+(penting di Windows); byte NUL ditolak. Permintaan yang memuat `..` ditolak
+seluruhnya, bukan "dinaikkan satu level", sehingga tidak ada jalan keluar dari
+`akar`.
+
+Rute eksplisit diperiksa lebih dulu, jadi `app.rute()` selalu menang bila
+polanya cocok. Berkas statis dicoba sebelum jawaban 404/405.
+
+> Jangan menaruh berkas rahasia di dalam `akar`: semua yang ada di bawahnya
+> dapat diunduh siapa pun yang tahu namanya.
 
 Penangan menerima `req` berisi `metode`, `path`, `versi`, `header`,
 `badan`, `params`, `query`, dan — setelah badan diurai — `form`, `berkas`,

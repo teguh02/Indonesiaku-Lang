@@ -7,6 +7,37 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Ditambahkan
+
+- **Penyajian berkas statis** di `pustaka/web.idk`: `app.statis(prefiks, akar)`
+  menyajikan CSS, JavaScript, gambar, dan font dari disk. Hanya `GET`/`HEAD`
+  (lainnya **405** dengan `Allow: GET, HEAD`); direktori tidak pernah didaftar
+  isinya; MIME ditentukan dari ekstensi dengan `application/octet-stream`
+  sebagai jatuh-tempo aman, selalu disertai `X-Content-Type-Options: nosniff`;
+  `ETag` lemah dengan `If-None-Match` dijawab **304**. (Fase 11 langkah 5)
+- **`panjang_byte(teks)`** — panjang teks dalam byte, pelengkap `panjang()`
+  yang menghitung karakter.
+
+### Diperbaiki
+
+- **`Content-Length` salah untuk badan biner.** `_http_panjang_byte()`
+  menghitung ulang lebar UTF-8 per karakter, sehingga berkas 5 byte
+  `FF FE 41 00 80` dilaporkan 6 byte dan byte non-UTF-8 hilang dari iterasi
+  karakter. Klien menggantung menunggu byte yang tidak pernah datang. Kini
+  memakai `panjang_byte()` yang membaca panjang byte sebenarnya.
+
+### Keamanan
+
+- Penyaji berkas statis menolak traversal **setelah** dekode persen, sehingga
+  `%2e%2e%2f` tertutup serapat `../`; backslash diperlakukan sebagai pemisah
+  (penting di Windows) dan byte NUL ditolak. Path yang memuat `..` ditolak
+  seluruhnya, bukan "dinaikkan satu level".
+- Symlink di dalam akar yang menunjuk keluar ditolak. Celah ini nyata dan
+  ditemukan saat pengujian — tautan `bocor.txt` → `../rahasia.txt` sempat
+  menyajikan isi berkas di luar akar dengan HTTP 200. Builtin `_jalur_nyata()`
+  ditambahkan untuk membuktikan jalur nyata berkas berada di bawah jalur nyata
+  akar; ada tes regresinya.
+
 ### Rilis
 
 - **Paket Linux v1.2.0, v1.3.0, dan v1.3.1 ditarik** dari GitHub Releases.
