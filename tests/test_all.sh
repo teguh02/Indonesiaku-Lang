@@ -201,6 +201,19 @@ if [ -f tests/web_statis_server.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Batas waktu soket: satu klien yang diam tidak boleh membekukan server.
+# Hanya bisa dibuktikan dengan koneksi sungguhan yang sengaja tidak
+# mengirim apa pun.
+if [ -f tests/web_batas_waktu_server.sh ]; then
+    echo ""
+    if bash tests/web_batas_waktu_server.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES web-batas-waktu"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Mengikuti pengalihan HTTP perlu server sungguhan: klien memblokir saat
 # menunggu balasan, jadi tidak bisa diuji dalam satu proses.
 if [ -f tests/http_pengalihan_server.sh ]; then

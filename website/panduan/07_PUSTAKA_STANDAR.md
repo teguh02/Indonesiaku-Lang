@@ -611,7 +611,40 @@ ditangkap `coba/kecuali`. Untuk server **dan klien** HTTP, gunakan
 | `soket_baca(klien)` | Baca data yang diterima (satu recv) → string |
 | `soket_tulis(klien, teks)` | Kirim teks → jumlah byte |
 | `soket_tutup(soket)` | Tutup soket (server atau klien) |
+| `soket_batas_waktu(soket, detik)` | Batas waktu baca **dan** tulis untuk satu soket. `0` berarti tanpa batas (bawaan). Detik boleh pecahan (`0.5`) |
 | `soket_sambung(host, port)` | Klien: sambung ke `host:port` (nama host atau IP, IPv4/IPv6) → soket. Host tak dikenal atau koneksi ditolak → `GalatOS`. Ditolak (`GalatIzin`) di `indk --sandbox` |
+
+#### Batas waktu soket: satu klien diam bisa membekukan server
+
+Tanpa batas waktu, `soket_baca()` menunggu selamanya. Satu klien yang menyambung
+lalu **tidak mengirim apa pun** sudah cukup membuat server berhenti melayani
+siapa pun — penyerang hanya perlu satu koneksi (serangan *slowloris*).
+
+Setel batas waktu pada setiap soket klien yang diterima (potongan ini bagian
+dari gelung server, jadi tidak bisa dijalankan sendiri):
+
+```indonesiaku-takjalan
+variabel klien = soket_terima(server)
+soket_batas_waktu(klien, 5)
+
+coba {
+    variabel mentah = web.baca_permintaan(klien)
+    soket_tulis(klien, app.tangani(mentah))
+} kecuali e {
+    # Klien lambat atau diam: lewati saja, server tetap melayani yang lain.
+    cetak("koneksi dilewati:", e)
+}
+soket_tutup(klien)
+```
+
+Batas waktu yang terlampaui **menaikkan galat** yang bisa ditangkap
+`coba/kecuali`, bukan mengembalikan string kosong. Keduanya sengaja dibedakan:
+string kosong berarti klien menutup koneksi dengan sopan, sedangkan batas waktu
+berarti permintaannya belum lengkap. Kalau disamakan, server akan menjawab
+`400` untuk klien yang sebenarnya hanya lambat.
+
+Bawaannya tetap tanpa batas supaya program lama tidak berubah perilaku, jadi
+batas waktu harus disetel secara eksplisit.
 
 ### 1.10 Basis Data (SQLite)
 

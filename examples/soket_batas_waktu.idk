@@ -1,0 +1,25 @@
+# Batas waktu soket: soket_batas_waktu(soket, detik).
+#
+# Golden ini sengaja TIDAK membuka port. Mengikat port membuat tes bergantung
+# pada nomor port yang bebas di mesin mana pun, dan itu sumber tes flaky di
+# CI. Yang diperiksa di sini adalah kontrak argumennya; bukti bahwa batas
+# waktu benar-benar menyelamatkan server dari klien yang diam ada di
+# tests/web_batas_waktu_server.sh, memakai koneksi sungguhan.
+
+# Bukan soket.
+coba {
+    soket_batas_waktu("bukan soket", 1)
+    cetak("ini tidak boleh tercetak")
+} kecuali e {
+    cetak("ditolak:", e)
+}
+
+# Jumlah argumen salah.
+coba {
+    soket_batas_waktu(1)
+} kecuali e {
+    cetak("ditolak:", e)
+}
+
+# Semua galat di atas bisa ditangkap coba/kecuali, jadi program tetap jalan.
+cetak("selesai")

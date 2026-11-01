@@ -461,6 +461,7 @@ void initVM() {
     defineNative("soket_dengar", nativeFnSoketDengar);
     defineNative("soket_terima", nativeFnSoketTerima);
     defineNative("soket_baca", nativeFnSoketBaca);
+    defineNative("soket_batas_waktu", nativeFnSoketBatasWaktu);
     defineNative("soket_tulis", nativeFnSoketTulis);
     defineNative("soket_tutup", nativeFnSoketTutup);
     defineNative("soket_sambung", nativeFnSoketSambung);   // klien; ditolak di --sandbox

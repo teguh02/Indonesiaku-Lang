@@ -1845,6 +1845,61 @@ Value nativeFnSoketTerima(int argCount, Value* args) {
     return OBJ_VAL(newSocket((long long)c));
 }
 
+// Benar jika galat soket terakhir adalah batas waktu terlampaui, bukan
+// kegagalan sungguhan. Dipisah karena pesan untuk pengguna berbeda: klien
+// lambat bukan soket rusak.
+static bool soketBatasWaktuTerlampaui(void) {
+#ifdef _WIN32
+    return WSAGetLastError() == WSAETIMEDOUT;
+#else
+    return errno == EAGAIN || errno == EWOULDBLOCK;
+#endif
+}
+
+// soket_batas_waktu(soket, detik) -> kosong.
+// Mengatur batas waktu baca DAN tulis untuk satu soket. detik = 0 berarti
+// tanpa batas (perilaku bawaan, sama seperti sebelum builtin ini ada).
+Value nativeFnSoketBatasWaktu(int argCount, Value* args) {
+    if (argCount != 2) {
+        nativeRaise("soket_batas_waktu() memerlukan 2 argumen (soket, detik)");
+        return KOSONG_VAL;
+    }
+    if (!IS_SOCKET(args[0]) || !IS_NUMBER(args[1])) {
+        nativeRaise("soket_batas_waktu() memerlukan (soket, angka)");
+        return KOSONG_VAL;
+    }
+    double detik = AS_NUMBER(args[1]);
+    if (detik < 0) {
+        nativeRaise("soket_batas_waktu() tidak menerima detik negatif");
+        return KOSONG_VAL;
+    }
+    ObjSocket* sock = AS_SOCKET(args[0]);
+    if (!sock->isOpen) {
+        nativeRaise("soket_batas_waktu() pada soket yang sudah tertutup");
+        return KOSONG_VAL;
+    }
+
+    // Winsock memakai DWORD milidetik untuk opsi yang pada POSIX bertipe
+    // struct timeval; bukan sekadar beda tipe, beda satuan.
+#ifdef _WIN32
+    DWORD nilai = (DWORD)(detik * 1000.0);
+    const char* p = (const char*)&nilai;
+    int n = (int)sizeof(nilai);
+#else
+    struct timeval nilai;
+    nilai.tv_sec = (time_t)detik;
+    nilai.tv_usec = (suseconds_t)((detik - (double)nilai.tv_sec) * 1000000.0);
+    const char* p = (const char*)&nilai;
+    socklen_t n = (socklen_t)sizeof(nilai);
+#endif
+    if (setsockopt((indk_socket_t)sock->fd, SOL_SOCKET, SO_RCVTIMEO, p, n) != 0 ||
+        setsockopt((indk_socket_t)sock->fd, SOL_SOCKET, SO_SNDTIMEO, p, n) != 0) {
+        nativeRaise("soket_batas_waktu() gagal mengatur batas waktu soket");
+        return KOSONG_VAL;
+    }
+    return KOSONG_VAL;
+}
+
 // soket_baca(klien) -> teks yang diterima (satu recv, maks ~64KB), atau
 // string kosong jika koneksi ditutup pihak lain.
 Value nativeFnSoketBaca(int argCount, Value* args) {
@@ -1867,7 +1922,13 @@ Value nativeFnSoketBaca(int argCount, Value* args) {
     int received = (int)recv((indk_socket_t)client->fd, buffer, cap - 1, 0);
     if (received < 0) {
         FREE_ARRAY(char, buffer, cap);
-        nativeRaise("soket_baca() gagal membaca dari soket");
+        // Batas waktu BUKAN koneksi tertutup: mengembalikan "" akan membuat
+        // baca_permintaan() menganggap permintaan separuh sudah lengkap.
+        if (soketBatasWaktuTerlampaui()) {
+            nativeRaise("soket_baca() melewati batas waktu menunggu data");
+        } else {
+            nativeRaise("soket_baca() gagal membaca dari soket");
+        }
         return KOSONG_VAL;
     }
     buffer[received] = '\0';
@@ -1896,7 +1957,11 @@ Value nativeFnSoketTulis(int argCount, Value* args) {
         int sent = (int)send((indk_socket_t)client->fd,
                              text->chars + total, text->length - total, 0);
         if (sent <= 0) {
-            nativeRaise("soket_tulis() gagal mengirim data");
+            if (sent < 0 && soketBatasWaktuTerlampaui()) {
+                nativeRaise("soket_tulis() melewati batas waktu mengirim data");
+            } else {
+                nativeRaise("soket_tulis() gagal mengirim data");
+            }
             return NUMBER_VAL(total);
         }
         total += sent;

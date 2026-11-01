@@ -21,7 +21,7 @@ const BUILTINS = [
   "kamus", "karakter", "ke_angka", "ke_bulat", "ke_desimal", "ke_logika", "ke_teks", "keluar",
   "kunci", "lanjutkan", "lantai", "lingkungan", "max", "md5", "min", "oktal", "ord", "pangkat",
   "panjang", "panjang_byte", "pasangkan", "peta", "potong", "punya", "punya_atribut", "radian", "rentang", "repr",
-  "saring", "semua", "sha1", "sha256", "sha512", "sin", "sisip", "soket_baca", "soket_dengar",
+  "saring", "semua", "sha1", "sha256", "sha512", "sin", "sisip", "soket_baca", "soket_batas_waktu", "soket_dengar",
   "soket_sambung", "soket_terima", "soket_tulis", "soket_tutup", "tambah", "tambah_berkas", "tan",
   "tanggal", "terbalik", "terurut", "tulis", "tulis_galat", "tulis_semua", "tupel", "turunan_dari",
   "tutup", "waktu"

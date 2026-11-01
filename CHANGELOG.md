@@ -17,6 +17,10 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `ETag` lemah dengan `If-None-Match` dijawab **304**. (Fase 11 langkah 5)
 - **`panjang_byte(teks)`** — panjang teks dalam byte, pelengkap `panjang()`
   yang menghitung karakter.
+- **`soket_batas_waktu(soket, detik)`** — batas waktu baca dan tulis untuk satu
+  soket (`SO_RCVTIMEO`/`SO_SNDTIMEO`). `0` berarti tanpa batas, yaitu perilaku
+  bawaan yang lama, sehingga program 1.4.x tidak berubah. Detik boleh pecahan.
+  (Fase 11 langkah 6, bagian pertama)
 
 ### Diperbaiki
 
@@ -28,6 +32,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Keamanan
 
+- **Slowloris: satu klien yang diam bisa membekukan server HTTP.** Tidak ada
+  batas waktu pada soket mana pun, jadi `soket_baca()` menunggu selamanya dan
+  `soket_terima()` berikutnya tidak pernah tercapai — penyerang cukup menyambung
+  lalu tidak mengirim apa pun. Dibuktikan dengan server sungguhan sebelum
+  perbaikan. Kini `soket_batas_waktu()` menutup lubang itu, dan batas waktu
+  dibedakan dari koneksi tertutup supaya klien lambat tidak dijawab `400`.
+  Ada tes regresinya (`tests/web_batas_waktu_server.sh`).
 - Penyaji berkas statis menolak traversal **setelah** dekode persen, sehingga
   `%2e%2e%2f` tertutup serapat `../`; backslash diperlakukan sebagai pemisah
   (penting di Windows) dan byte NUL ditolak. Path yang memuat `..` ditolak

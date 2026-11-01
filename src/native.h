@@ -189,6 +189,7 @@ Value nativeFnSoketTerima(int argCount, Value* args);  // soket_terima(server)
 Value nativeFnSoketBaca(int argCount, Value* args);    // soket_baca(klien)
 Value nativeFnSoketTulis(int argCount, Value* args);   // soket_tulis(klien, teks)
 Value nativeFnSoketTutup(int argCount, Value* args);   // soket_tutup(soket)
+Value nativeFnSoketBatasWaktu(int argCount, Value* args); // soket_batas_waktu(soket, detik)
 
 // Close a raw socket fd (used by the GC to reclaim leaked sockets).
 void indkCloseSocket(long long fd);
