@@ -488,6 +488,10 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
    - Symlink: ditemukan bocor saat pengujian (tautan di dalam akar menyajikan berkas di luarnya, HTTP 200) lalu ditutup dengan builtin `_jalur_nyata()` — jalur nyata berkas harus berada di bawah jalur nyata akar. Ada tes regresinya.
    - Belum: `Last-Modified` tidak dikirim karena `format_tanggal()` hanya punya waktu lokal, bukan GMT; `Range`/unduhan sebagian belum didukung.
 6. [ ] Rancang concurrency yang terukur, batas koneksi/thread/worker, timeout, backpressure, shutdown aman dan log terstruktur (**WEB-07**). Mulai dengan model sederhana yang dapat diuji dan ditingkatkan; jangan langsung mengklaim setara server produksi.
+   - Sebagian (1.5.0): **batas waktu** sudah ada — builtin `soket_batas_waktu(soket, detik)` menyetel `SO_RCVTIMEO`/`SO_SNDTIMEO`. Ini menutup lubang nyata: sebelumnya tidak ada batas waktu sama sekali, sehingga **satu klien yang menyambung lalu diam membekukan server selamanya** (slowloris dengan biaya satu koneksi). Dibuktikan dengan server sungguhan sebelum dan sesudah perbaikan, diuji `tests/web_batas_waktu_server.sh` (5 pemeriksaan, termasuk koneksi diam asli).
+   - Batas waktu menaikkan galat yang bisa ditangkap, **bukan** string kosong: `""` sudah berarti "klien menutup koneksi", dan menyamakannya membuat permintaan separuh dianggap lengkap lalu dijawab 400 padahal klien hanya lambat.
+   - Bawaan tetap tanpa batas (`0`) supaya program 1.4.x tidak berubah perilaku; batas waktu disetel eksplisit per soket.
+   - **Belum:** batas jumlah koneksi/worker, backpressure, shutdown anggun, dan log terstruktur. Model eksekusi masih satu permintaan pada satu waktu — langkah 6 belum boleh ditandai selesai.
 7. [ ] Buat contoh CRUD API memakai database Fase 10, uji dengan curl, serta CI untuk slow client, request berukuran besar, malformed HTTP, upload, redirect, sertifikat kedaluwarsa/tidak cocok, race/resource leak dan graceful shutdown.
 8. [ ] Dokumentasikan deployment dengan Docker/reverse proxy TLS, isolasi proses, pembatasan resource dan risiko membuka port secara publik.
 
