@@ -506,6 +506,33 @@ Value nativeFnHapusDirektori(int argCount, Value* args) {
     return KOSONG_VAL;
 }
 
+// _jalur_nyata(jalur) -> jalur absolut setelah symlink diikuti, atau kosong
+// bila jalur tidak ada. Dipakai penyaji berkas statis untuk membuktikan bahwa
+// berkas hasil gabungan benar-benar berada di bawah akar: memeriksa teks
+// jalurnya saja tidak cukup, karena sebuah symlink di dalam akar dapat
+// menunjuk ke mana pun di luar.
+Value nativeFnJalurNyata(int argCount, Value* args) {
+    const char* jalur;
+    if (argCount != 1 || !teksArg(argCount, args, 0, "_jalur_nyata", &jalur)) {
+        if (argCount != 1) nativeRaiseKelas(vm.galatTipe, "_jalur_nyata() memerlukan 1 teks");
+        return KOSONG_VAL;
+    }
+#ifdef _WIN32
+    char nyata[MAX_PATH];
+    if (_fullpath(nyata, jalur, sizeof(nyata)) == NULL) return KOSONG_VAL;
+    // _fullpath() tidak memeriksa keberadaan; jaga agar perilakunya sama
+    // dengan POSIX (kosong bila tidak ada).
+    uint64_t ukuranAbai = 0;
+    double waktuAbai = 0;
+    Alasan alasanAbai = ALASAN_LAIN;
+    if (jenisJalur(nyata, &ukuranAbai, &waktuAbai, &alasanAbai) <= 0) return KOSONG_VAL;
+#else
+    char nyata[PATH_MAX];
+    if (realpath(jalur, nyata) == NULL) return KOSONG_VAL;
+#endif
+    return teks(nyata, strlen(nyata));
+}
+
 // _info_jalur(jalur) -> ("berkas" | "direktori" | "lain", ukuran, waktu_ubah)
 // or kosong when nothing is there.
 Value nativeFnInfoJalur(int argCount, Value* args) {

@@ -37,6 +37,9 @@ app.rute("POST", "/kirim", fungsi(req) {
     kembalikan web.teks(201, "diterima " + ke_teks(panjang(req["badan"])) + " bita")
 })
 
+# Berkas statis: aset ada di tests/bantu/aset/.
+app.statis("/statis", "tests/bantu/aset")
+
 variabel server = soket_dengar(PORT)
 variabel sisa = SISA
 selagi sisa > 0 {

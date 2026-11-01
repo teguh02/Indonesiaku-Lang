@@ -264,6 +264,95 @@ fungsi _web_cocok(pola, path) {
     kembalikan params
 }
 
+# _web_mime(jalur) -> [tipe_konten, apakah_teks].
+# Tak dikenal -> octet-stream, yang aman: peramban mengunduh alih-alih
+# menebak dan mengeksekusi.
+fungsi _web_mime(jalur) {
+    variabel titik = 0 - 1
+    variabel i = panjang(jalur) - 1
+    selagi i >= 0 {
+        jika jalur[i] == "/" {
+            hentikan
+        }
+        jika jalur[i] == "." {
+            titik = i
+            hentikan
+        }
+        i = i - 1
+    }
+    jika titik < 0 {
+        kembalikan ["application/octet-stream", salah]
+    }
+    variabel ext = huruf_kecil(potong(jalur, titik + 1, panjang(jalur) - titik - 1))
+    variabel peta = kamus()
+    peta["html"] = ["text/html", benar]
+    peta["htm"] = ["text/html", benar]
+    peta["css"] = ["text/css", benar]
+    peta["js"] = ["text/javascript", benar]
+    peta["mjs"] = ["text/javascript", benar]
+    peta["json"] = ["application/json", benar]
+    peta["txt"] = ["text/plain", benar]
+    peta["md"] = ["text/markdown", benar]
+    peta["csv"] = ["text/csv", benar]
+    peta["xml"] = ["application/xml", benar]
+    peta["svg"] = ["image/svg+xml", benar]
+    peta["png"] = ["image/png", salah]
+    peta["jpg"] = ["image/jpeg", salah]
+    peta["jpeg"] = ["image/jpeg", salah]
+    peta["gif"] = ["image/gif", salah]
+    peta["webp"] = ["image/webp", salah]
+    peta["ico"] = ["image/x-icon", salah]
+    peta["woff"] = ["font/woff", salah]
+    peta["woff2"] = ["font/woff2", salah]
+    peta["ttf"] = ["font/ttf", salah]
+    peta["pdf"] = ["application/pdf", salah]
+    peta["zip"] = ["application/zip", salah]
+    jika ext dalam peta {
+        kembalikan peta[ext]
+    }
+    kembalikan ["application/octet-stream", salah]
+}
+
+# _web_jalur_aman(akar, sisa) -> jalur berkas, atau kosong bila ditolak.
+#
+# Pemeriksaan dilakukan SETELAH dekode persen, sehingga "%2e%2e%2f" tertutup
+# serapat "../". Menolak ".." per segmen (bukan sekadar mencari substring)
+# berarti nama berkas sah seperti "catatan..txt" tetap bisa disajikan.
+fungsi _web_jalur_aman(akar, sisa) {
+    variabel bersih = _web_dekode_persen(sisa)
+    # NUL bisa memotong jalur lebih awal di lapisan C di bawah kita.
+    untuk c dalam bersih {
+        jika ord(c) == 0 {
+            kembalikan kosong
+        }
+    }
+    # Backslash diperlakukan sebagai pemisah: di Windows "..\" juga naik level.
+    bersih = ganti(bersih, "\\", "/")
+    variabel bagian = []
+    untuk s dalam teks_pisah(bersih, "/") {
+        jika s == "" atau s == "." {
+            lanjut
+        }
+        jika s == ".." {
+            # Jangan "naik lalu turun lagi": sekali ada .. , tolak seluruhnya.
+            kembalikan kosong
+        }
+        tambah(bagian, s)
+    }
+    jika panjang(bagian) == 0 {
+        # Direktori akar: tidak ada daftar isi, dan tidak ada berkas.
+        kembalikan kosong
+    }
+    variabel jalur = akar
+    jika panjang(jalur) > 0 dan jalur[panjang(jalur) - 1] == "/" {
+        jalur = potong(jalur, 0, panjang(jalur) - 1)
+    }
+    untuk s dalam bagian {
+        jalur = jalur + "/" + s
+    }
+    kembalikan jalur
+}
+
 # json(kode, teks_json) -> teks respons HTTP.
 fungsi json(kode, badan) {
     kembalikan http_response_json(kode, badan)
@@ -284,12 +373,147 @@ kelas Aplikasi {
         diri.rute_daftar = []        # [metode, pola, penangan]
         diri.middleware = []
         diri.penangan_galat = kosong
+        diri.statis_daftar = []      # [prefiks, akar]
         # Badan request dibatasi supaya satu klien tidak bisa menghabiskan
         # memori server. 1 MB cukup untuk form dan API; naikkan bila perlu.
         jika ke_bulat(maks_badan) <= 0 {
             naikkan GalatWeb("maks_badan harus bulat positif")
         }
         diri.maks_badan = ke_bulat(maks_badan)
+    }
+
+    # statis(prefiks, akar) -> diri. Sajikan berkas di bawah `akar` pada URL
+    # yang diawali `prefiks`. Hanya GET dan HEAD; direktori tidak pernah
+    # didaftar isinya.
+    statis(prefiks, akar) {
+        jika jenis(prefiks) != "teks" atau prefiks == "" atau prefiks[0] != "/" {
+            naikkan GalatWeb("prefiks statis harus teks yang diawali '/'")
+        }
+        jika jenis(akar) != "teks" atau akar == "" {
+            naikkan GalatWeb("akar statis harus teks yang tidak kosong")
+        }
+        # Normalkan: simpan tanpa "/" di ujung supaya pencocokan di bawah
+        # hanya perlu satu bentuk.
+        variabel p = prefiks
+        selagi panjang(p) > 1 dan p[panjang(p) - 1] == "/" {
+            p = potong(p, 0, panjang(p) - 1)
+        }
+        tambah(diri.statis_daftar, [p, akar])
+        kembalikan diri
+    }
+
+    # _statis_tangani(req) -> teks respons, atau kosong bila tidak ada
+    # prefiks statis yang cocok (biarkan router biasa yang menjawab).
+    _statis_tangani(req) {
+        variabel path = req["path"]
+        untuk s dalam diri.statis_daftar {
+            variabel prefiks = s[0]
+            variabel akar = s[1]
+            variabel sisa = kosong
+            jika path == prefiks {
+                sisa = ""
+            } jika_lain panjang(path) > panjang(prefiks) {
+                jika potong(path, 0, panjang(prefiks)) == prefiks {
+                    jika path[panjang(prefiks)] == "/" {
+                        sisa = potong(path, panjang(prefiks) + 1,
+                                      panjang(path) - panjang(prefiks) - 1)
+                    }
+                }
+            }
+            jika sisa adalah kosong {
+                lanjut
+            }
+
+            variabel metode = req["metode"]
+            jika metode != "GET" dan metode != "HEAD" {
+                variabel badan405 = "Metode tidak boleh"
+                variabel k405 = "HTTP/1.1 405 Method Not Allowed\r\nAllow: GET, HEAD"
+                k405 = k405 + "\r\nContent-Type: text/plain; charset=utf-8"
+                k405 = k405 + "\r\nContent-Length: " + ke_teks(panjang_byte(badan405))
+                k405 = k405 + "\r\nConnection: close\r\n\r\n"
+                kembalikan k405 + badan405
+            }
+
+            variabel berkas = _web_jalur_aman(akar, sisa)
+            jika berkas adalah kosong {
+                kembalikan teks(404, "Tidak ditemukan")
+            }
+
+            # Satu pesan 404 untuk "tidak ada", "direktori", dan "tak
+            # terbaca": membedakannya membocorkan struktur direktori.
+            # _info_jalur() mengembalikan kosong (tidak menaikkan galat)
+            # bila jalur tidak ada, jadi periksa kosong SEBELUM mengindeks.
+            variabel info = kosong
+            coba {
+                info = _info_jalur(berkas)
+            } kecuali e {
+                kembalikan teks(404, "Tidak ditemukan")
+            }
+            jika info adalah kosong {
+                kembalikan teks(404, "Tidak ditemukan")
+            }
+            jika info[0] != "berkas" {
+                kembalikan teks(404, "Tidak ditemukan")
+            }
+
+            # Symlink: sebuah tautan DI DALAM akar bisa menunjuk ke mana pun
+            # di luar, dan pemeriksaan teks jalur di atas tidak melihatnya.
+            # Bandingkan jalur nyata (symlink sudah diikuti) berkas dengan
+            # jalur nyata akar; berkas di luar akar ditolak seperti 404 biasa.
+            variabel akar_nyata = _jalur_nyata(akar)
+            variabel berkas_nyata = _jalur_nyata(berkas)
+            jika akar_nyata adalah kosong atau berkas_nyata adalah kosong {
+                kembalikan teks(404, "Tidak ditemukan")
+            }
+            variabel batas = akar_nyata
+            jika panjang(batas) > 0 dan batas[panjang(batas) - 1] != "/" {
+                batas = batas + "/"
+            }
+            jika panjang(berkas_nyata) <= panjang(batas) {
+                kembalikan teks(404, "Tidak ditemukan")
+            }
+            jika potong(berkas_nyata, 0, panjang(batas)) != batas {
+                kembalikan teks(404, "Tidak ditemukan")
+            }
+
+            variabel isi = kosong
+            coba {
+                isi = baca_semua(berkas)
+            } kecuali e {
+                kembalikan teks(404, "Tidak ditemukan")
+            }
+
+            # ETag lemah dari ukuran + waktu ubah. Lemah (W/) karena bukan
+            # hash isi: dua tulisan dalam satu detik dengan ukuran sama bisa
+            # bertabrakan.
+            variabel etag = "W/\"" + ke_teks(ke_bulat(info[1])) + "-"
+            etag = etag + ke_teks(ke_bulat(info[2])) + "\""
+            jika "if-none-match" dalam req["header"] {
+                jika teks_pangkas(req["header"]["if-none-match"]) == etag {
+                    variabel k304 = "HTTP/1.1 304 Not Modified\r\nETag: " + etag
+                    k304 = k304 + "\r\nConnection: close\r\n\r\n"
+                    kembalikan k304
+                }
+            }
+
+            variabel m = _web_mime(berkas)
+            variabel ct = m[0]
+            jika m[1] {
+                ct = ct + "; charset=utf-8"
+            }
+            variabel kepala = "HTTP/1.1 200 OK\r\nContent-Type: " + ct
+            kepala = kepala + "\r\nContent-Length: " + ke_teks(panjang_byte(isi))
+            kepala = kepala + "\r\nETag: " + etag
+            kepala = kepala + "\r\nX-Content-Type-Options: nosniff"
+            kepala = kepala + "\r\nConnection: close\r\n\r\n"
+            # HEAD: header identik dengan GET (termasuk Content-Length),
+            # tetapi tanpa badan.
+            jika metode == "HEAD" {
+                kembalikan kepala
+            }
+            kembalikan kepala + isi
+        }
+        kembalikan kosong
     }
 
     # rute(metode, pola, penangan) -> diri (bisa dirantai).
@@ -340,6 +564,13 @@ kelas Aplikasi {
                     tambah(metode_lain, r[0])
                 }
             }
+        }
+        # Berkas statis dicoba SETELAH rute eksplisit (rute menang bila ada
+        # yang cocok) tetapi SEBELUM 405/404, supaya aset tetap tersaji
+        # walau ada pola rute yang kebetulan menutupi prefiksnya.
+        variabel res = diri._statis_tangani(req)
+        jika res bukan adalah kosong {
+            kembalikan res
         }
         # Path cocok tapi metode tidak: 405, bukan 404. Membedakan
         # "tidak ada" dari "metode salah" sangat membantu saat debug.
