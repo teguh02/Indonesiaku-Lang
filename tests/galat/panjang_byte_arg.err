@@ -1,0 +1,4 @@
+panjang_byte() memerlukan 1 argumen (teks)
+[baris 2, kolom 20] dalam skrip
+    cetak(panjang_byte())
+                       ^

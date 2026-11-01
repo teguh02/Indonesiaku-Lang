@@ -147,23 +147,16 @@ kelas Respons {
     }
 }
 
-# _http_panjang_byte(t) -> panjang teks dalam byte UTF-8 (Content-Length
-# menghitung byte, panjang() menghitung karakter).
+# _http_panjang_byte(t) -> panjang teks dalam byte (Content-Length menghitung
+# byte, panjang() menghitung karakter).
+#
+# Memakai builtin panjang_byte(), BUKAN menghitung ulang lebar UTF-8 per
+# karakter. Penghitungan ulang salah untuk badan biner (gambar, font): byte
+# yang bukan UTF-8 sah hilang dari iterasi karakter, sementara byte >= 0x80
+# dihitung dua kali. Untuk berkas 5 byte `FF FE 41 00 80` cara lama menjawab 6,
+# dan Content-Length yang terlalu besar membuat klien menggantung.
 fungsi _http_panjang_byte(t) {
-    variabel n = 0
-    untuk c dalam t {
-        variabel o = ord(c)
-        jika o < 128 {
-            n = n + 1
-        } jika_lain o < 2048 {
-            n = n + 2
-        } jika_lain o < 65536 {
-            n = n + 3
-        } selain {
-            n = n + 4
-        }
-    }
-    kembalikan n
+    kembalikan panjang_byte(t)
 }
 
 # _http_aman(t, apa, boleh_spasi) -- tolak CR/LF (dan spasi) yang bisa

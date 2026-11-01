@@ -395,6 +395,7 @@ void initVM() {
 
     defineNative("cetak", nativeFnCetak);
     defineNative("panjang", nativeFnPanjang);
+    defineNative("panjang_byte", nativeFnPanjangByte);
     defineNative("huruf_besar", nativeFnHurofBesar);
     defineNative("huruf_kecil", nativeFnHurofKecil);
     defineNative("ganti", nativeFnGanti);
@@ -488,6 +489,7 @@ void initVM() {
     defineNative("hapus_direktori", nativeFnHapusDirektori);
     defineNative("jalur_indk", nativeFnJalurIndk);
     defineNative("_info_jalur", nativeFnInfoJalur);
+    defineNative("_jalur_nyata", nativeFnJalurNyata);
     defineNative("_jalankan_proses", nativeFnJalankanProses);
 
     // Atribut dinamis (setattr/getattr/hasattr).

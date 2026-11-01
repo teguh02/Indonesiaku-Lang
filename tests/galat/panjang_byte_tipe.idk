@@ -1,0 +1,2 @@
+# panjang_byte() hanya menerima teks.
+cetak(panjang_byte(123))
