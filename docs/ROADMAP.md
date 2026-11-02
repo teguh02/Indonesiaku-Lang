@@ -939,8 +939,8 @@ kalkulator-indonesiaku/
 | Fase | Fokus | Status |
 |---|---|---|
 | 9 | LSP dan dukungan editor | ✅ selesai (v1.4.0) |
-| 10 | SQLite, MySQL/MariaDB, PostgreSQL | 🟨 sebagian — SQLite lengkap (BLOB, batas tunggu); MySQL/PostgreSQL terblokir pustaka klien eksternal |
-| 11 | HTTP/HTTPS dan backend server | 🟨 sebagian — modul `web` (routing, middleware, parsing badan, berkas statis) jalan; HTTPS/TLS dan concurrency belum |
+| 10 | SQLite, MySQL/MariaDB, PostgreSQL | 🟨 sebagian — SQLite lengkap (BLOB, batas tunggu); MySQL/PostgreSQL belum. Penghalangnya **bukan** pustaka klien eksternal: `soket_sambung`/`tls_mulai`/`sha256`/HMAC+PBKDF2 mbedTLS sudah ada, jadi wire protocol bisa ditulis langsung. Yang kurang: `soket_tulis`/`soket_baca` hanya menerima teks, dan byte >127 ter-enkode UTF-8 (2 byte) sehingga bingkai biner rusak — butuh I/O soket berbasis daftar byte lebih dulu |
+| 11 | HTTP/HTTPS dan backend server | 🟨 sebagian — langkah 1–6 dan 8 `[x]`: routing, middleware, parsing badan, berkas statis, **HTTPS/TLS klien** (1.5.0) dan gelung server dengan batas waktu/shutdown. Sisa langkah 7: **race** (butuh worker/thread, Fase 20) dan **CRUD di atas DB Fase 10** (masih SQLite) |
 | 12 | Server-Side Rendering / HTML template | ⬜ belum |
 | 13 | Session, keamanan, login dan otorisasi | ⬜ belum |
 | 14 | Package manager dan developer tooling | ⬜ belum |
