@@ -201,6 +201,19 @@ if [ -f tests/web_statis_server.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Gelung server bawaan pustaka (app.jalankan): batas waktu aktif tanpa
+# disetel pemakai, penangan yang meledak tidak mematikan server, dan
+# berhenti() melepas port setelah balasan terkirim.
+if [ -f tests/web_jalankan_server.sh ]; then
+    echo ""
+    if bash tests/web_jalankan_server.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES web-jalankan"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Batas waktu soket: satu klien yang diam tidak boleh membekukan server.
 # Hanya bisa dibuktikan dengan koneksi sungguhan yang sengaja tidak
 # mengirim apa pun.

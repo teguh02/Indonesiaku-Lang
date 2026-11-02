@@ -1,0 +1,31 @@
+# Server uji untuk app.jalankan(): gelung server bawaan pustaka.
+#
+# Berbeda dari server bantu lain, berkas ini TIDAK menulis gelung soket
+# sendiri. Itulah yang diuji: gelung milik pustaka harus menyediakan batas
+# waktu, penanganan galat per koneksi, log, dan penutupan soket.
+
+impor web
+
+variabel PORT = ke_bulat(ambil_lingkungan("IDK_PORT"))
+variabel SISA = ke_bulat(ambil_lingkungan("IDK_SISA"))
+
+variabel app = web.Aplikasi()
+
+app.rute("GET", "/halo", fungsi(req) {
+    kembalikan web.teks(200, "halo")
+})
+
+# Penangan yang sengaja meledak: satu permintaan buruk tidak boleh
+# mematikan server.
+app.rute("GET", "/meledak", fungsi(req) {
+    naikkan web.GalatWeb("sengaja meledak")
+})
+
+# Shutdown anggun: balasan ini harus tetap sampai ke klien.
+app.rute("GET", "/matikan", fungsi(req) {
+    app.berhenti()
+    kembalikan web.teks(200, "berhenti")
+})
+
+variabel dilayani = app.jalankan(PORT, 2, SISA)
+cetak("dilayani:", dilayani)

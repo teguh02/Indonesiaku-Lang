@@ -1,0 +1,32 @@
+# Gelung server bawaan: app.jalankan().
+#
+# Golden ini sengaja TIDAK membuka port supaya deterministik di CI; yang
+# diperiksa adalah validasi argumennya. Properti gelungnya sendiri (batas
+# waktu, galat per koneksi, berhenti anggun, log) diuji lewat HTTP sungguhan
+# di tests/web_jalankan_server.sh.
+
+impor web
+
+variabel app = web.Aplikasi()
+
+coba {
+    app.jalankan("bukan angka")
+} kecuali e {
+    cetak("ditolak:", e)
+}
+
+coba {
+    app.jalankan(8080, 0 - 1)
+} kecuali e {
+    cetak("ditolak:", e)
+}
+
+coba {
+    app.jalankan(8080, 10, 0 - 5)
+} kecuali e {
+    cetak("ditolak:", e)
+}
+
+# berhenti() boleh dipanggil kapan saja, termasuk sebelum jalankan().
+app.berhenti()
+cetak("selesai")
