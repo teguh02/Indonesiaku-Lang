@@ -107,8 +107,9 @@ fungsi http_response_json(kode, badan) {
 }
 
 # --- klien HTTP (http_ambil) -------------------------------------------------
-# Padanan urllib.request.urlopen / requests.get untuk http:// saja (HTTPS
-# butuh TLS dan belum ada). Permintaan dikirim sebagai HTTP/1.0: server tidak
+# Padanan urllib.request.urlopen / requests.get untuk http:// dan https://.
+# HTTPS memakai tls_mulai() dengan verifikasi sertifikat yang selalu aktif.
+# Permintaan dikirim sebagai HTTP/1.0: server tidak
 # boleh membalasnya dengan "chunked", dan badan berakhir saat koneksi
 # ditutup -- jadi tidak perlu menghitung byte di bahasa yang mengindeks
 # teks per karakter. Ditolak (GalatIzin) di `indk --sandbox`.
@@ -174,13 +175,18 @@ fungsi http_urai_url(url) {
         naikkan GalatJaringan(f"url harus teks, bukan {jenis(url)}")
     }
     _http_aman(url, "url", salah)
+    variabel aman = salah
+    variabel sisa = ""
     jika teks_mulai_dengan(huruf_kecil(url), "https://") {
-        naikkan GalatJaringan("HTTPS belum didukung (butuh TLS); pakai http://")
+        aman = benar
+        sisa = url[8:]
+    } selain {
+        jika teks_mulai_dengan(huruf_kecil(url), "http://") {
+            sisa = url[7:]
+        } selain {
+            naikkan GalatJaringan(f"url harus diawali http:// atau https://: {repr(url)}")
+        }
     }
-    jika tidak teks_mulai_dengan(huruf_kecil(url), "http://") {
-        naikkan GalatJaringan(f"url harus diawali http://: {repr(url)}")
-    }
-    variabel sisa = url[7:]
     # Fragmen (#...) tidak pernah dikirim ke server.
     variabel pagar = teks_cari(sisa, "#")
     jika pagar != 0 - 1 {
@@ -207,7 +213,7 @@ fungsi http_urai_url(url) {
         naikkan GalatJaringan(f"alamat IPv6 dalam url belum didukung: {repr(url)}")
     }
     variabel host = alamat
-    variabel port = 80
+    variabel port = 443 jika aman selain 80
     variabel titik_dua = teks_cari(alamat, ":")
     jika titik_dua != 0 - 1 {
         host = alamat[:titik_dua]
@@ -226,7 +232,7 @@ fungsi http_urai_url(url) {
     jika host == "" {
         naikkan GalatJaringan(f"url tanpa host: {repr(url)}")
     }
-    kembalikan [host, port, jalur]
+    kembalikan [host, port, jalur, aman]
 }
 
 # _http_satu_permintaan(...) -> Respons untuk SATU permintaan, tanpa
@@ -235,7 +241,9 @@ fungsi _http_satu_permintaan(url, metode = "GET", kepala = kosong, badan = "") {
     variabel bagian = http_urai_url(url)
     variabel host = bagian[0]
     variabel port = bagian[1]
-    variabel host_kepala = host jika port == 80 selain host + ":" + ke_teks(port)
+    variabel aman = bagian[3]
+    variabel port_bawaan = 443 jika aman selain 80
+    variabel host_kepala = host jika port == port_bawaan selain host + ":" + ke_teks(port)
     _http_aman(metode, "metode", salah)
     variabel baris = [metode + " " + bagian[2] + " HTTP/1.0", "Host: " + host_kepala,
                       "User-Agent: Indonesiaku", "Connection: close"]
@@ -253,6 +261,12 @@ fungsi _http_satu_permintaan(url, metode = "GET", kepala = kosong, badan = "") {
     variabel s = soket_sambung(host, port)
     variabel data = ""
     coba {
+        jika aman {
+            # Handshake TLS SEBELUM satu bita pun permintaan dikirim.
+            # tls_mulai() memverifikasi sertifikat dan mengirim SNI; bila
+            # sertifikat tidak sah ia menaikkan galat, bukan melanjutkan.
+            tls_mulai(s, host)
+        }
         soket_tulis(s, permintaan)
         selagi benar {
             variabel potongan = soket_baca(s)
@@ -303,8 +317,11 @@ fungsi _http_gabung_url(dasar, lokasi) {
     variabel bagian = http_urai_url(dasar)
     variabel host = bagian[0]
     variabel port = bagian[1]
-    variabel awal = "http://" + host
-    jika port != 80 {
+    # Skema harus ikut URL dasar. Meng-hardcode "http://" di sini akan
+    # menurunkan pengalihan relatif pada situs HTTPS menjadi HTTP polos.
+    variabel aman = bagian[3]
+    variabel awal = ("https://" jika aman selain "http://") + host
+    jika port != (443 jika aman selain 80) {
         awal = awal + ":" + ke_teks(port)
     }
     jika teks_mulai_dengan(lokasi, "/") {
@@ -366,6 +383,13 @@ fungsi http_ambil(url, metode = "GET", kepala = kosong, badan = "", maks_pengali
         }
 
         variabel tujuan = _http_gabung_url(kini, teks_pangkas(r.kepala["location"]))
+        # Penurunan https:// -> http:// ditolak. Mengikutinya diam-diam berarti
+        # permintaan berikut (termasuk header Authorization dan cookie) dikirim
+        # polos padahal pengguna meminta koneksi terenkripsi.
+        jika http_urai_url(kini)[3] dan tidak http_urai_url(tujuan)[3] {
+            naikkan GalatJaringan(
+                f"pengalihan menurunkan keamanan dari https ke http: {kini} -> {tujuan}")
+        }
         jika tujuan dalam dikunjungi {
             naikkan GalatJaringan(
                 f"pengalihan berputar: " + teks_gabung(dikunjungi, " -> ") +

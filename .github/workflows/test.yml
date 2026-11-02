@@ -189,7 +189,7 @@ jobs:
             -DDEBUG_STRESS_GC \
             -o indk_asan \
             src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
-            src/native.c src/object.c src/scanner.c src/table.c src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/sqlite3.c -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm
+            src/native.c src/object.c src/scanner.c src/table.c src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/vendor/mbedtls/library/*.c -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm
 
       - name: Run every example under sanitizers
         env:
@@ -229,7 +229,7 @@ jobs:
         run: |
           gcc -std=c11 -g -O0 -Isrc -o indk_dbg \
             src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
-            src/native.c src/object.c src/scanner.c src/table.c src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/sqlite3.c -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm
+            src/native.c src/object.c src/scanner.c src/table.c src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/vendor/mbedtls/library/*.c -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm
 
       - name: Valgrind on representative examples
         run: |
@@ -257,9 +257,15 @@ jobs:
 
       - name: Build with coverage instrumentation
         run: |
-          gcc -std=c11 -O0 -g --coverage -Isrc -o indk \
+          # mbedTLS dikompilasi TANPA --coverage. Dua alasan: cakupan 132.812
+          # baris kode pihak ketiga tidak mengukur apa pun tentang Indonesiaku
+          # dan hanya menenggelamkan angka kita, dan .gcda vendor membuat lcov
+          # gagal dengan "stamp mismatch" saat ada artefak build sebelumnya.
+          gcc -std=c11 -O0 -g -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -c src/vendor/mbedtls/library/*.c
+          mkdir -p mbedtls-obj && mv *.o mbedtls-obj/
+          gcc -std=c11 -O0 -g --coverage -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk \
             src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
-            src/native.c src/object.c src/scanner.c src/table.c src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/sqlite3.c -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm
+            src/native.c src/object.c src/scanner.c src/table.c src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c mbedtls-obj/*.o -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm
 
       - name: Exercise every example
         run: |
@@ -270,8 +276,13 @@ jobs:
 
       - name: Generate lcov report
         run: |
-          lcov --capture --directory . --output-file coverage.info --ignore-errors mismatch,negative 2>/dev/null || \
-          lcov --capture --directory . --output-file coverage.info
+          # --ignore-errors gcov: .gcda yatim dari langkah build lain di runner
+          # yang sama membuat lcov keluar 1 walaupun laporan kita sendiri utuh.
+          lcov --capture --directory . --output-file coverage.info \
+            --ignore-errors mismatch,negative,gcov,inconsistent,empty
+          # Kode pihak ketiga dibuang dari laporan, bukan sekadar tidak diukur.
+          lcov --remove coverage.info '*/src/vendor/*' '*/src/sqlite3.c' \
+            --output-file coverage.info --ignore-errors unused
           lcov --list coverage.info || true
 
       - name: Upload coverage report
@@ -296,7 +307,7 @@ jobs:
           clang -g -O1 -fsanitize=fuzzer,address,undefined -Isrc \
             tests/fuzz_compile.c src/chunk.c src/compiler.c src/debug.c src/format.c \
             src/memory.c src/native.c src/object.c src/scanner.c src/table.c \
-            src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/sqlite3.c -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm -o fuzz_compile
+            src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/vendor/mbedtls/library/*.c -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm -o fuzz_compile
 
       - name: Seed corpus from examples
         run: |

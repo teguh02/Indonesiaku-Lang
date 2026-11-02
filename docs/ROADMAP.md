@@ -475,12 +475,32 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 **Langkah pengembangan:**
 
 1. [ ] Buat docs/RENCANA_FITUR/http_web_server.md dan https_tls.md. Tentukan kontrak Request/Response, router, middleware, batas request, model konkurensi dan pemakaian reverse proxy.
-2. [ ] Perluas klien pustaka/http.idk sehingga http_ambil dapat menerima https:// (**P2**). Pilih TLS library yang terawat; aktifkan verifikasi CA dan hostname secara default; timeout dan redirect dibatasi; insecure-by-default dilarang.
-   - Sebagian: mengikuti pengalihan 301/302/303/307/308 sudah ada (1.4.0). **HTTPS/TLS masih terblokir** — biner rilis saat ini hanya menaut libc/libm (`LDFLAGS = -lm`), jadi menaut OpenSSL mengakhiri sifat mandiri itu. Keputusan arsitektur, bukan detail implementasi.
-   - **Bahan keputusan sudah tersedia: [`docs/ANALISIS/08_KEPUTUSAN_TLS.md`](ANALISIS/08_KEPUTUSAN_TLS.md)** (2026-11-02), semua angkanya diukur di container bersih, bukan diperkirakan. Ringkasnya: OpenSSL statis **+5,1 MB**, mbedTLS statis **+0,66 MB**; mbedTLS 3.6.2 LTS **bisa di-vendor dengan gcc polos** (108 berkas `.c`, tanpa cmake/configure) persis seperti `src/sqlite3.c` yang sudah ada, sedangkan OpenSSL butuh `Configure` Perl. Handshake TLS 1.3 ke host sungguhan berhasil dan **sertifikat hostname salah ditolak** (`-0x2700`), jadi "insecure-by-default dilarang" terpenuhi.
-   - Rekomendasi dokumen itu: vendor mbedTLS. Yang dikorbankan ditulis terang-terangan: **+132.812 baris C pihak ketiga** masuk permukaan audit, waktu build bertambah, dan ada kewajiban baru mengikuti rilis keamanan mbedTLS.
-   - **Masih menunggu keputusan pemilik proyek** — satu hal saja: setuju atau tidak menambah kode pihak ketiga sebanyak itu demi HTTPS dengan biner yang tetap mandiri. Sebelum itu dijawab, tidak ada kode TLS yang ditulis.
-   - Catatan lingkup: langkah ini hanya tentang **klien** `http_ambil()`. Server HTTPS tetap lewat reverse proxy (lihat `website/panduan/08_DEPLOYMENT.md`).
+2. [x] Perluas klien pustaka/http.idk sehingga http_ambil dapat menerima https:// (**P2**). Pilih TLS library yang terawat; aktifkan verifikasi CA dan hostname secara default; timeout dan redirect dibatasi; insecure-by-default dilarang.
+   - Selesai 1.5.0: `http_ambil()` menerima `https://` lewat builtin
+     `tls_mulai(soket, host)`. Ditenagai **mbedTLS 3.6.2 (LTS)** yang di-vendor
+     di `src/vendor/mbedtls/` dan ditaut statis — biner tetap hanya menaut
+     libc/libm, jadi sifat mandirinya terjaga. Dasar keputusan + angka
+     pengukurannya ada di [`docs/ANALISIS/08_KEPUTUSAN_TLS.md`](ANALISIS/08_KEPUTUSAN_TLS.md).
+   - **Verifikasi tidak bisa dimatikan**: tidak ada parameter, env, atau "mode
+     pengembangan" untuk melewatinya. Diuji terhadap `badssl.com` di
+     `tests/https_klien.sh` — kedaluwarsa, hostname salah, self-signed, dan
+     akar tak dikenal semuanya ditolak dengan pesan yang menyebut sebabnya.
+     Sabotase (VERIFY_NONE, SNI dimatikan, CA gagal tapi lanjut) membuat tes
+     merah.
+   - CA bundle: `INDK_CA_BUNDLE` lebih dulu, lalu jalur sistem umum; **tidak
+     ada satu pun = gagal**, bukan diam-diam melewati verifikasi.
+   - Pengalihan `https://` → `http://` **ditolak**. Sekaligus memperbaiki bug
+     lama `_http_gabung_url()` yang meng-hardcode `http://` sehingga pengalihan
+     relatif di situs HTTPS turun ke HTTP polos.
+   - Sisa yang jujur ditulis: **Windows belum membaca Certificate Store**, jadi
+     di sana `INDK_CA_BUNDLE` perlu disetel bila jalur PEM gaya Unix tidak ada.
+     Build MinGW diverifikasi dan HTTPS-nya berjalan (termasuk keempat
+     penolakan badssl.com) lewat Wine; Wine bukan Windows asli, jadi perilaku
+     CA di sana belum terbukti. Permukaan audit bertambah 132.049 (ccm.c dibuang)
+     baris C pihak ketiga; `tools/vendor_mbedtls.sh` menjadikan pembaruan saat
+     CVE satu perintah dengan sha256 terkunci.
+   - Lingkup: hanya **klien**. Server HTTPS tetap lewat reverse proxy (lihat
+     `website/panduan/08_DEPLOYMENT.md`).
 3. [x] Rancang modul server HTTP dengan routing metode/path, parameter URL, query string, header, status, error handler dan middleware (**WEB-01**). Hindari ekspose detail socket mentah pada API yang digunakan pemula.
    - Selesai 1.4.0: `pustaka/web.idk` — routing metode/path, parameter URL `:nama`, query string + dekode persen, middleware berantai, penangan galat, 405 dengan header `Allow`. Diuji lewat HTTP sungguhan (`tests/web_router_server.sh`, 9 pemeriksaan curl). Socket mentah tidak diekspos: `app.tangani()` bekerja pada teks.
 4. [x] Tambahkan parsing application/json, application/x-www-form-urlencoded, multipart/form-data, file upload streaming dan batas ukuran/bentuk input (**WEB-02**).

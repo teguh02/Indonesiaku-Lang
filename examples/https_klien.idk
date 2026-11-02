@@ -1,0 +1,33 @@
+# HTTPS: penguraian url dan aturan keamanan yang tidak butuh jaringan.
+# Permintaan HTTPS sungguhan diuji tests/https_klien.sh -- sengaja TIDAK di
+# sini, karena golden yang menyentuh jaringan membuat CI rapuh.
+impor "pustaka/http.idk"
+
+cetak("== skema dan port bawaan ==")
+untuk u dalam ["http://contoh.id/a", "https://contoh.id/a",
+              "https://contoh.id:8443/a", "http://contoh.id:8080/a"] {
+    variabel b = http_urai_url(u)
+    cetak(b[0], b[1], b[2], "aman:", b[3])
+}
+
+cetak("== pengalihan relatif mempertahankan skema ==")
+cetak(_http_gabung_url("https://a.id/x/y", "/z"))
+cetak(_http_gabung_url("https://a.id/x/y", "z"))
+cetak(_http_gabung_url("https://a.id:8443/x/y", "/z"))
+cetak(_http_gabung_url("http://a.id/x/y", "/z"))
+
+cetak("== url https yang tetap ditolak ==")
+untuk u dalam ["https://", "https://h:99x/", "https://u@h/", "https://[::1]/"] {
+    coba {
+        http_urai_url(u)
+    } kecuali GalatJaringan sebagai e {
+        cetak("GalatJaringan:", e.pesan)
+    }
+}
+
+cetak("== tls_mulai memeriksa argumennya ==")
+coba {
+    tls_mulai("bukan soket", "contoh.id")
+} kecuali GalatTipe sebagai e {
+    cetak("GalatTipe:", e.pesan)
+}

@@ -169,10 +169,20 @@ Alasannya, berurutan:
 
 ## 8. Keputusan
 
-**Belum diambil.** Dokumen ini menyediakan bahannya. Yang dibutuhkan dari
-pemilik proyek hanya satu hal: setuju atau tidak menambah 132.812 baris C
-pihak ketiga ke repo demi HTTPS dengan biner yang tetap mandiri.
+**Diambil 2026-11-02: vendor mbedTLS, disetujui pemilik proyek.** Penambahan
+132.812 baris C pihak ketiga diterima secara sadar demi HTTPS dengan biner
+yang tetap mandiri.
 
-Jika setuju, urutan kerjanya: vendor `src/vendor/mbedtls/` → builtin TLS di
-`native.c` → `http_ambil()` menerima `https://` → tes terhadap host sungguhan
-termasuk sertifikat salah → dokumentasi.
+Dilaksanakan di 1.5.0 (lihat `docs/RENCANA_FITUR/selesai/https_tls.md`):
+
+| Yang direncanakan | Hasil sebenarnya |
+|---|---|
+| biner tetap mandiri | ya — `ldd` tetap hanya libc/libm |
+| +0,66 MB | +0,96 MB (1,42 → 2,38 MB; selisihnya kode `tls.c` + jalur baru) |
+| verifikasi wajib | `MBEDTLS_SSL_VERIFY_REQUIRED`, tanpa jalan keluar |
+| tes negatif | 4 kasus badssl.com ditolak dengan sebab spesifik |
+
+Satu hal yang berubah dari rencana: ukuran bertambah **+0,96 MB**, bukan
++0,66 MB seperti hasil pengukuran program uji minimal. Selisihnya wajar —
+program uji itu tidak membawa seluruh VM Indonesiaku — tetapi dicatat di sini
+supaya angka rencana tidak dikutip sebagai hasil akhir.

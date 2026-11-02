@@ -9,6 +9,37 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **HTTPS untuk klien HTTP** — `http_ambil()` menerima `https://`, dengan
+  builtin baru `tls_mulai(soket, host)` yang meningkatkan soket tersambung
+  menjadi TLS. Verifikasi sertifikat **selalu aktif dan tidak bisa dimatikan**:
+  tidak ada parameter, variabel lingkungan, atau "mode pengembangan" untuk
+  melewatinya. Sertifikat kedaluwarsa, nama host tidak cocok, dan penerbit tak
+  dikenal ditolak dengan pesan yang menyebut sebabnya — diuji terhadap
+  `badssl.com` di `tests/https_klien.sh`. SNI selalu dikirim. Daftar CA diambil
+  dari `INDK_CA_BUNDLE` bila disetel, selain itu dari jalur sistem yang umum;
+  bila tidak ada satu pun, koneksi **gagal** alih-alih diam-diam melewati
+  verifikasi. Ditenagai mbedTLS 3.6.2 (LTS) yang di-vendor di
+  `src/vendor/mbedtls/` dan ditaut statis, jadi biner tetap hanya bergantung
+  pada libc/libm seperti sebelumnya. (Fase 11 langkah 2)
+- **Pengalihan `https://` → `http://` ditolak.** Mengikutinya diam-diam berarti
+  permintaan berikutnya — termasuk header `Authorization` dan cookie — dikirim
+  polos padahal pengguna meminta koneksi terenkripsi. Sekaligus memperbaiki
+  bug lama: `_http_gabung_url()` meng-hardcode `http://`, sehingga pengalihan
+  **relatif** pada situs HTTPS ikut turun ke HTTP polos.
+- **CCM dicabut dari mbedTLS** lewat `src/mbedtls_user_config.h`
+  (`MBEDTLS_USER_CONFIG_FILE`). TLS 1.3 memakai AES-GCM atau
+  ChaCha20-Poly1305, jadi CCM tidak pernah terpakai klien kita; mencabutnya
+  mengecilkan permukaan audit — alasan yang sama yang membuat mbedTLS dipilih
+  daripada OpenSSL. Berkas konfigurasinya sengaja di luar `src/vendor/` supaya
+  tidak terhapus saat `tools/vendor_mbedtls.sh` menulis ulang direktori vendor
+  pada pembaruan CVE. Berkasnya juga dibuang dari pohon vendor oleh `tools/vendor_mbedtls.sh`, karena pemindai statis membaca berkas yang ada di repo, bukan yang dikompilasi. Permukaan audit 132.812 -> 132.049 baris. Diverifikasi: nol simbol `mbedtls_ccm` di biner.
+- **Windows menaut `-lbcrypt`** selain `-lws2_32`: mbedTLS mengambil entropi
+  lewat `BCryptGenRandom`. Tanpa itu link gagal **hanya di Windows**, jadi
+  build Linux/macOS yang hijau tidak membuktikan apa pun.
+- **`tools/vendor_mbedtls.sh`** — mengambil ulang mbedTLS dengan sha256 yang
+  terkunci di skrip. Kode pihak ketiga di dalam repo adalah utang keamanan;
+  skrip ini membuat pembaruan saat ada CVE menjadi satu perintah, bukan
+  tebak-tebakan berkas mana yang dulu disalin.
 - **Penyajian berkas statis** di `pustaka/web.idk`: `app.statis(prefiks, akar)`
   menyajikan CSS, JavaScript, gambar, dan font dari disk. Hanya `GET`/`HEAD`
   (lainnya **405** dengan `Allow: GET, HEAD`); direktori tidak pernah didaftar

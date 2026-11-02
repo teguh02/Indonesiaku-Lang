@@ -1,0 +1,17 @@
+== skema dan port bawaan ==
+contoh.id 80 /a aman: salah
+contoh.id 443 /a aman: benar
+contoh.id 8443 /a aman: benar
+contoh.id 8080 /a aman: salah
+== pengalihan relatif mempertahankan skema ==
+https://a.id/z
+https://a.id/x/z
+https://a.id:8443/z
+http://a.id/z
+== url https yang tetap ditolak ==
+GalatJaringan: url tanpa host: "https://"
+GalatJaringan: port tidak sah di url: "https://h:99x/"
+GalatJaringan: url dengan nama pengguna belum didukung: "https://u@h/"
+GalatJaringan: alamat IPv6 dalam url belum didukung: "https://[::1]/"
+== tls_mulai memeriksa argumennya ==
+GalatTipe: tls_mulai(soket, host) memerlukan soket dan teks

@@ -313,10 +313,15 @@ typedef struct {
     bool isOpen;
 } ObjFile;
 
+// Pembungkus TLS opsional (src/tls.h). Bila != NULL, soket ini terenkripsi
+// dan soket_baca/soket_tulis WAJIB lewat jalur TLS, bukan recv/send mentah.
+typedef struct IndkTls IndkTls;
+
 typedef struct {
     Obj obj;
     long long fd;        // OS socket descriptor (int on POSIX, SOCKET on Win)
     bool isOpen;
+    IndkTls* tls;        // NULL = TCP polos; selain itu sesi TLS milik soket ini
 } ObjSocket;
 
 typedef struct sqlite3 sqlite3;

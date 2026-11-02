@@ -613,6 +613,7 @@ ditangkap `coba/kecuali`. Untuk server **dan klien** HTTP, gunakan
 | `soket_tutup(soket)` | Tutup soket (server atau klien) |
 | `soket_batas_waktu(soket, detik)` | Batas waktu baca **dan** tulis untuk satu soket. `0` berarti tanpa batas (bawaan). Detik boleh pecahan (`0.5`) |
 | `soket_sambung(host, port)` | Klien: sambung ke `host:port` (nama host atau IP, IPv4/IPv6) → soket. Host tak dikenal atau koneksi ditolak → `GalatOS`. Ditolak (`GalatIzin`) di `indk --sandbox` |
+| `tls_mulai(soket, host)` | Meningkatkan soket yang sudah tersambung menjadi TLS terverifikasi. Sesudahnya `soket_baca`/`soket_tulis`/`soket_tutup` tetap dipakai seperti biasa, tetapi terenkripsi. `host` dipakai untuk SNI sekaligus verifikasi nama. Sertifikat tidak sah → `GalatOS` yang menyebut sebabnya. **Verifikasi tidak bisa dimatikan** |
 
 #### Batas waktu soket: satu klien diam bisa membekukan server
 
@@ -1137,16 +1138,23 @@ koneksi yang ditolak menjadi `GalatOS` dari `soket_sambung`.
 ```indonesiaku
 impor "pustaka/http.idk"
 
-cetak(http_urai_url("http://contoh.id:8080/a?b=1#c"))   # ["contoh.id", 8080, "/a?b=1"]
-coba {
-    http_ambil("https://contoh.id/")
-} kecuali GalatJaringan sebagai e {
-    cetak(e.pesan)    # HTTPS belum didukung (butuh TLS); pakai http://
-}
+cetak(http_urai_url("http://contoh.id:8080/a?b=1#c"))   # ["contoh.id", 8080, "/a?b=1", salah]
+cetak(http_urai_url("https://contoh.id/"))              # ["contoh.id", 443, "/", benar]
 ```
 
-Batasan: **HTTPS belum didukung** (perlu TLS); permintaan dikirim sebagai
-HTTP/1.0, sehingga server tidak mengirim `chunked` dan badan dibaca sampai
+**HTTPS didukung sejak 1.5.0.** Verifikasi sertifikat selalu aktif dan tidak
+bisa dimatikan: sertifikat kedaluwarsa, nama host tidak cocok, atau penerbit
+tak dikenal menaikkan `GalatOS` dengan pesan yang menyebut sebabnya. Daftar CA
+diambil dari `INDK_CA_BUNDLE` bila disetel, selain itu dari jalur sistem yang
+umum; bila tak satu pun ditemukan, koneksi **gagal** alih-alih diam-diam
+melewati verifikasi. Di Windows, mbedTLS tidak membaca Certificate Store, dan jalur PEM gaya Unix
+di atas umumnya tidak ada — setel `INDK_CA_BUNDLE` ke berkas bundel CA
+(mis. `cacert.pem`) bila HTTPS gagal dengan pesan "tidak menemukan bundel CA
+sistem". (Catatan: biner MinGW yang dijalankan lewat Wine tetap menemukan
+jalur Unix tersebut, jadi pengujian Wine tidak membuktikan perilaku Windows
+asli.)
+
+Batasan lain: permintaan dikirim sebagai HTTP/1.0, sehingga server tidak mengirim `chunked` dan badan dibaca sampai
 koneksi ditutup; tidak ada pengalihan (redirect) otomatis maupun **batas
 waktu** (server yang diam membuat program menunggu); url dengan nama pengguna
 (`user@host`) atau alamat IPv6 berkurung (`[::1]`) belum didukung. CR/LF di
