@@ -1,0 +1,112 @@
+# REST API di atas PostgreSQL.
+#
+# Pasangan `examples/api_siswa.idk`, yang memakai SQLite. Yang ini memenuhi
+# Fase 11 langkah 7: "contoh CRUD API memakai database Fase 10".
+#
+# Jalankan PostgreSQL lebih dulu, mis.:
+#   docker run -d --rm -e POSTGRES_PASSWORD=rahasia -e POSTGRES_DB=sekolah \
+#       -p 127.0.0.1:5432:5432 postgres:16-alpine
+#   PGSANDI=rahasia indk examples/api_siswa_pg.idk
+
+impor web
+impor "pustaka/pg.idk"
+impor "pustaka/json.idk"
+
+# Kredensial dari lingkungan, TIDAK ditulis di berkas sumber: contoh yang
+# memberi teladan buruk akan disalin apa adanya ke produksi.
+fungsi _konfigurasi() {
+    variabel port = 5432
+    jika ambil_lingkungan("PGPORT") != kosong {
+        port = ke_bulat(ambil_lingkungan("PGPORT"))
+    }
+    variabel sandi = ""
+    jika ambil_lingkungan("PGSANDI") != kosong {
+        sandi = ambil_lingkungan("PGSANDI")
+    }
+    variabel basisdata = "sekolah"
+    jika ambil_lingkungan("PGDB") != kosong {
+        basisdata = ambil_lingkungan("PGDB")
+    }
+    kembalikan {"host": "127.0.0.1", "port": port, "pengguna": "postgres",
+                "sandi": sandi, "basisdata": basisdata}
+}
+
+variabel db = sambung(_konfigurasi())
+
+db.eksekusi("CREATE TABLE IF NOT EXISTS siswa (
+    id serial PRIMARY KEY,
+    nama text NOT NULL,
+    nilai int
+)")
+
+variabel app = web.Aplikasi()
+
+fungsi _galat(kode, pesan) {
+    kembalikan web.json(kode, json_teks({"galat": pesan}))
+}
+
+fungsi daftar_siswa(req) {
+    kembalikan web.json(200, json_teks(db.ambil_semua(
+        "SELECT id, nama, nilai FROM siswa ORDER BY id")))
+}
+
+fungsi satu_siswa(req) {
+    variabel baris = db.ambil_satu(
+        "SELECT id, nama, nilai FROM siswa WHERE id = $1", [req["params"]["id"]])
+    jika baris == kosong { kembalikan _galat(404, "siswa tidak ditemukan") }
+    kembalikan web.json(200, json_teks(baris))
+}
+
+fungsi tambah_siswa(req) {
+    variabel badan = req["json"]
+    jika badan == kosong atau ("nama" dalam badan) == salah {
+        kembalikan _galat(400, "butuh field 'nama'")
+    }
+    variabel nilai = kosong
+    jika "nilai" dalam badan { nilai = badan["nilai"] }
+    # Parameter $1/$2 dikirim sebagai parameter protokol, bukan dirangkai ke
+    # SQL. Nilai dari pengguna tidak pernah melewati parser SQL.
+    variabel baru = db.ambil_satu(
+        "INSERT INTO siswa (nama, nilai) VALUES ($1, $2) RETURNING id, nama, nilai",
+        [badan["nama"], nilai])
+    kembalikan web.json(201, json_teks(baru))
+}
+
+fungsi ubah_siswa(req) {
+    variabel badan = req["json"]
+    jika badan == kosong atau ("nama" dalam badan) == salah {
+        kembalikan _galat(400, "butuh field 'nama'")
+    }
+    variabel nilai = kosong
+    jika "nilai" dalam badan { nilai = badan["nilai"] }
+    # Jumlah baris terpengaruh WAJIB diperiksa: tanpa ini, id yang tidak ada
+    # tetap dijawab 200 dan klien mengira datanya tersimpan.
+    variabel n = db.eksekusi("UPDATE siswa SET nama = $1, nilai = $2 WHERE id = $3",
+                             [badan["nama"], nilai, req["params"]["id"]])
+    jika n == 0 { kembalikan _galat(404, "siswa tidak ditemukan") }
+    kembalikan web.json(200, json_teks({"id": req["params"]["id"], "nama": badan["nama"]}))
+}
+
+fungsi hapus_siswa(req) {
+    variabel n = db.eksekusi("DELETE FROM siswa WHERE id = $1", [req["params"]["id"]])
+    jika n == 0 { kembalikan _galat(404, "siswa tidak ditemukan") }
+    kembalikan web.json(200, json_teks({"dihapus": req["params"]["id"]}))
+}
+
+app.rute("GET", "/siswa", daftar_siswa)
+app.rute("GET", "/siswa/:id", satu_siswa)
+app.rute("POST", "/siswa", tambah_siswa)
+app.rute("PUT", "/siswa/:id", ubah_siswa)
+app.rute("DELETE", "/siswa/:id", hapus_siswa)
+
+variabel port_web = 8080
+jika ambil_lingkungan("IDK_PORT") != kosong {
+    port_web = ke_bulat(ambil_lingkungan("IDK_PORT"))
+}
+variabel maks = 0
+jika ambil_lingkungan("IDK_SISA") != kosong {
+    maks = ke_bulat(ambil_lingkungan("IDK_SISA"))
+}
+
+app.jalankan(port_web, 10, maks)
+db.tutup()

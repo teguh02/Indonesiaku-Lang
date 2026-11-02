@@ -147,6 +147,33 @@ if [ -f tests/kebocoran_resource.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Driver PostgreSQL (Fase 10): terhadap server sungguhan di container.
+# Melewati diri sendiri bila Docker tidak ada.
+if [ -f tests/pg_driver.sh ]; then
+    if bash tests/pg_driver.sh > /tmp/idk_pg.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} pg_driver"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} pg_driver"
+        sed 's/^/      /' /tmp/idk_pg.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES pg_driver"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
+# REST API di atas PostgreSQL (Fase 11 langkah 7): CRUD lewat HTTP sungguhan.
+if [ -f tests/api_siswa_pg_server.sh ]; then
+    if bash tests/api_siswa_pg_server.sh > /tmp/idk_apipg_uji.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} api_siswa_pg_server"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} api_siswa_pg_server"
+        sed 's/^/      /' /tmp/idk_apipg_uji.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES api_siswa_pg_server"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Performa pustaka: json_teks/bita.ke_teks/base64.enkode harus linear.
 # Sama seperti di atas, yang diperiksa bentuk pertumbuhan, bukan ambang detik.
 if [ -f tests/pustaka_performa.sh ]; then

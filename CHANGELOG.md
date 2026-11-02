@@ -153,6 +153,27 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Tes protokol JSON-RPC tersedia di `editors/vscode-indonesiaku/test-lsp.js`
   dan dijalankan CI lintas Linux/macOS/Windows, bersama tes formatter ekstensi.
 
+### Ditambahkan
+- **Driver PostgreSQL** (`pustaka/pg.idk`): bicara wire protocol v3 langsung
+  tanpa libpq, jadi biner tetap hanya menaut libc dan libm. Autentikasi
+  **SCRAM-SHA-256**; `password` polos dan `md5` ditolak. Parameter dikirim
+  sebagai parameter protokol (Parse/Bind), bukan dirangkai ke SQL.
+  `sambung()`, `eksekusi()`, `ambil_satu()`, `ambil_semua()`,
+  `mulai()`/`komit()`/`batal()`, `tutup()` idempoten.
+- `soket_tulis(soket, daftar_bita)` menerima daftar bulat 0..255 di samping
+  teks, dan `soket_baca_bita(soket)` mengembalikannya. Tanpa ini protokol
+  biner mustahil: `chr(255)` di dalam teks ter-enkode UTF-8 menjadi **dua**
+  byte di kawat.
+- `hmac_sha256(kunci, pesan)` dan `pbkdf2_sha256(sandi, garam, iterasi,
+  panjang)` memakai mbedTLS yang sudah di-vendor. Iterasi dibatasi
+  1..10.000.000 karena nilainya datang dari server dalam SCRAM.
+- `examples/api_siswa_pg.idk`: REST API CRUD di atas PostgreSQL.
+
+### Diperbaiki
+- Tabel ringkasan status fase menyebut Fase 10 "terblokir pustaka klien
+  eksternal". Keliru: penghalang sebenarnya adalah I/O soket yang hanya
+  menerima teks.
+
 ## [1.4.0] - 2026-10-29
 
 ### Ditambahkan
