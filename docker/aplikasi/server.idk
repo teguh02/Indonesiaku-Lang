@@ -1,0 +1,33 @@
+# Server contoh untuk image docker/aplikasi/Dockerfile.
+#
+# Sengaja sekecil mungkin: yang didemonstrasikan adalah cara men-deploy, bukan
+# cara menulis API. Untuk contoh CRUD lengkap lihat examples/api_siswa.idk.
+
+impor web
+
+variabel PORT = 8080
+variabel port_env = ambil_lingkungan("IDK_PORT")
+jika port_env != kosong dan port_env != "" {
+    PORT = ke_bulat(port_env)
+}
+
+variabel app = web.Aplikasi()
+
+app.rute("GET", "/", fungsi(req) {
+    kembalikan web.teks(200, "Indonesiaku berjalan di dalam container\n")
+})
+
+# Endpoint kesehatan untuk healthcheck compose dan reverse proxy.
+app.rute("GET", "/sehat", fungsi(req) {
+    kembalikan web.json(200, "{\"status\":\"sehat\"}")
+})
+
+cetak("server siap di port " + ke_teks(PORT))
+
+# "0.0.0.0" WAJIB di dalam container. Bawaan soket_dengar() adalah 127.0.0.1,
+# yang di container hanya bisa dihubungi dari dalam container itu sendiri --
+# reverse proxy akan mendapat "Connection refused" padahal server hidup.
+# Yang membuat ini tetap aman adalah compose: aplikasi tidak punya `ports:`
+# dan berada di jaringan internal, jadi "semua antarmuka" di sini berarti
+# jaringan Docker internal, bukan internet.
+app.jalankan(PORT, 10, 0, benar, "0.0.0.0")

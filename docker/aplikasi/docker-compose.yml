@@ -1,0 +1,80 @@
+# Deployment server Indonesiaku: aplikasi + reverse proxy.
+#
+# Jalankan dari akar repo:
+#     docker compose -f docker/aplikasi/docker-compose.yml up -d --build
+#     curl http://127.0.0.1:8080/
+#
+# Pembagian tugas:
+#   proxy — nginx, SATU-SATUNYA yang mengekspos port. TLS, batas laju, batas
+#           ukuran permintaan, dan timeout klien ditegakkan di sini.
+#   app   — server Indonesiaku. Hanya di jaringan `internal`, jadi tidak bisa
+#           dihubungi dari luar dan tidak punya akses internet keluar.
+
+services:
+  proxy:
+    image: nginx:1.27-alpine
+    container_name: indk-proxy
+    restart: unless-stopped
+    # 127.0.0.1: port hanya terbuka di localhost host ini. Menulis "8080:80"
+    # saja akan membuka port ke SELURUH internet pada VPS, menembus ufw --
+    # Docker menulis aturan iptables-nya sendiri di chain DOCKER yang
+    # diproses sebelum chain INPUT milik ufw. Lihat 08_DEPLOYMENT.md.
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - publik
+      - internal
+    depends_on:
+      - app
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=32m
+      - /var/run:size=1m
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 128m
+    cpus: 0.50
+
+  app:
+    build:
+      context: ../..
+      dockerfile: docker/aplikasi/Dockerfile
+    image: indonesiaku-aplikasi:1.4.0
+    container_name: indk-app
+    restart: unless-stopped
+    # Tidak ada `ports:` sama sekali. Aplikasi hanya dapat dihubungi proxy
+    # lewat jaringan internal.
+    networks:
+      - internal
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.50
+
+networks:
+  publik:
+    driver: bridge
+  internal:
+    driver: bridge
+    # internal: true menghapus gateway jaringan ini, sehingga aplikasi tidak
+    # bisa menghubungi internet keluar. Kalau aplikasi perlu memanggil API
+    # pihak ketiga, pindahkan ke jaringan `publik` dan sadari risikonya.
+    internal: true

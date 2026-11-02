@@ -34,6 +34,9 @@ echo "Tag versi konsisten dengan INDK_VERSION ($VERSI):"
 periksa "base image playground" docker/playground/Dockerfile '^FROM teguh02/indonesiaku:[0-9.]+'
 periksa "image compose playground" docker/playground/docker-compose.yml 'image: indonesiaku-website:[0-9.]+'
 periksa "LABEL version image rilis" docker/images/Dockerfile 'LABEL version="[0-9.]+"'
+# Image aplikasi (docker/aplikasi) ikut dijaga di sini; kalau tidak, tag-nya
+# diam-diam menyimpang setiap kali versi dinaikkan.
+periksa "image compose aplikasi" docker/aplikasi/docker-compose.yml 'image: indonesiaku-aplikasi:[0-9.]+'
 
 # Cache-buster aset situs: HTML baru dengan ?v= lama menampilkan CSS basi
 # karena Cloudflare menyimpan assets/* selama 4 jam.
