@@ -147,6 +147,19 @@ if [ -f tests/kebocoran_resource.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Driver MySQL/MariaDB (Fase 10 WDB-02).
+if [ -f tests/my_driver.sh ]; then
+    if bash tests/my_driver.sh > /tmp/idk_my.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} my_driver"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} my_driver"
+        sed 's/^/      /' /tmp/idk_my.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES my_driver"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Driver PostgreSQL (Fase 10): terhadap server sungguhan di container.
 # Melewati diri sendiri bila Docker tidak ada.
 if [ -f tests/pg_driver.sh ]; then
