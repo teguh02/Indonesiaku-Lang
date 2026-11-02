@@ -201,6 +201,17 @@ if [ -f tests/web_statis_server.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# CRUD REST API di atas SQLite: contoh gabungan web + db + json.
+if [ -f tests/api_siswa_server.sh ]; then
+    echo ""
+    if bash tests/api_siswa_server.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES api-siswa"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Gelung server bawaan pustaka (app.jalankan): batas waktu aktif tanpa
 # disetel pemakai, penangan yang meledak tidak mematikan server, dan
 # berhenti() melepas port setelah balasan terkirim.

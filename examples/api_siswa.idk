@@ -1,0 +1,126 @@
+# CRUD REST API di atas SQLite.
+#
+# Menggabungkan tiga bagian yang sudah ada menjadi satu aplikasi utuh:
+#   - pustaka/web.idk  : routing, parsing JSON, gelung server (app.jalankan)
+#   - builtin db_*     : SQLite dengan query berparameter
+#   - pustaka/json.idk : menyusun badan respons
+#
+# Jalankan:
+#     indk examples/api_siswa.idk
+#     curl http://127.0.0.1:8080/siswa
+#
+# Port dari IDK_PORT (bawaan 8080). IDK_SISA membatasi jumlah koneksi supaya
+# server berhenti sendiri; dipakai pengujian otomatis.
+
+impor web
+impor "pustaka/json.idk"
+
+variabel PORT = 8080
+variabel port_env = ambil_lingkungan("IDK_PORT")
+jika port_env != kosong dan port_env != "" {
+    PORT = ke_bulat(port_env)
+}
+
+variabel SISA = 0
+variabel sisa_env = ambil_lingkungan("IDK_SISA")
+jika sisa_env != kosong dan sisa_env != "" {
+    SISA = ke_bulat(sisa_env)
+}
+
+# ":memory:" supaya contoh ini tidak meninggalkan berkas. Ganti dengan jalur
+# berkas untuk data yang bertahan setelah server mati.
+variabel db = db_buka(":memory:")
+db_eksekusi(db, "CREATE TABLE siswa (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + "nama TEXT NOT NULL, nilai REAL NOT NULL)")
+db_eksekusi(db, "INSERT INTO siswa (nama, nilai) VALUES (?, ?)", ["Budi", 85.5])
+db_eksekusi(db, "INSERT INTO siswa (nama, nilai) VALUES (?, ?)", ["Siti", 92.0])
+
+variabel app = web.Aplikasi()
+
+# _galat(kode, pesan) -> respons JSON untuk kegagalan.
+fungsi _galat(kode, pesan) {
+    kembalikan web.json(kode, json_teks({"galat": pesan}))
+}
+
+# _baca_siswa(badan) -> [nama, nilai] bila sah, atau kosong bila tidak.
+#
+# Validasi ada di SATU tempat karena POST dan PUT membutuhkannya sama persis;
+# menyalinnya dua kali adalah cara klasik satu sisi lupa diperbaiki.
+fungsi _baca_siswa(badan) {
+    jika badan adalah kosong atau jenis(badan) != "kamus" {
+        kembalikan kosong
+    }
+    jika tidak punya(badan, "nama") atau tidak punya(badan, "nilai") {
+        kembalikan kosong
+    }
+    variabel nama = badan["nama"]
+    variabel nilai = badan["nilai"]
+    jika jenis(nama) != "teks" atau nama == "" {
+        kembalikan kosong
+    }
+    jika jenis(nilai) != "angka" {
+        kembalikan kosong
+    }
+    kembalikan [nama, nilai]
+}
+
+# GET /siswa -> daftar semua siswa.
+app.rute("GET", "/siswa", fungsi(req) {
+    variabel baris = db_ambil_semua(db, "SELECT id, nama, nilai FROM siswa ORDER BY id")
+    kembalikan web.json(200, json_teks(baris))
+})
+
+# GET /siswa/:id -> satu siswa, atau 404.
+app.rute("GET", "/siswa/:id", fungsi(req) {
+    variabel baris = db_ambil_satu(db,
+        "SELECT id, nama, nilai FROM siswa WHERE id = ?", [req["params"]["id"]])
+    jika baris adalah kosong {
+        kembalikan _galat(404, "siswa tidak ditemukan")
+    }
+    kembalikan web.json(200, json_teks(baris))
+})
+
+# POST /siswa -> buat siswa baru, balas 201 beserta id-nya.
+app.rute("POST", "/siswa", fungsi(req) {
+    variabel data = _baca_siswa(req["json"])
+    jika data adalah kosong {
+        kembalikan _galat(400, "butuh nama (teks) dan nilai (angka)")
+    }
+    # Parameter dikirim terpisah dari SQL; nama dari klien TIDAK pernah
+    # dirangkai ke dalam teks query, sehingga injeksi SQL tidak mungkin.
+    db_eksekusi(db, "INSERT INTO siswa (nama, nilai) VALUES (?, ?)", data)
+    variabel id_baru = db_id_terakhir(db)
+    kembalikan web.json(201, json_teks({"id": id_baru, "nama": data[0],
+                                        "nilai": data[1]}))
+})
+
+# PUT /siswa/:id -> ganti seluruh data siswa.
+app.rute("PUT", "/siswa/:id", fungsi(req) {
+    variabel data = _baca_siswa(req["json"])
+    jika data adalah kosong {
+        kembalikan _galat(400, "butuh nama (teks) dan nilai (angka)")
+    }
+    variabel id = req["params"]["id"]
+    db_eksekusi(db, "UPDATE siswa SET nama = ?, nilai = ? WHERE id = ?",
+                [data[0], data[1], id])
+    # db_baris_terpengaruh() membedakan "berhasil diubah" dari "id tidak ada".
+    # Tanpa pemeriksaan ini, PUT ke id yang tidak ada akan menjawab 200.
+    jika db_baris_terpengaruh(db) == 0 {
+        kembalikan _galat(404, "siswa tidak ditemukan")
+    }
+    kembalikan web.json(200, json_teks({"id": ke_bulat(id), "nama": data[0],
+                                        "nilai": data[1]}))
+})
+
+# DELETE /siswa/:id -> hapus, 404 bila memang tidak ada.
+app.rute("DELETE", "/siswa/:id", fungsi(req) {
+    db_eksekusi(db, "DELETE FROM siswa WHERE id = ?", [req["params"]["id"]])
+    jika db_baris_terpengaruh(db) == 0 {
+        kembalikan _galat(404, "siswa tidak ditemukan")
+    }
+    kembalikan web.json(200, json_teks({"dihapus": benar}))
+})
+
+cetak("API siswa di http://127.0.0.1:" + ke_teks(PORT) + "/siswa")
+app.jalankan(PORT, 10, SISA)
+db_tutup(db)
