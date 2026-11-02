@@ -1,0 +1,26 @@
+# soket_dengar(port, alamat) -- argumen alamat opsional.
+#
+# Golden ini sengaja TIDAK mengikat port apa pun supaya deterministik di CI;
+# yang diperiksa adalah validasi argumennya. Perilaku "0.0.0.0" yang
+# sesungguhnya dibuktikan tests/web_jalankan_server.sh dan stack Docker di
+# docker/aplikasi/.
+
+coba {
+    soket_dengar(8080, "1.2.3.4")
+} kecuali e {
+    cetak("ditolak:", e)
+}
+
+coba {
+    soket_dengar(8080, 123)
+} kecuali e {
+    cetak("ditolak:", e)
+}
+
+coba {
+    soket_dengar(8080, "127.0.0.1", "lebih")
+} kecuali e {
+    cetak("ditolak:", e)
+}
+
+cetak("selesai")

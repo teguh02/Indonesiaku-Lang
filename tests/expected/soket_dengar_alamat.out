@@ -1,0 +1,4 @@
+ditolak: soket_dengar() alamat hanya boleh "127.0.0.1" atau "0.0.0.0"
+ditolak: soket_dengar() alamat harus teks ("127.0.0.1" atau "0.0.0.0")
+ditolak: soket_dengar() memerlukan 1-2 argumen (port [, alamat])
+selesai

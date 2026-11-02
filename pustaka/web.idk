@@ -754,10 +754,13 @@ kelas Aplikasi {
     # gelung berhenti setelah sekian koneksi, dipakai tes supaya server
     # berakhir sendiri alih-alih dibunuh.
     #
+    # alamat bawaannya "127.0.0.1" dan hanya menerima itu atau "0.0.0.0".
+    #
     # ponytail: satu permintaan dilayani pada satu waktu. VM ini satu utas dan
     # belum punya primitif thread, jadi worker/backpressure belum berlaku di
     # sini. Jangan anggap setara server produksi; pakai reverse proxy di depan.
-    jalankan(port, batas_waktu = 10, maks_permintaan = 0, catat = benar) {
+    jalankan(port, batas_waktu = 10, maks_permintaan = 0, catat = benar,
+             alamat = "127.0.0.1") {
         jika jenis(port) != "angka" {
             naikkan GalatWeb("port harus angka")
         }
@@ -776,7 +779,10 @@ kelas Aplikasi {
             diri.pencatat.atur_ambang(log.INFO)
         }
 
-        variabel server = soket_dengar(ke_bulat(port))
+        # Bawaan 127.0.0.1: server tidak otomatis terbuka ke jaringan.
+        # Di dalam container WAJIB "0.0.0.0", jika tidak reverse proxy
+        # mendapat "Connection refused" padahal server hidup.
+        variabel server = soket_dengar(ke_bulat(port), alamat)
         diri.berjalan = benar
         variabel dilayani = 0
 
