@@ -41,6 +41,10 @@ variabel server = soket_dengar(PORT)
 variabel sisa = SISA
 selagi sisa > 0 {
     variabel klien = soket_terima(server)
+    # Server ini sengaja menulis HTTP mentah untuk menguji pengalihan, jadi
+    # ia tidak memakai web.Aplikasi dan gelung app.jalankan(). Batas waktunya
+    # tetap wajib: tanpa ini satu klien diam membekukan server.
+    soket_batas_waktu(klien, 10)
     coba {
         variabel mentah = soket_baca(klien)
         variabel jalur = "/"

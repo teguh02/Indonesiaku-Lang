@@ -13,6 +13,7 @@
 impor "pustaka/teks.idk"
 impor "pustaka/http.idk"
 impor "pustaka/json.idk"
+impor log
 
 kelas GalatWeb < Galat {
     init(pesan) { diri.pesan = pesan }
@@ -380,6 +381,7 @@ kelas Aplikasi {
             naikkan GalatWeb("maks_badan harus bulat positif")
         }
         diri.maks_badan = ke_bulat(maks_badan)
+        diri.berjalan = salah
     }
 
     # statis(prefiks, akar) -> diri. Sajikan berkas di bawah `akar` pada URL
@@ -683,8 +685,10 @@ kelas Aplikasi {
                 kembalikan diri.penangan_galat(req, e)
             }
             # Detail galat TIDAK bocor ke klien; operator melihatnya di stderr.
+            # tulis_galat() tidak menambah baris baru sendiri, jadi "\n"
+            # wajib: tanpa itu pesan ini menempel ke baris log berikutnya.
             tulis_galat("web: galat menangani " + req["metode"] + " "
-                        + req["path"] + ": " + ke_teks(e))
+                        + req["path"] + ": " + ke_teks(e) + "\n")
             kembalikan teks(500, "Galat internal")
         }
     }
@@ -700,4 +704,162 @@ kelas Aplikasi {
             kembalikan app._jalankan(r, berikut)
         })
     }
+
+    # berhenti() -> diri. Tandai agar gelung jalankan() berhenti SETELAH
+    # balasan yang sedang diproses terkirim. Tidak memutus koneksi di tengah
+    # jalan; itulah "anggun" yang bisa dijamin di sini.
+    berhenti() {
+        diri.berjalan = salah
+        kembalikan diri
+    }
+
+    # _catat(metode, path, status, mulai) -> catat satu permintaan lewat modul
+    # `log`, BUKAN cetak() sendiri. Dengan begitu pemakai mendapat ambang,
+    # format, dan pengalihan ke berkas yang sudah ada di pustaka itu, dan
+    # tidak ada mekanisme log kedua yang harus dirawat terpisah.
+    #
+    # Badan dan header TIDAK pernah dicatat: badan bisa memuat kata sandi dan
+    # header memuat cookie sesi. Hanya metode, path, status, dan durasi.
+    _catat(metode, path, status, mulai) {
+        variabel ms = bulatkan((jam() - mulai) * 1000, 1)
+        variabel pesan = metode + " " + path + " " + ke_teks(status)
+        pesan = pesan + " " + ke_teks(ms) + "ms"
+        jika status >= 500 {
+            diri.pencatat.galat(pesan)
+        } jika_lain status >= 400 {
+            diri.pencatat.peringatan(pesan)
+        } selain {
+            diri.pencatat.info(pesan)
+        }
+    }
+
+    # jalankan(port, ...) -> jumlah koneksi yang dilayani.
+    #
+    # Gelung server lengkap: batas waktu, galat per koneksi, log, dan
+    # penutupan soket. Sebelum ada metode ini setiap pemakai menyalin gelung
+    # soketnya sendiri, dan empat dari lima salinan di repo ini lupa memasang
+    # batas waktu sehingga bisa dibekukan satu klien yang diam.
+    #
+    # Parameternya bernama `catat`, BUKAN `log`: parameter bernama `log`
+    # membayangi modul `log` yang diimpor di atas, sehingga pemanggilan
+    # log.ambil_pencatat() di dalam metode ini gagal dengan "Hanya objek yang
+    # memiliki metode".
+    #
+    # batas_waktu bawaannya 10 detik, BUKAN tanpa batas. Builtin
+    # soket_batas_waktu() bawaannya 0 demi kompatibilitas program lama;
+    # jalankan() API baru, jadi bawaannya dipilih yang aman. 0 tetap berarti
+    # tanpa batas.
+    #
+    # maks_permintaan = 0 berarti melayani selamanya. Angka positif membuat
+    # gelung berhenti setelah sekian koneksi, dipakai tes supaya server
+    # berakhir sendiri alih-alih dibunuh.
+    #
+    # ponytail: satu permintaan dilayani pada satu waktu. VM ini satu utas dan
+    # belum punya primitif thread, jadi worker/backpressure belum berlaku di
+    # sini. Jangan anggap setara server produksi; pakai reverse proxy di depan.
+    jalankan(port, batas_waktu = 10, maks_permintaan = 0, catat = benar) {
+        jika jenis(port) != "angka" {
+            naikkan GalatWeb("port harus angka")
+        }
+        jika batas_waktu < 0 {
+            naikkan GalatWeb("batas_waktu tidak boleh negatif")
+        }
+        jika maks_permintaan < 0 {
+            naikkan GalatWeb("maks_permintaan tidak boleh negatif")
+        }
+
+        # Pencatat bernama "web": ambang bawaan pustaka log adalah PERINGATAN,
+        # jadi baris INFO per permintaan tidak muncul kecuali ambangnya
+        # diturunkan di sini. Pemakai tetap bisa mengubahnya lewat log.atur().
+        diri.pencatat = log.ambil_pencatat("web")
+        jika catat dan diri.pencatat.ambang adalah kosong {
+            diri.pencatat.atur_ambang(log.INFO)
+        }
+
+        variabel server = soket_dengar(ke_bulat(port))
+        diri.berjalan = benar
+        variabel dilayani = 0
+
+        coba {
+            selagi diri.berjalan {
+                jika maks_permintaan > 0 dan dilayani >= maks_permintaan {
+                    hentikan
+                }
+                variabel klien = soket_terima(server)
+                dilayani = dilayani + 1
+                variabel mulai = jam()
+                coba {
+                    soket_batas_waktu(klien, batas_waktu)
+                    variabel mentah = baca_permintaan(klien, diri.maks_badan)
+                    jika mentah != "" {
+                        variabel respons = diri.tangani(mentah)
+                        soket_tulis(klien, respons)
+                        jika catat {
+                            diri._catat(_web_metode_dari(mentah),
+                                        _web_path_dari(mentah),
+                                        _web_status_dari(respons), mulai)
+                        }
+                    }
+                } kecuali e {
+                    # Satu koneksi bermasalah TIDAK boleh mematikan server:
+                    # batas waktu, permintaan rusak, atau klien yang pergi di
+                    # tengah jalan semuanya berakhir di sini.
+                    jika catat {
+                        diri.pencatat.peringatan("koneksi dilewati: " + ke_teks(e))
+                    }
+                } akhirnya {
+                    # Di akhirnya supaya soket tidak bocor pada jalur galat
+                    # mana pun.
+                    soket_tutup(klien)
+                }
+            }
+        } akhirnya {
+            soket_tutup(server)
+        }
+        kembalikan dilayani
+    }
 }
+
+# _web_metode_dari(mentah) -> metode HTTP, atau "?" bila tak terbaca.
+# Untuk log saja, jadi tidak boleh menaikkan galat.
+fungsi _web_metode_dari(mentah) {
+    variabel sp = teks_cari(mentah, " ")
+    jika sp == 0 - 1 {
+        kembalikan "?"
+    }
+    kembalikan potong(mentah, 0, sp)
+}
+
+# _web_path_dari(mentah) -> path permintaan, atau "?" bila tak terbaca.
+fungsi _web_path_dari(mentah) {
+    variabel sp = teks_cari(mentah, " ")
+    jika sp == 0 - 1 {
+        kembalikan "?"
+    }
+    variabel sisa = potong(mentah, sp + 1, panjang(mentah) - sp - 1)
+    variabel sp2 = teks_cari(sisa, " ")
+    jika sp2 == 0 - 1 {
+        kembalikan "?"
+    }
+    kembalikan potong(sisa, 0, sp2)
+}
+
+# _web_status_dari(respons) -> kode status dari baris pertama, 0 bila tak
+# terbaca. Untuk log saja.
+fungsi _web_status_dari(respons) {
+    variabel sp = teks_cari(respons, " ")
+    jika sp == 0 - 1 {
+        kembalikan 0
+    }
+    variabel sisa = potong(respons, sp + 1, panjang(respons) - sp - 1)
+    variabel sp2 = teks_cari(sisa, " ")
+    jika sp2 == 0 - 1 {
+        kembalikan 0
+    }
+    coba {
+        kembalikan ke_bulat(potong(sisa, 0, sp2))
+    } kecuali e {
+        kembalikan 0
+    }
+}
+

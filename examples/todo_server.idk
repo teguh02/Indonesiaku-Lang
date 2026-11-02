@@ -165,6 +165,10 @@ fungsi jalankan_server(port) {
     variabel berjalan = benar
     selagi berjalan {
         variabel klien = soket_terima(server)
+        # Tanpa ini satu klien yang menyambung lalu diam membekukan server
+        # selamanya. Contoh ini memakai routernya sendiri, bukan
+        # web.Aplikasi, jadi gelung app.jalankan() belum dipakai di sini.
+        soket_batas_waktu(klien, 10)
         coba {
             # Satu soket_baca() memotong badan >64KB diam-diam;
             # web.baca_permintaan() menggelung sampai Content-Length penuh.

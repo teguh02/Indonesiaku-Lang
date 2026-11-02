@@ -17,6 +17,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `ETag` lemah dengan `If-None-Match` dijawab **304**. (Fase 11 langkah 5)
 - **`panjang_byte(teks)`** — panjang teks dalam byte, pelengkap `panjang()`
   yang menghitung karakter.
+- **`app.jalankan(port, ...)` dan `app.berhenti()`** di `pustaka/web.idk` —
+  gelung server bawaan: batas waktu per koneksi (bawaan 10 detik), galat satu
+  koneksi tidak mematikan server, soket selalu ditutup, berhenti anggun, dan
+  log per permintaan lewat modul `log` (pencatat `web`). Sebelumnya setiap
+  pemakai menyalin gelung soketnya sendiri dan **empat dari lima salinan di
+  repo ini lupa memasang batas waktu**. (Fase 11 langkah 6)
 - **`soket_batas_waktu(soket, detik)`** — batas waktu baca dan tulis untuk satu
   soket (`SO_RCVTIMEO`/`SO_SNDTIMEO`). `0` berarti tanpa batas, yaitu perilaku
   bawaan yang lama, sehingga program 1.4.x tidak berubah. Detik boleh pecahan.
@@ -24,6 +30,10 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Pesan galat penangan menempel ke baris log berikutnya.** `tulis_galat()`
+  tidak menambah baris baru sendiri (sesuai dokumentasinya), tetapi
+  `pustaka/web.idk` lupa menambahkannya, sehingga keluaran stderr menjadi
+  `...sengaja meledakGALAT:web:GET /x 500`.
 - **`Content-Length` salah untuk badan biner.** `_http_panjang_byte()`
   menghitung ulang lebar UTF-8 per karakter, sehingga berkas 5 byte
   `FF FE 41 00 80` dilaporkan 6 byte dan byte non-UTF-8 hilang dari iterasi

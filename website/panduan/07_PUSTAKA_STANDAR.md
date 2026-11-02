@@ -931,7 +931,68 @@ gelung soket yang sudah ada tetap dipakai.
 | `app.gunakan(mw)` | Middleware `mw(req, teruskan)` |
 | `app.galat(penangan)` | Timpa respons 500 bawaan dengan `penangan(req, e)` |
 | `app.tangani(mentah)` | Teks request → teks respons |
+| `app.jalankan(port, batas_waktu, maks_permintaan, catat)` | Gelung server lengkap; mengembalikan jumlah koneksi yang dilayani |
+| `app.berhenti()` | Hentikan gelung **setelah** balasan saat ini terkirim |
 | `web.teks(kode, isi)`, `web.json(kode, isi)`, `web.html(kode, isi)` | Pembantu respons |
+
+#### Menjalankan server: `app.jalankan()`
+
+`app.tangani()` hanya mengubah teks request menjadi teks respons. Untuk
+benar-benar melayani jaringan, pakai `app.jalankan()` — jangan menulis gelung
+soket sendiri:
+
+```indonesiaku-takjalan
+impor web
+
+variabel app = web.Aplikasi()
+app.rute("GET", "/halo", fungsi(req) { kembalikan web.teks(200, "halo") })
+
+app.jalankan(8080)
+```
+
+Gelung itu sudah menyertakan hal-hal yang mudah terlupa kalau ditulis manual:
+
+- **batas waktu per koneksi** (bawaan 10 detik) — tanpa ini satu klien yang
+  menyambung lalu diam membekukan server selamanya;
+- **galat satu koneksi tidak mematikan server** — permintaan rusak, klien yang
+  pergi, atau penangan yang menaikkan galat hanya menutup koneksi itu;
+- **soket selalu ditutup**, termasuk di jalur galat;
+- **log per permintaan** lewat modul `log` (pencatat bernama `web`), memuat
+  metode, path, status, dan durasi — tidak pernah badan atau header.
+
+Parameternya:
+
+| Parameter | Bawaan | Arti |
+|---|---|---|
+| `port` | wajib | Port TCP |
+| `batas_waktu` | `10` | Detik per koneksi; `0` berarti tanpa batas |
+| `maks_permintaan` | `0` | `0` melayani selamanya; angka positif berhenti setelah sekian koneksi (berguna untuk tes) |
+| `catat` | `benar` | Tulis satu baris log per permintaan |
+
+Berhenti dari dalam penangan:
+
+```indonesiaku-takjalan
+app.rute("POST", "/matikan", fungsi(req) {
+    app.berhenti()
+    kembalikan web.teks(200, "berhenti")
+})
+```
+
+`berhenti()` membiarkan balasan yang sedang diproses terkirim lebih dulu, baru
+menutup soket server.
+
+Karena log memakai modul `log`, pengaturannya ikut pustaka itu:
+
+```indonesiaku-takjalan
+impor log
+log.atur(berkas = "server.log")          # alihkan ke berkas
+log.ambil_pencatat("web").atur_ambang(log.PERINGATAN)   # hanya 4xx/5xx
+```
+
+> **Batas yang jujur:** `jalankan()` melayani **satu permintaan pada satu
+> waktu**. VM Indonesiaku satu utas dan belum punya thread, jadi belum ada
+> worker paralel. Untuk beban publik, taruh reverse proxy (Nginx, Caddy) di
+> depannya dan jangan perlakukan ini sebagai server produksi mandiri.
 
 ```indonesiaku-takjalan
 impor web

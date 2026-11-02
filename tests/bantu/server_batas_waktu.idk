@@ -17,24 +17,7 @@ app.rute("GET", "/halo", fungsi(req) {
     kembalikan web.teks(200, "halo")
 })
 
-variabel server = soket_dengar(PORT)
-variabel sisa = SISA
-selagi sisa > 0 {
-    variabel klien = soket_terima(server)
-    soket_batas_waktu(klien, BATAS)
-    coba {
-        variabel mentah = web.baca_permintaan(klien)
-        jika mentah != "" {
-            soket_tulis(klien, app.tangani(mentah))
-        }
-    } kecuali e {
-        # Klien lambat/diam dilewati. Pesan dicetak supaya tes bisa
-        # membuktikan jalur batas waktu benar-benar diambil, bukan
-        # kebetulan klien menutup koneksi sendiri.
-        cetak("lewati:", e)
-    } akhirnya {
-        soket_tutup(klien)
-    }
-    sisa = sisa - 1
-}
-soket_tutup(server)
+# Gelung milik pustaka sekarang yang memasang batas waktu. Nilai BATAS tetap
+# dari lingkungan supaya tes bisa menyetelnya pendek. Log dinyalakan: tes
+# membuktikan jalur batas waktu dari baris PERINGATAN-nya.
+app.jalankan(PORT, BATAS, SISA)
