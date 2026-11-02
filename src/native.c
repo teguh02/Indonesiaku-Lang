@@ -23,6 +23,10 @@
 #else
     #include <unistd.h>
     #include <sys/socket.h>
+    // struct timeval dan suseconds_t (dipakai soket_batas_waktu) berasal dari
+    // sini. glibc menariknya diam-diam lewat header lain, musl TIDAK: tanpa
+    // baris ini build di Alpine gagal dengan "'suseconds_t' undeclared".
+    #include <sys/time.h>
     #include <netinet/in.h>
     #include <arpa/inet.h>
     #include <netdb.h>
@@ -1725,10 +1729,19 @@ static void indkEnsureWinsock() {
 static void indkEnsureWinsock() { }
 #endif
 
-// soket_dengar(port) -> soket server yang mendengarkan di 127.0.0.1:port.
+// soket_dengar(port [, alamat]) -> soket server yang mendengarkan.
+//
+// Bawaannya 127.0.0.1: server baru TIDAK langsung terbuka ke jaringan hanya
+// karena dijalankan. Itu default yang disengaja dan tidak diubah.
+//
+// Argumen kedua opsional "0.0.0.0" membuka ke semua antarmuka. Ini WAJIB di
+// dalam container: proses di container lain menghubungi lewat IP jaringan
+// Docker, dan soket yang terikat 127.0.0.1 hanya menerima dari dalam
+// container itu sendiri -- gejalanya "Connection refused" dari reverse proxy
+// padahal server jelas hidup.
 Value nativeFnSoketDengar(int argCount, Value* args) {
-    if (argCount != 1) {
-        nativeRaise("soket_dengar() memerlukan 1 argumen (port)");
+    if (argCount < 1 || argCount > 2) {
+        nativeRaise("soket_dengar() memerlukan 1-2 argumen (port [, alamat])");
         return KOSONG_VAL;
     }
     if (!IS_NUMBER(args[0])) {
@@ -1739,6 +1752,24 @@ Value nativeFnSoketDengar(int argCount, Value* args) {
     if (port < 1 || port > 65535) {
         nativeRaise("soket_dengar() port di luar jangkauan (1-65535)");
         return KOSONG_VAL;
+    }
+
+    // Hanya dua nilai yang diterima. Alamat bebas belum didukung, dan menerima
+    // teks apa pun lalu diam-diam jatuh ke loopback akan menyembunyikan salah
+    // ketik yang membuat server tampak hidup tapi tak bisa dihubungi.
+    bool semua_antarmuka = false;
+    if (argCount == 2) {
+        if (!IS_STRING(args[1])) {
+            nativeRaise("soket_dengar() alamat harus teks (\"127.0.0.1\" atau \"0.0.0.0\")");
+            return KOSONG_VAL;
+        }
+        const char* alamat = AS_CSTRING(args[1]);
+        if (strcmp(alamat, "0.0.0.0") == 0) {
+            semua_antarmuka = true;
+        } else if (strcmp(alamat, "127.0.0.1") != 0) {
+            nativeRaise("soket_dengar() alamat hanya boleh \"127.0.0.1\" atau \"0.0.0.0\"");
+            return KOSONG_VAL;
+        }
     }
 
     indkEnsureWinsock();
@@ -1757,7 +1788,7 @@ Value nativeFnSoketDengar(int argCount, Value* args) {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons((unsigned short)port);
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); // 127.0.0.1
+    addr.sin_addr.s_addr = htonl(semua_antarmuka ? INADDR_ANY : INADDR_LOOPBACK);
 
     if (bind(s, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
         INDK_CLOSESOCKET(s);

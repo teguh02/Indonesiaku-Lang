@@ -57,6 +57,31 @@ jobs:
           chmod +x tests/test_all.sh
           bash tests/test_all.sh
 
+  # Alpine memakai musl, bukan glibc. Keduanya berbeda soal header mana yang
+  # menarik header lain: glibc menyediakan struct timeval lewat <sys/socket.h>
+  # secara tidak langsung, musl TIDAK. Tanpa job ini, kode yang lupa
+  # #include <sys/time.h> tetap hijau di seluruh CI dan baru ketahuan rusak
+  # saat seseorang membangun image Docker -- itu persis yang terjadi.
+  test-musl:
+    name: Build on musl (Alpine)
+    runs-on: ubuntu-latest
+    container: alpine:3.20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        # python3: dibutuhkan tests/test_templat_playground.sh. Tanpa itu
+        # tesnya gagal dengan "python3: command not found", bukan karena musl.
+        run: apk add --no-cache build-base bash curl python3
+
+      - name: Build
+        run: make
+
+      - name: Run tests
+        run: |
+          chmod +x tests/test_all.sh
+          bash tests/test_all.sh
+
   todo-crud:
     name: Todo-list JSON DB (CLI CRUD)
     runs-on: ubuntu-latest
