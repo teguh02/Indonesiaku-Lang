@@ -812,6 +812,55 @@ Nama modulnya bukan `hash` karena nama itu sudah dipakai fungsi bawaan
 Untuk menyimpan kata sandi, jangan memakai MD5/SHA-1 polos: keduanya
 dipertahankan untuk kecocokan dengan sistem lama dan pemeriksaan isi berkas.
 
+
+## Database: PostgreSQL dan MySQL/MariaDB
+
+Selain builtin `db_*` untuk SQLite, ada dua driver jaringan yang bicara
+protokol server langsung — tanpa libpq maupun libmysqlclient, jadi `indk`
+tetap hanya menaut libc dan libm.
+
+```indonesiaku-takjalan
+impor "pustaka/pg.idk"      # PostgreSQL
+# atau
+impor "pustaka/my.idk"      # MySQL / MariaDB
+
+variabel k = sambung({"host": "127.0.0.1", "port": 5432,
+                      "pengguna": "postgres", "sandi": ambil_lingkungan("PGSANDI"),
+                      "basisdata": "sekolah"})
+
+k.eksekusi("INSERT INTO siswa (nama, nilai) VALUES ($1, $2)", ["Budi", 80])
+variabel b = k.ambil_semua("SELECT * FROM siswa", kosong)
+variabel satu = k.ambil_satu("SELECT * FROM siswa WHERE id = $1", [1])
+k.mulai() ; k.komit() ; k.batal()
+k.tutup()
+```
+
+| Metode | Hasil |
+|---|---|
+| `sambung(konfigurasi)` | Koneksi. Kunci: `host`, `port`, `pengguna`, `sandi`, `basisdata` |
+| `k.eksekusi(sql, parameter)` | Jumlah baris terpengaruh |
+| `k.ambil_satu(sql, parameter)` | Kamus, atau `kosong` bila tak ada baris |
+| `k.ambil_semua(sql, parameter)` | Daftar kamus |
+| `k.mulai()` / `k.komit()` / `k.batal()` | Transaksi |
+| `k.tutup()` | Idempoten; aman dipanggil dua kali |
+
+**Penanda parameter berbeda dan sengaja tidak disembunyikan**: PostgreSQL
+memakai `$1, $2`, MySQL memakai `?`. Membungkusnya akan membuat query
+terlihat portabel padahal dialek SQL-nya tetap berbeda.
+
+Nilai selalu dikirim sebagai parameter protokol, tidak pernah dirangkai ke
+teks SQL, jadi payload injeksi tersimpan sebagai data biasa.
+
+**Autentikasi yang didukung**: PostgreSQL `SCRAM-SHA-256`; MySQL/MariaDB
+`mysql_native_password`. Metode lain — `password` polos, `md5`, dan
+`caching_sha2_password` (bawaan MySQL 8) — **ditolak dengan pesan jelas**,
+bukan didukung diam-diam.
+
+**Belum didukung**: TLS ke database, timeout per-query. MySQL 8 belum pernah
+diuji (butuh CPU `x86-64-v2`) dan bawaannya memakai metode autentikasi yang
+ditolak di atas.
+
+
 ## 2. Pustaka Standar (`pustaka/`)
 
 Di-`impor` sesuai kebutuhan. Fungsi diberi awalan agar tidak bentrok dengan

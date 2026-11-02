@@ -174,6 +174,19 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   eksternal". Keliru: penghalang sebenarnya adalah I/O soket yang hanya
   menerima teks.
 
+### Ditambahkan
+- **Driver MySQL/MariaDB** (`pustaka/my.idk`): protokol MySQL langsung tanpa
+  libmysqlclient. Autentikasi `mysql_native_password`;
+  `caching_sha2_password` ditolak dengan pesan jelas. Parameter lewat
+  **prepared statement** (COM_STMT_PREPARE/EXECUTE). Kolom INT kembali
+  sebagai angka, bukan teks.
+
+### Diperbaiki
+- Versi pertama driver MySQL memakai COM_QUERY dengan escaping manual dan
+  **merusak data** di bawah `sql_mode = NO_BACKSLASH_ESCAPES`: `x\` tersimpan
+  sebagai `x\\`. Escaping yang benar mustahil tanpa melacak sql_mode server,
+  jadi jalur itu diganti prepared statement.
+
 ## [1.4.0] - 2026-10-29
 
 ### Ditambahkan
