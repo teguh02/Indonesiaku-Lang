@@ -147,6 +147,20 @@ if [ -f tests/kebocoran_resource.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Performa pustaka: json_teks/bita.ke_teks/base64.enkode harus linear.
+# Sama seperti di atas, yang diperiksa bentuk pertumbuhan, bukan ambang detik.
+if [ -f tests/pustaka_performa.sh ]; then
+    if bash tests/pustaka_performa.sh > /tmp/idk_pustaka_perf.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} pustaka_performa"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} pustaka_performa"
+        sed 's/^/      /' /tmp/idk_pustaka_perf.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES pustaka_performa"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Parsing badan (WEB-02): upload >64KB membuktikan gelung baca, bukan satu recv.
 if [ -f tests/web_badan_server.sh ]; then
     echo ""

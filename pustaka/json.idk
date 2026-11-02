@@ -12,27 +12,34 @@
 # ---------------------------------------------------------------------------
 
 # Escape sebuah string menjadi literal JSON (termasuk tanda kutip).
+#
+# Potongan dikumpulkan ke daftar lalu disatukan sekali dengan teks_gabung.
+# `hasil = hasil + c` per karakter menyalin seluruh string tiap iterasi (teks
+# immutable), jadi biayanya O(n^2) -- dan json_teks() dipakai untuk MENYUSUN
+# BALASAN SERVER, sehingga satu respons besar membekukan gelung permintaan.
 fungsi json_escape(s) {
-    variabel hasil = "\""
+    variabel potongan = daftar()
+    tambah(potongan, "\"")
     variabel i = 0
     selagi i < panjang(s) {
         variabel c = s[i]
         jika c == "\"" {
-            hasil = hasil + "\\\""
+            tambah(potongan, "\\\"")
         } jika_lain c == "\\" {
-            hasil = hasil + "\\\\"
+            tambah(potongan, "\\\\")
         } jika_lain c == "\n" {
-            hasil = hasil + "\\n"
+            tambah(potongan, "\\n")
         } jika_lain c == "\t" {
-            hasil = hasil + "\\t"
+            tambah(potongan, "\\t")
         } jika_lain c == "\r" {
-            hasil = hasil + "\\r"
+            tambah(potongan, "\\r")
         } selain {
-            hasil = hasil + c
+            tambah(potongan, c)
         }
         i = i + 1
     }
-    kembalikan hasil + "\""
+    tambah(potongan, "\"")
+    kembalikan teks_gabung(potongan, "")
 }
 
 fungsi json_teks(nilai) {
@@ -53,30 +60,24 @@ fungsi json_teks(nilai) {
         kembalikan json_escape(nilai)
     }
     jika t == "daftar" {
-        variabel hasil = "["
+        variabel potongan = daftar()
         variabel i = 0
         selagi i < panjang(nilai) {
-            jika i > 0 {
-                hasil = hasil + ","
-            }
-            hasil = hasil + json_teks(nilai[i])
+            tambah(potongan, json_teks(nilai[i]))
             i = i + 1
         }
-        kembalikan hasil + "]"
+        kembalikan "[" + teks_gabung(potongan, ",") + "]"
     }
     jika t == "kamus" {
-        variabel hasil = "{"
+        variabel potongan = daftar()
         variabel daftar_kunci = kunci(nilai)
         variabel i = 0
         selagi i < panjang(daftar_kunci) {
-            jika i > 0 {
-                hasil = hasil + ","
-            }
             variabel k = daftar_kunci[i]
-            hasil = hasil + json_escape(k) + ":" + json_teks(nilai[k])
+            tambah(potongan, json_escape(k) + ":" + json_teks(nilai[k]))
             i = i + 1
         }
-        kembalikan hasil + "}"
+        kembalikan "{" + teks_gabung(potongan, ",") + "}"
     }
     # tipe lain (objek/kelas/berkas) tidak didukung
     naikkan "json_teks: tipe tidak didukung: " + t

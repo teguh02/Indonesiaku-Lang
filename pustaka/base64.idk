@@ -33,7 +33,9 @@ fungsi _masukan(data) {
 fungsi _enkode(data, tabel) {
     variabel b = _masukan(data)
     variabel n = panjang(b)
-    variabel hasil = ""
+    # Potongan dikumpulkan lalu disatukan sekali: `hasil = hasil + ...` per
+    # karakter menyalin seluruh string tiap iterasi (teks immutable) -> O(n^2).
+    variabel potongan = daftar()
     variabel i = 0
     selagi i < n {
         variabel sisa = n - i
@@ -42,13 +44,13 @@ fungsi _enkode(data, tabel) {
         jika sisa > 1 { b1 = b[i + 1] }
         jika sisa > 2 { b2 = b[i + 2] }
         variabel tiga = b[i] * 65536 + b1 * 256 + b2
-        hasil = hasil + tabel[(tiga // 262144) % 64]
-        hasil = hasil + tabel[(tiga // 4096) % 64]
-        jika sisa > 1 { hasil = hasil + tabel[(tiga // 64) % 64] } selain { hasil = hasil + "=" }
-        jika sisa > 2 { hasil = hasil + tabel[tiga % 64] } selain { hasil = hasil + "=" }
+        tambah(potongan, tabel[(tiga // 262144) % 64])
+        tambah(potongan, tabel[(tiga // 4096) % 64])
+        jika sisa > 1 { tambah(potongan, tabel[(tiga // 64) % 64]) } selain { tambah(potongan, "=") }
+        jika sisa > 2 { tambah(potongan, tabel[tiga % 64]) } selain { tambah(potongan, "=") }
         i = i + 3
     }
-    kembalikan hasil
+    kembalikan teks_gabung(potongan, "")
 }
 
 fungsi _nilai_sah(c, tabel) {
