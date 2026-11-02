@@ -496,7 +496,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
      di sana `INDK_CA_BUNDLE` perlu disetel bila jalur PEM gaya Unix tidak ada.
      Build MinGW diverifikasi dan HTTPS-nya berjalan (termasuk keempat
      penolakan badssl.com) lewat Wine; Wine bukan Windows asli, jadi perilaku
-     CA di sana belum terbukti. Permukaan audit bertambah 132.812
+     CA di sana belum terbukti. Permukaan audit bertambah 132.049 (ccm.c dibuang)
      baris C pihak ketiga; `tools/vendor_mbedtls.sh` menjadikan pembaruan saat
      CVE satu perintah dengan sha256 terkunci.
    - Lingkup: hanya **klien**. Server HTTPS tetap lewat reverse proxy (lihat

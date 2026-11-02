@@ -4,7 +4,7 @@
 - **Target versi:** 1.5.0
 - **Tanggal:** 2026-11-02
 - **Dasar keputusan:** [`docs/ANALISIS/08_KEPUTUSAN_TLS.md`](../ANALISIS/08_KEPUTUSAN_TLS.md)
-  (disetujui pemilik proyek: vendor mbedTLS, menerima +132.812 baris C pihak ketiga)
+  (disetujui pemilik proyek: vendor mbedTLS, menerima +132.812 baris C pihak ketiga; terpakai 132.049 setelah ccm.c dibuang)
 
 ## Masalah
 

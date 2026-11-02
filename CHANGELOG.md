@@ -32,7 +32,7 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   mengecilkan permukaan audit — alasan yang sama yang membuat mbedTLS dipilih
   daripada OpenSSL. Berkas konfigurasinya sengaja di luar `src/vendor/` supaya
   tidak terhapus saat `tools/vendor_mbedtls.sh` menulis ulang direktori vendor
-  pada pembaruan CVE. Diverifikasi: nol simbol `mbedtls_ccm` di biner.
+  pada pembaruan CVE. Berkasnya juga dibuang dari pohon vendor oleh `tools/vendor_mbedtls.sh`, karena pemindai statis membaca berkas yang ada di repo, bukan yang dikompilasi. Permukaan audit 132.812 -> 132.049 baris. Diverifikasi: nol simbol `mbedtls_ccm` di biner.
 - **Windows menaut `-lbcrypt`** selain `-lws2_32`: mbedTLS mengambil entropi
   lewat `BCryptGenRandom`. Tanpa itu link gagal **hanya di Windows**, jadi
   build Linux/macOS yang hijau tidak membuktikan apa pun.

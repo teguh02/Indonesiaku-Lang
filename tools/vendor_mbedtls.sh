@@ -50,6 +50,17 @@ cp "$sumber/LICENSE" "$tujuan/LICENSE"
 rm -f "$tujuan/include/CMakeLists.txt" "$tujuan/library/CMakeLists.txt"
 rm -f "$tujuan/library/Makefile"
 
+# CCM dibuang dari pohon vendor, bukan sekadar dinonaktifkan lewat
+# src/mbedtls_user_config.h. Alasannya: pemindai kode statis (CodeQL) membaca
+# berkas yang ADA DI REPO, bukan yang benar-benar dikompilasi, jadi ccm.c tetap
+# menghasilkan temuan meski tak pernah ikut build. Temuan pada kode mati
+# melatih orang mengabaikan pemindai.
+#
+# Aman karena klien HTTPS kita memakai TLS 1.3 (AES-GCM / ChaCha20-Poly1305);
+# CCM tak pernah dipakai. Kalau suatu saat perlu, hapus baris ini DAN
+# #undef MBEDTLS_CCM_C di src/mbedtls_user_config.h.
+rm -f "$tujuan/library/ccm.c"
+
 echo "$MBEDTLS_VERSI" > "$tujuan/VERSI"
 
 echo "Selesai: $tujuan ($(ls "$tujuan"/library/*.c | wc -l) berkas .c)"
