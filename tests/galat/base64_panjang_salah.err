@@ -1,6 +1,6 @@
 dekode: panjang base64 tidak sah
-[baris 78, kolom 67] dalam _dekode()
+[baris 80, kolom 67] dalam _dekode()
     …ase64("dekode: panjang base64 tidak sah")
                                              ^
-[baris 101, kolom 36] dalam dekode()
+[baris 103, kolom 36] dalam dekode()
 [baris 3, kolom 21] dalam skrip

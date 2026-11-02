@@ -44,47 +44,51 @@ fungsi ke_bita(teks) {
 # ke_teks(bita) -> teks hasil mendekode daftar byte UTF-8.
 # GalatBita bila urutannya tidak sah (byte lanjutan menggantung, terpotong).
 fungsi ke_teks(data) {
-    variabel hasil = ""
+    # Potongan dikumpulkan lalu disatukan sekali dengan teks_gabung:
+    # `hasil = hasil + chr(...)` menyalin seluruh string tiap iterasi
+    # (teks immutable) -> O(n^2) untuk data yang datang dari soket.
+    variabel potongan = daftar()
     variabel n = panjang(data)
     variabel i = 0
     selagi i < n {
         variabel b = data[i]
         jika b < 128 {
-            hasil = hasil + chr(b)
+            tambah(potongan, chr(b))
             i = i + 1
         } jika_lain b >= 192 dan b < 224 {
             jika i + 1 >= n {
                 naikkan GalatBita("ke_teks: urutan UTF-8 terpotong")
             }
-            hasil = hasil + chr((b - 192) * 64 + (data[i + 1] - 128))
+            tambah(potongan, chr((b - 192) * 64 + (data[i + 1] - 128)))
             i = i + 2
         } jika_lain b >= 224 dan b < 240 {
             jika i + 2 >= n {
                 naikkan GalatBita("ke_teks: urutan UTF-8 terpotong")
             }
-            hasil = hasil + chr((b - 224) * 4096 + (data[i + 1] - 128) * 64 + (data[i + 2] - 128))
+            tambah(potongan, chr((b - 224) * 4096 + (data[i + 1] - 128) * 64 + (data[i + 2] - 128)))
             i = i + 3
         } jika_lain b >= 240 {
             jika i + 3 >= n {
                 naikkan GalatBita("ke_teks: urutan UTF-8 terpotong")
             }
-            hasil = hasil + chr((b - 240) * 262144 + (data[i + 1] - 128) * 4096 + (data[i + 2] - 128) * 64 + (data[i + 3] - 128))
+            tambah(potongan, chr((b - 240) * 262144 + (data[i + 1] - 128) * 4096 + (data[i + 2] - 128) * 64 + (data[i + 3] - 128)))
             i = i + 4
         } selain {
             naikkan GalatBita("ke_teks: byte 128..191 tanpa pemimpin")
         }
     }
-    kembalikan hasil
+    kembalikan teks_gabung(potongan, "")
 }
 
 # ke_heksa(bita) -> teks heksa huruf kecil.
 fungsi ke_heksa(data) {
     variabel tabel = "0123456789abcdef"
-    variabel hasil = ""
+    variabel potongan = daftar()
     untuk b dalam data {
-        hasil = hasil + tabel[b // 16] + tabel[b % 16]
+        tambah(potongan, tabel[b // 16])
+        tambah(potongan, tabel[b % 16])
     }
-    kembalikan hasil
+    kembalikan teks_gabung(potongan, "")
 }
 
 fungsi _nilai_heksa(c) {
