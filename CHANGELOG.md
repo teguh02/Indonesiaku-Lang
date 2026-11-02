@@ -17,6 +17,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `ETag` lemah dengan `If-None-Match` dijawab **304**. (Fase 11 langkah 5)
 - **`panjang_byte(teks)`** — panjang teks dalam byte, pelengkap `panjang()`
   yang menghitung karakter.
+- **Contoh `examples/api_siswa.idk`** — CRUD REST API di atas SQLite yang
+  menggabungkan `web.Aplikasi`, `app.jalankan()`, builtin `db_*`, dan
+  `pustaka/json.idk`. Menunjukkan dua hal yang mudah salah: memeriksa
+  `db_baris_terpengaruh()` sesudah UPDATE/DELETE (tanpa itu id yang tidak ada
+  tetap dijawab `200`) dan memakai parameter `?` alih-alih merangkai teks SQL.
+  Diuji dengan curl di `tests/api_siswa_server.sh`, termasuk payload injeksi
+  SQL. (Fase 11 langkah 7, sebagian: database masih SQLite)
 - **`app.jalankan(port, ...)` dan `app.berhenti()`** di `pustaka/web.idk` —
   gelung server bawaan: batas waktu per koneksi (bawaan 10 detik), galat satu
   koneksi tidak mematikan server, soket selalu ditutup, berhenti anggun, dan

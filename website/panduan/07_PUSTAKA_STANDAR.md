@@ -1773,3 +1773,25 @@ membangun aplikasi nyata dengan penyimpanan JSON.
 `GET/POST/PUT/DELETE /todos`:
 
 {{embed:examples/todo_server.idk}}
+
+### 3.3 CRUD REST API di atas SQLite
+
+`examples/api_siswa.idk` — menggabungkan tiga bagian yang sudah dibahas
+menjadi satu aplikasi: `web.Aplikasi` untuk routing dan `app.jalankan()`,
+builtin `db_*` untuk SQLite, dan `pustaka/json.idk` untuk badan respons.
+
+Bedanya dengan `todo_server.idk`: penyimpanannya SQLite (bukan JSON di
+memori), gelung servernya milik pustaka (bukan ditulis tangan), dan validasi
+badan ada di satu fungsi yang dipakai POST maupun PUT.
+
+Dua hal yang mudah salah dan sengaja ditunjukkan di sini:
+
+- **`db_baris_terpengaruh()` sesudah UPDATE/DELETE.** Tanpa itu, `PUT` atau
+  `DELETE` ke id yang tidak ada tetap menjawab `200` seolah berhasil, padahal
+  tidak ada baris yang tersentuh.
+- **Parameter `?`, bukan perangkaian teks SQL.** Nama dari klien tidak pernah
+  masuk ke dalam teks query, jadi badan seperti
+  `{"nama": "Evil'); DROP TABLE siswa;--"}` tersimpan sebagai nama biasa dan
+  tabelnya tetap utuh. `tests/api_siswa_server.sh` membuktikannya.
+
+{{embed:examples/api_siswa.idk}}
