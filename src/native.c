@@ -37,6 +37,8 @@
 
 #include "native.h"
 #include "tls.h"
+#include "mbedtls/md.h"
+#include "mbedtls/pkcs5.h"
 #include "sistem.h"
 #include "vm.h"
 #include "object.h"
@@ -2066,14 +2068,76 @@ Value nativeFnSoketBaca(int argCount, Value* args) {
     return OBJ_VAL(result);
 }
 
-// soket_tulis(klien, teks) -> jumlah byte terkirim.
+// soket_baca_bita(klien) -> daftar bulat 0..255, atau daftar kosong bila
+// koneksi ditutup rapi.
+//
+// soket_baca() mengembalikan teks, dan itu cukup untuk HTTP yang memang
+// berbasis teks. Protokol biner (wire protocol PostgreSQL/MySQL) tidak bisa
+// lewat jalur itu: byte >127 akan dibaca sebagai awal urutan UTF-8, dan byte
+// yang bukan UTF-8 sah tidak punya representasi teks sama sekali. Jadi
+// sediakan jalur byte mentah, dengan konvensi daftar bulat 0..255 yang sudah
+// dipakai db_* untuk BLOB dan pustaka/bita.idk -- bukan konvensi baru.
+Value nativeFnSoketBacaBita(int argCount, Value* args) {
+    if (argCount != 1) {
+        nativeRaise("soket_baca_bita() memerlukan 1 argumen (soket klien)");
+        return KOSONG_VAL;
+    }
+    if (!IS_SOCKET(args[0])) {
+        nativeRaise("soket_baca_bita() hanya menerima soket");
+        return KOSONG_VAL;
+    }
+    ObjSocket* client = AS_SOCKET(args[0]);
+    if (!client->isOpen) {
+        nativeRaise("soket_baca_bita() pada soket yang sudah tertutup");
+        return KOSONG_VAL;
+    }
+
+    int cap = 65536;
+    char* buffer = ALLOCATE(char, cap);
+    int received;
+    bool batasWaktu;
+    if (client->tls != NULL) {
+        received = indkTlsBaca(client->tls, buffer, cap);
+        batasWaktu = (received == -2);
+        if (received < 0) received = -1;
+    } else {
+        received = (int)recv((indk_socket_t)client->fd, buffer, cap, 0);
+        batasWaktu = (received < 0 && soketBatasWaktuTerlampaui());
+    }
+    if (received < 0) {
+        FREE_ARRAY(char, buffer, cap);
+        // Sama seperti soket_baca(): batas waktu bukan koneksi tertutup.
+        // Daftar kosong berarti "selesai", jadi jangan pakai untuk galat.
+        if (batasWaktu) {
+            nativeRaise("soket_baca_bita() melewati batas waktu menunggu data");
+        } else {
+            nativeRaise("soket_baca_bita() gagal membaca dari soket");
+        }
+        return KOSONG_VAL;
+    }
+
+    ObjList* hasil = newList();
+    push(OBJ_VAL(hasil));  // lindungi dari GC selagi daftar diisi
+    for (int i = 0; i < received; i++) {
+        writeValueArray(&hasil->items, INT_VAL((unsigned char)buffer[i]));
+    }
+    pop();
+    FREE_ARRAY(char, buffer, cap);
+    return OBJ_VAL(hasil);
+}
+
+// soket_tulis(klien, teks | daftar bita) -> jumlah byte terkirim.
+//
+// Daftar bulat 0..255 dikirim sebagai byte mentah, konvensi yang sama dengan
+// db_* untuk BLOB. Tanpa ini protokol biner mustahil: chr(255) di dalam teks
+// ter-enkode UTF-8 menjadi DUA byte di kawat, bukan satu.
 Value nativeFnSoketTulis(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("soket_tulis() memerlukan 2 argumen (soket, teks)");
+        nativeRaise("soket_tulis() memerlukan 2 argumen (soket, teks atau daftar bita)");
         return NUMBER_VAL(0);
     }
-    if (!IS_SOCKET(args[0]) || !IS_STRING(args[1])) {
-        nativeRaise("soket_tulis() memerlukan (soket, string)");
+    if (!IS_SOCKET(args[0]) || (!IS_STRING(args[1]) && !IS_LIST(args[1]))) {
+        nativeRaise("soket_tulis() memerlukan (soket, teks atau daftar bita)");
         return NUMBER_VAL(0);
     }
     ObjSocket* client = AS_SOCKET(args[0]);
@@ -2081,9 +2145,37 @@ Value nativeFnSoketTulis(int argCount, Value* args) {
         nativeRaise("soket_tulis() pada soket yang sudah tertutup");
         return NUMBER_VAL(0);
     }
-    ObjString* text = AS_STRING(args[1]);
+
+    const char* data;
+    int length;
+    char* ownedBuffer = NULL;
+    if (IS_LIST(args[1])) {
+        ObjList* bita = AS_LIST(args[1]);
+        length = bita->items.count;
+        if (length > 0) {
+            ownedBuffer = ALLOCATE(char, length);
+            for (int i = 0; i < length; i++) {
+                Value b = bita->items.values[i];
+                if (!IS_INT(b) || AS_INT(b) < 0 || AS_INT(b) > 255) {
+                    FREE_ARRAY(char, ownedBuffer, length);
+                    // Sebut indeksnya: mencari satu byte salah dalam daftar
+                    // panjang tanpa posisi adalah tebak-tebakan.
+                    nativeRaise("soket_tulis() elemen bita ke-%d harus bulat 0..255", i);
+                    return NUMBER_VAL(0);
+                }
+                ownedBuffer[i] = (char)(unsigned char)AS_INT(b);
+            }
+        }
+        data = ownedBuffer;
+    } else {
+        ObjString* text = AS_STRING(args[1]);
+        data = text->chars;
+        length = text->length;
+    }
+
     if (client->tls != NULL) {
-        int rc = indkTlsTulis(client->tls, text->chars, (size_t)text->length);
+        int rc = indkTlsTulis(client->tls, data, (size_t)length);
+        if (ownedBuffer != NULL) FREE_ARRAY(char, ownedBuffer, length);
         if (rc < 0) {
             nativeRaise(rc == -2 ? "soket_tulis() melewati batas waktu mengirim data"
                                  : "soket_tulis() gagal mengirim data");
@@ -2092,10 +2184,13 @@ Value nativeFnSoketTulis(int argCount, Value* args) {
         return NUMBER_VAL((double)rc);
     }
     int total = 0;
-    while (total < text->length) {
+    while (total < length) {
         int sent = (int)send((indk_socket_t)client->fd,
-                             text->chars + total, text->length - total, 0);
+                             data + total, length - total, 0);
         if (sent <= 0) {
+            // Bebaskan SEKALI di satu tempat sebelum keluar: menyebar
+            // FREE_ARRAY ke tiap cabang galat adalah cara klasik melewatkan satu.
+            if (ownedBuffer != NULL) FREE_ARRAY(char, ownedBuffer, length);
             if (sent < 0 && soketBatasWaktuTerlampaui()) {
                 nativeRaise("soket_tulis() melewati batas waktu mengirim data");
             } else {
@@ -2105,6 +2200,7 @@ Value nativeFnSoketTulis(int argCount, Value* args) {
         }
         total += sent;
     }
+    if (ownedBuffer != NULL) FREE_ARRAY(char, ownedBuffer, length);
     return NUMBER_VAL((double)total);
 }
 
@@ -3363,6 +3459,102 @@ Value nativeFnSha256(int argCount, Value* args) {
 
 Value nativeFnSha512(int argCount, Value* args) {
     return hashNative(argCount, args, "sha512", sha512Digest, 64);
+}
+
+
+// hmac_sha256(kunci, pesan) -> daftar 32 bita.
+// pbkdf2_sha256(sandi, garam, iterasi, panjang) -> daftar bita.
+//
+// Keduanya memakai mbedTLS yang sudah di-vendor untuk TLS (#31) -- primitif
+// kriptografi tidak ditulis ulang di sini. Dibutuhkan oleh autentikasi
+// SCRAM-SHA-256 PostgreSQL, yang merupakan bawaan sejak PG 14.
+//
+// Mengembalikan daftar bita, BUKAN heksa seperti sha256(): SCRAM melakukan XOR
+// dan perbandingan pada byte mentah, dan mengubah ke heksa lalu kembali hanya
+// menambah jalan untuk salah.
+static Value hmacPbkdfHasil(const uint8_t* buf, size_t n) {
+    ObjList* hasil = newList();
+    push(OBJ_VAL(hasil));  // lindungi dari GC selagi diisi
+    for (size_t i = 0; i < n; i++) {
+        writeValueArray(&hasil->items, INT_VAL(buf[i]));
+    }
+    pop();
+    return OBJ_VAL(hasil);
+}
+
+Value nativeFnHmacSha256(int argCount, Value* args) {
+    if (argCount != 2) {
+        nativeRaise("hmac_sha256() memerlukan 2 argumen (kunci, pesan)");
+        return KOSONG_VAL;
+    }
+    uint8_t* kunci = NULL; size_t kunciLen = 0;
+    if (!hashInputBytes(args[0], "hmac_sha256", &kunci, &kunciLen)) return KOSONG_VAL;
+    uint8_t* pesan = NULL; size_t pesanLen = 0;
+    if (!hashInputBytes(args[1], "hmac_sha256", &pesan, &pesanLen)) {
+        free(kunci);
+        return KOSONG_VAL;
+    }
+    uint8_t digest[32];
+    int rc = mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA256),
+                             kunci, kunciLen, pesan, pesanLen, digest);
+    free(kunci);
+    free(pesan);
+    if (rc != 0) {
+        nativeRaise("hmac_sha256() gagal menghitung HMAC");
+        return KOSONG_VAL;
+    }
+    return hmacPbkdfHasil(digest, sizeof(digest));
+}
+
+Value nativeFnPbkdf2Sha256(int argCount, Value* args) {
+    if (argCount != 4) {
+        nativeRaise("pbkdf2_sha256() memerlukan 4 argumen (sandi, garam, iterasi, panjang)");
+        return KOSONG_VAL;
+    }
+    if (!IS_INT(args[2]) || !IS_INT(args[3])) {
+        nativeRaise("pbkdf2_sha256() iterasi dan panjang harus bilangan bulat");
+        return KOSONG_VAL;
+    }
+    int64_t iterasi = AS_INT(args[2]);
+    int64_t panjang = AS_INT(args[3]);
+    // Batas atas bukan sekadar kehati-hatian: iterasi berasal dari SERVER
+    // dalam SCRAM, jadi server jahat bisa mengirim angka raksasa dan
+    // membekukan klien. 10 juta sudah jauh di atas pemakaian nyata (PG: 4096).
+    if (iterasi < 1 || iterasi > 10000000) {
+        nativeRaise("pbkdf2_sha256() iterasi harus 1..10000000");
+        return KOSONG_VAL;
+    }
+    if (panjang < 1 || panjang > 1024) {
+        nativeRaise("pbkdf2_sha256() panjang harus 1..1024");
+        return KOSONG_VAL;
+    }
+    uint8_t* sandi = NULL; size_t sandiLen = 0;
+    if (!hashInputBytes(args[0], "pbkdf2_sha256", &sandi, &sandiLen)) return KOSONG_VAL;
+    uint8_t* garam = NULL; size_t garamLen = 0;
+    if (!hashInputBytes(args[1], "pbkdf2_sha256", &garam, &garamLen)) {
+        free(sandi);
+        return KOSONG_VAL;
+    }
+    uint8_t* keluar = (uint8_t*)malloc((size_t)panjang);
+    if (keluar == NULL) {
+        free(sandi); free(garam);
+        nativeRaise("pbkdf2_sha256() memori habis");
+        return KOSONG_VAL;
+    }
+    int rc = mbedtls_pkcs5_pbkdf2_hmac_ext(MBEDTLS_MD_SHA256,
+                                           sandi, sandiLen, garam, garamLen,
+                                           (unsigned int)iterasi,
+                                           (uint32_t)panjang, keluar);
+    free(sandi);
+    free(garam);
+    if (rc != 0) {
+        free(keluar);
+        nativeRaise("pbkdf2_sha256() gagal menurunkan kunci");
+        return KOSONG_VAL;
+    }
+    Value hasil = hmacPbkdfHasil(keluar, (size_t)panjang);
+    free(keluar);
+    return hasil;
 }
 
 
