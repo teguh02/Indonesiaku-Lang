@@ -30,18 +30,6 @@ app.rute("POST", "/besar", fungsi(req) {
     kembalikan web.teks(200, "bita=" + ke_teks(panjang(req["badan"])))
 })
 
-variabel server = soket_dengar(PORT)
-variabel sisa = SISA
-selagi sisa > 0 {
-    variabel klien = soket_terima(server)
-    coba {
-        variabel mentah = web.baca_permintaan(klien, 307200)
-        jika mentah != "" {
-            soket_tulis(klien, app.tangani(mentah))
-        }
-    } akhirnya {
-        soket_tutup(klien)
-    }
-    sisa = sisa - 1
-}
-soket_tutup(server)
+# Gelung server milik pustaka. Batas badan ikut dari Aplikasi(maks_badan)
+# di atas, bukan angka terpisah di gelung seperti sebelumnya.
+app.jalankan(PORT, 10, SISA, salah)
