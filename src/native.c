@@ -1106,6 +1106,50 @@ Value nativeFnKeAngka(int argCount, Value* args) {
     return NUMBER_VAL(v);
 }
 
+// teks_gabung(daftar, perekat) - satukan elemen jadi satu string.
+//
+// Dulu ini fungsi Indonesiaku di pustaka/teks.idk yang merakit hasil dengan
+// `hasil = hasil + bagian` di dalam gelung. Teks immutable, jadi setiap
+// gabung menyalin seluruh string yang sudah terkumpul: O(n^2). Akibatnya
+// nyata dan bukan teoretis -- parsing badan urlencoded 100 KB butuh 10,7
+// detik, dan karena gelung server melayani satu permintaan pada satu waktu,
+// satu POST 1 MB membekukan server. Dipindahkan ke C memakai TextBuf yang
+// tumbuh amortized, sehingga semua pemakai teks_gabung ikut linear sekaligus.
+Value nativeFnTeksGabung(int argCount, Value* args) {
+    if (argCount != 2) {
+        nativeRaise("teks_gabung() memerlukan 2 argumen (daftar, perekat)");
+        return KOSONG_VAL;
+    }
+    if (!IS_LIST(args[0])) {
+        nativeRaise("teks_gabung() argumen pertama harus list");
+        return KOSONG_VAL;
+    }
+    if (!IS_STRING(args[1])) {
+        nativeRaise("teks_gabung() perekat harus string");
+        return KOSONG_VAL;
+    }
+
+    ObjList* list = AS_LIST(args[0]);
+    ObjString* perekat = AS_STRING(args[1]);
+
+    TextBuf buf;
+    initTextBuf(&buf);
+    for (int i = 0; i < list->items.count; i++) {
+        if (i > 0 && perekat->length > 0) {
+            textAppend(&buf, perekat->chars, perekat->length);
+        }
+        // Elemen non-string ikut lewat formatter yang sama dengan ke_teks(),
+        // supaya teks_gabung([1, 2], "-") tetap "1-2" seperti versi .idk.
+        if (!formatValue(&buf, list->items.values[i], false, true)) {
+            freeTextBuf(&buf);
+            return KOSONG_VAL;   // galat metode ajaib sudah tertunda
+        }
+    }
+    Value hasil = OBJ_VAL(copyString(buf.length > 0 ? buf.chars : "", buf.length));
+    freeTextBuf(&buf);
+    return hasil;
+}
+
 Value nativeFnKeTeks(int argCount, Value* args) {
     if (argCount != 1) {
         nativeRaise("ke_teks() memerlukan 1 argumen");

@@ -137,6 +137,7 @@ Value nativeFnKeAngka(int argCount, Value* args);
 
 // ke_teks(nilai) - Konversi nilai apa pun ke string
 Value nativeFnKeTeks(int argCount, Value* args);
+Value nativeFnTeksGabung(int argCount, Value* args);
 
 // format(pola, ...) - Ganti setiap {} di pola dengan argumen
 Value nativeFnFormat(int argCount, Value* args);

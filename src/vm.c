@@ -423,6 +423,7 @@ void initVM() {
     defineNative("ke_angka", nativeFnKeAngka);
     defineNative("ke_desimal", nativeFnKeDesimal);
     defineNative("ke_teks", nativeFnKeTeks);
+    defineNative("teks_gabung", nativeFnTeksGabung);
     defineNative("format", nativeFnFormat);
     defineNative("acak_bulat", nativeFnAcakBulat);
 
