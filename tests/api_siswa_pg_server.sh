@@ -37,10 +37,31 @@ if ! docker run -d --rm --name "$WADAH" \
     echo "  LEWAT api pg: image postgres tidak bisa dijalankan"
     exit 0
 fi
+# pg_isready di dalam container lolos saat server masih restart setelah
+# initdb; koneksi dari host lalu diterima-dan-diputus. Tunggu query
+# sungguhan dari host.
+SIAP=0
 for _ in $(seq 1 60); do
-    docker exec "$WADAH" pg_isready -U postgres >/dev/null 2>&1 && break
+    if PGPORT_T="$PGPORT_UJI" PGSANDI_T="$SANDI" "$INDK" /dev/stdin <<'PROBE' >/dev/null 2>&1
+impor "pustaka/pg.idk"
+variabel k = sambung({"host":"127.0.0.1",
+                      "port": ke_bulat(ambil_lingkungan("PGPORT_T")),
+                      "pengguna":"postgres",
+                      "sandi": ambil_lingkungan("PGSANDI_T"),
+                      "basisdata":"sekolah"})
+k.ambil_satu("SELECT 1 AS x")
+k.tutup()
+PROBE
+    then
+        SIAP=1
+        break
+    fi
     sleep 1
 done
+if [ "$SIAP" -eq 0 ]; then
+    echo "  GAGAL api pg: PostgreSQL tidak bisa dihubungi dari host"
+    exit 1
+fi
 
 PGPORT="$PGPORT_UJI" PGSANDI="$SANDI" IDK_PORT="$WEBPORT" IDK_SISA=60 \
     "$INDK" examples/api_siswa_pg.idk > /tmp/idk_apipg.log 2>&1 &

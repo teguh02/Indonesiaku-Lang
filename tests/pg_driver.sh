@@ -57,6 +57,34 @@ if [ "$SIAP" -eq 0 ]; then
     exit 1
 fi
 
+# pg_isready saja TIDAK cukup: container postgres menjalankan initdb, lalu
+# ME-RESTART server. Di sela itu pg_isready sudah bilang siap sementara
+# koneksi dari host masih diterima-lalu-diputus. Itu yang membuat CI merah
+# sementara mesin lokal hijau -- di lokal containernya sudah panas.
+#
+# Jadi tunggu sampai sebuah query SUNGGUHAN berhasil DARI HOST, lewat port
+# yang dipetakan, bukan lewat unix socket di dalam container.
+tunggu_pg_siap() {
+    local port="$1" sandi="$2" i
+    for i in $(seq 1 60); do
+        if PGPORT_T="$port" PGSANDI_T="$sandi" "$INDK" /dev/stdin <<'PROBE' >/dev/null 2>&1
+impor "pustaka/pg.idk"
+variabel k = sambung({"host":"127.0.0.1",
+                      "port": ke_bulat(ambil_lingkungan("PGPORT_T")),
+                      "pengguna":"postgres",
+                      "sandi": ambil_lingkungan("PGSANDI_T"),
+                      "basisdata":"ujian"})
+k.ambil_satu("SELECT 1 AS x")
+k.tutup()
+PROBE
+        then
+            return 0
+        fi
+        sleep 1
+    done
+    return 1
+}
+
 periksa() {
     local nama="$1" harap="$2" dapat="$3"
     if [ "$dapat" = "$harap" ]; then
@@ -66,6 +94,11 @@ periksa() {
         GAGAL=$((GAGAL+1))
     fi
 }
+
+if ! tunggu_pg_siap "$PORT" "$SANDI"; then
+    echo "  GAGAL uji pg: koneksi dari host tidak pernah berhasil"
+    exit 1
+fi
 
 echo "Driver PostgreSQL (server sungguhan):"
 
