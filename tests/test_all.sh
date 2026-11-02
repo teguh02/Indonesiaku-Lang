@@ -123,6 +123,30 @@ if [ -f tests/test_baca_sumber.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Performa parsing badan: urlencoded harus LINEAR, bukan kuadratik.
+# Yang diperiksa bentuk pertumbuhan (2x ukuran -> ~2x waktu), bukan ambang
+# detik, supaya runner lambat tidak membuatnya merah palsu.
+if [ -f tests/web_badan_performa.sh ]; then
+    echo ""
+    if bash tests/web_badan_performa.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES web-badan-performa"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
+# Kebocoran resource: fd tidak boleh tumbuh di jalur galat, putus, badan besar.
+if [ -f tests/kebocoran_resource.sh ]; then
+    echo ""
+    if bash tests/kebocoran_resource.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES kebocoran-resource"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Parsing badan (WEB-02): upload >64KB membuktikan gelung baca, bukan satu recv.
 if [ -f tests/web_badan_server.sh ]; then
     echo ""

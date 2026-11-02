@@ -474,7 +474,9 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 **Rekomendasi rilis fase: `v1.6.0` (minor), kandidat `v1.6.0-rc.1`; patch `v1.6.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Klien HTTPS lolos verifikasi sertifikat/hostname; router, middleware, parsing input dan static assets serta pengujian HTTP sudah stabil.\n\n
 **Langkah pengembangan:**
 
-1. [ ] Buat docs/RENCANA_FITUR/http_web_server.md dan https_tls.md. Tentukan kontrak Request/Response, router, middleware, batas request, model konkurensi dan pemakaian reverse proxy.
+1. [x] Buat docs/RENCANA_FITUR/http_web_server.md dan https_tls.md. Tentukan kontrak Request/Response, router, middleware, batas request, model konkurensi dan pemakaian reverse proxy.
+   - Selesai: keduanya ada di `docs/RENCANA_FITUR/selesai/` (`http_web_server.md` target 1.4.0, `https_tls.md` target 1.5.0). Kontrak Request/Response, router, middleware dan batas request dipakai nyata oleh `pustaka/web.idk`; reverse proxy didokumentasikan di `website/panduan/08_DEPLOYMENT.md`.
+   - **Model konkurensi ditulis apa adanya, bukan diklaim setara server produksi**: satu permintaan pada satu waktu. VM ini satu utas dan belum punya primitif thread, jadi worker/backpressure belum berlaku — lihat komentar `ponytail:` di `pustaka/web.idk`.
 2. [x] Perluas klien pustaka/http.idk sehingga http_ambil dapat menerima https:// (**P2**). Pilih TLS library yang terawat; aktifkan verifikasi CA dan hostname secara default; timeout dan redirect dibatasi; insecure-by-default dilarang.
    - Selesai 1.5.0: `http_ambil()` menerima `https://` lewat builtin
      `tls_mulai(soket, host)`. Ditenagai **mbedTLS 3.6.2 (LTS)** yang di-vendor
@@ -524,7 +526,11 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
    - Dua jebakan yang sengaja ditunjukkan contoh ini: `db_baris_terpengaruh()` sesudah UPDATE/DELETE (tanpa itu id yang tidak ada tetap dijawab `200`), dan parameter `?` alih-alih perangkaian teks SQL.
    - **Database masih SQLite**, bukan MySQL/PostgreSQL: Fase 10 belum ada, jadi bagian "database Fase 10" belum terpenuhi.
    - CI yang sudah jalan: **slow client** (`tests/web_batas_waktu_server.sh`), **graceful shutdown** (`tests/web_jalankan_server.sh`), **request besar + malformed HTTP** (`tests/web_badan_server.sh`), **redirect** (`tests/http_pengalihan_server.sh`).
-   - **Belum:** upload multipart, sertifikat kedaluwarsa/tidak cocok (menunggu HTTPS di langkah 2), dan deteksi race/resource leak di bawah beban — tidak bisa dibuktikan selama eksekusi masih satu permintaan pada satu waktu.
+   - **upload multipart**: sudah diuji lewat HTTP sungguhan (`curl -F`) di `tests/web_badan_server.sh`, bukan hanya terhadap teks.
+   - **sertifikat kedaluwarsa/tidak cocok**: ditutup `tests/https_klien.sh` (1.5.0) — empat kasus badssl.com ditolak dengan sebab spesifik.
+   - **resource leak**: ditutup `tests/kebocoran_resource.sh` — fd dihitung dari `/proc` sesudah 90 permintaan campuran di jalur yang biasanya bocor (penangan meledak, klien putus di tengah, badan besar). Hasil: 4 → 4, tidak ada kebocoran.
+   - **race**: masih BELUM dan sengaja tidak diklaim. Eksekusi satu permintaan pada satu waktu, jadi belum ada balapan untuk dideteksi; ini baru bermakna setelah ada worker/thread.
+   - Temuan saat menulis uji beban, diperbaiki di 1.5.0: parsing badan `urlencoded` ternyata **kuadratik** (100 KB = 10,7 detik), cukup untuk membekukan server lewat satu POST 1 MB. Akarnya `teks_gabung()` yang merakit teks per potongan; dipindahkan ke builtin C. Dijaga `tests/web_badan_performa.sh` yang memeriksa bentuk pertumbuhan, bukan ambang detik.
 8. [x] Dokumentasikan deployment dengan Docker/reverse proxy TLS, isolasi proses, pembatasan resource dan risiko membuka port secara publik.
    - Selesai 1.5.0: bab panduan `website/panduan/08_DEPLOYMENT.md`, dengan konfigurasi nyata di `docker/aplikasi/` (`Dockerfile` dua tahap + pengguna non-root UID 10001, `docker-compose.yml`, `nginx.conf`).
    - **Semua contohnya dijalankan sungguhan**, bukan ditulis dari ingatan: image dibangun, stack dinyalakan, permintaan dikirim lewat proxy, lalu isolasi diperiksa dari luar — aplikasi tak terjangkau dari host, `wget` keluar gagal (`bad address`), proses berjalan sebagai UID 10001, `/app` read-only. Batas laju terbukti dengan 40 permintaan beruntun → 24 × `200` + 16 × `503`; `client_max_body_size` terbukti dengan unggahan 2 MB → `413`.

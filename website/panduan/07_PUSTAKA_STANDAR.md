@@ -826,7 +826,7 @@ impor "pustaka/teks.idk"
 | `teks_mulai_dengan(teks, awalan)` | Boolean |
 | `teks_akhiri_dengan(teks, akhiran)` | Boolean |
 | `teks_pisah(teks, pemisah)` | List bagian |
-| `teks_gabung(daftar, perekat)` | Gabungkan list jadi string |
+| `teks_gabung(daftar, perekat)` | Gabungkan list jadi string. **Builtin** (bukan fungsi `pustaka/teks.idk`), jadi tersedia tanpa impor dan berbiaya linear terhadap panjang hasil |
 | `teks_ulang(teks, n)` | Ulang `teks` sebanyak `n` |
 | `teks_balik(teks)` | Teks terbalik |
 | `teks_pangkas(teks)` | Hilangkan spasi di awal/akhir |

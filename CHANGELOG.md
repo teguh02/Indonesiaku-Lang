@@ -7,6 +7,24 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Diperbaiki
+
+- **Parsing badan `application/x-www-form-urlencoded` tidak lagi kuadratik.**
+  `_web_dekode_persen()` merakit hasil dengan `hasil = hasil + c` per
+  karakter; teks immutable, jadi setiap gabung menyalin seluruh string yang
+  sudah terkumpul. Terukur: 40 KB = 1,6 s, 80 KB = 6,7 s, 100 KB = 10,7 s —
+  empat kali lipat tiap ukuran berlipat dua. Karena gelung server melayani
+  satu permintaan pada satu waktu, satu POST 1 MB membekukan server: itu DoS
+  lewat satu permintaan yang sah. Sekarang 100 KB = 0,06 s (178x) dan 1 MB
+  = 0,6 s.
+- **`teks_gabung()` menjadi builtin C** (`src/native.c`). Akar masalahnya ada
+  di sini: versi `pustaka/teks.idk` memakai pola `hasil = hasil + ...` yang
+  sama, jadi memperbaiki pemanggilnya saja hanya memindahkan biaya. Definisi
+  `.idk`-nya dihapus, bukan disimpan sebagai cadangan — fungsi di pustaka
+  akan **membayangi** builtin untuk setiap berkas yang mengimpornya, sehingga
+  perbaikannya diam-diam tidak terpakai. Pola yang sama masih ada di 47
+  tempat lain pada 10 berkas pustaka; itu utang yang dicatat, belum dibayar.
+
 ### Ditambahkan
 
 - **HTTPS untuk klien HTTP** — `http_ambil()` menerima `https://`, dengan

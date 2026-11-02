@@ -69,19 +69,16 @@ fungsi teks_pisah(teks, pemisah) {
     kembalikan hasil
 }
 
-# teks_gabung(daftar, perekat) -> string hasil penggabungan.
-fungsi teks_gabung(daftar, perekat) {
-    variabel hasil = ""
-    variabel i = 0
-    selagi i < panjang(daftar) {
-        jika i > 0 {
-            hasil = hasil + perekat
-        }
-        hasil = hasil + ke_teks(daftar[i])
-        i = i + 1
-    }
-    kembalikan hasil
-}
+# teks_gabung(daftar, perekat) sekarang BUILTIN (src/native.c).
+#
+# Versi Indonesiaku-nya dulu di sini merakit hasil dengan `hasil = hasil + ...`
+# di dalam gelung. Teks immutable, jadi tiap gabung menyalin seluruh string
+# yang sudah terkumpul: O(n^2). Itu membuat parsing badan urlencoded 100 KB
+# memakan 10,7 detik dan satu POST 1 MB cukup untuk membekukan server.
+#
+# Definisinya dihapus, bukan dibiarkan sebagai cadangan: fungsi .idk di sini
+# akan MEMBAYANGI builtin-nya untuk setiap berkas yang mengimpor pustaka ini,
+# sehingga perbaikannya diam-diam tidak terpakai.
 
 # teks_ulang(teks, n) -> teks diulang n kali.
 fungsi teks_ulang(teks, n) {
