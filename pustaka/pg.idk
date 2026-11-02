@@ -1,0 +1,436 @@
+# Driver PostgreSQL untuk Indonesiaku.
+#
+# Bicara wire protocol v3 langsung lewat soket, tanpa libpq. Alasannya ada di
+# docs/RENCANA_FITUR/database_multi_driver.md: biner ini hanya menaut libc dan
+# libm, dan sifat itu sengaja dibayar mahal sejak mbedTLS di-vendor.
+#
+# Parameter query dikirim sebagai parameter PROTOKOL (Parse/Bind), bukan
+# dirangkai ke teks SQL. Itu bukan escaping yang lebih rapi -- nilainya tidak
+# pernah melewati parser SQL sama sekali.
+
+impor base64
+impor bita
+impor "pustaka/teks.idk"
+
+kelas GalatPg < GalatOS {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+# --- bantu bingkai biner -------------------------------------------------
+
+# Bilangan 32-bit big-endian; PostgreSQL memakai network byte order di mana-mana.
+fungsi _i32(n) {
+    kembalikan [(n // 16777216) % 256, (n // 65536) % 256, (n // 256) % 256, n % 256]
+}
+
+fungsi _i16(n) {
+    kembalikan [(n // 256) % 256, n % 256]
+}
+
+fungsi _baca_i32(b, i) {
+    kembalikan b[i] * 16777216 + b[i + 1] * 65536 + b[i + 2] * 256 + b[i + 3]
+}
+
+fungsi _baca_i16(b, i) {
+    kembalikan b[i] * 256 + b[i + 1]
+}
+
+# Teks + NUL, sesuai tipe String protokol.
+fungsi _teks_nul(t) {
+    variabel b = bita.ke_bita(t)
+    tambah(b, 0)
+    kembalikan b
+}
+
+fungsi _gabung_bita(bagian) {
+    variabel keluar = daftar()
+    untuk p dalam bagian {
+        untuk x dalam p { tambah(keluar, x) }
+    }
+    kembalikan keluar
+}
+
+# Pesan bertipe: 1 byte tipe, int32 panjang (termasuk dirinya), lalu isi.
+fungsi _pesan(tipe, isi) {
+    variabel b = daftar()
+    untuk x dalam bita.ke_bita(tipe) { tambah(b, x) }
+    untuk x dalam _i32(panjang(isi) + 4) { tambah(b, x) }
+    untuk x dalam isi { tambah(b, x) }
+    kembalikan b
+}
+
+# --- SCRAM-SHA-256 -------------------------------------------------------
+
+fungsi _xor_bita(a, b) {
+    variabel keluar = daftar()
+    variabel i = 0
+    selagi i < panjang(a) {
+        tambah(keluar, a[i] ^ b[i])
+        i = i + 1
+    }
+    kembalikan keluar
+}
+
+# Nonce klien: harus tak tertebak, bukan sekadar unik. acak_bulat() memakai
+# sumber acak juru bahasa.
+fungsi _nonce() {
+    variabel huruf = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    variabel potongan = daftar()
+    variabel i = 0
+    selagi i < 24 {
+        tambah(potongan, huruf[acak_bulat(0, panjang(huruf) - 1)])
+        i = i + 1
+    }
+    kembalikan teks_gabung(potongan, "")
+}
+
+# Ambil nilai atribut SCRAM (mis. "r", "s", "i") dari "r=...,s=...,i=..."
+fungsi _scram_ambil(pesan, kunci) {
+    untuk bagian dalam teks_pisah(pesan, ",") {
+        jika panjang(bagian) > 1 dan bagian[0] == kunci dan bagian[1] == "=" {
+            kembalikan potong(bagian, 2, panjang(bagian) - 2)
+        }
+    }
+    naikkan GalatPg("SCRAM: atribut '" + kunci + "' tidak ada di balasan server")
+}
+
+# Ekor daftar mulai dari indeks i. `potong` hanya untuk teks.
+fungsi _ekor(d, i) {
+    variabel keluar = daftar()
+    selagi i < panjang(d) { tambah(keluar, d[i]); i = i + 1 }
+    kembalikan keluar
+}
+
+# sha256() mengembalikan heksa; SCRAM butuh byte mentah.
+fungsi _sha256_bita(d) {
+    kembalikan bita.dari_heksa(sha256(d))
+}
+
+# --- koneksi -----------------------------------------------------------
+
+kelas Koneksi {
+    init(soket) {
+        diri.s = soket
+        diri.terbuka = benar
+        diri.sisa = daftar()   # byte yang sudah terbaca tapi belum terpakai
+    }
+
+    # Baca tepat n byte, menggabung beberapa paket TCP. Satu recv() TIDAK
+    # dijamin memuat satu pesan protokol: itu asumsi yang bikin driver rapuh.
+    _ambil(n) {
+        selagi panjang(diri.sisa) < n {
+            variabel potong_baru = soket_baca_bita(diri.s)
+            jika panjang(potong_baru) == 0 {
+                naikkan GalatPg("koneksi ditutup server saat menunggu data")
+            }
+            untuk x dalam potong_baru { tambah(diri.sisa, x) }
+        }
+        variabel keluar = daftar()
+        variabel i = 0
+        selagi i < n { tambah(keluar, diri.sisa[i]); i = i + 1 }
+        variabel baru = daftar()
+        selagi i < panjang(diri.sisa) { tambah(baru, diri.sisa[i]); i = i + 1 }
+        diri.sisa = baru
+        kembalikan keluar
+    }
+
+    # Satu pesan server: [tipe][int32 panjang][isi]
+    _pesan() {
+        variabel kepala = diri._ambil(5)
+        variabel tipe = chr(kepala[0])
+        variabel panjang_isi = _baca_i32(kepala, 1) - 4
+        variabel isi = daftar()
+        jika panjang_isi > 0 { isi = diri._ambil(panjang_isi) }
+        kembalikan [tipe, isi]
+    }
+
+    _kirim(b) {
+        soket_tulis(diri.s, b)
+    }
+
+    # ErrorResponse: field bertag, diakhiri byte 0. Tag "M" = pesan manusia.
+    _galat_dari(isi) {
+        variabel pesan = "galat server tanpa keterangan"
+        variabel kode = ""
+        variabel i = 0
+        selagi i < panjang(isi) dan isi[i] != 0 {
+            variabel tag = chr(isi[i])
+            variabel j = i + 1
+            variabel potongan = daftar()
+            selagi j < panjang(isi) dan isi[j] != 0 {
+                tambah(potongan, isi[j])
+                j = j + 1
+            }
+            variabel nilai = bita.ke_teks(potongan)
+            jika tag == "M" { pesan = nilai }
+            jika tag == "C" { kode = nilai }
+            i = j + 1
+        }
+        jika kode == "" { kembalikan GalatPg(pesan) }
+        kembalikan GalatPg(pesan + " [" + kode + "]")
+    }
+
+    # --- autentikasi ------------------------------------------------------
+
+    # Hanya SCRAM-SHA-256. "password" polos dan "md5" DITOLAK: keduanya
+    # mengirim sandi atau turunan lemahnya ke kawat.
+    _autentikasi(pengguna, sandi) {
+        selagi benar {
+            variabel m = diri._pesan()
+            variabel tipe = m[0]
+            variabel isi = m[1]
+
+            jika tipe == "E" { naikkan diri._galat_dari(isi) }
+            jika tipe == "R" {
+                variabel kode = _baca_i32(isi, 0)
+                jika kode == 0 { kembalikan kosong }          # AuthenticationOk
+                jika kode == 10 { diri._scram(isi, sandi) }   # SASL
+                jika_lain kode == 3 {
+                    naikkan GalatPg("server meminta sandi polos; ditolak demi keamanan - setel password_encryption = scram-sha-256")
+                }
+                jika_lain kode == 5 {
+                    naikkan GalatPg("server meminta autentikasi md5; ditolak demi keamanan - setel password_encryption = scram-sha-256")
+                }
+                jika_lain kode != 11 dan kode != 12 {
+                    naikkan GalatPg("metode autentikasi " + ke_teks(kode) + " tidak didukung")
+                }
+            }
+        }
+    }
+
+    _scram(isi, sandi) {
+        # Server mendaftar mekanisme yang didukung; kita hanya mau SCRAM-SHA-256.
+        variabel punya = salah
+        variabel i = 4
+        selagi i < panjang(isi) dan isi[i] != 0 {
+            variabel potongan = daftar()
+            selagi i < panjang(isi) dan isi[i] != 0 { tambah(potongan, isi[i]); i = i + 1 }
+            jika bita.ke_teks(potongan) == "SCRAM-SHA-256" { punya = benar }
+            i = i + 1
+        }
+        jika punya == salah {
+            naikkan GalatPg("server tidak menawarkan SCRAM-SHA-256")
+        }
+
+        variabel nonce = _nonce()
+        variabel bare = "n=,r=" + nonce
+        variabel awal = "n,," + bare
+        # SASLInitialResponse: nama mekanisme, lalu panjang + isi respons.
+        diri._kirim(_pesan("p", _gabung_bita([
+            _teks_nul("SCRAM-SHA-256"),
+            _i32(panjang(bita.ke_bita(awal))),
+            bita.ke_bita(awal)
+        ])))
+
+        variabel m = diri._pesan()
+        jika m[0] == "E" { naikkan diri._galat_dari(m[1]) }
+        jika m[0] != "R" { naikkan GalatPg("SCRAM: balasan server tak terduga") }
+        variabel tantangan = bita.ke_teks(_ekor(m[1], 4))
+
+        variabel nonce_server = _scram_ambil(tantangan, "r")
+        # Server WAJIB mengawali nonce-nya dengan nonce kita. Tanpa cek ini,
+        # penyerang di tengah bisa memutar ulang tantangan lama.
+        jika teks_mulai_dengan(nonce_server, nonce) == salah {
+            naikkan GalatPg("SCRAM: nonce server tidak mengandung nonce klien")
+        }
+        variabel garam = base64.dekode(_scram_ambil(tantangan, "s"))
+        variabel iterasi = ke_bulat(_scram_ambil(tantangan, "i"))
+
+        variabel kunci_asin = pbkdf2_sha256(sandi, garam, iterasi, 32)
+        variabel kunci_klien = hmac_sha256(kunci_asin, "Client Key")
+        variabel kunci_tersimpan = _sha256_bita(kunci_klien)
+
+        variabel akhir_tanpa_bukti = "c=biws,r=" + nonce_server
+        variabel pesan_auth = bare + "," + tantangan + "," + akhir_tanpa_bukti
+        variabel tanda = hmac_sha256(kunci_tersimpan, pesan_auth)
+        variabel bukti = base64.enkode(_xor_bita(kunci_klien, tanda))
+
+        diri._kirim(_pesan("p", bita.ke_bita(akhir_tanpa_bukti + ",p=" + bukti)))
+
+        variabel akhir = diri._pesan()
+        jika akhir[0] == "E" { naikkan diri._galat_dari(akhir[1]) }
+        jika akhir[0] != "R" { naikkan GalatPg("SCRAM: balasan akhir tak terduga") }
+
+        # Verifikasi tanda tangan server: membuktikan server benar-benar tahu
+        # sandinya. Melewatkan langkah ini membuat server palsu bisa lolos.
+        variabel akhir_teks = bita.ke_teks(_ekor(akhir[1], 4))
+        variabel kunci_server = hmac_sha256(kunci_asin, "Server Key")
+        variabel tanda_server = hmac_sha256(kunci_server, pesan_auth)
+        jika _scram_ambil(akhir_teks, "v") != base64.enkode(tanda_server) {
+            naikkan GalatPg("SCRAM: tanda tangan server tidak cocok")
+        }
+    }
+
+
+    # --- query ------------------------------------------------------------
+
+    # Parse/Bind/Describe/Execute/Sync. Nilai dikirim sebagai parameter
+    # PROTOKOL: tidak pernah dirangkai ke teks SQL, jadi tidak ada yang perlu
+    # di-escape dan tidak ada jalan untuk injeksi.
+    _jalankan(sql, parameter) {
+        variabel bagian_param = daftar()
+        tambah(bagian_param, _i16(panjang(parameter)))
+        untuk p dalam parameter {
+            jika p == kosong {
+                tambah(bagian_param, _i32(4294967295))   # -1 = NULL
+            } selain {
+                variabel b = bita.ke_bita(ke_teks(p))
+                tambah(bagian_param, _i32(panjang(b)))
+                tambah(bagian_param, b)
+            }
+        }
+
+        diri._kirim(_gabung_bita([
+            # Parse: statement tanpa nama, 0 tipe parameter (server yang menebak)
+            _pesan("P", _gabung_bita([[0], _teks_nul(sql), _i16(0)])),
+            # Bind: portal & statement tanpa nama, format teks untuk semuanya
+            _pesan("B", _gabung_bita([[0], [0], _i16(0),
+                                      _gabung_bita(bagian_param), _i16(0)])),
+            _pesan("D", _gabung_bita([bita.ke_bita("P"), [0]])),
+            _pesan("E", _gabung_bita([[0], _i32(0)])),
+            _pesan("S", daftar())
+        ]))
+
+        variabel kolom = daftar()
+        variabel baris = daftar()
+        variabel terpengaruh = 0
+        variabel galat = kosong
+
+        selagi benar {
+            variabel m = diri._pesan()
+            variabel tipe = m[0]
+            variabel isi = m[1]
+
+            jika tipe == "T" {                      # RowDescription
+                variabel n = _baca_i16(isi, 0)
+                variabel i = 2
+                variabel k = 0
+                selagi k < n {
+                    variabel nama = daftar()
+                    selagi isi[i] != 0 { tambah(nama, isi[i]); i = i + 1 }
+                    tambah(kolom, bita.ke_teks(nama))
+                    i = i + 1 + 18                  # NUL + 18 byte metadata
+                    k = k + 1
+                }
+            } jika_lain tipe == "D" {               # DataRow
+                variabel n = _baca_i16(isi, 0)
+                variabel i = 2
+                variabel satu = kamus()
+                variabel k = 0
+                selagi k < n {
+                    variabel lebar = _baca_i32(isi, i)
+                    i = i + 4
+                    jika lebar == 4294967295 {
+                        satu[kolom[k]] = kosong
+                    } selain {
+                        variabel nilai = daftar()
+                        variabel j = 0
+                        selagi j < lebar { tambah(nilai, isi[i + j]); j = j + 1 }
+                        i = i + lebar
+                        satu[kolom[k]] = bita.ke_teks(nilai)
+                    }
+                    k = k + 1
+                }
+                tambah(baris, satu)
+            } jika_lain tipe == "C" {               # CommandComplete: "INSERT 0 3"
+                variabel kata = teks_pisah(bita.ke_teks(_ekor(isi, 0)), " ")
+                variabel akhir = kata[panjang(kata) - 1]
+                variabel bersih = daftar()
+                untuk c dalam akhir {
+                    jika c >= "0" dan c <= "9" { tambah(bersih, c) }
+                }
+                jika panjang(bersih) > 0 { terpengaruh = ke_bulat(teks_gabung(bersih, "")) }
+            } jika_lain tipe == "E" {
+                # Jangan langsung naikkan: server tetap mengirim ReadyForQuery,
+                # dan meninggalkannya di buffer merusak query BERIKUTNYA.
+                galat = diri._galat_dari(isi)
+            } jika_lain tipe == "Z" {               # ReadyForQuery
+                jika galat != kosong { naikkan galat }
+                kembalikan [kolom, baris, terpengaruh]
+            }
+        }
+    }
+
+    # eksekusi(sql, parameter) -> jumlah baris terpengaruh.
+    eksekusi(sql, parameter = kosong) {
+        jika parameter == kosong { parameter = daftar() }
+        variabel h = diri._jalankan(sql, parameter)
+        kembalikan h[2]
+    }
+
+    # ambil_semua(sql, parameter) -> daftar kamus.
+    ambil_semua(sql, parameter = kosong) {
+        jika parameter == kosong { parameter = daftar() }
+        variabel h = diri._jalankan(sql, parameter)
+        kembalikan h[1]
+    }
+
+    # ambil_satu(sql, parameter) -> kamus, atau kosong bila tidak ada baris.
+    ambil_satu(sql, parameter = kosong) {
+        variabel semua = diri.ambil_semua(sql, parameter)
+        jika panjang(semua) == 0 { kembalikan kosong }
+        kembalikan semua[0]
+    }
+
+    mulai() { diri.eksekusi("BEGIN") }
+    komit() { diri.eksekusi("COMMIT") }
+    batal() { diri.eksekusi("ROLLBACK") }
+
+    # tutup() idempoten: dipanggil dua kali bukan galat, sama seperti db_tutup().
+    tutup() {
+        jika diri.terbuka == salah { kembalikan kosong }
+        diri.terbuka = salah
+        coba {
+            diri._kirim(_pesan("X", daftar()))     # Terminate
+        } kecuali e {
+            # Server mungkin sudah menutup duluan; tetap tutup soketnya.
+        }
+        soket_tutup(diri.s)
+    }
+}
+
+# sambung(konfigurasi) -> Koneksi.
+fungsi sambung(konfigurasi) {
+    variabel host = konfigurasi["host"]
+    variabel port = konfigurasi["port"]
+    variabel pengguna = konfigurasi["pengguna"]
+    variabel basisdata = konfigurasi["basisdata"]
+    variabel sandi = ""
+    jika "sandi" dalam konfigurasi { sandi = konfigurasi["sandi"] }
+
+    variabel s = soket_sambung(host, port)
+    soket_batas_waktu(s, 30)
+    variabel k = Koneksi(s)
+
+    jika "tls" dalam konfigurasi dan konfigurasi["tls"] {
+        # SSLRequest: int32 panjang 8, int32 kode ajaib 80877103.
+        soket_tulis(s, _gabung_bita([_i32(8), _i32(80877103)]))
+        variabel jawab = soket_baca_bita(s)
+        jika panjang(jawab) == 0 atau chr(jawab[0]) != "S" {
+            soket_tutup(s)
+            naikkan GalatPg("server menolak TLS; koneksi dibatalkan daripada turun ke teks polos")
+        }
+        tls_mulai(s, host)
+    }
+
+    # StartupMessage: tanpa tipe, hanya panjang + versi protokol 3.0.
+    k._kirim(_gabung_bita([
+        _i32(panjang(_gabung_bita([_teks_nul("user"), _teks_nul(pengguna),
+                                   _teks_nul("database"), _teks_nul(basisdata), [0]])) + 8),
+        _i32(196608),
+        _teks_nul("user"), _teks_nul(pengguna),
+        _teks_nul("database"), _teks_nul(basisdata),
+        [0]
+    ]))
+
+    k._autentikasi(pengguna, sandi)
+
+    # Habiskan parameter server sampai ReadyForQuery.
+    selagi benar {
+        variabel m = k._pesan()
+        jika m[0] == "E" { naikkan k._galat_dari(m[1]) }
+        jika m[0] == "Z" { kembalikan k }
+    }
+}
