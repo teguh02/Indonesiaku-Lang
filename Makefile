@@ -1,7 +1,8 @@
 # Makefile untuk Bahasa Pemrograman Indonesiaku
 
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include
+CFLAGS = -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include \
+         -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"'
 LDFLAGS = -lm
 
 # Tambahan flag dari pemanggil, mis. EXTRA_CFLAGS=-march=x86-64 saat rilis.

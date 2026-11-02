@@ -10,7 +10,7 @@
 # yang merah karena DNS mati melatih orang mengabaikan CI.
 #
 # Sabotase yang sudah diuji terhadap berkas ini (3 dari 4 membuatnya merah):
-#   - MBEDTLS_SSL_VERIFY_REQUIRED -> VERIFY_NONE   : merah
+#   - MBEDTLS_SSL_VERIFY_REQUIRED -> VERIFY_NONE   : merah (8 pemeriksaan)
 #   - SNI tidak dikirim (set_hostname NULL)        : merah
 #   - muatCa() gagal tetapi handshake diteruskan   : merah
 #   - pemeriksaan ulang verify_result dihapus      : TETAP HIJAU
@@ -20,6 +20,15 @@
 # tls.c murni pertahanan berlapis untuk menjaga perubahan konfigurasi di masa
 # depan. Menambah "tes" yang hanya bisa hijau tidak membuktikan apa pun, jadi
 # sengaja tidak ditambahkan.
+#
+# Catatan soal "EOF": badssl.com membatasi laju. Saat dihantam berkali-kali ia
+# memutus koneksi sebelum sertifikat sempat dinilai, dan pesan kita berubah
+# dari sebab spesifik menjadi "The connection indicated an EOF". Ini sempat
+# disangka regresi akibat mencabut CCM; A/B tiga biner (MinGW dengan CCM,
+# MinGW tanpa CCM, Linux tanpa CCM) membuktikan ketiganya berperilaku sama,
+# jadi penyebabnya murni jaringan. Karena itu "DITOLAK" dan "sebab spesifik"
+# dipisah menjadi dua pemeriksaan: yang pertama tidak boleh longgar sedikit
+# pun, yang kedua memaafkan galat transport.
 set -u
 
 akar="$(cd "$(dirname "$0")/.." && pwd)"
@@ -80,7 +89,25 @@ coba {
     cetak("DITOLAK", e.pesan)
 }
 EOF
-    periksa "$1" "$3" "$("$indk" "$tmp/t.idk" 2>&1)"
+    keluaran="$("$indk" "$tmp/t.idk" 2>&1)"
+
+    # Yang WAJIB benar: permintaannya DITOLAK. Inilah pemeriksaan yang berubah
+    # merah begitu verifikasi dilemahkan -- dengan VERIFY_NONE host-host ini
+    # menjawab 200.
+    periksa "$1" "DITOLAK" "$keluaran"
+
+    # Sebab spesifiknya diperiksa terpisah, dan galat transport TIDAK dihitung
+    # gagal: badssl.com membatasi laju dan kadang memutus koneksi sebelum
+    # sertifikat sempat dinilai, sehingga pesannya jadi "EOF". Itu bukan cacat
+    # kode kita, dan CI yang merah karenanya hanya melatih orang mengabaikan CI.
+    case "$keluaran" in
+        *EOF*|*"batas waktu"*|*reset*|*"tidak dapat tersambung"*)
+            echo "  lewat $1: sebab spesifik (koneksi diputus sebelum sertifikat dinilai)"
+            ;;
+        *)
+            periksa "$1 (sebab spesifik)" "$3" "$keluaran"
+            ;;
+    esac
 }
 
 tolak "sertifikat kedaluwarsa ditolak"   "expired.badssl.com"        "kedaluwarsa"

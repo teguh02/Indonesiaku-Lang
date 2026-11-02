@@ -129,6 +129,20 @@ menyentuh jaringan sama sekali.
 Selain itu: sabotase (matikan verifikasi hostname, terima sertifikat apa pun)
 harus membuat tes merah. Kalau tidak, tesnya yang salah.
 
+## Catatan pelaksanaan
+
+- **CCM dicabut** (`src/mbedtls_user_config.h`): tidak dipakai TLS 1.3, dan
+  CodeQL melaporkan 3 alert di `ccm.c`. Alert-nya sendiri **false positive**
+  (`iv_len` divalidasi 7..13, upstream menulis "Also implies q is within
+  bounds"), tetapi mencabut modul yang memang tidak terpakai lebih baik
+  daripada men-dismiss alert.
+- **Windows perlu `-lbcrypt`** — mbedTLS mengambil entropi lewat
+  `BCryptGenRandom`. Kegagalan ini hanya muncul di Windows, jadi Linux/macOS
+  hijau tidak membuktikan apa pun.
+- **Jangan percaya satu kali jalan ke badssl.com.** Host itu membatasi laju;
+  saat diputus sebelum sertifikat dinilai, pesan berubah menjadi "EOF" dan
+  tampak seperti regresi. Dibuktikan bukan regresi lewat A/B tiga biner.
+
 ## Risiko
 
 - **Permukaan audit bertambah 132.812 baris C.** Diterima secara sadar;

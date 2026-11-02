@@ -252,7 +252,7 @@ make
 **Opsi B - Menggunakan GCC langsung:**
 
 ```powershell
-gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -o indk.exe `
+gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk.exe `
     -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 `
     src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c `
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c `
@@ -663,7 +663,7 @@ make
 **Opsi B - Menggunakan GCC langsung:**
 
 ```bash
-gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -o indk \
+gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk \
     -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 \
     src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c \
@@ -784,7 +784,7 @@ make
 **Opsi B - Menggunakan GCC langsung:**
 
 ```bash
-gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -o indk \
+gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk \
     -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 \
     src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c \
@@ -954,7 +954,7 @@ indk.exe
 sudo apt install build-essential
 
 # Atau gunakan GCC langsung (tanpa make)
-gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -o indk \
+gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk \
     -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 \
     src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c \
@@ -1072,7 +1072,7 @@ make
 
 # Windows
 del /Q src\*.o indk.exe
-gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -o indk.exe `
+gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk.exe `
     -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 `
     src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c `
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c `

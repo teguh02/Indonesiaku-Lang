@@ -26,6 +26,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   polos padahal pengguna meminta koneksi terenkripsi. Sekaligus memperbaiki
   bug lama: `_http_gabung_url()` meng-hardcode `http://`, sehingga pengalihan
   **relatif** pada situs HTTPS ikut turun ke HTTP polos.
+- **CCM dicabut dari mbedTLS** lewat `src/mbedtls_user_config.h`
+  (`MBEDTLS_USER_CONFIG_FILE`). TLS 1.3 memakai AES-GCM atau
+  ChaCha20-Poly1305, jadi CCM tidak pernah terpakai klien kita; mencabutnya
+  mengecilkan permukaan audit — alasan yang sama yang membuat mbedTLS dipilih
+  daripada OpenSSL. Berkas konfigurasinya sengaja di luar `src/vendor/` supaya
+  tidak terhapus saat `tools/vendor_mbedtls.sh` menulis ulang direktori vendor
+  pada pembaruan CVE. Diverifikasi: nol simbol `mbedtls_ccm` di biner.
 - **Windows menaut `-lbcrypt`** selain `-lws2_32`: mbedTLS mengambil entropi
   lewat `BCryptGenRandom`. Tanpa itu link gagal **hanya di Windows**, jadi
   build Linux/macOS yang hijau tidak membuktikan apa pun.
