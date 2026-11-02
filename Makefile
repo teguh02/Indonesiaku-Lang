@@ -17,7 +17,11 @@ ifeq ($(OS),Windows_NT)
     # On Windows, del requires backslash paths; / is parsed as a switch.
     CLEAN = del /Q src\*.o src\vendor\mbedtls\library\*.o $(TARGET) 2>NUL & exit 0
     # Winsock for TCP sockets (soket_* natives).
-    LDFLAGS += -lws2_32
+    # bcrypt: mbedTLS mengambil entropi lewat BCryptGenRandom di Windows
+    # (library/entropy_poll.c). Tanpa ini link gagal dengan
+    # "undefined reference to `BCryptGenRandom'" -- dan hanya di Windows,
+    # jadi build Linux/macOS yang hijau tidak membuktikan apa pun.
+    LDFLAGS += -lws2_32 -lbcrypt
 else
     EXE =
     RM = rm -f

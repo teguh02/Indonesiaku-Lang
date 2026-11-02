@@ -26,6 +26,9 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   polos padahal pengguna meminta koneksi terenkripsi. Sekaligus memperbaiki
   bug lama: `_http_gabung_url()` meng-hardcode `http://`, sehingga pengalihan
   **relatif** pada situs HTTPS ikut turun ke HTTP polos.
+- **Windows menaut `-lbcrypt`** selain `-lws2_32`: mbedTLS mengambil entropi
+  lewat `BCryptGenRandom`. Tanpa itu link gagal **hanya di Windows**, jadi
+  build Linux/macOS yang hijau tidak membuktikan apa pun.
 - **`tools/vendor_mbedtls.sh`** — mengambil ulang mbedTLS dengan sha256 yang
   terkunci di skrip. Kode pihak ketiga di dalam repo adalah utang keamanan;
   skrip ini membuat pembaruan saat ada CVE menjadi satu perintah, bukan

@@ -1147,8 +1147,12 @@ bisa dimatikan: sertifikat kedaluwarsa, nama host tidak cocok, atau penerbit
 tak dikenal menaikkan `GalatOS` dengan pesan yang menyebut sebabnya. Daftar CA
 diambil dari `INDK_CA_BUNDLE` bila disetel, selain itu dari jalur sistem yang
 umum; bila tak satu pun ditemukan, koneksi **gagal** alih-alih diam-diam
-melewati verifikasi. Di Windows `INDK_CA_BUNDLE` wajib disetel karena
-Certificate Store belum dibaca.
+melewati verifikasi. Di Windows, mbedTLS tidak membaca Certificate Store, dan jalur PEM gaya Unix
+di atas umumnya tidak ada — setel `INDK_CA_BUNDLE` ke berkas bundel CA
+(mis. `cacert.pem`) bila HTTPS gagal dengan pesan "tidak menemukan bundel CA
+sistem". (Catatan: biner MinGW yang dijalankan lewat Wine tetap menemukan
+jalur Unix tersebut, jadi pengujian Wine tidak membuktikan perilaku Windows
+asli.)
 
 Batasan lain: permintaan dikirim sebagai HTTP/1.0, sehingga server tidak mengirim `chunked` dan badan dibaca sampai
 koneksi ditutup; tidak ada pengalihan (redirect) otomatis maupun **batas

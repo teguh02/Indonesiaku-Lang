@@ -257,7 +257,7 @@ gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -o indk.exe `
     src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c `
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c `
     src/vendor/mbedtls/library/*.c `
-    src/scanner.c src/table.c src/value.c src/vm.c -lm -lws2_32
+    src/scanner.c src/table.c src/value.c src/vm.c -lm -lws2_32 -lbcrypt
 ```
 
 **Output:**
@@ -1077,7 +1077,7 @@ gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -o indk.exe `
     src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c `
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c `
     src/vendor/mbedtls/library/*.c `
-    src/scanner.c src/table.c src/value.c src/vm.c -lm -lws2_32
+    src/scanner.c src/table.c src/value.c src/vm.c -lm -lws2_32 -lbcrypt
 ```
 
 ### 4. Debug Build
