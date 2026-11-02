@@ -610,6 +610,8 @@ ditangkap `coba/kecuali`. Untuk server **dan klien** HTTP, gunakan
 | `soket_terima(server)` | Blocking: terima koneksi → soket klien |
 | `soket_baca(klien)` | Baca data yang diterima (satu recv) → string |
 | `soket_tulis(klien, teks)` | Kirim teks → jumlah byte |
+| `soket_tulis(klien, daftar_bita)` | Kirim byte mentah (daftar bulat 0..255) → jumlah byte. Dipakai protokol biner: `chr(255)` di dalam teks ter-enkode UTF-8 jadi **dua** byte di kawat |
+| `soket_baca_bita(klien)` | Baca → daftar bulat 0..255. Daftar kosong = koneksi ditutup rapi; batas waktu menaikkan galat |
 | `soket_tutup(soket)` | Tutup soket (server atau klien) |
 | `soket_batas_waktu(soket, detik)` | Batas waktu baca **dan** tulis untuk satu soket. `0` berarti tanpa batas (bawaan). Detik boleh pecahan (`0.5`) |
 | `soket_sambung(host, port)` | Klien: sambung ke `host:port` (nama host atau IP, IPv4/IPv6) → soket. Host tak dikenal atau koneksi ditolak → `GalatOS`. Ditolak (`GalatIzin`) di `indk --sandbox` |
@@ -789,6 +791,8 @@ setiap program dengan mode ini.
 | `md5(data)` | Hash MD5, 32 karakter heksa |
 | `sha1(data)` | Hash SHA-1, 40 karakter heksa |
 | `sha256(data)` | Hash SHA-256, 64 karakter heksa |
+| `hmac_sha256(kunci, pesan)` | HMAC-SHA-256 → daftar 32 bita (bukan heksa: dipakai untuk XOR dan perbandingan byte) |
+| `pbkdf2_sha256(sandi, garam, iterasi, panjang)` | Turunkan kunci → daftar bita. Iterasi dibatasi 1..10.000.000 karena nilainya bisa datang dari server |
 | `sha512(data)` | Hash SHA-512, 128 karakter heksa |
 
 Padanan `hashlib` Python, tetapi langsung mengembalikan **teks heksa huruf

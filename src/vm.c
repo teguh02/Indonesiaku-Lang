@@ -462,6 +462,7 @@ void initVM() {
     defineNative("soket_dengar", nativeFnSoketDengar);
     defineNative("soket_terima", nativeFnSoketTerima);
     defineNative("soket_baca", nativeFnSoketBaca);
+    defineNative("soket_baca_bita", nativeFnSoketBacaBita);
     defineNative("soket_batas_waktu", nativeFnSoketBatasWaktu);
     defineNative("soket_tulis", nativeFnSoketTulis);
     defineNative("soket_tutup", nativeFnSoketTutup);
@@ -473,6 +474,8 @@ void initVM() {
     defineNative("sha1", nativeFnSha1);
     defineNative("sha256", nativeFnSha256);
     defineNative("sha512", nativeFnSha512);
+    defineNative("hmac_sha256", nativeFnHmacSha256);
+    defineNative("pbkdf2_sha256", nativeFnPbkdf2Sha256);
 
     // Ekspresi reguler (Fase 6 gelombang C). Internal: dibungkus oleh
     // pustaka/pola.idk, yang menambah kelas Pola/Cocokan dan GalatPola.

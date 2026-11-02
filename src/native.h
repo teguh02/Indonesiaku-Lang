@@ -188,6 +188,7 @@ Value nativeFnRentang(int argCount, Value* args);   // rentang([awal,] akhir[, l
 Value nativeFnSoketDengar(int argCount, Value* args);  // soket_dengar(port)
 Value nativeFnSoketTerima(int argCount, Value* args);  // soket_terima(server)
 Value nativeFnSoketBaca(int argCount, Value* args);    // soket_baca(klien)
+Value nativeFnSoketBacaBita(int argCount, Value* args);
 Value nativeFnSoketTulis(int argCount, Value* args);   // soket_tulis(klien, teks)
 Value nativeFnSoketTutup(int argCount, Value* args);   // soket_tutup(soket)
 Value nativeFnSoketBatasWaktu(int argCount, Value* args); // soket_batas_waktu(soket, detik)
@@ -234,7 +235,9 @@ Value nativeFnLanjutkan(int argCount, Value* args);      // lanjutkan(it[, bawaa
 Value nativeFnMd5(int argCount, Value* args);      // md5(teks | daftar byte)
 Value nativeFnSha1(int argCount, Value* args);     // sha1(...)
 Value nativeFnSha256(int argCount, Value* args);   // sha256(...)
-Value nativeFnSha512(int argCount, Value* args);   // sha512(...)
+Value nativeFnSha512(int argCount, Value* args);
+Value nativeFnHmacSha256(int argCount, Value* args);
+Value nativeFnPbkdf2Sha256(int argCount, Value* args);   // sha512(...)
 
 Value nativeFnSoketSambung(int argCount, Value* args);   // soket_sambung(host, port)
 Value nativeFnTlsMulai(int argCount, Value* args);       // tls_mulai(soket, host)
