@@ -212,6 +212,20 @@ if [ -f tests/api_siswa_server.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Klien HTTPS: verifikasi sertifikat terhadap host sungguhan. Sebagian besar
+# isinya tes NEGATIF (badssl.com) -- "berhasil mengambil halaman" juga terjadi
+# kalau verifikasi dimatikan, jadi yang membuktikan benar adalah penolakannya.
+# Melewati diri sendiri bila jaringan tidak tersedia.
+if [ -f tests/https_klien.sh ]; then
+    echo ""
+    if bash tests/https_klien.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES https-klien"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Gelung server bawaan pustaka (app.jalankan): batas waktu aktif tanpa
 # disetel pemakai, penangan yang meledak tidak mematikan server, dan
 # berhenti() melepas port setelah balasan terkirim.

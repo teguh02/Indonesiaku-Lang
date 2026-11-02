@@ -465,6 +465,7 @@ void initVM() {
     defineNative("soket_tulis", nativeFnSoketTulis);
     defineNative("soket_tutup", nativeFnSoketTutup);
     defineNative("soket_sambung", nativeFnSoketSambung);   // klien; ditolak di --sandbox
+    defineNative("tls_mulai", nativeFnTlsMulai);          // soket polos -> TLS terverifikasi
 
     // Hash kriptografis (Fase 6). Mengembalikan teks heksa huruf kecil.
     defineNative("md5", nativeFnMd5);

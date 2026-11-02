@@ -37,12 +37,9 @@ coba {
 #     permintaan berikutnya dikirim, bukan di sini ---
 cetak(_http_gabung_url("http://a.id/", "https://a.id/aman"))
 
-# --- https ditolak ketika benar-benar diminta (TLS belum ada) ---
-coba {
-    http_ambil("https://a.id/aman")
-} kecuali GalatJaringan {
-    cetak("https ditolak: butuh TLS")
-}
+# --- pengalihan relatif mempertahankan skema https, tidak turun ke http ---
+cetak(_http_gabung_url("https://a.id/x/y", "/z"))
+cetak(_http_gabung_url("https://a.id:8443/x/y", "z"))
 
 # --- maks_pengalihan harus bilangan bulat tak negatif ---
 coba {

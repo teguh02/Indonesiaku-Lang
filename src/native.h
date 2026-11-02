@@ -236,6 +236,7 @@ Value nativeFnSha256(int argCount, Value* args);   // sha256(...)
 Value nativeFnSha512(int argCount, Value* args);   // sha512(...)
 
 Value nativeFnSoketSambung(int argCount, Value* args);   // soket_sambung(host, port)
+Value nativeFnTlsMulai(int argCount, Value* args);       // tls_mulai(soket, host)
 
 // Atribut dinamis (Fase 6): setattr / getattr / hasattr.
 Value nativeFnAturAtribut(int argCount, Value* args);    // atur_atribut(objek, nama, nilai)

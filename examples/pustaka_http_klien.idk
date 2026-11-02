@@ -4,12 +4,13 @@ impor "pustaka/http.idk"
 
 cetak("== urai url ==")
 untuk u dalam ["http://example.com", "http://Example.com:8080/a/b?x=1#bagian",
-              "http://h?q=1", "http://127.0.0.1:8137/todos"] {
+              "http://h?q=1", "http://127.0.0.1:8137/todos",
+              "https://example.com", "https://example.com:8443/a"] {
     cetak(http_urai_url(u))
 }
 
 cetak("== url yang ditolak ==")
-untuk u dalam ["https://example.com", "ftp://x", "http://", "http://h:80x/", 5,
+untuk u dalam ["ftp://x", "http://", "http://h:80x/", 5,
               "http://h/a\r\nX-Sisip: 1", "http://h/a b", "http://u@h/", "http://[::1]:80/"] {
     coba {
         http_urai_url(u)

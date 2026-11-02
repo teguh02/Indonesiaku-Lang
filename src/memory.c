@@ -4,6 +4,7 @@
 #include "common.h"
 #include "compiler.h"
 #include "memory.h"
+#include "tls.h"
 #include "native.h"
 #include "object.h"
 #include "table.h"
@@ -291,6 +292,12 @@ static void freeObject(Obj* object) {
         }
         case OBJ_SOCKET: {
             ObjSocket* sock = (ObjSocket*)object;
+            // Bebaskan sesi TLS SEBELUM menutup fd: close_notify perlu soket
+            // yang masih hidup. Terbalik urutannya = menulis ke fd tertutup.
+            if (sock->tls != NULL) {
+                indkTlsTutup(sock->tls);
+                sock->tls = NULL;
+            }
             // Close the socket if still open (prevents fd leaks on GC).
             if (sock->isOpen) {
                 indkCloseSocket(sock->fd);

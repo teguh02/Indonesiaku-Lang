@@ -36,6 +36,7 @@
 #endif
 
 #include "native.h"
+#include "tls.h"
 #include "sistem.h"
 #include "vm.h"
 #include "object.h"
@@ -1853,6 +1854,51 @@ Value nativeFnSoketSambung(int argCount, Value* args) {
     return OBJ_VAL(newSocket((long long)s));
 }
 
+// tls_mulai(soket, host) -> kosong. Meningkatkan soket yang SUDAH tersambung
+// menjadi koneksi TLS terverifikasi. Sesudah ini soket_baca/soket_tulis/
+// soket_tutup bekerja seperti biasa, tetapi terenkripsi -- itulah sebabnya
+// tidak ada builtin tls_baca/tls_tulis terpisah.
+//
+// `host` dipakai untuk SNI sekaligus verifikasi nama, jadi harus nama host
+// yang diminta pengguna, bukan alamat IP hasil resolusi.
+//
+// Verifikasi sertifikat SELALU aktif dan tidak bisa dimatikan. Untuk CA
+// sendiri, setel INDK_CA_BUNDLE (lihat src/tls.c).
+Value nativeFnTlsMulai(int argCount, Value* args) {
+    if (argCount != 2 || !IS_SOCKET(args[0]) || !IS_STRING(args[1])) {
+        nativeRaiseKelas(vm.galatTipe, "tls_mulai(soket, host) memerlukan soket dan teks");
+        return KOSONG_VAL;
+    }
+    ObjSocket* sock = AS_SOCKET(args[0]);
+    if (!sock->isOpen) {
+        nativeRaise("tls_mulai() pada soket yang sudah tertutup");
+        return KOSONG_VAL;
+    }
+    if (sock->tls != NULL) {
+        nativeRaise("tls_mulai() pada soket yang sudah memakai TLS");
+        return KOSONG_VAL;
+    }
+    const char* host = AS_CSTRING(args[1]);
+    if (host[0] == '\0') {
+        nativeRaiseKelas(vm.galatNilai, "tls_mulai(): host tidak boleh kosong");
+        return KOSONG_VAL;
+    }
+
+    char galat[256];
+    galat[0] = '\0';
+    IndkTls* tls = indkTlsMulai(sock->fd, host, galat, sizeof(galat));
+    if (tls == NULL) {
+        // Pesan dari tls.c sudah menyebutkan SEBAB kegagalan (kedaluwarsa,
+        // nama tidak cocok, penerbit tak dikenal), bukan sekadar "gagal".
+        // galatOS mengikuti soket_sambung(); GalatJaringan adalah kelas di
+        // pustaka/http.idk, tidak tersedia dari C.
+        nativeRaiseKelas(vm.galatOS, "%s", galat);
+        return KOSONG_VAL;
+    }
+    sock->tls = tls;
+    return KOSONG_VAL;
+}
+
 // soket_terima(server) -> soket klien (blocking sampai ada koneksi).
 Value nativeFnSoketTerima(int argCount, Value* args) {
     if (argCount != 1) {
@@ -1950,12 +1996,21 @@ Value nativeFnSoketBaca(int argCount, Value* args) {
 
     int cap = 65536;
     char* buffer = ALLOCATE(char, cap);
-    int received = (int)recv((indk_socket_t)client->fd, buffer, cap - 1, 0);
+    int received;
+    bool batasWaktu;
+    if (client->tls != NULL) {
+        received = indkTlsBaca(client->tls, buffer, cap - 1);
+        batasWaktu = (received == -2);
+        if (received < 0) received = -1;
+    } else {
+        received = (int)recv((indk_socket_t)client->fd, buffer, cap - 1, 0);
+        batasWaktu = (received < 0 && soketBatasWaktuTerlampaui());
+    }
     if (received < 0) {
         FREE_ARRAY(char, buffer, cap);
         // Batas waktu BUKAN koneksi tertutup: mengembalikan "" akan membuat
         // baca_permintaan() menganggap permintaan separuh sudah lengkap.
-        if (soketBatasWaktuTerlampaui()) {
+        if (batasWaktu) {
             nativeRaise("soket_baca() melewati batas waktu menunggu data");
         } else {
             nativeRaise("soket_baca() gagal membaca dari soket");
@@ -1983,6 +2038,15 @@ Value nativeFnSoketTulis(int argCount, Value* args) {
         return NUMBER_VAL(0);
     }
     ObjString* text = AS_STRING(args[1]);
+    if (client->tls != NULL) {
+        int rc = indkTlsTulis(client->tls, text->chars, (size_t)text->length);
+        if (rc < 0) {
+            nativeRaise(rc == -2 ? "soket_tulis() melewati batas waktu mengirim data"
+                                 : "soket_tulis() gagal mengirim data");
+            return NUMBER_VAL(0);
+        }
+        return NUMBER_VAL((double)rc);
+    }
     int total = 0;
     while (total < text->length) {
         int sent = (int)send((indk_socket_t)client->fd,
@@ -2011,6 +2075,12 @@ Value nativeFnSoketTutup(int argCount, Value* args) {
         return KOSONG_VAL;
     }
     ObjSocket* sock = AS_SOCKET(args[0]);
+    // Sesi TLS dibereskan lebih dulu supaya close_notify terkirim selagi fd
+    // masih hidup; sesudah itu baru soketnya ditutup.
+    if (sock->tls != NULL) {
+        indkTlsTutup(sock->tls);
+        sock->tls = NULL;
+    }
     if (sock->isOpen) {
         INDK_CLOSESOCKET((indk_socket_t)sock->fd);
         sock->isOpen = false;

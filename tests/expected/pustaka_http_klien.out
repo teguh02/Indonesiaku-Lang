@@ -1,11 +1,12 @@
 == urai url ==
-["example.com", 80, "/"]
-["Example.com", 8080, "/a/b?x=1"]
-["h", 80, "/?q=1"]
-["127.0.0.1", 8137, "/todos"]
+["example.com", 80, "/", salah]
+["Example.com", 8080, "/a/b?x=1", salah]
+["h", 80, "/?q=1", salah]
+["127.0.0.1", 8137, "/todos", salah]
+["example.com", 443, "/", benar]
+["example.com", 8443, "/a", benar]
 == url yang ditolak ==
-GalatJaringan: HTTPS belum didukung (butuh TLS); pakai http://
-GalatJaringan: url harus diawali http://: "ftp://x"
+GalatJaringan: url harus diawali http:// atau https://: "ftp://x"
 GalatJaringan: url tanpa host: "http://"
 GalatJaringan: port tidak sah di url: "http://h:80x/"
 GalatJaringan: url harus teks, bukan angka

@@ -237,6 +237,7 @@ ObjSocket* newSocket(long long fd) {
     ObjSocket* sock = ALLOCATE_OBJ(ObjSocket, OBJ_SOCKET);
     sock->fd = fd;
     sock->isOpen = true;
+    sock->tls = NULL;   // polos sampai tls_mulai() dipanggil
     return sock;
 }
 
