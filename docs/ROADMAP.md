@@ -456,7 +456,14 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 1. [x] Buat docs/RENCANA_FITUR/database_multi_driver.md; tetapkan API, semantik transaksi, tipe nilai/NULL/BLOB, error, koneksi dan lifecycle GC. Jangan mengubah builtin db_* tanpa kebijakan kompatibilitas.
 2. [x] Audit src/db.c, src/object.c/h, src/native.c/h, dan examples/db_sqlite.idk. Lengkapi SQLite: dukungan data biner/BLOB masuk-keluar, busy timeout, pengujian transaksi dan penutupan handle idempoten (**WDB-01**).
    - Selesai 1.4.0: BLOB masuk-keluar sebagai daftar bulat 0..255 (konvensi `pustaka/bita.idk`), `db_batas_tunggu()`, transaksi diuji di `examples/db_sqlite.idk`, dan `db_tutup()` idempoten (diverifikasi). Diuji dengan ASan/UBSan dan `-DDEBUG_STRESS_GC`.
-3. [ ] Buat driver MySQL/MariaDB (**WDB-02**) menggunakan client library teruji dan prepared statements; dukung host/port, opsi TLS dengan verifikasi, timeout, penanganan koneksi terputus, query satu/banyak baris, perubahan baris dan ID terakhir sesuai dialek.
+3. [x] Buat driver MySQL/MariaDB (**WDB-02**) menggunakan client library teruji dan prepared statements; dukung host/port, opsi TLS dengan verifikasi, timeout, penanganan koneksi terputus, query satu/banyak baris, perubahan baris dan ID terakhir sesuai dialek.
+   - Selesai 1.6.0: `pustaka/my.idk` bicara protokol MySQL langsung tanpa libmysqlclient, sejalan dengan `pustaka/pg.idk`.
+   - Autentikasi `mysql_native_password` (bawaan MariaDB). `caching_sha2_password` (bawaan MySQL 8) **ditolak dengan pesan jelas**, bukan didukung setengah jalan.
+   - **Versi pertama memakai COM_QUERY + escaping manual dan itu dibuang setelah terbukti MERUSAK DATA**: dengan `sql_mode = NO_BACKSLASH_ESCAPES`, backslash bukan karakter escape, sehingga `x\` tersimpan menjadi `x\\` — korupsi diam-diam, bukan galat. Escaping yang benar mustahil tanpa melacak sql_mode server, dan mode itu bisa berubah kapan saja lewat `SET SESSION`. Diganti **prepared statement** (COM_STMT_PREPARE/EXECUTE), yang memindahkan pemisahan kode/data ke protokol.
+   - Diuji terhadap **MariaDB 11 sungguhan** (`tests/my_driver.sh`, 22 pemeriksaan): CRUD, INT kembali sebagai angka (format baris biner), NULL, Unicode 4-byte, transaksi, hitungan parameter dua arah, 300 baris (paket terpecah di soket), `NO_BACKSLASH_ESCAPES`, payload injeksi tersimpan utuh sebagai data, sandi salah ditolak dan tidak bocor.
+   - **MySQL 8 belum pernah dijalankan** di mesin ini: image `mysql:8` menolak start pada CPU tanpa `x86-64-v2` (*Fatal glibc error*). Jadi dukungan MySQL 8 **tidak diklaim** — bawaannya `caching_sha2_password` yang memang ditolak driver ini.
+   - Belum: TLS ke database, timeout per-query, `COM_STMT_RESET`/reuse statement (statement ditutup setelah dipakai).
+
 4. [x] Buat driver PostgreSQL (**WDB-03**) memakai libpq atau pustaka kompatibel yang terawat; pastikan parameter binding, hasil data bertipe, transaksi, timeout dan validasi TLS/hostname.
    - Selesai 1.6.0: `pustaka/pg.idk` bicara **wire protocol v3 langsung**, bukan libpq. Alasannya ada di `docs/RENCANA_FITUR/database_multi_driver.md`: `ldd indk` tetap hanya libc+libm, dan menaut libpq akan mengembalikan ketergantungan runtime per OS yang juga merusak build musl/Alpine yang baru ditutup 1.5.0.
    - **Prasyarat yang ternyata salah didiagnosis**: tabel status lama menyebut "terblokir pustaka klien eksternal". Penghalang sebenarnya `soket_tulis()` hanya menerima teks, dan `chr(255)` ter-enkode UTF-8 jadi dua byte — setiap bingkai biner rusak di kawat. Ditutup dengan `soket_tulis(soket, daftar_bita)` dan `soket_baca_bita(soket)`, memakai konvensi daftar bulat 0..255 yang sudah dipakai `db_*` untuk BLOB.
@@ -466,6 +473,11 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
    - **Server jujur tidak bisa membuktikan klien memeriksa apa pun**: mematikan cek nonce dan tanda tangan server tetap menghasilkan koneksi sukses melawan PostgreSQL asli. Karena itu ada `tests/bantu/pg_server_jahat.py` — server palsu yang menuntaskan jabat tangan tapi curang. Asli → ditolak, sabotase → diterima, jadi kedua cek terbukti yang menahan.
    - Belum: TLS ke database baru lewat `tls_mulai` (kode ada, **belum diuji** terhadap server ber-TLS); timeout per-query; tipe hasil masih teks (konversi di sisi pemanggil).
 5. [ ] Rancang API abstraksi bersama (**WDB-04**), misalnya db.koneksi(konfigurasi), koneksi.eksekusi(sql, parameter), koneksi.ambil_satu, koneksi.ambil_semua, koneksi.mulai/komit/batal/tutup. Nama final diputuskan lewat dokumen rencana; API SQLite lama tetap berjalan.
+   - **Dicoba di 1.6.0 lalu dibatalkan, bukan ditunda karena malas.** `pustaka/db.idk` sempat ditulis dan berfungsi untuk SQLite, tetapi tidak bisa menyatukan PostgreSQL dan MySQL sekaligus: `impor` membawa nama ke lingkup global berkas, jadi `sambung()` kedua driver bentrok dan tidak ada `impor X sebagai Y` di bahasa ini. Hasilnya lapisan yang melempar galat untuk salah satu backend — lebih buruk daripada tidak ada.
+   - Permukaan API kedua driver **sudah identik** (`eksekusi`/`ambil_satu`/`ambil_semua`/`mulai`/`komit`/`batal`/`tutup`), jadi yang kurang hanyalah namespace impor, bukan rancangan API.
+   - Prasyarat nyata: namespace impor per modul (atau `impor X sebagai Y`). Itu perubahan bahasa, bukan pekerjaan pustaka.
+   - Catatan rancangan: dialek SQL dan penanda parameter (`$1` vs `?`) **tidak boleh disembunyikan** — query akan terlihat portabel padahal tidak.
+
 6. [ ] Tambahkan lapisan migrasi skema dan query builder parameterized ringan (**WDB-05**); simpan versi migrasi dan catat aturan rollback. ORM penuh tidak wajib.
 7. [ ] Siapkan database uji MySQL, MariaDB, PostgreSQL dalam container CI yang terisolasi; jalankan suite bersama untuk koneksi, CRUD, transaksi, rollback, NULL, Unicode, BLOB, kegagalan TLS, kredensial salah, timeout, SQL injection dan cleanup.
 8. [ ] Perbarui docs/SPESIFIKASI.md bila kontrak bahasa berubah, website/panduan/07_PUSTAKA_STANDAR.md, examples/, CHANGELOG.md dan instalasi dependensi per OS.
@@ -946,7 +958,7 @@ kalkulator-indonesiaku/
 | Fase | Fokus | Status |
 |---|---|---|
 | 9 | LSP dan dukungan editor | ✅ selesai (v1.4.0) |
-| 10 | SQLite, MySQL/MariaDB, PostgreSQL | 🟨 sebagian — SQLite lengkap; **PostgreSQL jalan** lewat wire protocol v3 sendiri + SCRAM-SHA-256 (`pustaka/pg.idk`, diuji ke PG 16 sungguhan). MySQL/MariaDB belum; API abstraksi bersama (WDB-04) dan migrasi (WDB-05) ditunda sampai ada driver kedua |
+| 10 | SQLite, MySQL/MariaDB, PostgreSQL | 🟨 sebagian — SQLite lengkap; **PostgreSQL** (wire protocol v3 + SCRAM-SHA-256) dan **MySQL/MariaDB** (prepared statement) jalan, diuji ke PG 16 dan MariaDB 11 sungguhan. MySQL 8 tak terverifikasi (CPU tanpa x86-64-v2). WDB-04 terhalang namespace impor; WDB-05 belum |
 | 11 | HTTP/HTTPS dan backend server | 🟨 sebagian — langkah 1–6 dan 8 `[x]`; langkah 7 tinggal **race** saja (butuh worker/thread, Fase 20). CRUD di atas DB Fase 10 sudah terpenuhi lewat `examples/api_siswa_pg.idk` |
 | 12 | Server-Side Rendering / HTML template | ⬜ belum |
 | 13 | Session, keamanan, login dan otorisasi | ⬜ belum |

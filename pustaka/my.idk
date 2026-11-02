@@ -1,0 +1,722 @@
+# Driver MySQL/MariaDB untuk Indonesiaku.
+#
+# Bicara protokol MySQL langsung lewat soket, tanpa libmysqlclient. Alasan
+# sama dengan pustaka/pg.idk dan tercatat di
+# docs/RENCANA_FITUR/database_multi_driver.md: `ldd indk` tetap hanya libc
+# dan libm.
+#
+# Perbedaan yang penting dari PostgreSQL: MySQL memakai integer
+# LITTLE-endian, sedangkan PostgreSQL big-endian. Itu sebabnya _le16/_le32 di
+# sini bukan salinan _i16/_i32 milik pg.idk meski bentuknya mirip.
+#
+# Prasyarat soket bita ada di src/native.c (soket_tulis daftar bita +
+# soket_baca_bita).
+
+impor bita
+
+kelas GalatMy < GalatOS {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+# --- bingkai paket --------------------------------------------------------
+
+fungsi _le16(n) {
+    kembalikan [n % 256, (n // 256) % 256]
+}
+
+fungsi _le32(n) {
+    kembalikan [n % 256, (n // 256) % 256, (n // 65536) % 256, (n // 16777216) % 256]
+}
+
+fungsi _baca_le16(b, i) {
+    kembalikan b[i] + b[i + 1] * 256
+}
+
+fungsi _baca_le24(b, i) {
+    kembalikan b[i] + b[i + 1] * 256 + b[i + 2] * 65536
+}
+
+fungsi _baca_le32(b, i) {
+    kembalikan b[i] + b[i + 1] * 256 + b[i + 2] * 65536 + b[i + 3] * 16777216
+}
+
+fungsi _gabung(bagian) {
+    variabel keluar = daftar()
+    untuk bgn dalam bagian {
+        untuk x dalam bgn { tambah(keluar, x) }
+    }
+    kembalikan keluar
+}
+
+fungsi _xor(a, b) {
+    variabel keluar = daftar()
+    variabel i = 0
+    selagi i < panjang(a) {
+        tambah(keluar, a[i] ^ b[i])
+        i = i + 1
+    }
+    kembalikan keluar
+}
+
+# Integer panjang-variabel MySQL. 0xFB menandai NULL, bukan panjang: tanpa
+# membedakannya, kolom NULL terbaca sebagai string sepanjang 251 byte.
+fungsi _baca_lenenc(b, i) {
+    variabel c = b[i]
+    jika c < 251 { kembalikan [c, i + 1] }
+    jika c == 251 { kembalikan [kosong, i + 1] }
+    jika c == 252 { kembalikan [_baca_le16(b, i + 1), i + 3] }
+    jika c == 253 { kembalikan [_baca_le24(b, i + 1), i + 4] }
+    kembalikan [_baca_le32(b, i + 1), i + 9]
+}
+
+fungsi _lenenc(n) {
+    jika n < 251 { kembalikan [n] }
+    jika n < 65536 { kembalikan _gabung([[252], _le16(n)]) }
+    kembalikan _gabung([[253], [n % 256, (n // 256) % 256, (n // 65536) % 256]])
+}
+
+fungsi _teks_bita(t) {
+    kembalikan bita.ke_bita(t)
+}
+
+fungsi _potong(d, awal, akhir) {
+    variabel keluar = daftar()
+    variabel i = awal
+    selagi i < akhir {
+        tambah(keluar, d[i])
+        i = i + 1
+    }
+    kembalikan keluar
+}
+
+# --- koneksi --------------------------------------------------------------
+
+fungsi _ekor_d(d, i) {
+    variabel keluar = daftar()
+    variabel k = i
+    selagi k < panjang(d) {
+        tambah(keluar, d[k])
+        k = k + 1
+    }
+    kembalikan keluar
+}
+
+# --- autentikasi ----------------------------------------------------------
+
+# mysql_native_password:
+#   SHA1(sandi) XOR SHA1( tantangan + SHA1(SHA1(sandi)) )
+#
+# Sandi tidak pernah dikirim, dan tantangan membuat tangkapan paket tidak
+# bisa diputar ulang. caching_sha2_password (bawaan MySQL 8) TIDAK didukung
+# dan ditolak dengan pesan jelas -- jalur sandi polosnya mensyaratkan TLS,
+# dan mendukungnya setengah jalan lebih berbahaya daripada menolak.
+fungsi _sha1b(d) {
+    kembalikan bita.dari_heksa(sha1(d))
+}
+
+fungsi _native_password(sandi, tantangan) {
+    jika sandi == "" { kembalikan daftar() }
+    variabel tahap1 = _sha1b(_teks_bita(sandi))
+    variabel tahap2 = _sha1b(tahap1)
+    variabel sandi_acak = _sha1b(_gabung([tantangan, tahap2]))
+    kembalikan _xor(tahap1, sandi_acak)
+}
+
+fungsi _urai_salam(p) {
+    # Tata letak diverifikasi terhadap paket MariaDB 11 sungguhan, bukan dari
+    # ingatan: versi server ber-NUL, 4 byte id koneksi, 8 byte tantangan,
+    # 1 filler, kapabilitas bawah, charset, status, kapabilitas atas,
+    # panjang auth, 10 byte cadangan, lalu SISA TANTANGAN 12 byte + 1 NUL.
+    #
+    # Sisa tantangan selalu 12 byte meski panjang_auth bilang 21; memakai
+    # angka server apa adanya membuat pembacaan meleset satu byte dan
+    # autentikasi gagal tanpa pesan yang berguna.
+    variabel i = 1
+    selagi p[i] != 0 { i = i + 1 }
+    i = i + 1
+    i = i + 4
+    variabel tantangan = _potong(p, i, i + 8)
+    i = i + 8 + 1
+    i = i + 2
+    i = i + 1
+    i = i + 2
+    i = i + 2
+    i = i + 1
+    i = i + 10
+    untuk x dalam _potong(p, i, i + 12) { tambah(tantangan, x) }
+    i = i + 12 + 1
+    variabel metode = "mysql_native_password"
+    jika i < panjang(p) {
+        variabel akhir = i
+        selagi akhir < panjang(p) dan p[akhir] != 0 { akhir = akhir + 1 }
+        metode = bita.ke_teks(_potong(p, i, akhir))
+    }
+    kembalikan {"tantangan": _potong(tantangan, 0, 20), "metode": metode}
+}
+
+# --- sambung --------------------------------------------------------------
+
+fungsi sambung(konfigurasi) {
+    variabel host = "127.0.0.1"
+    jika "host" dalam konfigurasi { host = konfigurasi["host"] }
+    variabel port = 3306
+    jika "port" dalam konfigurasi { port = konfigurasi["port"] }
+    variabel pengguna = "root"
+    jika "pengguna" dalam konfigurasi { pengguna = konfigurasi["pengguna"] }
+    variabel sandi = ""
+    jika "sandi" dalam konfigurasi { sandi = konfigurasi["sandi"] }
+    variabel basisdata = ""
+    jika "basisdata" dalam konfigurasi { basisdata = konfigurasi["basisdata"] }
+
+    variabel s = soket_sambung(host, port)
+    soket_batas_waktu(s, 30)
+    variabel k = Koneksi(s)
+
+    variabel salam = _urai_salam(k._terima())
+
+    jika salam["metode"] != "mysql_native_password" {
+        soket_tutup(s)
+        naikkan GalatMy("metode autentikasi '" + salam["metode"] +
+                        "' tidak didukung; driver ini hanya mendukung " +
+                        "mysql_native_password")
+    }
+
+    # Dihitung dari flag bernama, bukan konstanta hasil hafalan:
+    # LONG_PASSWORD 1 | LONG_FLAG 4 | CONNECT_WITH_DB 8 | PROTOCOL_41 512
+    # | TRANSACTIONS 8192 | SECURE_CONNECTION 32768 | MULTI_RESULTS 131072
+    # | PLUGIN_AUTH 524288
+    variabel kap = 1 + 4 + 8 + 512 + 8192 + 32768 + 131072 + 524288
+    jika basisdata == "" { kap = kap - 8 }
+
+    variabel bukti = _native_password(sandi, salam["tantangan"])
+    variabel isi = _gabung([
+        _le32(kap),
+        _le32(16777215),
+        [45],
+        _nol(23),
+        _teks_bita(pengguna), [0],
+        [panjang(bukti)], bukti
+    ])
+    jika basisdata != "" {
+        isi = _gabung([isi, _teks_bita(basisdata), [0]])
+    }
+    isi = _gabung([isi, _teks_bita("mysql_native_password"), [0]])
+    k._kirim(isi)
+
+    variabel balas = k._terima()
+    jika balas[0] == 255 {
+        variabel kode = _baca_le16(balas, 1)
+        soket_tutup(s)
+        naikkan GalatMy("MySQL menolak koneksi [" + ke_teks(kode) + "]: " +
+                        bita.ke_teks(_potong(balas, 9, panjang(balas))))
+    }
+    # 0xFE di sini = server minta ganti metode auth (mis. caching_sha2).
+    jika balas[0] == 254 {
+        soket_tutup(s)
+        naikkan GalatMy("server meminta ganti metode autentikasi; " +
+                        "hanya mysql_native_password yang didukung")
+    }
+    kembalikan k
+}
+
+fungsi _nol(n) {
+    variabel keluar = daftar()
+    variabel i = 0
+    selagi i < n { tambah(keluar, 0); i = i + 1 }
+    kembalikan keluar
+}
+
+# --- query ----------------------------------------------------------------
+
+# Parameter dikirim lewat PREPARED STATEMENT (COM_STMT_PREPARE/EXECUTE),
+# bukan dirangkai ke teks query.
+#
+# Versi pertama driver ini memakai COM_QUERY dengan escaping manual. Itu
+# ditinggalkan setelah terbukti MERUSAK DATA: dengan sql_mode
+# NO_BACKSLASH_ESCAPES, backslash bukan karakter escape, sehingga "x\"
+# tersimpan sebagai "x\\". Escaping yang benar mustahil tanpa melacak
+# sql_mode server, dan mode itu bisa berubah kapan saja lewat SET SESSION.
+#
+# Prepared statement memindahkan pemisahan kode/data ke protokol, jadi
+# sql_mode tidak lagi relevan untuk keamanan maupun keutuhan data.
+
+# Tipe biner yang dikirim. Semua nilai non-NULL dikirim sebagai string
+# (MYSQL_TYPE_VAR_STRING = 253) dan dikonversi server sesuai kolom; ini
+# menghindari menebak lebar integer di sisi klien.
+fungsi _nilai_bita(nilai) {
+    variabel t = _teks_bita(ke_teks(nilai))
+    kembalikan _gabung([_lenenc(panjang(t)), t])
+}
+
+kelas Koneksi {
+    init(soket) {
+        diri.s = soket
+        diri.urut = 0
+        diri.sisa = daftar()
+        diri.tertutup = salah
+    }
+
+    _kirim(isi) {
+        variabel kepala = [panjang(isi) % 256, (panjang(isi) // 256) % 256,
+                           (panjang(isi) // 65536) % 256, diri.urut]
+        soket_tulis(diri.s, _gabung([kepala, isi]))
+        diri.urut = (diri.urut + 1) % 256
+    }
+
+    # Satu paket bisa terpecah di beberapa pembacaan soket, dan dua paket bisa
+    # tiba dalam satu pembacaan. Menganggap "satu baca = satu paket" adalah
+    # bug yang hanya muncul pada hasil besar.
+    _terima() {
+        selagi panjang(diri.sisa) < 4 { diri._isi() }
+        variabel n = _baca_le24(diri.sisa, 0)
+        diri.urut = (diri.sisa[3] + 1) % 256
+        selagi panjang(diri.sisa) < 4 + n { diri._isi() }
+        variabel isi = _potong(diri.sisa, 4, 4 + n)
+        diri.sisa = _ekor_d(diri.sisa, 4 + n)
+        kembalikan isi
+    }
+
+    _isi() {
+        variabel potongan = soket_baca_bita(diri.s)
+        jika panjang(potongan) == 0 {
+            naikkan GalatMy("koneksi MySQL ditutup server")
+        }
+        untuk x dalam potongan { tambah(diri.sisa, x) }
+    }
+
+    _periksa_hidup() {
+        jika diri.tertutup { naikkan GalatMy("koneksi MySQL sudah ditutup") }
+    }
+
+    _galat(p) {
+        variabel kode = _baca_le16(p, 1)
+        variabel i = 3
+        jika panjang(p) > 3 dan p[3] == 35 { i = 9 }
+        naikkan GalatMy("[" + ke_teks(kode) + "] " +
+                        bita.ke_teks(_potong(p, i, panjang(p))))
+    }
+
+    # Kolom lenenc-string; 0xFB berarti NULL dan harus dibedakan dari string
+    # kosong, kalau tidak kolom NULL terbaca sebagai "".
+    _baris(p, jumlah) {
+        variabel nilai = daftar()
+        variabel i = 0
+        variabel ke = 0
+        selagi ke < jumlah {
+            jika p[i] == 251 {
+                tambah(nilai, kosong)
+                i = i + 1
+            } selain {
+                variabel hasil = _baca_lenenc(p, i)
+                variabel n = hasil[0]
+                i = hasil[1]
+                tambah(nilai, bita.ke_teks(_potong(p, i, i + n)))
+                i = i + n
+            }
+            ke = ke + 1
+        }
+        kembalikan nilai
+    }
+
+    # Mengembalikan nama DAN tipe kolom. Tipe wajib untuk hasil prepared
+    # statement: di format biner, INT datang sebagai 4 byte mentah sedangkan
+    # VARCHAR sebagai lenenc-string, jadi tanpa tipe pembacaan meleset.
+    _nama_kolom(p) {
+        # catalog, schema, table, org_table, name, org_name -- enam
+        # lenenc-string, lalu panjang tetap, charset, panjang kolom, tipe.
+        variabel i = 0
+        variabel ke = 0
+        variabel nama = ""
+        selagi ke < 5 {
+            variabel hasil = _baca_lenenc(p, i)
+            i = hasil[1]
+            nama = bita.ke_teks(_potong(p, i, i + hasil[0]))
+            i = i + hasil[0]
+            ke = ke + 1
+        }
+        variabel org = _baca_lenenc(p, i)
+        i = org[1] + org[0]
+        i = i + 1 + 2 + 4
+        kembalikan {"nama": nama, "tipe": p[i]}
+    }
+
+    _baca_hasil(p) {
+        jika p[0] == 255 { diri._galat(p) }
+        jika p[0] == 0 atau p[0] == 254 {
+            kembalikan {"baris": daftar(), "terpengaruh": _baca_lenenc(p, 1)[0]}
+        }
+
+        variabel jumlah = _baca_lenenc(p, 0)[0]
+        variabel kolom = daftar()
+        variabel ke = 0
+        selagi ke < jumlah {
+            tambah(kolom, diri._nama_kolom(diri._terima()))
+            ke = ke + 1
+        }
+        # Paket EOF penutup definisi kolom. Tanpa CLIENT_DEPRECATE_EOF ia
+        # SELALU ada; melewatkannya membuat EOF ini terbaca sebagai akhir
+        # baris, dan SELECT selalu mengembalikan nol baris tanpa galat.
+        diri._terima()
+        kembalikan {"kolom": kolom, "jumlah": jumlah}
+    }
+
+    # Baris hasil prepared statement memakai format BINER, bukan teks: ada
+    # bitmap NULL di depan, dan offsetnya +2 karena bit pertama dicadangkan.
+    # Baris hasil prepared statement memakai format BINER, bukan teks: ada
+    # bitmap NULL di depan, dan offsetnya +2 karena bit pertama dicadangkan.
+    _baris_biner(p, kolom) {
+        variabel jumlah = panjang(kolom)
+        variabel awal_bitmap = 1
+        variabel panjang_bitmap = (jumlah + 7 + 2) // 8
+        variabel i = awal_bitmap + panjang_bitmap
+        variabel satu = kamus()
+        variabel ke = 0
+        selagi ke < jumlah {
+            variabel bit = ke + 2
+            variabel bita_ke = p[awal_bitmap + bit // 8]
+            variabel null_ = (bita_ke // (2 ** (bit % 8))) % 2
+            variabel nama = kolom[ke]["nama"]
+            variabel t = kolom[ke]["tipe"]
+            jika null_ == 1 {
+                satu[nama] = kosong
+            } selain {
+                # Tipe lebar-tetap datang sebagai byte mentah little-endian;
+                # sisanya lenenc-string. Angka dikembalikan sebagai angka,
+                # bukan teks -- pemanggil tidak perlu menebak.
+                jika t == 1 {
+                    satu[nama] = p[i]
+                    i = i + 1
+                } selain {
+                    jika t == 2 {
+                        satu[nama] = _baca_le16(p, i)
+                        i = i + 2
+                    } selain {
+                        jika t == 3 atau t == 9 {
+                            satu[nama] = _baca_le32(p, i)
+                            i = i + 4
+                        } selain {
+                            jika t == 8 {
+                                satu[nama] = _baca_le32(p, i) + _baca_le32(p, i + 4) * 4294967296
+                                i = i + 8
+                            } selain {
+                                variabel h = _baca_lenenc(p, i)
+                                i = h[1]
+                                satu[nama] = bita.ke_teks(_potong(p, i, i + h[0]))
+                                i = i + h[0]
+                            }
+                        }
+                    }
+                }
+            }
+            ke = ke + 1
+        }
+        kembalikan satu
+    }
+
+    kueri(sql, parameter) {
+        diri._periksa_hidup()
+        jika parameter == kosong { parameter = daftar() }
+
+        diri.urut = 0
+        diri._kirim(_gabung([[22], _teks_bita(sql)]))
+        variabel siap = diri._terima()
+        jika siap[0] == 255 { diri._galat(siap) }
+
+        variabel id_stmt = _potong(siap, 1, 5)
+        variabel n_kolom = _baca_le16(siap, 5)
+        variabel n_param = _baca_le16(siap, 7)
+
+        jika n_param != panjang(parameter) {
+            # Habiskan paket definisi yang menyusul supaya koneksi tetap
+            # sinkron, lalu baru naikkan galat.
+            variabel sisa = n_param + n_kolom
+            variabel z = 0
+            selagi z < sisa { diri._terima(); z = z + 1 }
+            jika n_param > 0 { diri._terima() }
+            jika n_kolom > 0 { diri._terima() }
+            naikkan GalatMy("query butuh " + ke_teks(n_param) +
+                            " parameter, diberikan " + ke_teks(panjang(parameter)))
+        }
+
+        variabel z = 0
+        selagi z < n_param { diri._terima(); z = z + 1 }
+        jika n_param > 0 { diri._terima() }
+        z = 0
+        selagi z < n_kolom { diri._terima(); z = z + 1 }
+        jika n_kolom > 0 { diri._terima() }
+
+        # Bitmap NULL + tipe + nilai.
+        variabel bitmap = _nol((panjang(parameter) + 7) // 8)
+        variabel tipe = daftar()
+        variabel nilai = daftar()
+        variabel ke = 0
+        untuk pv dalam parameter {
+            jika pv == kosong {
+                bitmap[ke // 8] = bitmap[ke // 8] + (2 ** (ke % 8))
+                tambah(tipe, 6)
+                tambah(tipe, 0)
+            } selain {
+                tambah(tipe, 253)
+                tambah(tipe, 0)
+                untuk x dalam _nilai_bita(pv) { tambah(nilai, x) }
+            }
+            ke = ke + 1
+        }
+
+        diri.urut = 0
+        diri._kirim(_gabung([[23], id_stmt, [0], _le32(1), bitmap, [1],
+                             tipe, nilai]))
+
+        variabel p = diri._terima()
+        jika p[0] == 255 { diri._galat(p) }
+        jika p[0] == 0 atau p[0] == 254 {
+            variabel terp = _baca_lenenc(p, 1)[0]
+            diri._tutup_stmt(id_stmt)
+            kembalikan {"baris": daftar(), "terpengaruh": terp}
+        }
+
+        variabel meta = diri._baca_hasil(p)
+        variabel baris = daftar()
+        variabel jalan = benar
+        selagi jalan {
+            variabel r = diri._terima()
+            jika r[0] == 255 { diri._galat(r) }
+            jika r[0] == 254 dan panjang(r) < 9 {
+                jalan = salah
+            } selain {
+                tambah(baris, diri._baris_biner(r, meta["kolom"]))
+            }
+        }
+        diri._tutup_stmt(id_stmt)
+        kembalikan {"baris": baris, "terpengaruh": 0}
+    }
+
+    # Statement ditutup setelah dipakai. Tanpa ini server menumpuk statement
+    # sampai max_prepared_stmt_count dan menolak query baru.
+    _tutup_stmt(id_stmt) {
+        diri.urut = 0
+        diri._kirim(_gabung([[25], id_stmt]))
+    }
+
+    eksekusi(sql, parameter) {
+        kembalikan diri.kueri(sql, parameter)["terpengaruh"]
+    }
+
+    ambil_semua(sql, parameter) {
+        kembalikan diri.kueri(sql, parameter)["baris"]
+    }
+
+    ambil_satu(sql, parameter) {
+        variabel b = diri.ambil_semua(sql, parameter)
+        jika panjang(b) == 0 { kembalikan kosong }
+        kembalikan b[0]
+    }
+
+    mulai() { diri.eksekusi("START TRANSACTION", kosong) }
+    komit() { diri.eksekusi("COMMIT", kosong) }
+    batal() { diri.eksekusi("ROLLBACK", kosong) }
+
+    tutup() {
+        jika diri.tertutup == salah {
+            diri.tertutup = benar
+            soket_tutup(diri.s)
+        }
+    }
+}
+fungsi _ekor_d(d, i) {
+    variabel keluar = daftar()
+    variabel k = i
+    selagi k < panjang(d) {
+        tambah(keluar, d[k])
+        k = k + 1
+    }
+    kembalikan keluar
+}
+
+# --- autentikasi ----------------------------------------------------------
+
+# mysql_native_password:
+#   SHA1(sandi) XOR SHA1( tantangan + SHA1(SHA1(sandi)) )
+#
+# Sandi tidak pernah dikirim, dan tantangan membuat tangkapan paket tidak
+# bisa diputar ulang. caching_sha2_password (bawaan MySQL 8) TIDAK didukung
+# dan ditolak dengan pesan jelas -- jalur sandi polosnya mensyaratkan TLS,
+# dan mendukungnya setengah jalan lebih berbahaya daripada menolak.
+fungsi _sha1b(d) {
+    kembalikan bita.dari_heksa(sha1(d))
+}
+
+fungsi _native_password(sandi, tantangan) {
+    jika sandi == "" { kembalikan daftar() }
+    variabel tahap1 = _sha1b(_teks_bita(sandi))
+    variabel tahap2 = _sha1b(tahap1)
+    variabel sandi_acak = _sha1b(_gabung([tantangan, tahap2]))
+    kembalikan _xor(tahap1, sandi_acak)
+}
+
+fungsi _urai_salam(p) {
+    # Tata letak diverifikasi terhadap paket MariaDB 11 sungguhan, bukan dari
+    # ingatan: versi server ber-NUL, 4 byte id koneksi, 8 byte tantangan,
+    # 1 filler, kapabilitas bawah, charset, status, kapabilitas atas,
+    # panjang auth, 10 byte cadangan, lalu SISA TANTANGAN 12 byte + 1 NUL.
+    #
+    # Sisa tantangan selalu 12 byte meski panjang_auth bilang 21; memakai
+    # angka server apa adanya membuat pembacaan meleset satu byte dan
+    # autentikasi gagal tanpa pesan yang berguna.
+    variabel i = 1
+    selagi p[i] != 0 { i = i + 1 }
+    i = i + 1
+    i = i + 4
+    variabel tantangan = _potong(p, i, i + 8)
+    i = i + 8 + 1
+    i = i + 2
+    i = i + 1
+    i = i + 2
+    i = i + 2
+    i = i + 1
+    i = i + 10
+    untuk x dalam _potong(p, i, i + 12) { tambah(tantangan, x) }
+    i = i + 12 + 1
+    variabel metode = "mysql_native_password"
+    jika i < panjang(p) {
+        variabel akhir = i
+        selagi akhir < panjang(p) dan p[akhir] != 0 { akhir = akhir + 1 }
+        metode = bita.ke_teks(_potong(p, i, akhir))
+    }
+    kembalikan {"tantangan": _potong(tantangan, 0, 20), "metode": metode}
+}
+
+# --- sambung --------------------------------------------------------------
+
+fungsi sambung(konfigurasi) {
+    variabel host = "127.0.0.1"
+    jika "host" dalam konfigurasi { host = konfigurasi["host"] }
+    variabel port = 3306
+    jika "port" dalam konfigurasi { port = konfigurasi["port"] }
+    variabel pengguna = "root"
+    jika "pengguna" dalam konfigurasi { pengguna = konfigurasi["pengguna"] }
+    variabel sandi = ""
+    jika "sandi" dalam konfigurasi { sandi = konfigurasi["sandi"] }
+    variabel basisdata = ""
+    jika "basisdata" dalam konfigurasi { basisdata = konfigurasi["basisdata"] }
+
+    variabel s = soket_sambung(host, port)
+    soket_batas_waktu(s, 30)
+    variabel k = Koneksi(s)
+
+    variabel salam = _urai_salam(k._terima())
+
+    jika salam["metode"] != "mysql_native_password" {
+        soket_tutup(s)
+        naikkan GalatMy("metode autentikasi '" + salam["metode"] +
+                        "' tidak didukung; driver ini hanya mendukung " +
+                        "mysql_native_password")
+    }
+
+    # Dihitung dari flag bernama, bukan konstanta hasil hafalan:
+    # LONG_PASSWORD 1 | LONG_FLAG 4 | CONNECT_WITH_DB 8 | PROTOCOL_41 512
+    # | TRANSACTIONS 8192 | SECURE_CONNECTION 32768 | MULTI_RESULTS 131072
+    # | PLUGIN_AUTH 524288
+    variabel kap = 1 + 4 + 8 + 512 + 8192 + 32768 + 131072 + 524288
+    jika basisdata == "" { kap = kap - 8 }
+
+    variabel bukti = _native_password(sandi, salam["tantangan"])
+    variabel isi = _gabung([
+        _le32(kap),
+        _le32(16777215),
+        [45],
+        _nol(23),
+        _teks_bita(pengguna), [0],
+        [panjang(bukti)], bukti
+    ])
+    jika basisdata != "" {
+        isi = _gabung([isi, _teks_bita(basisdata), [0]])
+    }
+    isi = _gabung([isi, _teks_bita("mysql_native_password"), [0]])
+    k._kirim(isi)
+
+    variabel balas = k._terima()
+    jika balas[0] == 255 {
+        variabel kode = _baca_le16(balas, 1)
+        soket_tutup(s)
+        naikkan GalatMy("MySQL menolak koneksi [" + ke_teks(kode) + "]: " +
+                        bita.ke_teks(_potong(balas, 9, panjang(balas))))
+    }
+    # 0xFE di sini = server minta ganti metode auth (mis. caching_sha2).
+    jika balas[0] == 254 {
+        soket_tutup(s)
+        naikkan GalatMy("server meminta ganti metode autentikasi; " +
+                        "hanya mysql_native_password yang didukung")
+    }
+    kembalikan k
+}
+
+fungsi _nol(n) {
+    variabel keluar = daftar()
+    variabel i = 0
+    selagi i < n { tambah(keluar, 0); i = i + 1 }
+    kembalikan keluar
+}
+
+# --- query ----------------------------------------------------------------
+
+# Nilai di-escape lalu dimasukkan ke teks query (COM_QUERY). Ini BUKAN
+# prepared statement seperti pg.idk, dan bedanya nyata: keamanan di sini
+# bergantung pada _kutip() di bawah, bukan pada pemisahan kode/data di
+# protokol. Prepared statement (COM_STMT_PREPARE) adalah peningkatan yang
+# sudah dicatat di docs/RENCANA_FITUR/database_multi_driver.md.
+# ponytail: COM_QUERY + escaping; naikkan ke COM_STMT_PREPARE bila dipakai
+# untuk data tak tepercaya dalam volume besar.
+fungsi _kutip(nilai) {
+    jika nilai == kosong { kembalikan "NULL" }
+    jika jenis(nilai) == "logika" {
+        jika nilai { kembalikan "1" }
+        kembalikan "0"
+    }
+    jika jenis(nilai) == "angka" { kembalikan ke_teks(nilai) }
+
+    variabel potongan = daftar()
+    tambah(potongan, "'")
+    untuk c dalam ke_teks(nilai) {
+        jika c == "'" {
+            tambah(potongan, "''")
+        } selain {
+            jika c == "\\" {
+                tambah(potongan, "\\\\")
+            } selain {
+                jika c == chr(0) {
+                    tambah(potongan, "\\0")
+                } selain {
+                    tambah(potongan, c)
+                }
+            }
+        }
+    }
+    tambah(potongan, "'")
+    kembalikan teks_gabung(potongan, "")
+}
+
+fungsi _rakit(sql, parameter) {
+    jika parameter == kosong { kembalikan sql }
+    variabel potongan = daftar()
+    variabel ke = 0
+    untuk c dalam sql {
+        jika c == "?" {
+            jika ke >= panjang(parameter) {
+                naikkan GalatMy("parameter kurang untuk query")
+            }
+            tambah(potongan, _kutip(parameter[ke]))
+            ke = ke + 1
+        } selain {
+            tambah(potongan, c)
+        }
+    }
+    jika ke != panjang(parameter) {
+        naikkan GalatMy("parameter berlebih: " + ke_teks(panjang(parameter)) +
+                        " diberikan, " + ke_teks(ke) + " dipakai")
+    }
+    kembalikan teks_gabung(potongan, "")
+}
+
