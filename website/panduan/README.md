@@ -64,6 +64,16 @@ Daftar lengkap fungsi bawaan dan pustaka standar.
 - Pustaka `.idk`: `teks`, `daftar`, `matematika`, `kamus`, `json`, `http`
 - Signature & deskripsi tiap fungsi
 
+### 8. [Deployment](08_DEPLOYMENT.md)
+Menaruh server Indonesiaku di internet tanpa membuat lubang.
+- Batas yang harus disadari: satu permintaan pada satu waktu
+- Risiko membuka port, termasuk Docker yang menembus `ufw`
+- Dockerfile dua tahap, pengguna non-root, mengikat `0.0.0.0` di container
+- Compose dengan isolasi proses dan batas resource
+- Reverse proxy: batas laju, batas ukuran, timeout
+- TLS dan pembaruan sertifikat
+- Daftar periksa sebelum publik
+
 ---
 
 ## 🚀 Memulai Cepat
@@ -113,6 +123,7 @@ cetak("Hasil penjumlahan:", jumlah)
 ## 📚 Dokumentasi Tambahan
 
 - **[07_PUSTAKA_STANDAR.md](07_PUSTAKA_STANDAR.md)** - Referensi fungsi bawaan & pustaka
+- **[08_DEPLOYMENT.md](08_DEPLOYMENT.md)** - Docker, reverse proxy, TLS, isolasi
 - **[CHANGELOG.md](../CHANGELOG.md)** - Riwayat perubahan tiap versi
 - **[QUICKSTART.md](../QUICKSTART.md)** - Panduan cepat memulai
 - **[examples/](../examples/)** - 50+ contoh program siap jalan

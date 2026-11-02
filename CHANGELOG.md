@@ -17,6 +17,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `ETag` lemah dengan `If-None-Match` dijawab **304**. (Fase 11 langkah 5)
 - **`panjang_byte(teks)`** — panjang teks dalam byte, pelengkap `panjang()`
   yang menghitung karakter.
+- **Bab panduan `08_DEPLOYMENT.md`** — Docker, reverse proxy, TLS, isolasi
+  proses, batas resource, dan risiko membuka port (termasuk `docker run -p`
+  yang menembus `ufw`). Konfigurasinya ada di `docker/aplikasi/` dan
+  dijalankan sungguhan, bukan ditulis dari ingatan. (Fase 11 langkah 8)
+- **Argumen alamat opsional `soket_dengar(port, alamat)`** dan parameter
+  kelima `app.jalankan(..., alamat)`. Bawaannya tetap `"127.0.0.1"`; hanya
+  `"0.0.0.0"` yang diterima sebagai alternatif.
+- **Job CI `test-musl`** — membangun dan menjalankan seluruh suite di Alpine.
 - **Contoh `examples/api_siswa.idk`** — CRUD REST API di atas SQLite yang
   menggabungkan `web.Aplikasi`, `app.jalankan()`, builtin `db_*`, dan
   `pustaka/json.idk`. Menunjukkan dua hal yang mudah salah: memeriksa
@@ -37,6 +45,16 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **`indk` gagal dibangun di musl/Alpine.** `struct timeval` dan
+  `suseconds_t` yang dipakai `soket_batas_waktu()` berasal dari
+  `<sys/time.h>`; glibc menariknya diam-diam lewat header lain, musl tidak.
+  Akibatnya `docker/images/Dockerfile` ikut gagal di-build. Seluruh CI tetap
+  hijau karena tidak ada satu pun job yang memakai musl -- sekarang ada.
+- **Server tidak bisa dipakai di dalam container.** `soket_dengar()` selalu
+  mengikat `127.0.0.1`, yang di dalam container hanya bisa dihubungi dari
+  dalam container itu sendiri; reverse proxy mendapat `Connection refused`
+  padahal server hidup dan mencatat "siap". Bawaan loopback dipertahankan
+  (itu default aman yang disengaja), alamat kini bisa dipilih.
 - **Pesan galat penangan menempel ke baris log berikutnya.** `tulis_galat()`
   tidak menambah baris baru sendiri (sesuai dokumentasinya), tetapi
   `pustaka/web.idk` lupa menambahkannya, sehingga keluaran stderr menjadi
