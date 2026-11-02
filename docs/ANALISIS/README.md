@@ -14,6 +14,7 @@ folder ini berisi alasan dan rinciannya.
 | [`05_OPEN_SOURCE.md`](05_OPEN_SOURCE.md) | Tata kelola, keamanan rantai pasok, proses RFC, pendidikan sebagai pembeda | mengelola proyek & komunitas |
 | [`06_KATALOG_TIPE_BAWAAN.md`](06_KATALOG_TIPE_BAWAAN.md) | Setiap metode `str`/`list`/`dict`/`set`/`tuple`/angka, ±65 kelas pengecualian, ±80 metode ajaib → nama Indonesia | mengimplementasikan metode/kelas bawaan |
 | [`07_KATALOG_PUSTAKA_STANDAR.md`](07_KATALOG_PUSTAKA_STANDAR.md) | ±435 fungsi/kelas dari modul stdlib Python (`math`, `random`, `os`, `collections`, `re`, `datetime`, `turtle`, …) → modul Indonesia | menulis pustaka standar |
+| [`08_KEPUTUSAN_TLS.md`](08_KEPUTUSAN_TLS.md) | Perbandingan terukur OpenSSL vs mbedTLS untuk HTTPS (ukuran biner, kemungkinan vendoring, bukti verifikasi sertifikat), rekomendasi + yang dikorbankan | memutuskan Fase 11 langkah 2 (HTTPS) |
 
 ## Kesimpulan utama
 
