@@ -1,0 +1,2 @@
+# Regresi T-U9: komprehensi bersarang belum didukung.
+cetak([x untuk x dalam [1] untuk y dalam [2]])
