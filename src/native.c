@@ -1012,6 +1012,34 @@ Value nativeFnJenis(int argCount, Value* args) {
     return OBJ_VAL(copyString("tidak diketahui", 15));
 }
 
+char* readLineAlloc(FILE* in, size_t* length) {
+    size_t capacity = 256;
+    size_t count = 0;
+    char* line = (char*)malloc(capacity);
+    if (line == NULL) return NULL;
+    int c;
+    while ((c = fgetc(in)) != EOF) {
+        if (count + 1 == capacity) {
+            char* grown = (char*)realloc(line, capacity * 2);
+            if (grown == NULL) {
+                free(line);
+                return NULL;
+            }
+            line = grown;
+            capacity *= 2;
+        }
+        line[count++] = (char)c;
+        if (c == '\n') break;
+    }
+    if (count == 0) {
+        free(line);
+        return NULL;
+    }
+    line[count] = '\0';
+    *length = count;
+    return line;
+}
+
 Value nativeFnInput(int argCount, Value* args) {
     if (argCount > 1) {
         nativeRaise("input() menerima maksimal 1 argumen");
@@ -1029,20 +1057,19 @@ Value nativeFnInput(int argCount, Value* args) {
         fflush(stdout);
     }
 
-    // Read input
-    char buffer[1024];
-    if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
-        return KOSONG_VAL;
-    }
+    size_t len;
+    char* buffer = readLineAlloc(stdin, &len);
+    if (buffer == NULL) return KOSONG_VAL;
 
     // Remove newline
-    size_t len = strlen(buffer);
     if (len > 0 && buffer[len - 1] == '\n') {
         buffer[len - 1] = '\0';
         len--;
     }
 
-    return OBJ_VAL(copyString(buffer, len));
+    Value result = OBJ_VAL(copyString(buffer, (int)len));
+    free(buffer);
+    return result;
 }
 
 Value nativeFnHenti(int argCount, Value* args) {

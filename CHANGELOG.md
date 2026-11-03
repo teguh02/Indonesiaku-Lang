@@ -29,6 +29,11 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **`input()` dan REPL membaca baris dengan panjang berapa pun** (T-U10).
+  Di 1.4.0 keduanya memotong baris pada 1023 bita, dan sisanya muncul pada
+  pembacaan berikutnya. Buffer blok REPL juga diam-diam membuang baris di
+  atas 8192 bita. Regresi: `tests/test_baris_panjang.sh`.
+
 - ⚠️ **Variabel `untuk` mengikuti lingkup Python** (T-U4, keputusan K21).
   Dulu ia menjadi lokal blok baru: `k = 99; untuk k dalam rentang(3) { }`
   menyisakan `k` = 99 (hasil salah tanpa galat), dan nama itu tidak

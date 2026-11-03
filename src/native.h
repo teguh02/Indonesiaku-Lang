@@ -1,6 +1,8 @@
 #ifndef indk_native_h
 #define indk_native_h
 
+#include <stdio.h>
+
 #include "common.h"
 #include "value.h"
 #include "object.h"
@@ -124,6 +126,12 @@ Value nativeFnJenis(int argCount, Value* args);
 
 // input(prompt) - Membaca input dari pengguna
 Value nativeFnInput(int argCount, Value* args);
+
+// One line from `in` of any length, malloc'd, the newline kept, NUL bytes
+// included (*length counts them). NULL at end of input with nothing read.
+// Shared by input() and the REPL, which both used a 1024-byte fgets and
+// split longer lines in two (T-U10).
+char* readLineAlloc(FILE* in, size_t* length);
 
 // henti(sek) - Menunda eksekusi dalam detik
 Value nativeFnHenti(int argCount, Value* args);
