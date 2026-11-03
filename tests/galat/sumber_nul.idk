@@ -1,0 +1,3 @@
+# Regresi T-U11: sumber berisi bita NUL ditolak, bukan dipotong diam-diam.
+impor "tests/bantu/sumber_nul.dat"
+cetak("tidak boleh tercetak")

@@ -1223,7 +1223,10 @@ static void defineMethod(ObjString* name) {
 }
 
 // Read an entire file into a NUL-terminated heap buffer, or NULL on failure.
+static bool moduleSourceHasNul = false;   // why the last read failed
+
 static char* readModuleSource(const char* path) {
+    moduleSourceHasNul = false;
     FILE* file = sistemBukaBerkas(path, "rb");
     if (file == NULL) return NULL;
 
@@ -1236,11 +1239,24 @@ static char* readModuleSource(const char* path) {
     if (buffer == NULL) { fclose(file); return NULL; }
 
     size_t read = fread(buffer, sizeof(char), (size_t)size, file);
+    fclose(file);
+    moduleSourceHasNul = sourceHasNul(buffer, read);
+    if (moduleSourceHasNul) {
+        free(buffer);
+        return NULL;
+    }
     buffer[read] = '\0';
     read = stripUtf8Bom(buffer, read);
     normalizeNewlines(buffer, read);
-    fclose(file);
     return buffer;
+}
+
+// readModuleSource() returned NULL because of a NUL byte? Then report that
+// and return true; otherwise the caller reports its own "cannot read".
+static bool reportNulModule(const char* path) {
+    if (!moduleSourceHasNul) return false;
+    runtimeError("Modul '%s' berisi bita NUL; kode sumber tidak boleh memuatnya.", path);
+    return true;
 }
 
 // Compile and execute another .idk file in the current global namespace.
@@ -1437,7 +1453,7 @@ static bool loadModule(ObjString* name, Value* out) {
     char* source = readModuleSource(resolved);
     if (source == NULL) {
         pop();
-        runtimeError("Tidak dapat membaca modul '%s'.", resolved);
+        if (!reportNulModule(resolved)) runtimeError("Tidak dapat membaca modul '%s'.", resolved);
         return false;
     }
 
@@ -1523,7 +1539,7 @@ static bool importModule(ObjString* path, ObjModule* into) {
 
     char* source = readModuleSource(file);
     if (source == NULL) {
-        runtimeError("Tidak dapat mengimpor file '%s'.", path->chars);
+        if (!reportNulModule(path->chars)) runtimeError("Tidak dapat mengimpor file '%s'.", path->chars);
         return false;
     }
 

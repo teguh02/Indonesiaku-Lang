@@ -49,6 +49,17 @@ for src in examples/*.idk examples/*/*.idk pustaka/*.idk; do
 done
 echo "  bytecode identik: $((bc_total-bc_fail))/$bc_total"
 
+# T-U11: berkas dengan bita NUL dulu dipotong di NUL oleh --tulis (data
+# hilang, exit 0). Kini ditolak (exit 65) dan berkas tidak disentuh.
+printf 'cetak(1)\0cetak(2)\ncetak(3)\n' > "$tmp.nul.idk"
+cp "$tmp.nul.idk" "$tmp.nul.asli"
+./indk rapikan --tulis "$tmp.nul.idk" >/dev/null 2>&1; rc=$?
+if [ "$rc" -ne 65 ] || ! cmp -s "$tmp.nul.idk" "$tmp.nul.asli"; then
+    fail=$((fail+1)); echo "GAGAL (NUL): rapikan --tulis exit $rc atau berkas berubah"
+else
+    pass=$((pass+1))
+fi
+
 rm -f "$tmp".*
 echo "FORMAT: $pass/$((pass+fail)) lulus"
 [ "$fail" -eq 0 ] && [ "$bc_fail" -eq 0 ]

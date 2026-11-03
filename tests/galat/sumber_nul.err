@@ -1,0 +1,4 @@
+Modul 'tests/bantu/sumber_nul.dat' berisi bita NUL; kode sumber tidak boleh memuatnya.
+[baris 2, kolom 7] dalam skrip
+    impor "tests/bantu/sumber_nul.dat"
+          ^

@@ -29,6 +29,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Sumber berisi bita NUL ditolak** (T-U11). Dulu sumber berakhir di NUL
+  pertama: `indk rapikan --tulis` memotong berkasnya (data hilang, exit 0),
+  dan menjalankannya diam-diam mengabaikan kode setelah NUL. Kini berkas
+  seperti itu ditolak dengan exit 65 tanpa ditulis, dan modul seperti itu
+  menaikkan galat yang bisa ditangkap. Regresi: `tests/galat/sumber_nul.idk`,
+  `tests/test_format.sh`.
+
 - **`input()` dan REPL membaca baris dengan panjang berapa pun** (T-U10).
   Di 1.4.0 keduanya memotong baris pada 1023 bita, dan sisanya muncul pada
   pembacaan berikutnya. Buffer blok REPL juga diam-diam membuang baris di
