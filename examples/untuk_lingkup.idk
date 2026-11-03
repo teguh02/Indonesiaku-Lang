@@ -1,0 +1,42 @@
+# Regresi T-U4 / K21: variabel 'untuk' mengikuti lingkup Python.
+# Ia di-assign seperti 'x = elemen', jadi menimpa nama yang ada dan tetap
+# bernilai elemen terakhir setelah loop. Variabel comprehension tetap privat.
+k = 99
+untuk k dalam rentang(3) { }
+cetak(k)
+fungsi f() {
+    j = 7
+    untuk j dalam rentang(3) { }
+    kembalikan j
+}
+cetak(f())
+untuk q dalam rentang(3) { }
+cetak(q)
+x = "global"
+fungsi g() {
+    cetak([x untuk x dalam [1, 2]], x)
+    untuk y dalam [1] { }
+    kembalikan y
+}
+cetak(g(), x)
+fungsi h() {
+    global x
+    untuk x dalam ["dari h"] { }
+}
+h()
+cetak(x)
+fungsi luar() {
+    z = 0
+    fungsi dalam_f() {
+        nonlokal z
+        untuk z dalam [5, 6] { }
+    }
+    dalam_f()
+    kembalikan z
+}
+cetak(luar())
+fungsi kosongan() {
+    untuk w dalam [] { }
+    kembalikan w
+}
+coba { cetak(kosongan()) } kecuali e { cetak("galat:", e) }

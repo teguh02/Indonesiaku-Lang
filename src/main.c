@@ -97,7 +97,7 @@ static void repl() {
 }
 
 static char* readFile(const char* path) {
-    FILE* file = fopen(path, "rb");
+    FILE* file = sistemBukaBerkas(path, "rb");
     if (file == NULL) {
         fprintf(stderr, "Tidak dapat membuka file \"%s\".\n", path);
         exit(74);
@@ -136,6 +136,7 @@ static char* readFile(const char* path) {
     }
 
     buffer[bytesRead] = '\0';
+    bytesRead = stripUtf8Bom(buffer, bytesRead);
     normalizeNewlines(buffer, bytesRead);
 
     fclose(file);
@@ -201,7 +202,7 @@ static int formatFile(const char* path, bool write, bool checkOnly) {
         }
     } else if (write) {
         if (strcmp(source, formatted) != 0) {
-            FILE* f = fopen(path, "wb");
+            FILE* f = sistemBukaBerkas(path, "wb");
             if (f == NULL) {
                 fprintf(stderr, "Tidak dapat menulis \"%s\".\n", path);
                 code = 74;
@@ -249,6 +250,7 @@ static int runFile(const char* path) {
 }
 
 int main(int argc, const char* argv[]) {
+    sistemSiapkanProses(&argc, &argv);   // Windows: UTF-8 argv + console
     sistemAturArgv0(argv[0]);
 
     // `indk --sandbox skrip.idk ...`: refuse environment, directory listing

@@ -1,0 +1,6 @@
+﻿# Berkas ini diawali BOM UTF-8 (EF BB BF), seperti yang ditulis Notepad
+# lama atau "UTF-8 with BOM" di VS Code. Python menerimanya; Indonesiaku juga.
+# Jangan simpan ulang tanpa BOM: .gitattributes menjaganya tetap utuh.
+
+cetak("bom dilewati")
+cetak(panjang("☕"))

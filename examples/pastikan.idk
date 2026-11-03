@@ -66,3 +66,10 @@ coba {
 } akhirnya {
     cetak("akhirnya tetap jalan")
 }
+
+# Kurung tanpa koma hanya mengelompokkan; tupel di dalam kondisi yang lebih
+# besar tetap sah. Hanya `pastikan(kondisi, pesan)` yang ditolak (T-U5).
+pastikan(1 == 1)
+pastikan (1, 2)[0] == 1, "indeks tupel"
+pastikan (1, 2) == (1, 2)
+cetak("kurung pengelompok sah")

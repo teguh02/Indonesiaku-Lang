@@ -47,6 +47,11 @@ fungsi ke_teks(data) {
     # Potongan dikumpulkan lalu disatukan sekali dengan teks_gabung:
     # `hasil = hasil + chr(...)` menyalin seluruh string tiap iterasi
     # (teks immutable) -> O(n^2) untuk data yang datang dari soket.
+    #
+    # Validasi mengikuti RFC 3629, seperti bytes.decode("utf-8") di Python:
+    # bita lanjutan harus 0x80..0xBF, bentuk overlong (C0 80 untuk NUL,
+    # E0 80 80, ...) ditolak, begitu pula surrogate D800..DFFF dan nilai di
+    # atas U+10FFFF. Dulu hanya bita pemimpin yang diperiksa (T-U16).
     variabel potongan = daftar()
     variabel n = panjang(data)
     variabel i = 0
@@ -55,27 +60,51 @@ fungsi ke_teks(data) {
         jika b < 128 {
             tambah(potongan, chr(b))
             i = i + 1
-        } jika_lain b >= 192 dan b < 224 {
-            jika i + 1 >= n {
-                naikkan GalatBita("ke_teks: urutan UTF-8 terpotong")
-            }
-            tambah(potongan, chr((b - 192) * 64 + (data[i + 1] - 128)))
-            i = i + 2
-        } jika_lain b >= 224 dan b < 240 {
-            jika i + 2 >= n {
-                naikkan GalatBita("ke_teks: urutan UTF-8 terpotong")
-            }
-            tambah(potongan, chr((b - 224) * 4096 + (data[i + 1] - 128) * 64 + (data[i + 2] - 128)))
-            i = i + 3
-        } jika_lain b >= 240 {
-            jika i + 3 >= n {
-                naikkan GalatBita("ke_teks: urutan UTF-8 terpotong")
-            }
-            tambah(potongan, chr((b - 240) * 262144 + (data[i + 1] - 128) * 4096 + (data[i + 2] - 128) * 64 + (data[i + 3] - 128)))
-            i = i + 4
-        } selain {
-            naikkan GalatBita("ke_teks: byte 128..191 tanpa pemimpin")
+            lanjut
         }
+        variabel lebar = 0
+        variabel nilai = 0
+        variabel minimum = 0
+        jika b >= 194 dan b < 224 {
+            lebar = 2
+            nilai = b - 192
+            minimum = 128
+        } jika_lain b >= 224 dan b < 240 {
+            lebar = 3
+            nilai = b - 224
+            minimum = 2048
+        } jika_lain b >= 240 dan b < 245 {
+            lebar = 4
+            nilai = b - 240
+            minimum = 65536
+        } jika_lain b >= 128 dan b < 192 {
+            naikkan GalatBita("ke_teks: byte 128..191 tanpa pemimpin")
+        } selain {
+            naikkan GalatBita(format("ke_teks: byte pemimpin tidak sah {}", b))
+        }
+        jika i + lebar > n {
+            naikkan GalatBita("ke_teks: urutan UTF-8 terpotong")
+        }
+        variabel j = 1
+        selagi j < lebar {
+            variabel c = data[i + j]
+            jika c < 128 atau c >= 192 {
+                naikkan GalatBita("ke_teks: byte lanjutan UTF-8 tidak sah")
+            }
+            nilai = nilai * 64 + (c - 128)
+            j = j + 1
+        }
+        jika nilai < minimum {
+            naikkan GalatBita("ke_teks: urutan UTF-8 overlong")
+        }
+        jika nilai >= 55296 dan nilai < 57344 {
+            naikkan GalatBita("ke_teks: surrogate UTF-16 bukan karakter yang sah")
+        }
+        jika nilai > 1114111 {
+            naikkan GalatBita("ke_teks: kode di atas U+10FFFF")
+        }
+        tambah(potongan, chr(nilai))
+        i = i + lebar
     }
     kembalikan teks_gabung(potongan, "")
 }

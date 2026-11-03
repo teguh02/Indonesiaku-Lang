@@ -1,0 +1,19 @@
+# Regresi T-U12: nan/takhingga tidak boleh diam-diam menjadi bilangan bulat.
+# Seperti Python: nan -> GalatNilai, takhingga -> GalatLuapan.
+n = ke_angka("nan")
+t = ke_angka("inf")
+untuk f dalam [bulat, lantai, atap, bulatkan] {
+    untuk v dalam [n, t, -t] {
+        coba {
+            cetak("SALAH", f(v))
+        } kecuali GalatNilai sebagai e {
+            cetak("GalatNilai:", e.pesan)
+        } kecuali GalatLuapan sebagai e {
+            cetak("GalatLuapan:", e.pesan)
+        }
+    }
+}
+cetak(bulatkan(n, 2), bulatkan(t, 1), bulatkan(2.5), bulatkan(3.7, 0), bulatkan(1.25, 1))
+besar = 2 ** 62 + 1
+cetak(bulat(besar) == besar, lantai(besar) == besar, atap(besar) == besar, bulatkan(besar) == besar)
+cetak(bulat(2.5), lantai(-1.5), atap(-1.5), bulat(-0.5))

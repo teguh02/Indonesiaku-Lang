@@ -137,6 +137,7 @@ incomplete, however good the C code is.
 | `docs/ROADMAP.md`, `docs/ANALISIS/02_PETA_FITUR_PYTHON.md` | flip status to ✅ |
 | `README.md`, this `AGENTS.md` | user-visible syntax and new pitfalls |
 | plan file | status → `selesai`, then `git mv` into `docs/RENCANA_FITUR/selesai/` |
+| `docs/TESTING/WINDOWS.md`, `MACOS.md`, `LINUX.md` | new test cases for every user-visible change (syntax, builtin, module, CLI option), identical in all three files — see the cross-OS rule below |
 
 **3. A breaking change must also fix every consumer in-repo:** `examples/`,
 `pustaka/`, and the integration test scripts. Grep, don't guess — the golden
@@ -166,6 +167,40 @@ Before committing:
 
 **5. Only then commit**, code+tests separate from docs (see Conventions),
 `git fetch` + rebase, re-test, push.
+
+**6. Cross-OS test plans are part of the feature (MANDATORY).**
+`docs/TESTING/` holds one plan + results file per OS: `WINDOWS.md`,
+`MACOS.md`, `LINUX.md`. They test the RELEASED package (installer, `.zip`,
+`.tar.gz`, `.deb`) from the command line, which CI does not: CI builds from
+source on runners, so it missed every Windows-only bug those files record
+(non-ASCII paths, UTF-8 BOM, console code page). Rules, for humans and AI
+agents alike:
+
+- **When a phase or feature is done, add its test cases to all three
+  files** before flipping the roadmap item to ✅. A case is a complete `.idk`
+  program plus its exact stdout, stderr and exit code, produced by actually
+  running it — never typed from memory.
+- **Sections 2–4 (between `BERSAMA:MULAI` and `BERSAMA:AKHIR`) must stay
+  byte-identical in the three files.** Check with
+  `diff <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/TESTING/WINDOWS.md) <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/TESTING/LINUX.md)`
+  (and the same for `MACOS.md`).
+- **OS-specific behaviour** (paths, encodings, installers, sockets, shells)
+  goes in that OS's section 6 with a new `WIN-`/`MAC-`/`LIN-` ID. IDs are
+  never reused.
+- **Results (section 7 and the history table) are written only by whoever
+  really ran the tests on that OS** — never copied from CI or another OS.
+  Untested stays `⬜ belum diuji`. Every release tag is re-tested on all
+  three OS and gets one history row each.
+- Windows findings at v1.4.0 that are still open: **T-W1** non-ASCII paths
+  outside the ANSI code page cannot be opened (no `wmain`/`_wfopen`),
+  **T-W2** a UTF-8 BOM is rejected by the scanner, **T-W3** non-ASCII output
+  is garbled in a cp437/850 console (no `SetConsoleOutputCP`). The
+  multi-agent run on the same release added T-W5–T-W11 and 15 high-severity
+  language bugs that are NOT Windows-specific (T-U2–T-U16, e.g. keyword
+  arguments inside a function turning global positional arguments into
+  `kosong`, `untuk` variables being block-scoped, `x = a jika c selain b`
+  skipping the assignment). Read `WINDOWS.md` section 7 before touching those
+  areas. Fixing them follows the normal feature workflow.
 
 ## Build
 
@@ -207,6 +242,13 @@ Before committing:
   shadows a builtin in the module table instead of mutating the shared one.
   `compileInModule()` stamps `function->module`; `compile()` is the no-module
   wrapper. Both `compilingModule` and `function->module` are GC roots.
+- **`impor "file.idk"` runs the file INTO the importer's module**
+  (`compileInModule(source, importer)`), cached under `fileImportKey(path,
+  module)`, so it runs once per importer. It used to compile with no module,
+  so its top level wrote into `vm.globals`, the builtin table every module
+  reads: a library defining `panjang`, or doing `dari bita impor ke_teks`,
+  silently replaced the builtin inside `pustaka/json.idk` (T-U8). Never let a
+  user-level definition reach `vm.globals`.
 - **A module name is an identifier, so language keywords cannot be path
   components:** `impor paket.dalam` fails because `dalam` is the `in` operator.
   Name module files accordingly.
@@ -245,6 +287,12 @@ allocates and can trigger a GC. Two rules follow, both learned from real bugs:
   triggered by `_sama_` freed them — a use-after-free that the normal suite
   passed and only the sanitizer build caught. Keep values on the stack
   (`peek`), pop after.
+- **A `ValueTable` probe can fail midway.** `findValueEntry` returns NULL when
+  a `_sama_` it ran raised; `valueTableGet`/`Set`/`Delete` then touch
+  nothing, and the opcode must `RESOLVE_MAGIC_ERROR()` right after. Entries
+  store their hash, so a probe skips `_sama_` on a hash mismatch and a resize
+  never runs user code. Never re-hash keys in `adjustValueCapacity`: a
+  `_hash_` that raised there used to drop the entry silently.
 - **A method that only declares a contract must NOT be flattened.** Copying
   an `@abstrak` method's empty body into a subclass lets it beat a real
   implementation inherited from a later base -- the mixin case
@@ -321,12 +369,19 @@ allocates and can trigger a GC. Two rules follow, both learned from real bugs:
   (`object.c`) is the only correct way to read a rentang element if you want
   bulat elements. Truthiness: `0` and `0.0` are false.
 - Truthiness is Python's (K1, `isFalsey` in `vm.c`): `salah`, `kosong`, `0`, `""`, empty list/kamus/rentang are false; every instance is true. Collection emptiness uses live counts (`dictLength` skips tombstones).
+- **The `untuk` loop variable is NOT a block local (K21).** `forStatement`
+  stores each element with `assignToName()` exactly like `x = elemen`, and
+  `prescanFunctionBody` pre-declares the name after a statement-level `untuk`
+  as a function-local (K3). Only at statement start (previous token newline,
+  `{`, `}` or `;`): a comprehension's `untuk` follows an expression, and its
+  variable must stay private (Python 3). Do not reintroduce `addLocal` for the
+  loop variable.
 - `rentang()` returns an `OBJ_RANGE` (start/stop/step doubles, no list). `untuk` is desugared to `OP_LIST_LEN` + `OP_INDEX_GET`, so any sequence those two opcodes accept is iterable — currently list, rentang, and teks (per character). Add a type there to make it iterable.
 - `x dalam y` / `x tidak dalam y` compile to `OP_IN` (+ `OP_NOT`) at `PREC_COMPARISON` (`containsValue` in `vm.c`). `TOKEN_TIDAK` now has an infix rule (`notIn`), so because of B16 a line starting with `tidak` right after an expression is a compile error ("Harapkan 'dalam'"). Comparison chaining is not implemented yet.
 - **`{` is position-dependent.** `statement()` consumes `{` as a block; everywhere else the Pratt prefix rule `dictLiteral` reads it as a dict literal (`OP_BUILD_DICT`). A bare `{"a": 1}` statement is therefore a block, not a dict — the guides say to write `x = {"a": 1}`. `{` does NOT raise the scanner's `groupingDepth` (blocks need newline tokens), so `dictLiteral` skips `TOKEN_NEWLINE` by hand for multi-line literals. Dict keys must evaluate to strings.
 - Negative indices are resolved in the VM (`OP_INDEX_GET`/`OP_INDEX_SET`) for list, teks, and rentang — NOT for `kamus[angka]`, which means "nth key in insertion order". Error messages report the index the user wrote, not the normalised one.
 - Slicing `a[awal:akhir:langkah]` emits `OP_SLICE` with four stack slots (target + 3 bounds); omitted parts are compiled as `OP_KOSONG` so the VM distinguishes "not given" from a real value. `resolveSlice` in `vm.c` holds the Python clamping rules; a step of 0 raises `GalatNilai`. Slices are read-only — assignment is rejected at compile time.
-- **`==` is structural, `adalah` is identity (K7) — do not conflate them.** `valuesEqual` in `value.c` recurses into lists, dicts, and ranges (dict insertion order is irrelevant; depth capped at `EQUAL_MAX_DEPTH` so self-referential containers can't hang the VM). `valuesIdentical` is the identity version. `OP_EQUAL` uses the first, `OP_IDENTICAL` the second. Two call sites must stay on identity: `chainCompare`'s `CHAIN_IDENTITY`/`CHAIN_NOT_IDENTITY` AND `emitComparison` (the non-chained path) — forgetting the second one silently makes `adalah` structural, which the `gabung_sama` golden exists to catch. `containsValue` (`dalam`) deliberately inherits the structural version.
+- **`==` is structural, `adalah` is identity (K7) — do not conflate them.** `valuesEqual` in `value.c` recurses into lists, dicts, and ranges (dict insertion order is irrelevant; nesting past `VALUE_MAX_DEPTH` (1000) raises `GalatRekursi` through `valueDepthHook`, for `hashValue` of tupel/`himpunan_beku` too, so self-referential containers can't hang the VM and deep ones can't overflow the C stack; never go back to returning `salah` at a cap, which was a silently wrong answer). `valuesIdentical` is the identity version. `OP_EQUAL` uses the first, `OP_IDENTICAL` the second. Two call sites must stay on identity: `chainCompare`'s `CHAIN_IDENTITY`/`CHAIN_NOT_IDENTITY` AND `emitComparison` (the non-chained path) — forgetting the second one silently makes `adalah` structural, which the `gabung_sama` golden exists to catch. `containsValue` (`dalam`) deliberately inherits the structural version.
 - **tupel (K17)** is `OBJ_TUPLE`, deliberately laid out exactly like `ObjList` (`Obj` + `ValueArray items`). Read paths (index, slice, unpack, iterate, `dalam`, `==`, hash, `+`, `*`, native sequence helpers) go through `sequenceItems(v)` in `object.h`, which returns the items of a daftar OR tupel; never write through it. Write paths must reject tupel explicitly: `OP_INDEX_SET`/`OP_INDEX_DELETE` and `rejectTuple` in the mutating natives. A new list-handling site therefore needs a decision: read → `sequenceItems`, write → reject. Literal parsing is in `grouping()`: a comma after the first expression makes a tupel, `()` is empty, `(x)` stays grouping. `hashValue` combines element hashes (structural, so equal tupel are one dict key); an unhashable element makes the whole tupel unhashable.
 - **himpunan (K17)** is `OBJ_SET`, laid out exactly like `ObjDict` (`table` + insertion-order `keys`, guarded by `_Static_assert`), so it reuses `dictSet`/`dictDelete`/`dictLength`/`dictKeyAt` via `setAsDict()`. No literal syntax — only `himpunan(...)`. Members follow the K8 hash rules; a set itself is unhashable (Python's `set`), so it cannot be a dict key — a hashable `himpunan_beku` is future work. `| & ^` go through `bitwiseBinary` → `setBinary`, `-` through the set branch at the top of `OP_SUBTRACT`. Order is insertion order; goldens compare via `terurut`. Regression: `examples/himpunan.idk`.
 - **Magic methods (K19)** live on the class: `ObjClass.magic` is a bitmask of the `MagicKind`s it defines (set in `defineMethod` by comparing the interned `vm.magicNames`, OR-ed from the parent in `OP_INHERIT`), so a miss costs one AND. Operators dispatch in two ways — keep them apart: (1) **opcodes push a frame** (`binaryMagic`/`binaryMagicOrError` → plain `call()`, receiver already in slot 0, `DISPATCH_MAGIC` in `run()`), and only on the branch that would otherwise raise, so the number/string fast paths are untouched; (2) **C code that cannot push a frame** (`chainCompare`, `!=` negating `_sama_`, `instanceEqualHook` inside `valuesEqual`, `formatInstanceHook` inside `formatValue`) calls `callMagicNow` → `callFromNative`, which leaves errors pending as native errors — `RESOLVE_MAGIC_ERROR()` after the operation unwinds them. A C loop that may reach user code (anything calling `valuesEqual` or `formatValue`) must re-read `count`/`values` every step and stop on `vm.nativeErrorPending`; `_sama_` may grow or empty the list being walked (golden `metode_ajaib` exercises this under ASan). `valuesEqual` takes Python's identity shortcut before calling `_sama_`; the top-level `==` opcode does not. A class with `_sama_` is unhashable (`hashValue`), so dict/set probes never run user code. `>=`/`<=`/`!=` are real opcodes now (`OP_GREATER_EQUAL`, `OP_LESS_EQUAL`, `OP_NOT_EQUAL`) — never lower them back to `NOT <`/`NOT >`/`NOT ==`: wrong for NaN and for magic methods.
@@ -335,7 +390,7 @@ allocates and can trigger a GC. Two rules follow, both learned from real bugs:
 - An uncaught typed galat rethrown by `OP_THROW` (no `kecuali` matched) prints its `.pesan` via `errorMessage`; it used to lose the message. Regression: `tests/galat/galat_bertipe_diteruskan`.
 - A single chunk holds at most **256 constants** (one-byte index, as in clox). A long top-level script full of literals hits "Terlalu banyak konstanta dalam satu chunk"; goldens split sections into functions (each has its own table, see `examples/tupel.idk`). Lifting this needs an `OP_CONSTANT_LONG`.
 - `+` accepts two lists (`concatenateLists`, both operands stay on the stack while the result grows); `*` accepts list/teks × angka in either order. `repeatCount` rejects non-integers (`GalatTipe`) and caps results at `REPEAT_MAX` 65535 (`GalatNilai`) so `[0] * 1e9` can't exhaust memory. Negative/zero factors give an empty result, as in Python.
-- Implemented: closures/upvalues, lists `[..]` + indexing, dicts via `kamus()` + string indexing, `untuk x dalam list { }`, `hentikan`/`lanjut`, classes (`kelas`, `init`, `diri`, `<` inheritance, `super`), `naikkan` + `coba/kecuali`, `impor "file.idk"` (shared global namespace, cached).
+- Implemented: closures/upvalues, lists `[..]` + indexing, dicts via `kamus()` + string indexing, `untuk x dalam list { }`, `hentikan`/`lanjut`, classes (`kelas`, `init`, `diri`, `<` inheritance, `super`), `naikkan` + `coba/kecuali`, `impor "file.idk"` (runs in the IMPORTER's module namespace, cached once per importer; see T-U8 below).
 - Catchable vs fatal: **every** `runtimeError` is catchable by `kecuali` (the caught value is the message string). When a handler is active, `runtimeError` only records the message (`vm.runtimeErrorPending`, no allocation) and `run()` returns; `interpret()` then unwinds via `throwValue`, pushes the message, and calls `run()` again. Only `fatalError` (stack underflow, bad jump offset — VM bugs) is never catchable. Natives still use `nativeRaise`. Uncaught errors print and exit 70.
 - `coba` handlers: `OP_RETURN` drops handlers registered by the returning frame; `hentikan`/`lanjut` emit `OP_TRY_END` for each `coba` they leave (`Compiler.tryDepth` vs `LoopCtx.tryDepth`).
 - **Several `kecuali` clauses chain by jump, and `catchClause()` does NOT emit its own rethrow.** It returns the unpatched "no match" jump; `tryStatement` patches it onto the next clause and only the last one falls through to `OP_POP` + `OP_THROW`. An untyped `kecuali e` returns -1 (always matches) and must be last — `semanticError`, not `error`, so there is no panic-mode cascade. `scanTryClauses` must skip EVERY `kecuali` clause in its lookahead loop, otherwise a trailing `akhirnya` goes undetected and its outer handler is never registered.
@@ -355,6 +410,23 @@ allocates and can trigger a GC. Two rules follow, both learned from real bugs:
   `a jika c selain b`, which would swallow the filter's `jika` and demand a
   `selain`. The element itself is a full `expression()`. A conditional
   iterable needs parentheses: `[x untuk x dalam (a jika c selain b)]`.
+- **Every path inside the interpreter is UTF-8; on Windows it reaches the OS
+  only through `sistem.c`.** Open files with `sistemBukaBerkas` (not `fopen`),
+  delete with `sistemHapusBerkas`, read environment variables with
+  `sistemAmbilLingkungan` (malloc'd, free it), and use the `W` APIs via
+  `keLebar`/`keUtf8` inside `sistem.c`. Plain `fopen`/`remove`/`getenv` read
+  the bytes as the ANSI code page, so `日本\s.idk` became `??/s.idk` (T-W1).
+  `main()` calls `sistemSiapkanProses` first: it replaces `argv` with a UTF-8
+  copy of `GetCommandLineW()` and switches an attached console to UTF-8,
+  restoring it `atexit`. Never include `windows.h` from a shared header:
+  `winnt.h` defines `TokenType`, which clashes with `scanner.h`. Regression:
+  `tests/test_jalur_unicode.{sh,ps1}`, golden `berkas_unicode`.
+- **A leading UTF-8 BOM is stripped from source** (`stripUtf8Bom` in
+  `common.h`, before `normalizeNewlines`) in `readFile` and
+  `readModuleSource`. A new source-reading path needs both calls.
+  `examples/bom_utf8.idk` is `-text` in `.gitattributes`, and
+  `tests/test_baca_sumber.sh` builds BOM files with `printf`, so an editor
+  that drops the BOM cannot silently remove the coverage.
 - **Source files are newline-normalised on load** (`normalizeNewlines` in
   `common.h`, called by `readFile` in `main.c` and `readModuleSource` in
   `vm.c`): `\r\n` and lone `\r` become `\n`, like Python's universal newlines.
@@ -526,6 +598,8 @@ Bagian ini menggantikan rencana historis `RENCANA_DOKUMENTASI.md` dan catatan `k
 ## Branch dan Pull Request (wajib untuk manusia maupun AI agent)
 
 Sebelum memulai pekerjaan, ikuti [docs/ATURAN_BRANCH_DAN_PR.md](docs/ATURAN_BRANCH_DAN_PR.md): buat branch kategori pekerjaan (`fitur/`, `perbaikan/`, `docs/`, `keamanan/`, `refactor/`, `test/`, `ci/`, `build/`, `rilis/`, dan sebagainya), nama deskriptif kebab-case, PR menuju `main`, review dan CI sebelum merge. Jangan push langsung ke `main` untuk pekerjaan biasa; jangan menghapus pekerjaan lokal, force-push, atau mengungkap kerentanan rahasia. AI agent mengikuti aturan yang **sama persis** dan tetap wajib membuat rencana/tes sesuai workflow proyek.
+
+**Satu temuan = satu branch = satu PR (WAJIB).** Saat memperbaiki atau menguji daftar temuan satu per satu (hasil `docs/TESTING/`, audit, kumpulan bug), setiap temuan dikerjakan di branch sendiri dari `main` terbaru dan dibuka sebagai PR sendiri. Jangan dijadikan satu PR besar, dan jangan menumpuk branch kecuali ada ketergantungan yang ditulis di PR. Setiap PR harus lengkap dan lulus sendiri: rencana, regression test, CHANGELOG, dan dokumentasi. Tujuannya agar pekerjaan lain tidak terganggu: orang dan agen lain bekerja paralel di `main` dan branch lain, dan PR kecil mudah ditinjau, di-merge, atau di-revert tanpa menahan yang lain. Jangan menyentuh worktree, checkout, atau branch milik sesi lain. Untuk menguji paralel, pakai salinan `git archive`. Commit ke branch PR orang lain hanya lewat push *fast-forward*, dan tidak pernah force-push. Temuan yang mengubah semantik ditanyakan dulu ke maintainer tanpa menahan PR lain. Rincian ada di §6 [docs/ATURAN_BRANCH_DAN_PR.md](docs/ATURAN_BRANCH_DAN_PR.md).
 
 ## Conventions
 
