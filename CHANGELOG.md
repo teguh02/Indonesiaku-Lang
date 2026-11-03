@@ -29,6 +29,11 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Argumen bernama di dalam fungsi tidak lagi mengosongkan argumen posisi**
+  (T-U3). Di 1.4.0, `g(D, b = 2)` di dalam fungsi membaca global/upvalue `D`
+  sebagai `kosong` karena prescan K3 menganggap `D, b =` sebagai
+  pembongkaran `a, b = ...`. Contohnya `statistik.kuantil(DATA, n = 2)` di
+  dalam fungsi. Regresi: `examples/argumen_bernama_lingkup.idk`.
 - **Windows: jalur dan nama berkas di luar code page ANSI** (T-W1 dari uji
   paket 1.4.0). `indk 日本\s.idk` dulu gagal dengan
   `Tidak dapat membuka file "??/s.idk".` (kode 74), dan
