@@ -29,6 +29,11 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **`input()` dan REPL membaca baris dengan panjang berapa pun** (T-U10).
+  Di 1.4.0 keduanya memotong baris pada 1023 bita, dan sisanya muncul pada
+  pembacaan berikutnya. Buffer blok REPL juga diam-diam membuang baris di
+  atas 8192 bita. Regresi: `tests/test_baris_panjang.sh`.
+
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
