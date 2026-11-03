@@ -1,0 +1,3 @@
+[baris 2, kolom 47] Kesalahan di 'jika': Comprehension hanya mendukung satu 'jika'; gabungkan syarat dengan 'dan'.
+    …[x untuk x dalam rentang(10) jika x > 2 jika x < 5])
+                                             ^^^^

@@ -17,6 +17,7 @@
 
 #ifdef _WIN32
     #include <windows.h>
+    #include <shellapi.h>   // CommandLineToArgvW
 #else
     #include <dirent.h>
     #include <fcntl.h>
@@ -151,6 +152,107 @@ static char* keUtf8(const wchar_t* w) {
     return s;
 }
 #endif
+
+// ---------------------------------------------------------------------------
+// UTF-8 at the OS boundary (see sistem.h)
+// ---------------------------------------------------------------------------
+
+#ifdef _WIN32
+static UINT cpKeluaranAsal = 0;
+static UINT cpMasukanAsal = 0;
+
+static void pulihkanKonsol(void) {
+    if (cpKeluaranAsal != 0) SetConsoleOutputCP(cpKeluaranAsal);
+    if (cpMasukanAsal != 0) SetConsoleCP(cpMasukanAsal);
+}
+
+static const char** argvUtf8(int* argc) {
+    int n = 0;
+    wchar_t** lebar = CommandLineToArgvW(GetCommandLineW(), &n);
+    if (lebar == NULL) return NULL;
+    const char** hasil = n > 0 ? malloc(sizeof(char*) * ((size_t)n + 1)) : NULL;
+    for (int i = 0; hasil != NULL && i < n; i++) {
+        hasil[i] = keUtf8(lebar[i]);
+        if (hasil[i] == NULL) {
+            while (i > 0) free((void*)hasil[--i]);
+            free(hasil);
+            hasil = NULL;
+        }
+    }
+    LocalFree(lebar);
+    if (hasil == NULL) return NULL;
+    hasil[n] = NULL;
+    *argc = n;
+    return hasil;   // lives as long as the process: `argumen` refers to it
+}
+#endif
+
+void sistemSiapkanProses(int* argc, const char*** argv) {
+#ifdef _WIN32
+    const char** utf8 = argvUtf8(argc);
+    if (utf8 != NULL) *argv = utf8;
+
+    // GetConsole*CP() returns 0 when no console is attached (a GUI parent,
+    // or a service); redirected output then stays raw UTF-8 bytes, as before.
+    UINT keluar = GetConsoleOutputCP();
+    UINT masuk = GetConsoleCP();
+    if (keluar != 0 && keluar != CP_UTF8 && SetConsoleOutputCP(CP_UTF8)) cpKeluaranAsal = keluar;
+    if (masuk != 0 && masuk != CP_UTF8 && SetConsoleCP(CP_UTF8)) cpMasukanAsal = masuk;
+    if (cpKeluaranAsal != 0 || cpMasukanAsal != 0) atexit(pulihkanKonsol);
+#else
+    (void)argc;
+    (void)argv;
+#endif
+}
+
+FILE* sistemBukaBerkas(const char* jalur, const char* mode) {
+#ifdef _WIN32
+    wchar_t m[8];
+    size_t i = 0;
+    for (; mode[i] != '\0' && i + 1 < sizeof(m) / sizeof(m[0]); i++) m[i] = (wchar_t)mode[i];
+    m[i] = L'\0';
+    wchar_t* w = keLebar(jalur);
+    if (w == NULL) return NULL;
+    FILE* f = _wfopen(w, m);
+    free(w);
+    return f;
+#else
+    return fopen(jalur, mode);
+#endif
+}
+
+int sistemHapusBerkas(const char* jalur) {
+#ifdef _WIN32
+    wchar_t* w = keLebar(jalur);
+    if (w == NULL) return -1;
+    int hasil = _wremove(w);
+    free(w);
+    return hasil;
+#else
+    return remove(jalur);
+#endif
+}
+
+char* sistemAmbilLingkungan(const char* nama) {
+#ifdef _WIN32
+    wchar_t* w = keLebar(nama);
+    if (w == NULL) return NULL;
+    DWORD n = GetEnvironmentVariableW(w, NULL, 0);
+    wchar_t* isi = n > 0 ? malloc(sizeof(wchar_t) * n) : NULL;
+    char* hasil = NULL;
+    if (isi != NULL && GetEnvironmentVariableW(w, isi, n) < n) hasil = keUtf8(isi);
+    free(isi);
+    free(w);
+    return hasil;
+#else
+    const char* isi = getenv(nama);
+    if (isi == NULL) return NULL;
+    size_t n = strlen(isi) + 1;
+    char* hasil = malloc(n);
+    if (hasil != NULL) memcpy(hasil, isi, n);
+    return hasil;
+#endif
+}
 
 // What is at `jalur`: 0 nothing, 1 file, 2 directory, 3 something else,
 // -1 error (reason in *alasan). Size and mtime (seconds since the epoch) for
@@ -290,25 +392,11 @@ Value nativeFnAmbilLingkungan(int argCount, Value* args) {
     if (!teksArg(argCount, args, 0, "ambil_lingkungan", &nama)) return KOSONG_VAL;
     if (ditolakSandbox("ambil_lingkungan")) return KOSONG_VAL;
     Value bawaan = argCount == 2 ? args[1] : KOSONG_VAL;
-#ifdef _WIN32
-    wchar_t* w = keLebar(nama);
-    if (w == NULL) return bawaan;
-    DWORD n = GetEnvironmentVariableW(w, NULL, 0);
-    if (n == 0) { free(w); return bawaan; }
-    wchar_t* isi = malloc(sizeof(wchar_t) * n);
-    if (isi == NULL) { free(w); return bawaan; }
-    GetEnvironmentVariableW(w, isi, n);
-    free(w);
-    char* utf8 = keUtf8(isi);
+    char* isi = sistemAmbilLingkungan(nama);
+    if (isi == NULL) return bawaan;
+    Value hasil = teks(isi, strlen(isi));
     free(isi);
-    if (utf8 == NULL) return bawaan;
-    Value hasil = teks(utf8, strlen(utf8));
-    free(utf8);
     return hasil;
-#else
-    const char* isi = getenv(nama);
-    return isi == NULL ? bawaan : teks(isi, strlen(isi));
-#endif
 }
 
 // ---------------------------------------------------------------------------
@@ -518,19 +606,27 @@ Value nativeFnJalurNyata(int argCount, Value* args) {
         return KOSONG_VAL;
     }
 #ifdef _WIN32
-    char nyata[MAX_PATH];
-    if (_fullpath(nyata, jalur, sizeof(nyata)) == NULL) return KOSONG_VAL;
-    // _fullpath() tidak memeriksa keberadaan; jaga agar perilakunya sama
+    wchar_t* w = keLebar(jalur);
+    wchar_t* penuh = w != NULL ? _wfullpath(NULL, w, 0) : NULL;
+    free(w);
+    char* nyata = penuh != NULL ? keUtf8(penuh) : NULL;
+    free(penuh);
+    if (nyata == NULL) return KOSONG_VAL;
+    // _wfullpath() tidak memeriksa keberadaan; jaga agar perilakunya sama
     // dengan POSIX (kosong bila tidak ada).
     uint64_t ukuranAbai = 0;
     double waktuAbai = 0;
     Alasan alasanAbai = ALASAN_LAIN;
-    if (jenisJalur(nyata, &ukuranAbai, &waktuAbai, &alasanAbai) <= 0) return KOSONG_VAL;
+    Value hasil = jenisJalur(nyata, &ukuranAbai, &waktuAbai, &alasanAbai) > 0
+                      ? teks(nyata, strlen(nyata))
+                      : KOSONG_VAL;
+    free(nyata);
+    return hasil;
 #else
     char nyata[PATH_MAX];
     if (realpath(jalur, nyata) == NULL) return KOSONG_VAL;
-#endif
     return teks(nyata, strlen(nyata));
+#endif
 }
 
 // _info_jalur(jalur) -> ("berkas" | "direktori" | "lain", ukuran, waktu_ubah)

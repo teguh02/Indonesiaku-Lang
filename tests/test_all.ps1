@@ -125,6 +125,19 @@ if (Test-Path $lokasi) {
     }
 }
 
+# Jalur skrip, argumen, dan nama berkas di luar code page ANSI (T-W1).
+$unicode = Join-Path $PSScriptRoot "test_jalur_unicode.ps1"
+if (Test-Path $unicode) {
+    Write-Host ""
+    $total++
+    & powershell -ExecutionPolicy Bypass -File $unicode
+    if ($LASTEXITCODE -eq 0) {
+        $passed++
+    } else {
+        $failed++; $failures += "jalur-unicode"
+    }
+}
+
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host "TOTAL: $passed/$total PASSED" -ForegroundColor Cyan
 if ($failed -eq 0) {
