@@ -29,6 +29,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Sumber berisi bita NUL ditolak** (T-U11). Dulu sumber berakhir di NUL
+  pertama: `indk rapikan --tulis` memotong berkasnya (data hilang, exit 0),
+  dan menjalankannya diam-diam mengabaikan kode setelah NUL. Kini berkas
+  seperti itu ditolak dengan exit 65 tanpa ditulis, dan modul seperti itu
+  menaikkan galat yang bisa ditangkap. Regresi: `tests/galat/sumber_nul.idk`,
+  `tests/test_format.sh`.
+
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
