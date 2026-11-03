@@ -123,6 +123,17 @@ if [ -f tests/test_baca_sumber.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# input()/REPL pernah memotong baris pada 1023 bita (T-U10).
+if [ -f tests/test_baris_panjang.sh ]; then
+    echo ""
+    if bash tests/test_baris_panjang.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES baris-panjang"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Performa parsing badan: urlencoded harus LINEAR, bukan kuadratik.
 # Yang diperiksa bentuk pertumbuhan (2x ukuran -> ~2x waktu), bukan ambang
 # detik, supaya runner lambat tidak membuatnya merah palsu.
