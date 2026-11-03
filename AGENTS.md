@@ -390,6 +390,23 @@ allocates and can trigger a GC. Two rules follow, both learned from real bugs:
   `a jika c selain b`, which would swallow the filter's `jika` and demand a
   `selain`. The element itself is a full `expression()`. A conditional
   iterable needs parentheses: `[x untuk x dalam (a jika c selain b)]`.
+- **Every path inside the interpreter is UTF-8; on Windows it reaches the OS
+  only through `sistem.c`.** Open files with `sistemBukaBerkas` (not `fopen`),
+  delete with `sistemHapusBerkas`, read environment variables with
+  `sistemAmbilLingkungan` (malloc'd, free it), and use the `W` APIs via
+  `keLebar`/`keUtf8` inside `sistem.c`. Plain `fopen`/`remove`/`getenv` read
+  the bytes as the ANSI code page, so `日本\s.idk` became `??/s.idk` (T-W1).
+  `main()` calls `sistemSiapkanProses` first: it replaces `argv` with a UTF-8
+  copy of `GetCommandLineW()` and switches an attached console to UTF-8,
+  restoring it `atexit`. Never include `windows.h` from a shared header:
+  `winnt.h` defines `TokenType`, which clashes with `scanner.h`. Regression:
+  `tests/test_jalur_unicode.{sh,ps1}`, golden `berkas_unicode`.
+- **A leading UTF-8 BOM is stripped from source** (`stripUtf8Bom` in
+  `common.h`, before `normalizeNewlines`) in `readFile` and
+  `readModuleSource`. A new source-reading path needs both calls.
+  `examples/bom_utf8.idk` is `-text` in `.gitattributes`, and
+  `tests/test_baca_sumber.sh` builds BOM files with `printf`, so an editor
+  that drops the BOM cannot silently remove the coverage.
 - **Source files are newline-normalised on load** (`normalizeNewlines` in
   `common.h`, called by `readFile` in `main.c` and `readModuleSource` in
   `vm.c`): `\r\n` and lone `\r` become `\n`, like Python's universal newlines.
