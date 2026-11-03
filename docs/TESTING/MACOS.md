@@ -35,7 +35,7 @@ di `AGENTS.md`.
 
 ## 2. Aturan rencana uji ini
 
-Folder `docs/testing/` berisi tiga berkas: `WINDOWS.md`, `MACOS.md`, dan
+Folder `docs/TESTING/` berisi tiga berkas: `WINDOWS.md`, `MACOS.md`, dan
 `LINUX.md`. Ketiganya adalah **rencana sekaligus catatan hasil** uji
 paket rilis di sistem operasi masing-masing: apa yang diuji, cara
 mengujinya, apa hasil yang diharapkan, dan apa hasil terakhirnya.
@@ -55,7 +55,7 @@ dari baris perintah seperti pengguna biasa.
 2. **Bagian bersama harus identik di ketiga berkas.** Bagian 2, 3, dan 4
    (di antara penanda `BERSAMA:MULAI` dan `BERSAMA:AKHIR`) disalin persis
    sama. Periksa dengan:
-   `diff <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/testing/WINDOWS.md) <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/testing/LINUX.md)`
+   `diff <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/TESTING/WINDOWS.md) <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/TESTING/LINUX.md)`
    (dan pasangan dengan `MACOS.md`), yang harus kosong.
 3. **Keluaran yang diharapkan harus berasal dari menjalankan kode**, bukan
    ditulis dari ingatan. Jalankan setiap kasus baru dengan biner hasil

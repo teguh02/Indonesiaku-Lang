@@ -137,7 +137,7 @@ incomplete, however good the C code is.
 | `docs/ROADMAP.md`, `docs/ANALISIS/02_PETA_FITUR_PYTHON.md` | flip status to ✅ |
 | `README.md`, this `AGENTS.md` | user-visible syntax and new pitfalls |
 | plan file | status → `selesai`, then `git mv` into `docs/RENCANA_FITUR/selesai/` |
-| `docs/testing/WINDOWS.md`, `MACOS.md`, `LINUX.md` | new test cases for every user-visible change (syntax, builtin, module, CLI option), identical in all three files — see the cross-OS rule below |
+| `docs/TESTING/WINDOWS.md`, `MACOS.md`, `LINUX.md` | new test cases for every user-visible change (syntax, builtin, module, CLI option), identical in all three files — see the cross-OS rule below |
 
 **3. A breaking change must also fix every consumer in-repo:** `examples/`,
 `pustaka/`, and the integration test scripts. Grep, don't guess — the golden
@@ -169,7 +169,7 @@ Before committing:
 `git fetch` + rebase, re-test, push.
 
 **6. Cross-OS test plans are part of the feature (MANDATORY).**
-`docs/testing/` holds one plan + results file per OS: `WINDOWS.md`,
+`docs/TESTING/` holds one plan + results file per OS: `WINDOWS.md`,
 `MACOS.md`, `LINUX.md`. They test the RELEASED package (installer, `.zip`,
 `.tar.gz`, `.deb`) from the command line, which CI does not: CI builds from
 source on runners, so it missed every Windows-only bug those files record
@@ -182,7 +182,7 @@ agents alike:
   running it — never typed from memory.
 - **Sections 2–4 (between `BERSAMA:MULAI` and `BERSAMA:AKHIR`) must stay
   byte-identical in the three files.** Check with
-  `diff <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/testing/WINDOWS.md) <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/testing/LINUX.md)`
+  `diff <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/TESTING/WINDOWS.md) <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/TESTING/LINUX.md)`
   (and the same for `MACOS.md`).
 - **OS-specific behaviour** (paths, encodings, installers, sockets, shells)
   goes in that OS's section 6 with a new `WIN-`/`MAC-`/`LIN-` ID. IDs are
