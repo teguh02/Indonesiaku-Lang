@@ -137,6 +137,7 @@ incomplete, however good the C code is.
 | `docs/ROADMAP.md`, `docs/ANALISIS/02_PETA_FITUR_PYTHON.md` | flip status to ✅ |
 | `README.md`, this `AGENTS.md` | user-visible syntax and new pitfalls |
 | plan file | status → `selesai`, then `git mv` into `docs/RENCANA_FITUR/selesai/` |
+| `docs/TESTING/WINDOWS.md`, `MACOS.md`, `LINUX.md` | new test cases for every user-visible change (syntax, builtin, module, CLI option), identical in all three files — see the cross-OS rule below |
 
 **3. A breaking change must also fix every consumer in-repo:** `examples/`,
 `pustaka/`, and the integration test scripts. Grep, don't guess — the golden
@@ -166,6 +167,40 @@ Before committing:
 
 **5. Only then commit**, code+tests separate from docs (see Conventions),
 `git fetch` + rebase, re-test, push.
+
+**6. Cross-OS test plans are part of the feature (MANDATORY).**
+`docs/TESTING/` holds one plan + results file per OS: `WINDOWS.md`,
+`MACOS.md`, `LINUX.md`. They test the RELEASED package (installer, `.zip`,
+`.tar.gz`, `.deb`) from the command line, which CI does not: CI builds from
+source on runners, so it missed every Windows-only bug those files record
+(non-ASCII paths, UTF-8 BOM, console code page). Rules, for humans and AI
+agents alike:
+
+- **When a phase or feature is done, add its test cases to all three
+  files** before flipping the roadmap item to ✅. A case is a complete `.idk`
+  program plus its exact stdout, stderr and exit code, produced by actually
+  running it — never typed from memory.
+- **Sections 2–4 (between `BERSAMA:MULAI` and `BERSAMA:AKHIR`) must stay
+  byte-identical in the three files.** Check with
+  `diff <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/TESTING/WINDOWS.md) <(sed -n '/BERSAMA:MULAI/,/BERSAMA:AKHIR/p' docs/TESTING/LINUX.md)`
+  (and the same for `MACOS.md`).
+- **OS-specific behaviour** (paths, encodings, installers, sockets, shells)
+  goes in that OS's section 6 with a new `WIN-`/`MAC-`/`LIN-` ID. IDs are
+  never reused.
+- **Results (section 7 and the history table) are written only by whoever
+  really ran the tests on that OS** — never copied from CI or another OS.
+  Untested stays `⬜ belum diuji`. Every release tag is re-tested on all
+  three OS and gets one history row each.
+- Windows findings at v1.4.0 that are still open: **T-W1** non-ASCII paths
+  outside the ANSI code page cannot be opened (no `wmain`/`_wfopen`),
+  **T-W2** a UTF-8 BOM is rejected by the scanner, **T-W3** non-ASCII output
+  is garbled in a cp437/850 console (no `SetConsoleOutputCP`). The
+  multi-agent run on the same release added T-W5–T-W11 and 15 high-severity
+  language bugs that are NOT Windows-specific (T-U2–T-U16, e.g. keyword
+  arguments inside a function turning global positional arguments into
+  `kosong`, `untuk` variables being block-scoped, `x = a jika c selain b`
+  skipping the assignment). Read `WINDOWS.md` section 7 before touching those
+  areas. Fixing them follows the normal feature workflow.
 
 ## Build
 
