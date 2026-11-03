@@ -17,6 +17,14 @@
 # `hasil = hasil + c` per karakter menyalin seluruh string tiap iterasi (teks
 # immutable), jadi biayanya O(n^2) -- dan json_teks() dipakai untuk MENYUSUN
 # BALASAN SERVER, sehingga satu respons besar membekukan gelung permintaan.
+_JSON_HEKSA = "0123456789abcdef"
+
+# "\u00XX" untuk satu kode di bawah 0x10000.
+fungsi _json_u4(kode) {
+    kembalikan ("\\u" + _JSON_HEKSA[(kode // 4096) % 16] + _JSON_HEKSA[(kode // 256) % 16] +
+        _JSON_HEKSA[(kode // 16) % 16] + _JSON_HEKSA[kode % 16])
+}
+
 fungsi json_escape(s) {
     variabel potongan = daftar()
     tambah(potongan, "\"")
@@ -33,6 +41,9 @@ fungsi json_escape(s) {
             tambah(potongan, "\\t")
         } jika_lain c == "\r" {
             tambah(potongan, "\\r")
+        } jika_lain ord(c) < 32 {
+            # RFC 8259: karakter kontrol wajib di-escape; mentah = JSON tidak sah.
+            tambah(potongan, _json_u4(ord(c)))
         } selain {
             tambah(potongan, c)
         }
@@ -40,6 +51,19 @@ fungsi json_escape(s) {
     }
     tambah(potongan, "\"")
     kembalikan teks_gabung(potongan, "")
+}
+
+# Kunci objek JSON selalu teks. Seperti json.dumps, kunci angka/logika/kosong
+# diubah ke bentuk JSON-nya ({1: "a"} -> {"1":"a"}); tipe lain ditolak.
+fungsi _json_kunci(k) {
+    variabel t = jenis(k)
+    jika t == "teks" {
+        kembalikan json_escape(k)
+    }
+    jika t == "angka" atau t == "logika" atau t == "kosong" {
+        kembalikan json_escape(json_teks(k))
+    }
+    naikkan "json_teks: kunci kamus harus teks, angka, logika, atau kosong, bukan " + t
 }
 
 fungsi json_teks(nilai) {
@@ -54,6 +78,11 @@ fungsi json_teks(nilai) {
         kembalikan "false"
     }
     jika t == "angka" {
+        # nan dan takhingga tidak punya bentuk JSON; "nan"/"takhingga" mentah
+        # menghasilkan dokumen yang tidak bisa diurai siapa pun.
+        jika nilai - nilai != 0 {
+            naikkan "json_teks: " + ke_teks(nilai) + " bukan angka JSON yang sah"
+        }
         kembalikan ke_teks(nilai)
     }
     jika t == "teks" {
@@ -74,7 +103,7 @@ fungsi json_teks(nilai) {
         variabel i = 0
         selagi i < panjang(daftar_kunci) {
             variabel k = daftar_kunci[i]
-            tambah(potongan, json_escape(k) + ":" + json_teks(nilai[k]))
+            tambah(potongan, _json_kunci(k) + ":" + json_teks(nilai[k]))
             i = i + 1
         }
         kembalikan "{" + teks_gabung(potongan, ",") + "}"
@@ -129,53 +158,121 @@ fungsi _json_adalah_digit(c) {
     kembalikan k >= 48 dan k <= 57
 }
 
+# Digit heksa -> nilainya, huruf kecil dan besar. Dibangun di dalam fungsi
+# supaya variabel gelungnya tidak bocor ke namespace pengimpor.
+fungsi _json_tabel_heksa() {
+    variabel tabel = {}
+    untuk i dalam rentang(16) {
+        tabel[_JSON_HEKSA[i]] = i
+        tabel[huruf_besar(_JSON_HEKSA[i])] = i
+    }
+    kembalikan tabel
+}
+_JSON_NILAI_HEKSA = _json_tabel_heksa()
+
+# Empat digit heksa setelah "\u" -> kodenya.
+fungsi _json_baca_u4() {
+    variabel kode = 0
+    variabel j = 0
+    selagi j < 4 {
+        variabel c = _json_maju()
+        variabel d = -1
+        jika c != "" dan c dalam _JSON_NILAI_HEKSA {
+            d = _JSON_NILAI_HEKSA[c]
+        }
+        jika d < 0 {
+            naikkan "json_urai: \\u harus diikuti empat digit heksa pada posisi " + ke_teks(_json_pos)
+        }
+        kode = kode * 16 + d
+        j = j + 1
+    }
+    kembalikan kode
+}
+
+# Satu escape "\u....", termasuk pasangan surrogate UTF-16 untuk karakter di
+# atas U+FFFF ("😀" -> 😀). Surrogate tunggal tidak punya bentuk
+# UTF-8, jadi ditolak.
+fungsi _json_urai_u() {
+    global _json_pos
+    variabel kode = _json_baca_u4()
+    jika kode >= 56320 dan kode < 57344 {
+        naikkan "json_urai: surrogate rendah \\u tanpa pasangan"
+    }
+    jika kode >= 55296 dan kode < 56320 {
+        jika potong(_json_src, _json_pos, 2) != "\\u" {
+            naikkan "json_urai: surrogate tinggi \\u tanpa pasangan"
+        }
+        _json_pos = _json_pos + 2
+        variabel rendah = _json_baca_u4()
+        jika rendah < 56320 atau rendah >= 57344 {
+            naikkan "json_urai: surrogate tinggi \\u tanpa pasangan"
+        }
+        kode = 65536 + (kode - 55296) * 1024 + (rendah - 56320)
+    }
+    kembalikan chr(kode)
+}
+
+# Literal teks bahasa ini tidak mengenal \b dan \f, jadi pakai chr().
+_JSON_ESCAPE = {"\"": "\"", "\\": "\\", "/": "/", "b": chr(8), "f": chr(12),
+                "n": "\n", "r": "\r", "t": "\t"}
+
 fungsi _json_urai_string() {
-    # mengonsumsi tanda kutip pembuka
+    jika _json_intip() != "\"" {
+        naikkan "json_urai: harapkan string pada posisi " + ke_teks(_json_pos)
+    }
     _json_maju()
-    variabel hasil = ""
+    # Potongan disatukan sekali: `hasil = hasil + c` per karakter kuadratik.
+    variabel potongan = daftar()
     selagi tidak _json_di_akhir() {
         variabel c = _json_maju()
         jika c == "\"" {
-            kembalikan hasil
+            kembalikan teks_gabung(potongan, "")
         }
         jika c == "\\" {
             variabel e = _json_maju()
-            jika e == "n" {
-                hasil = hasil + "\n"
-            } jika_lain e == "t" {
-                hasil = hasil + "\t"
-            } jika_lain e == "r" {
-                hasil = hasil + "\r"
-            } jika_lain e == "\"" {
-                hasil = hasil + "\""
-            } jika_lain e == "\\" {
-                hasil = hasil + "\\"
-            } jika_lain e == "/" {
-                hasil = hasil + "/"
+            jika e == "u" {
+                tambah(potongan, _json_urai_u())
+            } jika_lain e != "" dan e dalam _JSON_ESCAPE {
+                tambah(potongan, _JSON_ESCAPE[e])
             } selain {
-                hasil = hasil + e
+                naikkan "json_urai: escape tidak sah '\\" + e + "' pada posisi " + ke_teks(_json_pos - 1)
             }
+        } jika_lain ord(c) < 32 {
+            naikkan "json_urai: karakter kontrol mentah di dalam string pada posisi " + ke_teks(_json_pos - 1)
         } selain {
-            hasil = hasil + c
+            tambah(potongan, c)
         }
     }
     naikkan "json_urai: string tidak ditutup"
 }
 
-fungsi _json_urai_angka() {
+# Satu digit atau lebih; galat bila tidak ada satu pun.
+fungsi _json_digit_wajib() {
     global _json_pos
-    variabel mulai = _json_pos
-    jika _json_intip() == "-" {
-        _json_pos = _json_pos + 1
+    jika tidak _json_adalah_digit(_json_intip()) {
+        naikkan "json_urai: angka tidak sah pada posisi " + ke_teks(_json_pos)
     }
     selagi _json_adalah_digit(_json_intip()) {
         _json_pos = _json_pos + 1
     }
+}
+
+fungsi _json_urai_angka() {
+    global _json_pos
+    variabel mulai = _json_pos
+    # Tata bahasa RFC 8259: -?(0|[1-9][0-9]*)(.[0-9]+)?([eE][+-]?[0-9]+)?
+    # "01", "1.", "-" dan "1e" dulu diterima diam-diam.
+    jika _json_intip() == "-" {
+        _json_pos = _json_pos + 1
+    }
+    jika _json_intip() == "0" {
+        _json_pos = _json_pos + 1
+    } selain {
+        _json_digit_wajib()
+    }
     jika _json_intip() == "." {
         _json_pos = _json_pos + 1
-        selagi _json_adalah_digit(_json_intip()) {
-            _json_pos = _json_pos + 1
-        }
+        _json_digit_wajib()
     }
     # notasi eksponen (e/E)
     variabel ce = _json_intip()
@@ -185,9 +282,7 @@ fungsi _json_urai_angka() {
         jika cs == "+" atau cs == "-" {
             _json_pos = _json_pos + 1
         }
-        selagi _json_adalah_digit(_json_intip()) {
-            _json_pos = _json_pos + 1
-        }
+        _json_digit_wajib()
     }
     kembalikan ke_angka(potong(_json_src, mulai, _json_pos - mulai))
 }
@@ -283,5 +378,9 @@ fungsi json_urai(teks) {
     _json_pos = 0
     variabel hasil = _json_urai_nilai()
     _json_lewati_spasi()
+    # "1 2", "[1]x" dan "truex" dulu dikembalikan sebagian tanpa galat.
+    jika tidak _json_di_akhir() {
+        naikkan "json_urai: data tambahan setelah nilai pada posisi " + ke_teks(_json_pos)
+    }
     kembalikan hasil
 }
