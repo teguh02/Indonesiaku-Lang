@@ -29,6 +29,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **Comprehension menolak token setelah syaratnya** (T-U9). `jika` kedua,
+  `untuk` kedua, atau token sampah sebelum kurung penutup dulu dibuang
+  diam-diam, jadi `[x untuk x dalam a jika p jika q]` mengabaikan `q`. Kini
+  bentuk itu galat kompilasi dengan pesan yang menyebut sebabnya. Regresi:
+  `tests/galat/komprehensi_*`.
+
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal

@@ -1205,6 +1205,8 @@ cetak([k[0] untuk k dalam ["apel", "bunga"]])        # [a, b]
 ```
 
 - Satu `untuk` dan satu `jika` opsional (gabungkan syarat dengan `dan`/`atau`).
+  `untuk` atau `jika` kedua, atau token lain sebelum kurung penutup, adalah
+  galat kompilasi.
 - Variabel loop hanya hidup di dalam comprehension; nama di luar tidak berubah.
 - Boleh bersarang: `[[a * b untuk b dalam rentang(1, 3)] untuk a dalam [1, 2]]`.
 
