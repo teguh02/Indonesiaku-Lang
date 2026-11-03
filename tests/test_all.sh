@@ -187,6 +187,20 @@ if [ -f tests/api_siswa_pg_server.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Daftar builtin ekstensi VS Code harus sama persis dengan defineNative().
+# Daftar yang diketik tangan pernah tertinggal 4 builtin tanpa gejala apa pun.
+if [ -f tests/builtin_konsisten.sh ]; then
+    if bash tests/builtin_konsisten.sh > /tmp/idk_builtin_kons.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} builtin_konsisten"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} builtin_konsisten"
+        sed 's/^/      /' /tmp/idk_builtin_kons.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES builtin_konsisten"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Performa pustaka: json_teks/bita.ke_teks/base64.enkode harus linear.
 # Sama seperti di atas, yang diperiksa bentuk pertumbuhan, bukan ambang detik.
 if [ -f tests/pustaka_performa.sh ]; then
