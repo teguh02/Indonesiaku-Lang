@@ -4,6 +4,7 @@
 #include "object.h"
 #include "table.h"
 #include "value.h"
+#include "vm.h"
 
 #define TABLE_MAX_LOAD 0.75
 
@@ -20,6 +21,9 @@ void freeValueTable(ValueTable* table) {
     initValueTable(table);
 }
 
+// Returns NULL when a _sama_ called during the probe raised: the caller must
+// then neither read nor write the table, and leave the error to unwind
+// (T-U7: d[k] = v used to insert a second key and carry on).
 static ValueEntry* findValueEntry(ValueEntry* entries, int capacity,
                                   Value key, uint32_t hash) {
     uint32_t index = hash % (uint32_t)capacity;
@@ -32,8 +36,9 @@ static ValueEntry* findValueEntry(ValueEntry* entries, int capacity,
         }
         if (entry->state == 2) {
             if (tombstone == NULL) tombstone = entry;
-        } else if (valuesEqual(entry->key, key)) {
-            return entry;
+        } else if (entry->hash == hash) {
+            if (valuesEqual(entry->key, key)) return entry;
+            if (vm.nativeErrorPending) return NULL;
         }
         index = (index + 1) % (uint32_t)capacity;
     }
@@ -45,7 +50,7 @@ bool valueTableGet(ValueTable* table, Value key, Value* value) {
     if (!hashValue(key, &hash)) return false;
 
     ValueEntry* entry = findValueEntry(table->entries, table->capacity, key, hash);
-    if (entry->state != 1) return false;
+    if (entry == NULL || entry->state != 1) return false;
     *value = entry->value;
     return true;
 }
@@ -56,15 +61,20 @@ static void adjustValueCapacity(ValueTable* table, int capacity) {
         entries[i].state = 0;
         entries[i].key = KOSONG_VAL;
         entries[i].value = KOSONG_VAL;
+        entries[i].hash = 0;
     }
 
+    // Keys already in the table are distinct, so each goes into the first
+    // empty slot of its probe sequence: no _hash_ and no _sama_ here. Running
+    // them used to drop an entry whose _hash_ raised mid-resize.
     table->count = 0;
     for (int i = 0; i < table->capacity; i++) {
         ValueEntry* entry = &table->entries[i];
         if (entry->state != 1) continue;
-        uint32_t hash;
-        if (!hashValue(entry->key, &hash)) continue;
-        ValueEntry* dest = findValueEntry(entries, capacity, entry->key, hash);
+        uint32_t index = entry->hash % (uint32_t)capacity;
+        while (entries[index].state != 0) index = (index + 1) % (uint32_t)capacity;
+        ValueEntry* dest = &entries[index];
+        dest->hash = entry->hash;
         dest->state = 1;
         dest->key = entry->key;
         dest->value = entry->value;
@@ -87,22 +97,27 @@ bool valueTableSet(ValueTable* table, Value key, Value value) {
     }
 
     ValueEntry* entry = findValueEntry(table->entries, table->capacity, key, hash);
+    if (entry == NULL) return false;   // _sama_ raised: change nothing
     bool isNewKey = entry->state != 1;
     if (isNewKey && entry->state == 0) table->count++;
 
+    entry->hash = hash;
     entry->state = 1;
     entry->key = key;
     entry->value = value;
     return isNewKey;
 }
 
-bool valueTableDelete(ValueTable* table, Value key) {
+// removedKey receives the key as STORED, so the caller can find it again by
+// identity instead of running _sama_ a second time.
+bool valueTableDelete(ValueTable* table, Value key, Value* removedKey) {
     if (table->count == 0) return false;
     uint32_t hash;
     if (!hashValue(key, &hash)) return false;
 
     ValueEntry* entry = findValueEntry(table->entries, table->capacity, key, hash);
-    if (entry->state != 1) return false;
+    if (entry == NULL || entry->state != 1) return false;
+    *removedKey = entry->key;
     entry->state = 2;   // tombstone
     entry->key = KOSONG_VAL;
     entry->value = KOSONG_VAL;

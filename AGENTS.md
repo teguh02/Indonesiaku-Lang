@@ -280,6 +280,12 @@ allocates and can trigger a GC. Two rules follow, both learned from real bugs:
   triggered by `_sama_` freed them — a use-after-free that the normal suite
   passed and only the sanitizer build caught. Keep values on the stack
   (`peek`), pop after.
+- **A `ValueTable` probe can fail midway.** `findValueEntry` returns NULL when
+  a `_sama_` it ran raised; `valueTableGet`/`Set`/`Delete` then touch
+  nothing, and the opcode must `RESOLVE_MAGIC_ERROR()` right after. Entries
+  store their hash, so a probe skips `_sama_` on a hash mismatch and a resize
+  never runs user code. Never re-hash keys in `adjustValueCapacity`: a
+  `_hash_` that raised there used to drop the entry silently.
 - **A method that only declares a contract must NOT be flattened.** Copying
   an `@abstrak` method's empty body into a subclass lets it beat a real
   implementation inherited from a later base -- the mixin case
