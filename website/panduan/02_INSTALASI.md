@@ -945,6 +945,25 @@ ls indk.exe
 indk.exe
 ```
 
+#### Huruf non-ASCII rusak, atau skrip di folder non-Latin tidak bisa dibuka
+
+Gejala pada Indonesiaku **1.4.0** di Windows:
+
+- `cetak("☕")` tampil sebagai `Γÿò` di cmd/PowerShell;
+- skrip di folder seperti `日本\` gagal dengan `Tidak dapat membuka file "??/s.idk".`;
+- berkas UTF-8 yang disimpan "dengan BOM" ditolak dengan `Karakter tidak dikenal`.
+
+Ketiganya diperbaiki di versi sesudah 1.4.0. Interpreter kini memakai API
+Unicode Windows untuk jalur, menyetel konsol ke UTF-8 selama berjalan, dan
+melewati BOM. Di 1.4.0, pakai solusi sementara ini:
+
+```powershell
+chcp 65001            # konsol UTF-8 sebelum menjalankan indk
+```
+
+Selain itu, letakkan skrip di jalur ASCII, dan simpan berkas sebagai "UTF-8"
+tanpa BOM.
+
 ### Kendala di Linux/macOS
 #### Galat: "make: command not found"
 

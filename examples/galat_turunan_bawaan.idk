@@ -1,0 +1,38 @@
+# Regresi T-U6: subkelas buatan pengguna dari galat bawaan mewarisi SELURUH
+# leluhurnya, bukan hanya induk langsungnya.
+kelas B2 < GalatBagiNol { }
+coba {
+    naikkan B2()
+} kecuali GalatAritmetika sebagai e {
+    cetak("B2 tertangkap sebagai GalatAritmetika")
+} kecuali e {
+    cetak("SALAH: lolos ke catch-all")
+}
+
+kelas N1 < GalatNilai { }
+coba {
+    naikkan N1()
+} kecuali Galat sebagai e {
+    cetak("N1 tertangkap sebagai Galat")
+}
+
+# Turunan bertingkat dan pewarisan ganda dengan galat bawaan.
+kelas N2 < N1 { }
+kelas Campur { }
+kelas N3 < Campur, GalatNilai { }
+cetak(adalah_instansi(N2(), Galat), adalah_instansi(N2(), GalatNilai))
+cetak(adalah_instansi(N3(), Galat), adalah_instansi(N3(), Campur))
+coba {
+    naikkan N3()
+} kecuali Galat sebagai e {
+    cetak("N3 tertangkap sebagai Galat")
+}
+
+# Leluhur yang tidak terkait tetap tidak menangkap.
+coba {
+    naikkan B2()
+} kecuali GalatNilai sebagai e {
+    cetak("SALAH: B2 bukan GalatNilai")
+} kecuali GalatBagiNol sebagai e {
+    cetak("B2 tertangkap sebagai GalatBagiNol")
+}

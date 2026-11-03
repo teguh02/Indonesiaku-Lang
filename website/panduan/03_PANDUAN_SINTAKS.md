@@ -2408,9 +2408,11 @@ Dua hal yang perlu diingat:
 
 - **Pesan hanya dinilai kalau penegasannya gagal.** Jadi
   `pastikan benar, hitung_mahal()` tidak pernah memanggil `hitung_mahal()`.
-- **Jangan tulis `pastikan(kondisi, pesan)` dengan kurung.** Di sini itu
-  langsung ditolak saat kompilasi (`Harapkan ')' setelah ekspresi`), bukan
-  diam-diam selalu lolos seperti di Python — tetap saja, tulis tanpa kurung.
+- **Jangan tulis `pastikan(kondisi, pesan)` dengan kurung.** Kurung dengan
+  koma membentuk satu tupel, dan tupel tidak kosong selalu benar. Python
+  hanya memberi peringatan dan penegasannya tidak pernah gagal. Indonesiaku
+  menolaknya saat kompilasi (`Kondisi 'pastikan' berupa tupel sehingga
+  selalu benar`), jadi tulis tanpa kurung.
   `pastikan(kondisi)` dengan satu argumen sah, kurungnya hanya mengelompokkan
   ekspresi biasa.
 
