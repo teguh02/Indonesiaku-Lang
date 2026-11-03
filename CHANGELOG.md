@@ -29,6 +29,16 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **Variabel `untuk` mengikuti lingkup Python** (T-U4, keputusan K21).
+  Dulu ia menjadi lokal blok baru: `k = 99; untuk k dalam rentang(3) { }`
+  menyisakan `k` = 99 (hasil salah tanpa galat), dan nama itu tidak
+  terdefinisi setelah loop. Kini setiap elemen di-assign seperti
+  `k = elemen`: global di tingkat skrip, lokal fungsi (K3) di dalam fungsi,
+  dan mengikuti `global`/`nonlokal`, sehingga nilainya tetap elemen terakhir.
+  Variabel comprehension tetap privat. Kode yang sengaja membayangi nama di
+  luar dengan variabel loop kini menimpanya. Regresi:
+  `examples/untuk_lingkup.idk`.
+
 - **`bita.ke_teks` menolak UTF-8 tidak sah** (T-U16). Dulu hanya byte pemimpin
   yang diperiksa, sehingga `[0xC0, 0x80]` (*overlong*) menjadi NUL dan byte
   lanjutan yang salah, surrogate, serta kode di atas `U+10FFFF` diterima.

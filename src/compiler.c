@@ -2226,6 +2226,22 @@ static void prescanFunctionBody() {
                 token = scanToken();
             } while (token.type == TOKEN_COMMA);
             continue;
+        } else if (token.type == TOKEN_UNTUK &&
+                   (prev.type == TOKEN_NEWLINE || prev.type == TOKEN_LEFT_BRACE ||
+                    prev.type == TOKEN_RIGHT_BRACE || prev.type == TOKEN_SEMICOLON)) {
+            // K21: a statement-level `untuk x dalam` assigns x, so x is a
+            // function-local like `x = ...`. Only at statement start: the
+            // `untuk` of a comprehension follows an expression, and its
+            // variable stays private to the comprehension (Python 3).
+            Token next = scanToken();
+            if (next.type == TOKEN_IDENTIFIER && pendingCount < UINT8_COUNT) {
+                pending[pendingCount++] = next;
+            }
+            prev2 = token;
+            prev = next;
+            token = scanToken();
+            chainCount = 0;
+            continue;
         } else if (token.type == TOKEN_VARIABEL) {
             // `variabel x` at the body's own depth owns that slot; a prescan
             // slot for the same name would collide in the same scope.
@@ -2687,6 +2703,8 @@ static void expressionStatement() {
     emitByte(OP_POP);
 }
 
+static void assignToName(Token name);
+
 static void forStatement() {
     // Desugar:  untuk x dalam <list> { body }
     // into an index-based loop over the list, using hidden local slots.
@@ -2715,11 +2733,11 @@ static void forStatement() {
     emitConstant(NUMBER_VAL(-1));
     int idxSlot = addSyntheticLocal("  untuk idx");
 
-    // User-visible loop variable, initialized to kosong for now.
-    emitByte(OP_KOSONG);
-    addLocal(varName);
-    markInitialized();
-    int varSlot = current->localCount - 1;
+    // K21: the loop variable is NOT a block-scoped local. Each element is
+    // assigned exactly like `x = elemen`: a global at script level, the K3
+    // function-local (pre-declared by prescanFunctionBody) inside a function,
+    // and it honours global/nonlokal. So, as in Python, it overwrites a name
+    // that already exists and keeps its last value after the loop.
 
     consume(TOKEN_LEFT_BRACE, "Harapkan '{' setelah ekspresi dalam 'untuk'.");
 
@@ -2752,8 +2770,7 @@ static void forStatement() {
     emitBytes(OP_GET_LOCAL, (uint8_t)seqSlot);
     emitBytes(OP_GET_LOCAL, (uint8_t)idxSlot);
     emitByte(OP_ITER_NEXT);
-    emitBytes(OP_SET_LOCAL, (uint8_t)varSlot);
-    emitByte(OP_POP);
+    assignToName(varName);
     emitByte(OP_TRY_END);
     current->tryDepth--;
     int iteratorNormal = emitJump(OP_JUMP);
@@ -3797,15 +3814,19 @@ static void buangStatement() {
     buangFromBase();
 }
 
-// a, b = 1, 2 / a, b = urutan — assign n names from one sequence.
+// Pops the value on top of the stack into `name`, resolving it like a plain
+// `name = ...`: local, upvalue, else global (define-or-update). Used by
+// a, b = 1, 2 / a, b = urutan and by the `untuk` loop variable (K21).
 static void assignToName(Token name) {
-    int arg = resolveLocal(current, &name);
+    // `global x` wins over an enclosing function's local of the same name.
+    bool forceGlobal = scopeNameDeclared(current->globals, current->globalCount, &name);
+    int arg = forceGlobal ? -1 : resolveLocal(current, &name);
     if (arg != -1) {
         emitBytes(OP_SET_LOCAL, (uint8_t)arg);
         emitByte(OP_POP);
         return;
     }
-    int upvalue = resolveUpvalue(current, &name);
+    int upvalue = forceGlobal ? -1 : resolveUpvalue(current, &name);
     if (upvalue != -1) {
         emitBytes(OP_SET_UPVALUE, (uint8_t)upvalue);
         emitByte(OP_POP);
