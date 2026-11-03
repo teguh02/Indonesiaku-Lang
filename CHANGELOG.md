@@ -29,6 +29,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Subkelas galat bawaan mewarisi seluruh leluhurnya** (T-U6). Di 1.4.0,
+  `kelas B2 < GalatBagiNol { }` tidak tertangkap oleh `kecuali
+  GalatAritmetika` maupun `kecuali Galat`: MRO C3 menganggap kelas galat yang
+  didefinisikan dari C tidak punya leluhur. Regresi:
+  `examples/galat_turunan_bawaan.idk`.
+
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
