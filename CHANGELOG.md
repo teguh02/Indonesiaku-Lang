@@ -29,6 +29,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **Comprehension menolak token setelah syaratnya** (T-U9). `jika` kedua,
+  `untuk` kedua, atau token sampah sebelum kurung penutup dulu dibuang
+  diam-diam, jadi `[x untuk x dalam a jika p jika q]` mengabaikan `q`. Kini
+  bentuk itu galat kompilasi dengan pesan yang menyebut sebabnya. Regresi:
+  `tests/galat/komprehensi_*`.
+
 - **Galat dari `_logika_` dan `_sama_` langsung membatalkan operasinya**
   (T-U7). Di 1.4.0, `jika B() { ... }` dengan `_logika_` yang naik tetap
   menjalankan cabangnya. Pada tabrakan hash, `d[k] = v` dengan `_sama_`

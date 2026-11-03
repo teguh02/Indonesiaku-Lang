@@ -1012,6 +1012,25 @@ static bool colonBeforeComprehensionFor() {
 // re-read from a saved scanner position AFTER the header has declared 'x' —
 // see the layout in the body. (Only one 'untuk' and one optional 'jika' are
 // supported; chain conditions with 'dan'/'atau'.)
+// After the iterable or the filter only `expected` may follow. Anything else
+// used to be skipped silently, so `[x untuk x dalam a jika p jika q]` dropped
+// the second filter and returned a wrong list (T-U9).
+static void expectComprehensionEnd(TokenType expected, TokenType closer) {
+    if (check(expected)) return;
+    if (check(TOKEN_UNTUK)) {
+        errorAtCurrent("Comprehension hanya mendukung satu 'untuk'.");
+    } else if (check(TOKEN_JIKA)) {
+        errorAtCurrent("Comprehension hanya mendukung satu 'jika'; "
+                       "gabungkan syarat dengan 'dan'.");
+    } else if (closer == TOKEN_RIGHT_PAREN) {
+        errorAtCurrent("Harapkan ')' di akhir comprehension.");
+    } else if (closer == TOKEN_RIGHT_BRACE) {
+        errorAtCurrent("Harapkan '}' di akhir comprehension.");
+    } else {
+        errorAtCurrent("Harapkan ']' di akhir comprehension.");
+    }
+}
+
 static void comprehensionBody(ComprehensionKind kind, TokenType closer,
                               ScannerState elemState, Token elemCurrent, Token elemPrevious,
                               ScannerState untukState, Token untukCurrent, Token untukPrevious) {
@@ -1164,6 +1183,7 @@ static void comprehensionBody(ComprehensionKind kind, TokenType closer,
         // Python's comp_if is an or_test: no conditional expression here,
         // so a 'jika' inside the condition is never mistaken for one.
         parsePrecedence(PREC_OR);
+        expectComprehensionEnd(closer, closer);
         skipJump = emitJump(OP_JUMP_IF_FALSE);
         emitByte(OP_POP);
     }
@@ -1232,6 +1252,7 @@ static void comprehensionBody(ComprehensionKind kind, TokenType closer,
     // the 'jika' starts the filter, not a conditional expression 'a jika c
     // selain ...'. Wrap it in parentheses to use a conditional expression.
     parsePrecedence(PREC_OR);
+    expectComprehensionEnd(hasCond ? TOKEN_JIKA : closer, closer);
     emitBytes(OP_CALL, 1);
 
     restoreScanner(afterState);
