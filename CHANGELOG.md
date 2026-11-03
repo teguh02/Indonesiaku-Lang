@@ -29,6 +29,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Subkelas galat bawaan mewarisi seluruh leluhurnya** (T-U6). Di 1.4.0,
+  `kelas B2 < GalatBagiNol { }` tidak tertangkap oleh `kecuali
+  GalatAritmetika` maupun `kecuali Galat`: MRO C3 menganggap kelas galat yang
+  didefinisikan dari C tidak punya leluhur. Regresi:
+  `examples/galat_turunan_bawaan.idk`.
+
 - ⚠️ **`pastikan(kondisi, pesan)` dengan kurung ditolak saat kompilasi**
   (T-U5). Kurung dengan koma membentuk satu tupel yang selalu benar, jadi di
   1.4.0 penegasan itu tidak pernah gagal, padahal panduan sudah menyebutnya
