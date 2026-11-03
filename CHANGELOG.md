@@ -29,6 +29,15 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Galat dari `_logika_` dan `_sama_` langsung membatalkan operasinya**
+  (T-U7). Di 1.4.0, `jika B() { ... }` dengan `_logika_` yang naik tetap
+  menjalankan cabangnya. Pada tabrakan hash, `d[k] = v` dengan `_sama_`
+  yang naik juga tetap menyisipkan kunci kedua, dan galatnya baru muncul
+  belakangan dengan jenis yang hilang. Tabel kamus kini menyimpan hash
+  setiap kunci, sehingga `_sama_` hanya dipanggil bila hash-nya sama (seperti
+  Python) dan resize tidak lagi memanggil `_hash_`. Regresi:
+  `examples/oop/galat_ajaib_langsung.idk`.
+
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
