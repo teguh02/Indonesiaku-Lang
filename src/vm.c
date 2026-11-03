@@ -39,6 +39,15 @@ static const char* const MAGIC_NAMES[MAGIC_COUNT] = {
 static int formatInstanceMagic(TextBuf* out, Value instance, bool repr);
 static int instanceEqualMagic(Value a, Value b);
 static int instanceHashMagic(Value value, uint32_t* out);
+
+// valueDepthHook: == or hash nested too deep. Only the first report counts:
+// every enclosing level returns false on the way out.
+static void valueDepthError(const char* what, int limit) {
+    if (vm.nativeErrorPending) return;
+    nativeRaiseKelas(vm.galatRekursi, "Kedalaman %s melebihi %d tingkat "
+                     "(struktur terlalu dalam atau merujuk dirinya sendiri).",
+                     what, limit);
+}
 // Single ancestor walk used by every chain lookup. Classes built with one
 // parent (and the error classes defined from C) never get an mro array at
 // all: their superclass chain already IS their MRO, so allocating one would
@@ -327,6 +336,7 @@ void initVM() {
     formatInstanceHook = formatInstanceMagic;
     instanceEqualHook = instanceEqualMagic;
     instanceHashHook = instanceHashMagic;
+    valueDepthHook = valueDepthError;
     vm.runtimeErrorClass = NULL;
     vm.galat = defineErrorClass("Galat", NULL);
     vm.galatAritmetika = defineErrorClass("GalatAritmetika", vm.galat);
@@ -1065,15 +1075,20 @@ static bool c3Linearize(ObjClass* klass, ObjClass** bases, int baseCount) {
         return false;
     }
 
+    // L(Bi) via ancestors(): a class defined from C (the built-in error
+    // classes) has no mro array, its superclass chain IS its MRO. Copying
+    // only `mro` gave GalatBagiNol an empty list, so `B2 < GalatBagiNol`
+    // lost GalatAritmetika and Galat and `kecuali Galat` missed it (T-U6).
     for (int i = 0; i < baseCount; i++) {
-        if (bases[i]->mroCount > MRO_MAX) {
-            runtimeError("Rantai pewarisan terlalu panjang.");
-            return false;
+        int n = 0;
+        for (AncestorIter it = ancestors(bases[i]); ancestorNext(&it); ) {
+            if (n >= MRO_MAX) {
+                runtimeError("Rantai pewarisan terlalu panjang.");
+                return false;
+            }
+            lists[i][n++] = it.klass;
         }
-        for (int j = 0; j < bases[i]->mroCount; j++) {
-            lists[i][j] = bases[i]->mro[j];
-        }
-        lengths[i] = bases[i]->mroCount;
+        lengths[i] = n;
     }
     for (int i = 0; i < baseCount; i++) lists[baseCount][i] = bases[i];
     lengths[baseCount] = baseCount;
@@ -1212,7 +1227,7 @@ static bool moduleSourceHasNul = false;   // why the last read failed
 
 static char* readModuleSource(const char* path) {
     moduleSourceHasNul = false;
-    FILE* file = fopen(path, "rb");
+    FILE* file = sistemBukaBerkas(path, "rb");
     if (file == NULL) return NULL;
 
     fseek(file, 0L, SEEK_END);
@@ -1231,6 +1246,7 @@ static char* readModuleSource(const char* path) {
         return NULL;
     }
     buffer[read] = '\0';
+    read = stripUtf8Bom(buffer, read);
     normalizeNewlines(buffer, read);
     return buffer;
 }
@@ -1272,7 +1288,7 @@ static bool getGlobalValue(CallFrame* frame, ObjString* name, Value* out) {
 #endif
 
 static bool fileExists(const char* path) {
-    FILE* f = fopen(path, "rb");
+    FILE* f = sistemBukaBerkas(path, "rb");
     if (f == NULL) return false;
     fclose(f);
     return true;
@@ -1317,8 +1333,9 @@ static bool moduleNameToRelPath(const char* name, char* out, size_t outSize) {
 
 // `rel` inside each directory of INDK_PATH, in order.
 static bool findInSearchPath(const char* rel, char* out, size_t outSize) {
-    const char* search = getenv("INDK_PATH");
+    char* search = sistemAmbilLingkungan("INDK_PATH");
     if (search == NULL) return false;
+    bool found = false;
     const char* start = search;
     while (*start != '\0') {
         const char* end = strchr(start, INDK_PATH_SEP);
@@ -1329,13 +1346,15 @@ static bool findInSearchPath(const char* rel, char* out, size_t outSize) {
             dir[partLen] = '\0';
             if (snprintf(out, outSize, "%s%c%s", dir, INDK_DIR_SEP, rel) < (int)outSize &&
                 fileExists(out)) {
-                return true;
+                found = true;
+                break;
             }
         }
         if (end == NULL) break;
         start = end + 1;
     }
-    return false;
+    free(search);
+    return found;
 }
 
 // Standard-library directories located from the RUNNING INTERPRETER, so an
@@ -1481,10 +1500,27 @@ static bool loadModule(ObjString* name, Value* out) {
     return true;
 }
 
-static bool importModule(ObjString* path) {
-    // Already loaded? Skip.
+// Cache key of `impor "path"` run INTO `into`: once per importing module.
+// Modules are never freed (loadedModules / vm.mainModule root them), so
+// their address is a stable identity for the process lifetime.
+static ObjString* fileImportKey(ObjString* path, ObjModule* into) {
+    if (into == NULL) return path;
+    char key[700];
+    int n = snprintf(key, sizeof key, "%p%s", (void*)into, path->chars);
+    if (n < 0 || n >= (int)sizeof key) n = (int)sizeof key - 1;
+    return copyString(key, n);
+}
+
+// `impor "berkas.idk"`: the file's top level runs in the IMPORTER's module,
+// so its definitions land in the importer's globals -- the shared namespace
+// the old form promises, without the builtin table. It used to be compiled
+// with no module, writing into vm.globals, which every namespace module
+// reads: `fungsi panjang(x)` in such a file hijacked panjang() inside the
+// standard library (T-U8).
+static bool importModule(ObjString* path, ObjModule* into) {
+    ObjString* key = fileImportKey(path, into);
     Value dummy;
-    if (tableGet(&vm.loadedModules, path, &dummy)) {
+    if (tableGet(&vm.loadedModules, key, &dummy)) {
         return true;
     }
 
@@ -1507,10 +1543,13 @@ static bool importModule(ObjString* path) {
         return false;
     }
 
-    // Mark as loaded before running to break import cycles.
-    tableSet(&vm.loadedModules, path, BOOL_VAL(true));
+    // Mark as loaded before running to break import cycles. Root the key:
+    // tableSet may grow the table and collect it.
+    push(OBJ_VAL(key));
+    tableSet(&vm.loadedModules, key, BOOL_VAL(true));
+    pop();
 
-    ObjFunction* function = compile(source);
+    ObjFunction* function = compileInModule(source, into);
     free(source);
     if (function == NULL) {
         runtimeError("Gagal mengompilasi modul '%s'.", path->chars);
@@ -2423,6 +2462,7 @@ static InterpretResult run() {
                         return INTERPRET_RUNTIME_ERROR;
                     }
                     if (!dictDelete(AS_DICT(container), key)) {
+                        RESOLVE_MAGIC_ERROR();  // _sama_ raised (T-U7)
                         vm.runtimeErrorClass = vm.galatKunci;
                         if (IS_STRING(key)) {
                             runtimeError("Kunci '%s' tidak ada di kamus.", AS_CSTRING(key));
@@ -2850,9 +2890,14 @@ static InterpretResult run() {
                 push(NUMBER_VAL(pow(a, b)));
                 break;
             }
-            case OP_NOT:
-                push(BOOL_VAL(isFalsey(pop())));
+            case OP_NOT: {
+                // peek, not pop: _logika_ runs user code (K19), and a raise
+                // there must abort 'tidak' instead of yielding a value (T-U7).
+                bool falsey = isFalsey(peek(0));
+                RESOLVE_MAGIC_ERROR();
+                vm.stackTop[-1] = BOOL_VAL(falsey);
                 break;
+            }
             case OP_NEGATE: {
                 if (!IS_NUMBER(peek(0))) {
                     vm.runtimeErrorClass = vm.galatTipe;
@@ -2908,7 +2953,10 @@ static InterpretResult run() {
             }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
-                if (isFalsey(peek(0))) {
+                bool falsey = isFalsey(peek(0));
+                // A _logika_ that raised must not pick a branch (T-U7).
+                RESOLVE_MAGIC_ERROR();
+                if (falsey) {
                     frame->ip += offset;
                 }
                 break;
@@ -3204,6 +3252,7 @@ static InterpretResult run() {
                     // runs: it compares with _sama_, whose call allocates and
                     // can trigger a GC that would otherwise free them.
                     bool ada = valueTableGet(&dict->table, key, &value);
+                    RESOLVE_MAGIC_ERROR();      // _sama_ raised (T-U7)
                     vm.stackTop -= 2;
                     if (!ada) {
                         push(KOSONG_VAL);
@@ -3290,6 +3339,7 @@ static InterpretResult run() {
                         return INTERPRET_RUNTIME_ERROR;
                     }
                     dictSet(dict, key, value);
+                    RESOLVE_MAGIC_ERROR();      // _sama_ raised: nothing inserted
                     pop();  // value
                     pop();  // key
                     pop();  // dict
@@ -3805,13 +3855,14 @@ static InterpretResult run() {
                 break;
             }
             case OP_IMPORT: {
-                ObjString* path = AS_STRING(pop());
-                bool alreadyLoaded = false;
+                // peek, not pop: building the cache key allocates.
+                ObjString* path = AS_STRING(peek(0));
+                ObjModule* into = frame->closure->function->module;
+                ObjString* key = fileImportKey(path, into);
                 Value dummy;
-                if (tableGet(&vm.loadedModules, path, &dummy)) {
-                    alreadyLoaded = true;
-                }
-                if (!importModule(path)) {
+                bool alreadyLoaded = tableGet(&vm.loadedModules, key, &dummy);
+                pop();
+                if (!importModule(path, into)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 if (alreadyLoaded) {

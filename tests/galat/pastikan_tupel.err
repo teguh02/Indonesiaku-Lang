@@ -1,0 +1,3 @@
+[baris 2, kolom 31] Kesalahan di ')': Kondisi 'pastikan' berupa tupel sehingga selalu benar. Tulis tanpa kurung: pastikan kondisi, "pesan".
+    pastikan(1 == 2, "harus gagal")
+                                  ^

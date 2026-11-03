@@ -134,11 +134,13 @@ bool dictSet(ObjDict* dict, Value key, Value value) {
 }
 
 bool dictDelete(ObjDict* dict, Value key) {
-    if (!valueTableDelete(&dict->table, key)) return false;
+    Value stored;
+    if (!valueTableDelete(&dict->table, key, &stored)) return false;
     // Remove the key from the insertion-order list, keeping it contiguous so
-    // iteration and dictKeyAt never have to skip tombstones.
+    // iteration and dictKeyAt never have to skip tombstones. By identity with
+    // the stored key: valuesEqual would run _sama_ against every key.
     for (int i = 0; i < dict->keys.count; i++) {
-        if (valuesEqual(dict->keys.values[i], key)) {
+        if (valuesIdentical(dict->keys.values[i], stored)) {
             for (int j = i; j < dict->keys.count - 1; j++) {
                 dict->keys.values[j] = dict->keys.values[j + 1];
             }

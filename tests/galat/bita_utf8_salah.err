@@ -1,5 +1,5 @@
 ke_teks: byte 128..191 tanpa pemimpin
-[baris 77, kolom 70] dalam ke_teks()
+[baris 81, kolom 70] dalam ke_teks()
     …("ke_teks: byte 128..191 tanpa pemimpin")
                                              ^
 [baris 3, kolom 20] dalam skrip

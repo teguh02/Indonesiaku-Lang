@@ -1,0 +1,26 @@
+# Regresi T-U16: bita.ke_teks menolak UTF-8 tidak sah seperti bytes.decode().
+dari bita impor ke_teks, ke_bita, GalatBita
+fungsi coba_urai(nama, data) {
+    coba {
+        t = ke_teks(data)
+        cetak(nama, "->", panjang(t), [ord(c) untuk c dalam t])
+    } kecuali GalatBita sebagai e {
+        cetak(nama, "-> GalatBita:", e.pesan)
+    }
+}
+coba_urai("ascii", [104, 105])
+coba_urai("é", [0xC3, 0xA9])
+coba_urai("€", [0xE2, 0x82, 0xAC])
+coba_urai("emoji", [0xF0, 0x9F, 0x98, 0x80])
+coba_urai("U+10FFFF", [0xF4, 0x8F, 0xBF, 0xBF])
+coba_urai("overlong NUL", [0xC0, 0x80])
+coba_urai("overlong 3", [0xE0, 0x80, 0x80])
+coba_urai("overlong 4", [0xF0, 0x80, 0x80, 0x80])
+coba_urai("surrogate", [0xED, 0xA0, 0x80])
+coba_urai("di atas 10FFFF", [0xF4, 0x90, 0x80, 0x80])
+coba_urai("pemimpin F5", [0xF5, 0x80, 0x80, 0x80])
+coba_urai("lanjutan salah", [0xC3, 0x41])
+coba_urai("lanjutan menggantung", [0x80])
+coba_urai("terpotong", [0xE2, 0x82])
+teks_asli = "Halo, dunia — 日本 ☕ 😀"
+cetak("bolak-balik:", ke_teks(ke_bita(teks_asli)) == teks_asli)

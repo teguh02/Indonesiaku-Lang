@@ -1,0 +1,30 @@
+# Regresi T-U15: json_urai/json_teks mengikuti RFC 8259 seperti modul json Python.
+impor json
+fungsi urai(s) {
+    coba {
+        cetak("ok ", repr(json.json_urai(s)))
+    } kecuali e {
+        cetak("err", e)
+    }
+}
+untuk s dalam ["\"\u00e9\"", "\"\b\f\"", "\"a\qb\"", "\"\ud83d\ude00\"", "\"\ud83d\"", "\"\ude00\"", "\"\u00G0\"", "\"\u00\"",
+              "1 2", "[1]x", "truex", "-", "01", "1.", "1e", "-0", "0.5", "-1.5e+3", "1E2", "  [1, {\"a\": null}]  ",
+              "{a: 1}", "{\"a\": 1,}", "[1,]", "\"tab\tmentah\"", "\"\/\"", ""] {
+    urai(s)
+}
+fungsi teks(v) {
+    coba {
+        cetak("ok ", repr(json.json_teks(v)))
+    } kecuali e {
+        cetak("err", e)
+    }
+}
+teks(chr(1) + "a" + chr(31))
+teks([ke_angka("inf")])
+teks(ke_angka("nan"))
+teks({1: "satu", benar: 2, kosong: 3, 1.5: 4})
+teks({(1, 2): 1})
+teks(["é", "\n", 1.0, -0, 10000000000000000])
+asli = {"a": [1, 2.5, "x\ty\"z\\", kosong, benar], "b": chr(7) + "😀"}
+cetak("bolak-balik:", json.json_urai(json.json_teks(asli)) == asli)
+cetak("\b\f ->", [ord(c) untuk c dalam json.json_urai("\"\b\f\"")])

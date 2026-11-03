@@ -152,6 +152,9 @@ Aturan yang dijamin:
   sama ada di luar. Gunakan `global x` untuk menulis variabel tingkat skrip,
   `nonlokal x` untuk menulis variabel fungsi pembungkus.
 - `variabel x = ...` menamai lokal yang sama; keduanya setara.
+- Variabel `untuk x dalam ...` di-assign seperti `x = elemen` (K21): ia
+  menimpa nama yang sudah ada dan tetap terdefinisi setelah loop, dengan
+  nilai elemen terakhir. Variabel comprehension tetap privat.
 - `buang x` menghapus nama; membacanya lagi menaikkan `GalatNama`.
 
 ## 7. Alur kendali

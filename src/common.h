@@ -31,6 +31,19 @@ static inline bool sourceHasNul(const char* text, size_t length) {
 // "\r" become "\n", in place; returns the new length. Without this a file
 // checked out with CRLF (git on Windows) leaks '\r' into triple-quoted
 // strings, panjang(), and error snippets.
+// Drop a leading UTF-8 byte order mark (EF BB BF), as Python does for source
+// files; Notepad and VS Code's "UTF-8 with BOM" write one. `text` must be
+// NUL-terminated at `length`; returns the new length. Call it before
+// normalizeNewlines on every path that reads source.
+static inline size_t stripUtf8Bom(char* text, size_t length) {
+    if (length >= 3 && (unsigned char)text[0] == 0xEF && (unsigned char)text[1] == 0xBB &&
+        (unsigned char)text[2] == 0xBF) {
+        memmove(text, text + 3, length - 3 + 1);   // + 1: the terminator
+        return length - 3;
+    }
+    return length;
+}
+
 static inline size_t normalizeNewlines(char* text, size_t length) {
     size_t out = 0;
     for (size_t i = 0; i < length; i++) {

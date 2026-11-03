@@ -7,6 +7,7 @@
 #include "compiler.h"
 #include "debug.h"
 #include "format.h"
+#include "native.h"
 #include "object.h"
 #include "vm.h"
 #include "sistem.h"
@@ -36,11 +37,32 @@ static int braceDelta(const char* s) {
     return depth;
 }
 
+// Appends `line` to the growable *buffer. Returns false when out of memory.
+static bool appendReplLine(char** buffer, size_t* length, size_t* capacity,
+                           const char* line, size_t lineLength) {
+    if (*length + lineLength + 1 > *capacity) {
+        size_t grown = *capacity;
+        while (*length + lineLength + 1 > grown) grown *= 2;
+        char* bigger = (char*)realloc(*buffer, grown);
+        if (bigger == NULL) return false;
+        *buffer = bigger;
+        *capacity = grown;
+    }
+    memcpy(*buffer + *length, line, lineLength);
+    *length += lineLength;
+    (*buffer)[*length] = '\0';
+    return true;
+}
+
 static void repl() {
-    char line[1024];
-    char buffer[8192];
+    // Both grow: a fixed 1024-byte line split long input in two, and the
+    // 8192-byte block buffer silently dropped every line past its end (T-U10).
+    size_t capacity = 8192;
+    char* buffer = (char*)malloc(capacity);
+    if (buffer == NULL) return;
 
     for (;;) {
+        size_t length = 0;
         buffer[0] = '\0';
         int depth = 0;
         bool first = true;
@@ -49,19 +71,24 @@ static void repl() {
         // are unclosed braces so multi-line blocks (fungsi/kelas/jika/...) work.
         for (;;) {
             printf(first ? "> " : "... ");
-            if (!fgets(line, sizeof(line), stdin)) {
+            size_t lineLength;
+            char* line = readLineAlloc(stdin, &lineLength);
+            if (line == NULL) {
                 printf("\n");
                 if (buffer[0] != '\0') interpret(buffer);
+                free(buffer);
                 return;
             }
             first = false;
 
-            // Append the line to the accumulation buffer (bounded).
-            if (strlen(buffer) + strlen(line) < sizeof(buffer)) {
-                strcat(buffer, line);
-            }
-
+            bool appended = appendReplLine(&buffer, &length, &capacity, line, lineLength);
             depth += braceDelta(line);
+            free(line);
+            if (!appended) {
+                fprintf(stderr, "Tidak cukup memori untuk baris REPL.\n");
+                free(buffer);
+                return;
+            }
             if (depth <= 0) break;  // block complete (or no block opened)
         }
 
@@ -70,7 +97,7 @@ static void repl() {
 }
 
 static char* readFile(const char* path) {
-    FILE* file = fopen(path, "rb");
+    FILE* file = sistemBukaBerkas(path, "rb");
     if (file == NULL) {
         fprintf(stderr, "Tidak dapat membuka file \"%s\".\n", path);
         exit(74);
@@ -114,6 +141,7 @@ static char* readFile(const char* path) {
     }
 
     buffer[bytesRead] = '\0';
+    bytesRead = stripUtf8Bom(buffer, bytesRead);
     normalizeNewlines(buffer, bytesRead);
 
     fclose(file);
@@ -179,7 +207,7 @@ static int formatFile(const char* path, bool write, bool checkOnly) {
         }
     } else if (write) {
         if (strcmp(source, formatted) != 0) {
-            FILE* f = fopen(path, "wb");
+            FILE* f = sistemBukaBerkas(path, "wb");
             if (f == NULL) {
                 fprintf(stderr, "Tidak dapat menulis \"%s\".\n", path);
                 code = 74;
@@ -227,6 +255,7 @@ static int runFile(const char* path) {
 }
 
 int main(int argc, const char* argv[]) {
+    sistemSiapkanProses(&argc, &argv);   // Windows: UTF-8 argv + console
     sistemAturArgv0(argv[0]);
 
     // `indk --sandbox skrip.idk ...`: refuse environment, directory listing
