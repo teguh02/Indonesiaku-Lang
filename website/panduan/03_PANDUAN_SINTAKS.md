@@ -324,6 +324,12 @@ Instansi kelas (dan fungsi, berkas, soket) tetap dibandingkan berdasarkan
 identitas, bukan isi. Operator `dalam` ikut memakai kesetaraan struktural,
 jadi `[1, 2] dalam [[1, 2]]` bernilai `benar`.
 
+Perbandingan struktural (dan hash tupel/`himpunan_beku` sebagai kunci kamus)
+menelusuri paling banyak 1000 tingkat sarang. Struktur yang lebih dalam,
+atau daftar yang memuat dirinya sendiri, menaikkan `GalatRekursi`, seperti
+`RecursionError` di Python. Tidak ada hasil `salah` diam-diam dan tidak ada
+crash.
+
 Perbandingan dapat dirantai seperti Python: operand tengah dihitung sekali dan evaluasi berhenti saat salah.
 
 ```indonesiaku

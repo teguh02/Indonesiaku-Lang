@@ -29,6 +29,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **`==` dan hash pada struktur sangat dalam menaikkan `GalatRekursi`**
+  (T-U13, T-U14). Dulu `==` berhenti di 64 tingkat dan diam-diam menjawab
+  `salah`, termasuk untuk dua daftar yang identik, dan hash tupel bersarang
+  ribuan tingkat sebagai kunci kamus membuat interpreter crash. Kini batasnya
+  1000 tingkat, seperti `RecursionError` di Python. Daftar yang memuat dirinya
+  sendiri juga menaikkan galat, bukan lagi `salah`. Regresi:
+  `examples/kedalaman_sama_hash.idk`, `tests/galat/hash_tupel_dalam.idk`.
+
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
