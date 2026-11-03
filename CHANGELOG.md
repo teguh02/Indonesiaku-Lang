@@ -186,6 +186,16 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   **merusak data** di bawah `sql_mode = NO_BACKSLASH_ESCAPES`: `x\` tersimpan
   sebagai `x\\`. Escaping yang benar mustahil tanpa melacak sql_mode server,
   jadi jalur itu diganti prepared statement.
+- Sisa draf COM_QUERY (`_kutip`, `_rakit`) dan enam fungsi yang tersalin dua
+  kali masih tertinggal di `pustaka/my.idk`. Definisi kedua menimpa yang
+  pertama, jadi perilaku tidak terpengaruh, tetapi berkasnya menyimpan 195
+  baris mati termasuk perakit SQL berbasis penggabungan teks yang sudah
+  ditinggalkan. Seluruh sisa itu dihapus.
+- Ekstensi VS Code tidak menyorot `teks_gabung`, `hmac_sha256`,
+  `pbkdf2_sha256`, dan `soket_baca_bita` karena daftar builtinnya diketik
+  tangan dan tertinggal dari `defineNative()`. Daftar di `language-data.js`
+  dan pola `tmLanguage.json` kini diselaraskan, dan `tests/builtin_konsisten.sh`
+  menjaga keduanya tetap sama persis dengan VM.
 
 ## [1.4.0] - 2026-10-29
 
