@@ -1,0 +1,4 @@
+Kedalaman hash melebihi 1000 tingkat (struktur terlalu dalam atau merujuk dirinya sendiri).
+[baris 5, kolom 8] dalam skrip
+    d[t] = 1
+           ^

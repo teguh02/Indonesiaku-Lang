@@ -1272,7 +1272,7 @@ Value nativeFnBukaBerkas(int argCount, Value* args) {
         return KOSONG_VAL;
     }
 
-    FILE* fp = fopen(path->chars, cmode);
+    FILE* fp = sistemBukaBerkas(path->chars, cmode);
     if (fp == NULL) {
         nativeRaise("buka_berkas() gagal membuka '%s'", path->chars);
         return KOSONG_VAL;
@@ -1406,7 +1406,7 @@ Value nativeFnBacaSemua(int argCount, Value* args) {
         return KOSONG_VAL;
     }
     ObjString* path = AS_STRING(args[0]);
-    FILE* fp = fopen(path->chars, "rb");
+    FILE* fp = sistemBukaBerkas(path->chars, "rb");
     if (fp == NULL) {
         nativeRaise("baca_semua() gagal membuka '%s'", path->chars);
         return KOSONG_VAL;
@@ -1423,7 +1423,7 @@ Value nativeFnBacaSemua(int argCount, Value* args) {
 }
 
 static Value writeWholeFile(const char* path, ObjString* text, const char* mode, const char* fname) {
-    FILE* fp = fopen(path, mode);
+    FILE* fp = sistemBukaBerkas(path, mode);
     if (fp == NULL) {
         nativeRaise("%s() gagal membuka '%s'", fname, path);
         return KOSONG_VAL;
@@ -1470,7 +1470,7 @@ Value nativeFnAdaBerkas(int argCount, Value* args) {
         nativeRaise("ada_berkas() hanya menerima string path");
         return BOOL_VAL(false);
     }
-    FILE* fp = fopen(AS_STRING(args[0])->chars, "rb");
+    FILE* fp = sistemBukaBerkas(AS_STRING(args[0])->chars, "rb");
     if (fp == NULL) return BOOL_VAL(false);
     fclose(fp);
     return BOOL_VAL(true);
@@ -1485,7 +1485,7 @@ Value nativeFnHapusBerkas(int argCount, Value* args) {
         nativeRaise("hapus_berkas() hanya menerima string path");
         return BOOL_VAL(false);
     }
-    if (remove(AS_STRING(args[0])->chars) != 0) {
+    if (sistemHapusBerkas(AS_STRING(args[0])->chars) != 0) {
         nativeRaise("hapus_berkas() gagal menghapus '%s'", AS_STRING(args[0])->chars);
         return BOOL_VAL(false);
     }

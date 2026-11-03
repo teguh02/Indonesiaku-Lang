@@ -1,0 +1,50 @@
+# Regresi T-U2: `x = a jika c selain b` berarti `x = (a jika c selain b)`.
+x = 1 jika salah selain 2
+cetak("global baru:", x)
+
+y = 99
+y = 1 jika salah selain 2
+cetak("global lama:", y)
+y = 1 jika benar selain 2
+cetak("kondisi benar:", y)
+
+fungsi lokal() {
+    z = 1 jika salah selain 2
+    kembalikan z
+}
+cetak("lokal:", lokal())
+
+fungsi luar() {
+    w = 0
+    fungsi dalam_fungsi() {
+        nonlokal w
+        w = "a" jika w == 0 selain "b"
+    }
+    dalam_fungsi()
+    kembalikan w
+}
+cetak("nonlokal:", luar())
+
+# Rantai assignment dan tupel di sisi kanan.
+a = b = 3 jika salah selain 4
+cetak("rantai:", a, b)
+t = 1, 2 jika salah selain 3
+cetak("tupel:", t)
+
+# Kondisional berantai bersifat asosiatif kanan, seperti Python.
+n = 5
+kelas_n = "kecil" jika n < 3 selain "sedang" jika n < 10 selain "besar"
+cetak("berantai:", kelas_n)
+
+# Assignment ke atribut dan indeks sudah benar; tetap dijaga.
+kelas Kotak { }
+k = Kotak()
+k.isi = 1 jika salah selain 2
+d = [0]
+d[0] = 1 jika salah selain 2
+cetak("atribut/indeks:", k.isi, d[0])
+
+# Penjumlahan majemuk juga memakai ekspresi penuh.
+s = 10
+s += 1 jika salah selain 5
+cetak("majemuk:", s)

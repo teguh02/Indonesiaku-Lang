@@ -5,6 +5,7 @@
 
 impor web
 dari web impor GalatWeb
+impor "pustaka/teks.idk"     # teks_pisah/teks_cari di bawah
 
 # --- Pembantu untuk menampilkan hasil ---
 fungsi baris_status(resp) {

@@ -84,7 +84,27 @@ static uint32_t hashBytes(const void* data, size_t length, uint32_t hash) {
     return hash;
 }
 
+ValueDepthFn valueDepthHook = NULL;
+
+// Nesting beyond this raises GalatRekursi (Python's RecursionError) instead
+// of overflowing the C stack (hash of a 20000-deep tupel crashed, T-U14) or
+// silently answering salah (== at 64 levels, T-U13). Each level is one small
+// C frame, so 1000 -- Python's default recursion limit -- is ~100 KB.
+#define VALUE_MAX_DEPTH 1000
+
+static bool depthExceeded(int depth, const char* what) {
+    if (depth < VALUE_MAX_DEPTH) return false;
+    if (valueDepthHook != NULL) valueDepthHook(what, VALUE_MAX_DEPTH);
+    return true;
+}
+
+static bool hashValueDepth(Value value, uint32_t* out, int depth);
+
 bool hashValue(Value value, uint32_t* out) {
+    return hashValueDepth(value, out, 0);
+}
+
+static bool hashValueDepth(Value value, uint32_t* out, int depth) {
     const uint32_t seed = 2166136261u;   // FNV-1a offset basis
     switch (value.type) {
         case VAL_BOOL: {
@@ -122,12 +142,13 @@ bool hashValue(Value value, uint32_t* out) {
                 // himpunan_beku is hashable, plain himpunan is not (Python).
                 ObjSet* set = AS_SET(value);
                 if (!set->frozen) return false;
+                if (depthExceeded(depth, "hash")) return false;
                 // XOR so the hash does not depend on insertion order: two equal
                 // himpunan_beku built in different orders must hash the same.
                 uint32_t h = seed ^ (uint32_t)set->keys.count;
                 for (int i = 0; i < set->keys.count; i++) {
                     uint32_t member;
-                    if (!hashValue(set->keys.values[i], &member)) return false;
+                    if (!hashValueDepth(set->keys.values[i], &member, depth + 1)) return false;
                     h ^= member;
                 }
                 *out = h;
@@ -141,12 +162,14 @@ bool hashValue(Value value, uint32_t* out) {
                 // Structural, so equal tupel are the same dict key: combine the
                 // element hashes. Hashable only if every element is (Python:
                 // hash(([1],)) is a TypeError). A tupel cannot contain itself
-                // (it is immutable), so this recursion always terminates.
+                // (it is immutable), so this recursion always terminates --
+                // but it can be arbitrarily deep, hence the depth limit.
+                if (depthExceeded(depth, "hash")) return false;
                 ValueArray* items = &AS_TUPLE(value)->items;
                 uint32_t h = seed ^ (uint32_t)items->count;
                 for (int i = 0; i < items->count; i++) {
                     uint32_t element;
-                    if (!hashValue(items->values[i], &element)) return false;
+                    if (!hashValueDepth(items->values[i], &element, depth + 1)) return false;
                     h = (h ^ element) * 16777619u;
                 }
                 *out = h;
@@ -335,9 +358,9 @@ bool valuesIdentical(Value a, Value b) {
 
 // K7: '==' compares lists, dicts and ranges by STRUCTURE, recursively.
 // Everything else (instances, functions, files, sockets) stays identity-based.
-// Self-referential containers would recurse forever, so the depth is capped and
-// anything deeper is reported as not equal rather than crashing the VM.
-#define EQUAL_MAX_DEPTH 64
+// Self-referential containers would recurse forever, so past VALUE_MAX_DEPTH
+// the comparison raises GalatRekursi, as Python does. It used to stop at 64
+// levels and answer salah, a silently wrong result for deep but finite data.
 
 InstanceEqualFn instanceEqualHook = NULL;
 InstanceHashFn instanceHashHook = NULL;
@@ -361,7 +384,7 @@ static bool valuesEqualDepth(Value a, Value b, int depth) {
     if (!IS_OBJ(a)) return valuesIdentical(a, b);
     if (AS_OBJ(a) == AS_OBJ(b)) return true;      // same object: always equal
     if (OBJ_TYPE(a) != OBJ_TYPE(b)) return false;
-    if (depth >= EQUAL_MAX_DEPTH) return false;   // ponytail: cap instead of cycle detection
+    if (depthExceeded(depth, "perbandingan")) return false;
 
     switch (OBJ_TYPE(a)) {
         case OBJ_LIST:

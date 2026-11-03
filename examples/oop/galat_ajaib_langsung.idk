@@ -1,0 +1,111 @@
+# Regresi T-U7: galat yang dinaikkan metode ajaib langsung membatalkan
+# operasinya. Cabang tidak dijalankan dan kamus tidak diubah.
+kelas B {
+    _logika_() {
+        naikkan GalatNilai()
+    }
+}
+
+coba {
+    jika B() {
+        cetak("SALAH: cabang jika berjalan")
+    }
+} kecuali GalatNilai {
+    cetak("jika: tertangkap")
+}
+coba {
+    x = tidak B()
+    cetak("SALAH: tidak menghasilkan", x)
+} kecuali GalatNilai {
+    cetak("tidak: tertangkap")
+}
+coba {
+    x = B() atau 1
+    cetak("SALAH: atau menghasilkan", x)
+} kecuali GalatNilai {
+    cetak("atau: tertangkap")
+}
+coba {
+    x = B() dan 1
+    cetak("SALAH: dan menghasilkan", x)
+} kecuali GalatNilai {
+    cetak("dan: tertangkap")
+}
+coba {
+    selagi B() {
+        cetak("SALAH: badan selagi berjalan")
+    }
+} kecuali GalatNilai {
+    cetak("selagi: tertangkap")
+}
+
+# _sama_ yang naik saat tabrakan hash di kamus.
+kelas K {
+    _sama_(lain) {
+        naikkan GalatNilai()
+    }
+    _hash_() {
+        kembalikan 1
+    }
+}
+d = {}
+d[K()] = 1
+langkah = 0
+coba {
+    d[K()] = 2
+    langkah = 1
+} kecuali GalatNilai {
+    cetak("kamus[k] = v: tertangkap, langkah", langkah, "panjang", panjang(d))
+}
+coba {
+    v = d[K()]
+    langkah = 2
+} kecuali GalatNilai {
+    cetak("kamus[k]: tertangkap, langkah", langkah)
+}
+coba {
+    buang d[K()]
+    langkah = 3
+} kecuali GalatNilai {
+    cetak("buang kamus[k]: tertangkap, langkah", langkah, "panjang", panjang(d))
+}
+
+# _sama_ hanya dipanggil bila hash-nya sama, seperti Python.
+panggilan_sama = 0
+kelas H {
+    init(h) {
+        diri.h = h
+    }
+    _hash_() {
+        kembalikan diri.h
+    }
+    _sama_(lain) {
+        global panggilan_sama
+        panggilan_sama += 1
+        kembalikan diri.h == lain.h
+    }
+}
+e = {}
+untuk i dalam rentang(20) {
+    e[H(i)] = i
+}
+cetak("hash beda, _sama_ dipanggil:", panggilan_sama, "panjang", panjang(e))
+cetak("cari:", e[H(7)], panggilan_sama)
+
+# Memperbesar tabel tidak menjalankan _hash_ lagi. Dulu setiap resize
+# memanggil _hash_ setiap kunci, dan kunci yang _hash_-nya naik hilang.
+panggilan_hash = 0
+kelas HitungHash {
+    _hash_() {
+        global panggilan_hash
+        panggilan_hash += 1
+        kembalikan 5
+    }
+}
+f = {}
+f[HitungHash()] = "objek"
+sebelum = panggilan_hash
+untuk i dalam rentang(30) {
+    f[i + 100] = i
+}
+cetak("resize memanggil _hash_:", panggilan_hash - sebelum, "panjang", panjang(f))

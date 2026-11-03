@@ -1,0 +1,24 @@
+# Regresi T-U13/T-U14: == dan hash pada struktur sangat dalam menaikkan
+# GalatRekursi (seperti RecursionError Python), bukan diam-diam salah atau crash.
+fungsi buat(n) {
+    h = []
+    untuk i dalam rentang(n) { h = [i, h] }
+    kembalikan h
+}
+cetak(buat(60) == buat(60), buat(100) == buat(100), buat(100) != buat(100), buat(900) == buat(900))
+coba { cetak(buat(5000) == buat(5000)) } kecuali GalatRekursi sebagai e { cetak("==:", e.pesan) }
+a = [1]
+tambah(a, a)
+b = [1]
+tambah(b, b)
+coba { cetak(a == b) } kecuali GalatRekursi { cetak("siklus: GalatRekursi") }
+cetak(a == a, a dalam [a])
+t = ()
+untuk i dalam rentang(20000) { t = (t,) }
+coba { d = kamus(); d[t] = 1; cetak("SALAH") } kecuali GalatRekursi sebagai e { cetak("hash:", e.pesan) }
+coba { himpunan([t]) } kecuali GalatRekursi { cetak("himpunan: GalatRekursi") }
+u = ()
+untuk i dalam rentang(500) { u = (u,) }
+d = {u: "dangkal"}
+cetak(d[u])
+coba { cetak(buat(5000) dalam [buat(5000)]) } kecuali GalatRekursi { cetak("dalam: GalatRekursi") }

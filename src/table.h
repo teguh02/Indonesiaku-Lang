@@ -22,6 +22,9 @@ typedef struct {
 typedef struct {
     Value key;
     Value value;
+    // The key's hash, kept so a probe compares hashes before running
+    // _sama_ and a resize never re-runs _hash_ (both are user code).
+    uint32_t hash;
     uint8_t state;   // 0 = empty, 1 = filled, 2 = tombstone
 } ValueEntry;
 
@@ -35,7 +38,7 @@ void initValueTable(ValueTable* table);
 void freeValueTable(ValueTable* table);
 bool valueTableGet(ValueTable* table, Value key, Value* value);
 bool valueTableSet(ValueTable* table, Value key, Value value);
-bool valueTableDelete(ValueTable* table, Value key);
+bool valueTableDelete(ValueTable* table, Value key, Value* removedKey);
 void markValueTable(ValueTable* table);
 
 void initTable(Table* table);
