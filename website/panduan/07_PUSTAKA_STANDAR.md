@@ -36,6 +36,11 @@ luar jangkauan.
 | `acak()` | Angka acak `[0, 1)` |
 | `acak_bulat(min, maks)` | Bilangan bulat acak `[min, maks]` |
 
+`bulat`, `lantai`, `atap`, dan `bulatkan` tanpa `digit` selalu menghasilkan
+`bulat`. Karena itu `nan` menaikkan `GalatNilai`, sedangkan `takhingga` atau
+hasil di luar jangkauan int64 menaikkan `GalatLuapan`, seperti `math.floor`
+di Python.
+
 #### Trigonometri — radian, bukan derajat
 
 ```indonesiaku
@@ -997,6 +1002,17 @@ impor "pustaka/json.idk"
 |--------|-----------|
 | `json_teks(nilai)` | Serialisasi kamus/list/angka/string/boolean/kosong → string JSON |
 | `json_urai(teks)` | Parsing string JSON → nilai Indonesiaku (kesalahan dapat ditangkap) |
+
+Keduanya mengikuti RFC 8259, seperti modul `json` di Python:
+
+- `json_urai` mendekode `\uXXXX` (termasuk pasangan surrogate untuk emoji),
+  `\b`, `\f`, dan escape baku lainnya. Galat dinaikkan untuk escape tidak
+  sah, karakter kontrol mentah di dalam string, angka cacat (`01`, `1.`,
+  `-`), kunci objek yang bukan string, dan data tambahan setelah nilai
+  (`"1 2"`, `"[1]x"`).
+- `json_teks` meng-escape karakter kontrol (`\u0001`), menolak `nan` dan
+  `takhingga` (JSON tidak punya bentuk untuknya), dan mengubah kunci
+  angka/logika/kosong menjadi teks (`{1: "a"}` → `{"1":"a"}`).
 
 Contoh:
 ```python

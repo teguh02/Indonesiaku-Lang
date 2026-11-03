@@ -1,0 +1,3 @@
+# examples/bom_utf8.idk diawali BOM UTF-8 dengan sengaja (uji T-W2).
+# -text: git tidak boleh menormalkan isinya; ujinya justru byte di awal berkas.
+examples/bom_utf8.idk -text

@@ -1,0 +1,3 @@
+[baris 2, kolom 28] Kesalahan di 'untuk': Comprehension hanya mendukung satu 'untuk'.
+    cetak([x untuk x dalam [1] untuk y dalam [2]])
+                               ^^^^^

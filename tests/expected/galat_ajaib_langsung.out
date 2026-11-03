@@ -1,0 +1,11 @@
+jika: tertangkap
+tidak: tertangkap
+atau: tertangkap
+dan: tertangkap
+selagi: tertangkap
+kamus[k] = v: tertangkap, langkah 0 panjang 1
+kamus[k]: tertangkap, langkah 0
+buang kamus[k]: tertangkap, langkah 0 panjang 1
+hash beda, _sama_ dipanggil: 0 panjang 20
+cari: 7 1
+resize memanggil _hash_: 0 panjang 31

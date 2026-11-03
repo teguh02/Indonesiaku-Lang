@@ -1,0 +1,7 @@
+# Modul bernamespace: memakai builtin panjang() dan mengimpor berkas yang
+# sama dengan pengimpornya.
+impor "examples/modul_contoh/bajak_panjang.idk"
+
+fungsi ukur(t) {
+    kembalikan [nilai_bersama, panjang(t)]
+}

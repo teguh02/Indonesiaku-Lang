@@ -324,6 +324,12 @@ Instansi kelas (dan fungsi, berkas, soket) tetap dibandingkan berdasarkan
 identitas, bukan isi. Operator `dalam` ikut memakai kesetaraan struktural,
 jadi `[1, 2] dalam [[1, 2]]` bernilai `benar`.
 
+Perbandingan struktural (dan hash tupel/`himpunan_beku` sebagai kunci kamus)
+menelusuri paling banyak 1000 tingkat sarang. Struktur yang lebih dalam,
+atau daftar yang memuat dirinya sendiri, menaikkan `GalatRekursi`, seperti
+`RecursionError` di Python. Tidak ada hasil `salah` diam-diam dan tidak ada
+crash.
+
 Perbandingan dapat dirantai seperti Python: operand tengah dihitung sekali dan evaluasi berhenti saat salah.
 
 ```indonesiaku
@@ -1205,6 +1211,8 @@ cetak([k[0] untuk k dalam ["apel", "bunga"]])        # [a, b]
 ```
 
 - Satu `untuk` dan satu `jika` opsional (gabungkan syarat dengan `dan`/`atau`).
+  `untuk` atau `jika` kedua, atau token lain sebelum kurung penutup, adalah
+  galat kompilasi.
 - Variabel loop hanya hidup di dalam comprehension; nama di luar tidak berubah.
 - Boleh bersarang: `[[a * b untuk b dalam rentang(1, 3)] untuk a dalam [1, 2]]`.
 
@@ -2406,9 +2414,11 @@ Dua hal yang perlu diingat:
 
 - **Pesan hanya dinilai kalau penegasannya gagal.** Jadi
   `pastikan benar, hitung_mahal()` tidak pernah memanggil `hitung_mahal()`.
-- **Jangan tulis `pastikan(kondisi, pesan)` dengan kurung.** Di sini itu
-  langsung ditolak saat kompilasi (`Harapkan ')' setelah ekspresi`), bukan
-  diam-diam selalu lolos seperti di Python — tetap saja, tulis tanpa kurung.
+- **Jangan tulis `pastikan(kondisi, pesan)` dengan kurung.** Kurung dengan
+  koma membentuk satu tupel, dan tupel tidak kosong selalu benar. Python
+  hanya memberi peringatan dan penegasannya tidak pernah gagal. Indonesiaku
+  menolaknya saat kompilasi (`Kondisi 'pastikan' berupa tupel sehingga
+  selalu benar`), jadi tulis tanpa kurung.
   `pastikan(kondisi)` dengan satu argumen sah, kurungnya hanya mengelompokkan
   ekspresi biasa.
 
@@ -2573,8 +2583,8 @@ kelas Kosong { lewati }
 
 Ada dua bentuk impor. Bentuk **bermodul** (`impor nama`) memberi tiap berkas
 namespace sendiri; bentuk **berkas** (`impor "file.idk"`) menjalankan berkas
-lain dalam namespace yang sama. Keduanya di-cache: berkas yang sama tidak
-pernah dijalankan dua kali.
+lain dalam namespace pengimpornya. Keduanya di-cache: modul bernama dijalankan
+sekali per program, berkas dijalankan sekali per pengimpor.
 
 ### `impor nama` — tiap modul punya namespace sendiri
 
@@ -2649,8 +2659,12 @@ jika __nama__ == "__utama__" {
 
 ### Bentuk berkas: `impor "file.idk"`
 
-Bentuk lama tetap berlaku dan **tidak berubah**: berkas dijalankan dalam
-namespace yang sama, sehingga semua namanya langsung tersedia tanpa awalan.
+Bentuk lama tetap berlaku: berkas dijalankan dalam namespace **pengimpornya**,
+sehingga semua namanya langsung tersedia tanpa awalan. Namanya tidak bocor ke
+modul lain. Kalau berkas yang diimpor mendefinisikan `panjang`, hanya
+pengimpornya yang melihat `panjang` itu, dan `impor json` tetap memakai
+builtin aslinya. Modul bernamespace yang mengimpor berkas yang sama
+mendapat salinannya sendiri.
 
 ```indonesiaku
 impor "pustaka/teks.idk"
