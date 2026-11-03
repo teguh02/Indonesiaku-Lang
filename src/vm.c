@@ -1065,15 +1065,20 @@ static bool c3Linearize(ObjClass* klass, ObjClass** bases, int baseCount) {
         return false;
     }
 
+    // L(Bi) via ancestors(): a class defined from C (the built-in error
+    // classes) has no mro array, its superclass chain IS its MRO. Copying
+    // only `mro` gave GalatBagiNol an empty list, so `B2 < GalatBagiNol`
+    // lost GalatAritmetika and Galat and `kecuali Galat` missed it (T-U6).
     for (int i = 0; i < baseCount; i++) {
-        if (bases[i]->mroCount > MRO_MAX) {
-            runtimeError("Rantai pewarisan terlalu panjang.");
-            return false;
+        int n = 0;
+        for (AncestorIter it = ancestors(bases[i]); ancestorNext(&it); ) {
+            if (n >= MRO_MAX) {
+                runtimeError("Rantai pewarisan terlalu panjang.");
+                return false;
+            }
+            lists[i][n++] = it.klass;
         }
-        for (int j = 0; j < bases[i]->mroCount; j++) {
-            lists[i][j] = bases[i]->mro[j];
-        }
-        lengths[i] = bases[i]->mroCount;
+        lengths[i] = n;
     }
     for (int i = 0; i < baseCount; i++) lists[baseCount][i] = bases[i];
     lengths[baseCount] = baseCount;
