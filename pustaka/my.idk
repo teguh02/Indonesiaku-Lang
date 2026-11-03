@@ -415,7 +415,7 @@ kelas Koneksi {
         kembalikan satu
     }
 
-    kueri(sql, parameter) {
+    kueri(sql, parameter = kosong) {
         diri._periksa_hidup()
         jika parameter == kosong { parameter = daftar() }
 
@@ -500,15 +500,19 @@ kelas Koneksi {
         diri._kirim(_gabung([[25], id_stmt]))
     }
 
-    eksekusi(sql, parameter) {
+    # jenis() memudahkan kode portabel mengenali backend tanpa menebak dari
+    # bentuk galat atau dialek SQL.
+    jenis() { kembalikan "mysql" }
+
+    eksekusi(sql, parameter = kosong) {
         kembalikan diri.kueri(sql, parameter)["terpengaruh"]
     }
 
-    ambil_semua(sql, parameter) {
+    ambil_semua(sql, parameter = kosong) {
         kembalikan diri.kueri(sql, parameter)["baris"]
     }
 
-    ambil_satu(sql, parameter) {
+    ambil_satu(sql, parameter = kosong) {
         variabel b = diri.ambil_semua(sql, parameter)
         jika panjang(b) == 0 { kembalikan kosong }
         kembalikan b[0]

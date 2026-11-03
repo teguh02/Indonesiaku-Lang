@@ -7,7 +7,32 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Ditambahkan
+
+- **API basis data bersama** (`pustaka/db.idk`): `db.sambung({"jenis": ...})`
+  memberi satu bentuk pemanggilan untuk SQLite, MySQL/MariaDB, dan PostgreSQL.
+  Metode `eksekusi`/`ambil_semua`/`ambil_satu`/`mulai`/`komit`/`batal`/`tutup`
+  seragam di ketiga backend, dan `k.jenis()` menyebut backend yang dipakai.
+  API lama tetap berjalan tanpa perubahan: `db_*` untuk SQLite serta
+  `my.sambung`/`pg.sambung` langsung.
+
+  Dialek SQL **tidak** diseragamkan. PostgreSQL tetap memakai `$1`, SQLite dan
+  MySQL tetap `?`. Menerjemahkannya menuntut pemindai yang memahami literal
+  string, dan pemindai yang salah merusak query yang sah seperti
+  `WHERE nama = 'siapa?' AND id = ?` — tanda tanya pertama di situ adalah data,
+  bukan parameter.
+
+  Fitur ini sempat dicatat "terhalang" di ROADMAP karena `impor` dianggap
+  membawa nama ke lingkup global sehingga `sambung()` kedua driver bentrok.
+  Sejak modul punya globalnya sendiri, hal itu tidak lagi berlaku; catatan
+  tersebut kedaluwarsa tanpa pernah dicabut.
+
 ### Diperbaiki
+
+- **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
+  `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
+  nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
+  begitu dipindah ke MySQL. Kini seragam dengan `pg.idk`.
 
 - **Parsing badan `application/x-www-form-urlencoded` tidak lagi kuadratik.**
   `_web_dekode_persen()` merakit hasil dengan `hasil = hasil + c` per

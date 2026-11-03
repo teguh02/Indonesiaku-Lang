@@ -861,6 +861,59 @@ diuji (butuh CPU `x86-64-v2`) dan bawaannya memakai metode autentikasi yang
 ditolak di atas.
 
 
+## Satu API untuk ketiga backend: `pustaka/db.idk`
+
+Ketiga backend di atas dipakai dengan tiga cara berbeda: SQLite lewat fungsi
+global `db_*`, sedangkan MySQL dan PostgreSQL lewat metode objek. `db.idk`
+menyeragamkannya supaya kode yang berpindah backend tidak perlu ditulis ulang
+hanya karena bentuk pemanggilannya berbeda.
+
+```indonesiaku-takjalan
+impor db
+
+# satu-satunya baris yang berubah saat pindah backend
+variabel k = db.sambung({"jenis": "sqlite", "berkas": "data.db"})
+# variabel k = db.sambung({"jenis": "mysql",    "host": "127.0.0.1", "pengguna": "root",
+#                          "sandi": ambil_lingkungan("MYSANDI"), "basisdata": "sekolah"})
+# variabel k = db.sambung({"jenis": "postgres", "host": "127.0.0.1", "pengguna": "postgres",
+#                          "sandi": ambil_lingkungan("PGSANDI"), "basisdata": "sekolah"})
+
+cetak(k.jenis())                                  # "sqlite" | "mysql" | "postgres"
+k.eksekusi("INSERT INTO siswa (nama) VALUES (?)", ["Budi"])
+k.ambil_semua("SELECT * FROM siswa")              # parameter boleh diabaikan
+k.ambil_satu("SELECT * FROM siswa WHERE id = ?", [1])
+k.mulai() ; k.komit() ; k.batal()
+k.tutup()
+```
+
+| Metode | Hasil |
+|---|---|
+| `db.sambung(konfigurasi)` | Koneksi. `jenis` wajib: `sqlite`, `mysql`, atau `postgres` |
+| `k.jenis()` | Nama backend yang sedang dipakai |
+| `k.eksekusi(sql, parameter)` | Jumlah baris terpengaruh — **juga di SQLite** |
+| `k.ambil_satu(sql, parameter)` | Kamus, atau `kosong` bila tak ada baris |
+| `k.ambil_semua(sql, parameter)` | Daftar kamus |
+| `k.mulai()` / `k.komit()` / `k.batal()` | Transaksi |
+| `k.tutup()` | Idempoten di ketiga backend |
+
+`parameter` boleh diabaikan di ketiga backend. Kunci konfigurasi selain
+`jenis` diteruskan apa adanya ke driver, jadi opsi khusus seperti `tls` pada
+PostgreSQL tetap bisa dipakai.
+
+**SQL tetap ditulis sesuai dialek backend.** `db.idk` tidak menerjemahkan
+penanda parameter: PostgreSQL memakai `$1`, SQLite dan MySQL memakai `?`.
+Menerjemahkannya berarti memindai teks SQL, dan pemindai yang tidak memahami
+literal string akan merusak query yang sah — pada
+`SELECT * FROM t WHERE nama = 'siapa?' AND id = ?` tanda tanya pertama ada di
+dalam literal, bukan parameter.
+
+**API lama tetap berjalan**: `db_*` untuk SQLite serta `my.sambung`/`pg.sambung`
+langsung. `db.idk` adalah lapisan tipis di atasnya, bukan penggantinya.
+
+Belum termasuk: pool koneksi, ORM, migrasi skema, dan penyeragaman tipe data
+antar backend.
+
+
 ## 2. Pustaka Standar (`pustaka/`)
 
 Di-`impor` sesuai kebutuhan. Fungsi diberi awalan agar tidak bentrok dengan
