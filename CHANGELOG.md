@@ -29,6 +29,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **`==` dan hash pada struktur sangat dalam menaikkan `GalatRekursi`**
+  (T-U13, T-U14). Dulu `==` berhenti di 64 tingkat dan diam-diam menjawab
+  `salah`, termasuk untuk dua daftar yang identik, dan hash tupel bersarang
+  ribuan tingkat sebagai kunci kamus membuat interpreter crash. Kini batasnya
+  1000 tingkat, seperti `RecursionError` di Python. Daftar yang memuat dirinya
+  sendiri juga menaikkan galat, bukan lagi `salah`. Regresi:
+  `examples/kedalaman_sama_hash.idk`, `tests/galat/hash_tupel_dalam.idk`.
+
 - ⚠️ **`impor "berkas.idk"` tidak lagi menulis ke tabel builtin bersama**
   (T-U8). Berkas itu kini dijalankan di namespace pengimpornya, sekali per
   pengimpor. Di 1.4.0, `fungsi panjang(x)` di berkas yang diimpor dengan cara

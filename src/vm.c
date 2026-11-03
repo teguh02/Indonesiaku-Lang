@@ -39,6 +39,15 @@ static const char* const MAGIC_NAMES[MAGIC_COUNT] = {
 static int formatInstanceMagic(TextBuf* out, Value instance, bool repr);
 static int instanceEqualMagic(Value a, Value b);
 static int instanceHashMagic(Value value, uint32_t* out);
+
+// valueDepthHook: == or hash nested too deep. Only the first report counts:
+// every enclosing level returns false on the way out.
+static void valueDepthError(const char* what, int limit) {
+    if (vm.nativeErrorPending) return;
+    nativeRaiseKelas(vm.galatRekursi, "Kedalaman %s melebihi %d tingkat "
+                     "(struktur terlalu dalam atau merujuk dirinya sendiri).",
+                     what, limit);
+}
 // Single ancestor walk used by every chain lookup. Classes built with one
 // parent (and the error classes defined from C) never get an mro array at
 // all: their superclass chain already IS their MRO, so allocating one would
@@ -327,6 +336,7 @@ void initVM() {
     formatInstanceHook = formatInstanceMagic;
     instanceEqualHook = instanceEqualMagic;
     instanceHashHook = instanceHashMagic;
+    valueDepthHook = valueDepthError;
     vm.runtimeErrorClass = NULL;
     vm.galat = defineErrorClass("Galat", NULL);
     vm.galatAritmetika = defineErrorClass("GalatAritmetika", vm.galat);

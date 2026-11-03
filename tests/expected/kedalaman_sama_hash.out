@@ -1,0 +1,8 @@
+benar benar salah benar
+==: Kedalaman perbandingan melebihi 1000 tingkat (struktur terlalu dalam atau merujuk dirinya sendiri).
+siklus: GalatRekursi
+benar benar
+hash: Kedalaman hash melebihi 1000 tingkat (struktur terlalu dalam atau merujuk dirinya sendiri).
+himpunan: GalatRekursi
+dangkal
+dalam: GalatRekursi
