@@ -58,7 +58,19 @@ periksa "berkas > 8 KiB" "$got" "akhir berkas besar"
 got=$("$BIN" /dev/stdin < "$TMP/besar.idk" 2>&1)
 periksa "pipe > 8 KiB" "$got" "akhir berkas besar"
 
-# 4. Masukan kosong: tidak boleh crash, tidak boleh ada keluaran.
+# 4. BOM UTF-8 di awal berkas dilewati, baik pada skrip utama maupun modul
+#    yang diimpor (T-W2). Dibuat di sini dengan printf, supaya editor atau
+#    alat yang membuang BOM dari examples/bom_utf8.idk tidak diam-diam
+#    menghilangkan cakupannya.
+printf '\357\273\277X = "modul ber-BOM"\n' > "$TMP/modbom.idk"
+printf '\357\273\277impor modbom\ncetak(modbom.X)\n' > "$TMP/bom.idk"
+got=$("$BIN" "$TMP/bom.idk" 2>&1)
+periksa "BOM skrip + modul" "$got" "modul ber-BOM"
+printf '\357\273\277\357\273\277cetak(1)\n' > "$TMP/bom2.idk"
+"$BIN" "$TMP/bom2.idk" >/dev/null 2>&1; kode=$?
+periksa "hanya satu BOM dilewati (exit)" "$kode" "65"
+
+# 5. Masukan kosong: tidak boleh crash, tidak boleh ada keluaran.
 got=$(printf '' | "$BIN" /dev/stdin 2>&1); kode=$?
 periksa "pipe kosong (exit $kode)" "$got" ""
 
