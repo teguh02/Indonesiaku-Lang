@@ -29,6 +29,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **`pastikan(kondisi, pesan)` dengan kurung ditolak saat kompilasi**
+  (T-U5). Kurung dengan koma membentuk satu tupel yang selalu benar, jadi di
+  1.4.0 penegasan itu tidak pernah gagal, padahal panduan sudah menyebutnya
+  sebagai galat kompilasi. `pastikan(kondisi)` dan tupel di dalam ekspresi
+  yang lebih besar tetap sah. Regresi: `tests/galat/pastikan_tupel.idk`.
+
 - **`x = a jika c selain b` meng-assign hasil kondisional** (T-U2). Di 1.4.0
   bentuk ini dikompilasi sebagai `(x = a) jika c selain b`, jadi bila
   kondisinya salah `x` tidak di-assign sama sekali. Sisi kanan assignment
