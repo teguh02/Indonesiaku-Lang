@@ -1750,7 +1750,7 @@ coba {
 | Nama | Deskripsi |
 |------|-----------|
 | `ke_bita(teks)` | Daftar byte UTF-8 dari teks |
-| `ke_teks(data)` | Teks dari daftar byte UTF-8; `GalatBita` bila urutannya tidak sah |
+| `ke_teks(data)` | Teks dari daftar byte UTF-8; `GalatBita` bila urutannya tidak sah menurut RFC 3629, seperti `bytes.decode("utf-8")`: byte lanjutan menggantung atau salah, urutan terpotong, bentuk *overlong* (`C0 80`), surrogate `D800..DFFF`, atau kode di atas `U+10FFFF` |
 | `ke_heksa(data)` | Teks heksa huruf kecil (`bytes.hex()`) |
 | `dari_heksa(teks)` | Daftar byte dari teks heksa (panjang harus genap; `bytes.fromhex`) |
 

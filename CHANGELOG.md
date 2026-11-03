@@ -29,6 +29,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **`bita.ke_teks` menolak UTF-8 tidak sah** (T-U16). Dulu hanya byte pemimpin
+  yang diperiksa, sehingga `[0xC0, 0x80]` (*overlong*) menjadi NUL dan byte
+  lanjutan yang salah, surrogate, serta kode di atas `U+10FFFF` diterima.
+  Kini `GalatBita` dinaikkan untuk setiap urutan yang juga ditolak
+  `bytes.decode("utf-8")`. Regresi: `examples/bita_utf8_ketat.idk`.
+
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
