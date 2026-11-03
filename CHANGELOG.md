@@ -29,6 +29,11 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **`x = a jika c selain b` meng-assign hasil kondisional** (T-U2). Di 1.4.0
+  bentuk ini dikompilasi sebagai `(x = a) jika c selain b`, jadi bila
+  kondisinya salah `x` tidak di-assign sama sekali. Sisi kanan assignment
+  ke nama kini ekspresi penuh, sama seperti `o.x = ...` dan `d[i] = ...`.
+  Regresi: `examples/kondisional_assignment.idk`.
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
