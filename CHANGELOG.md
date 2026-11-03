@@ -29,6 +29,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **`pastikan(kondisi, pesan)` dengan kurung ditolak saat kompilasi**
+  (T-U5). Kurung dengan koma membentuk satu tupel yang selalu benar, jadi di
+  1.4.0 penegasan itu tidak pernah gagal, padahal panduan sudah menyebutnya
+  sebagai galat kompilasi. `pastikan(kondisi)` dan tupel di dalam ekspresi
+  yang lebih besar tetap sah. Regresi: `tests/galat/pastikan_tupel.idk`.
+
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
