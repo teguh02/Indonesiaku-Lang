@@ -11,7 +11,7 @@ Aturan memperbarui berkas ini ada di bagian 2 dan di `AGENTS.md`.
 | Paket | `Indonesiaku-Setup-1.4.0.exe` (terpasang di `C:\Program Files\Indonesiaku`) |
 | SHA-256 `indk.exe` terpasang | `b6da48f2b2af3b6106fcff2b653a6bf5a15fa6f19e7e7a92755dbd50601bc72a` |
 | Mesin | Windows 11 Home 10.0.26300, AMD64; Windows PowerShell 5.1; Git Bash 2.51; curl 8.15 |
-| Ringkasan | ⚠️ Bahasa, pustaka, dan perkakas lulus semua. **Tiga temuan khusus Windows** (jalur non-ASCII, berkas ber-BOM, keluaran konsol non-ASCII), lihat bagian 7 |
+| Ringkasan | ⚠️ Suite rilis, katalog, dan CLI lulus semua. Uji ekstensif multi-agen: 3584/3879 pemeriksaan lulus, **140 temuan terkonfirmasi** (7 di antaranya khas Windows, termasuk 2 temuan keamanan yang dilaporkan secara privat), lihat bagian 7 |
 
 ## 1. Persiapan
 
@@ -1095,8 +1095,93 @@ Temuan ini belum diperbaiki. Perbaikannya mengikuti alur fitur biasa
 (rencana di `docs/RENCANA_FITUR/`, uji regresi, lalu rilis patch) dan tidak
 termasuk dokumen rencana uji ini.
 
+### Uji ekstensif multi-agen
+
+Di samping bagian 3–6, rilis 1.4.0 diuji secara luas oleh delapan agen
+penguji paralel, satu per area. Setiap agen menulis dan menjalankan ratusan
+program `.idk` terhadap `indk.exe` terpasang, lalu membandingkannya dengan
+panduan v1.4.0 dan Python 3.14. Setiap temuan diulang oleh agen verifikator
+yang berusaha membantahnya: **140 terkonfirmasi**, 4 ditolak sebagai salah
+uji. Rincian lengkap (alasan, reproduksi minimal, keluaran) ada di
+[`lampiran/WINDOWS-1.4.0-uji-ekstensif.md`](lampiran/WINDOWS-1.4.0-uji-ekstensif.md).
+
+| Area | Pemeriksaan lulus | Temuan terkonfirmasi |
+|---|---|---|
+| Sintaks, angka, teks, operator | 252/292 | 23 |
+| Percabangan, perulangan, fungsi | 239/262 | 14 |
+| Koleksi | 319/357 | 12 |
+| Kelas dan OOP | 236/262 | 22 |
+| Galat, pesan, kode keluar | 243/270 | 18 |
+| Modul pustaka standar (dibanding `re`, `argparse`, `csv`, `hashlib`, `statistics`, `json`, …) | 1770/1855 | 23 |
+| Integrasi Windows: berkas, jalur, proses, soket | 284/312 | 13 |
+| CLI, REPL, perkakas, SQLite | 241/269 | 15 |
+| **Total** | **3584/3879 (92,4%)** | **140** (dengan duplikat antar-area) |
+
+Pemeriksaan yang "gagal" belum tentu bug: sebagian adalah pemeriksaan yang
+dibatalkan penguji sendiri setelah membaca ulang dokumentasi. Yang dihitung
+sebagai bug hanya temuan terkonfirmasi.
+
+**Temuan khas Windows** (tambahan T-W1–T-W4):
+
+| Kode | Tingkat | Temuan |
+|---|---|---|
+| T-W5 | Sedang | Isi `argumen` dengan karakter di luar code page ANSI menjadi `?` (`"日本"` → `[63, 63]`); akar masalahnya sama dengan T-W1 (`main` ANSI, bukan `wmain`) |
+| T-W6 | Tinggi | Temuan keamanan pada menjalankan proses anak. Rincian dilaporkan lewat jalur privat, tidak dicantumkan di sini sampai diperbaiki |
+| T-W7 | Tinggi | Temuan keamanan pada soket server. Rincian dilaporkan lewat jalur privat, tidak dicantumkan di sini sampai diperbaiki |
+| T-W8 | Tinggi | Kompilator crash (`0xC00000FD` stack overflow, tanpa pesan) pada 32 `fungsi` bersarang atau ±2500 kurung bersarang. Rekursinya tanpa batas di semua OS, tetapi stack 1 MB Windows membuat ambangnya sangat rendah |
+| T-W9 | Sedang | `ada_berkas()` memberi `salah` untuk berkas yang ada tetapi sedang dikunci proses lain (memakai `fopen`, bukan `stat`); `jalur.ada()` benar |
+| T-W10 | Sedang | Jalur lebih dari 260 karakter tidak didukung: `ada_berkas` salah, `baca_semua` dan `isi_direktori` gagal, walau `LongPathsEnabled=1` |
+| T-W11 | Rendah | `jam()` mengukur waktu dinding di Windows, padahal dokumentasi menyebut waktu CPU (`clock()` di UCRT) |
+
+**Temuan tingkat tinggi yang tidak khas Windows** (bug bahasa, kemungkinan
+sama di macOS dan Linux; uji ulang di sana):
+
+| Kode | Temuan |
+|---|---|
+| T-U2 | `x = a jika c selain b` tanpa `variabel` dikompilasi sebagai `(x = a) jika c selain b`: bila kondisinya salah, `x` tidak di-assign sama sekali |
+| T-U3 | Di dalam fungsi, panggilan dengan argumen bernama membuat argumen posisi yang berupa global/upvalue menjadi `kosong`: `g(D, b = 2)` → `[kosong, 2]` (di tingkat skrip benar `[7, 2]`) |
+| T-U4 | Variabel `untuk` berlingkup blok: variabel lama bernama sama tidak berubah setelah loop (`99`), dan nama itu tidak terdefinisi setelah loop — berbeda dengan Python |
+| T-U5 | `pastikan(kondisi, "pesan")` dengan kurung selalu lolos karena membentuk tupel yang selalu benar |
+| T-U6 | Subkelas buatan pengguna dari galat bawaan kehilangan leluhur di atas induk langsungnya, sehingga `kecuali Galat` tidak menangkapnya |
+| T-U7 | Galat yang dinaikkan `_logika_` atau `_sama_` tertunda: cabang `jika` tetap dijalankan dan kamus tetap diubah sebelum galatnya muncul |
+| T-U8 | `impor "berkas.idk"` menulis global ke tabel builtin bersama dan mencemari modul bernamespace, termasuk pustaka standar (mis. `impor "pustaka/base64.idk"` lalu `impor json` merusak `json.json_teks`) |
+| T-U9 | Komprehensi diam-diam mengabaikan token setelah filter pertama (`jika` kedua, `untuk` kedua, token sampah) |
+| T-U10 | `input()` dan REPL memotong baris pada 1023 byte; sisanya muncul pada pembacaan berikutnya |
+| T-U11 | `indk rapikan --tulis` memotong berkas pada byte NUL (kehilangan data) dan menulis ulang berkas bergalat sintaks dengan kode keluar 0 |
+| T-U12 | `lantai`/`atap`/`bulat` dari `nan` diam-diam memberi `-9223372036854775808`; `bulatkan(nan/inf)` memberi desimal |
+| T-U13 | `==` pada struktur bersarang lebih dari ±64 tingkat diam-diam `salah` (Python membandingkan atau melempar `RecursionError`) |
+| T-U14 | Meng-hash tupel bersarang sangat dalam (kunci kamus, anggota himpunan) membuat interpreter crash |
+| T-U15 | `json_urai` tidak mendekode `\uXXXX`, `\b`, `\f` dan menerima JSON tidak sah; `json_teks` bisa menghasilkan JSON tidak sah (karakter kontrol mentah, `takhingga`/`nan`) |
+| T-U16 | `bita.ke_teks` menerima UTF-8 *overlong* (`C0 80` menjadi NUL) |
+
+Temuan tingkat sedang yang paling berdampak (lengkapnya di lampiran):
+- Jenis galat tidak sesuai dokumentasi: nama tak terdefinisi bukan
+  `GalatNama`; indeks teks/rentang bukan `GalatIndeks`; jumlah argumen salah
+  bukan `GalatTipe`; galat berkas bukan `GalatOS`. Kunci kamus yang hilang
+  diam-diam memberi `kosong`, bukan `GalatKunci`.
+- `d[0] += 1` dan `diri.x += 1` ditolak kompilator.
+- Membaca lokal sebelum di-assign memberi `kosong`, bukan galat.
+- Hanya 64 blok `coba` aktif: rekursi dengan `coba` per frame gagal di
+  kedalaman 64.
+- Jejak galat tidak menyebut berkas modul, dan galat yang melewati
+  `akhirnya` menunjuk `}` penutup.
+- `jika x = 0 {` diterima dan meng-assign; `cetak "x"` diam-diam tidak
+  melakukan apa-apa.
+- Mengubah daftar/kamus saat `untuk` memberi hasil berbeda dari Python.
+- Kinerja kuadratik: menghapus kunci kamus (100k penghapusan > 13 s),
+  `daftar +=` (membuat daftar baru, alias tidak ikut berubah), pustaka yang
+  membangun teks per karakter.
+- Pustaka:
+  - SQLite mengikat desimal bulat sebagai INTEGER dan menolak bulat di atas
+    2⁵³;
+  - `csv` salah menangani CR;
+  - `web` tidak mengirim 413 ke klien;
+  - `waktu()` hanya beresolusi 1 detik;
+  - `opsi` keluar dengan kode 70 pada nilai bulat yang meluap.
+
 ## 8. Riwayat pengujian
 
 | Tanggal | Versi | Paket | Penguji | Hasil |
 |---|---|---|---|---|
-| 2026-11-03 | 1.4.0 | Installer `Indonesiaku-Setup-1.4.0.exe` | Claude Code (AI), atas permintaan maintainer | ⚠️ semua uji bahasa lulus; temuan T-W1–T-W4, T-U1 |
+| 2026-11-03 | 1.4.0 | Installer `Indonesiaku-Setup-1.4.0.exe` | Claude Code (AI), atas permintaan maintainer | ⚠️ bagian 3–6 lulus; temuan T-W1–T-W4, T-U1 |
+| 2026-11-03 | 1.4.0 | Installer `Indonesiaku-Setup-1.4.0.exe` | Claude Code (AI, 8 agen penguji + 8 verifikator) | ⚠️ uji ekstensif 3584/3879; 140 temuan terkonfirmasi, termasuk T-W5–T-W11 dan T-U2–T-U16 |

@@ -194,8 +194,13 @@ agents alike:
 - Windows findings at v1.4.0 that are still open: **T-W1** non-ASCII paths
   outside the ANSI code page cannot be opened (no `wmain`/`_wfopen`),
   **T-W2** a UTF-8 BOM is rejected by the scanner, **T-W3** non-ASCII output
-  is garbled in a cp437/850 console (no `SetConsoleOutputCP`). Fixing them
-  follows the normal feature workflow.
+  is garbled in a cp437/850 console (no `SetConsoleOutputCP`). The
+  multi-agent run on the same release added T-W5–T-W11 and 15 high-severity
+  language bugs that are NOT Windows-specific (T-U2–T-U16, e.g. keyword
+  arguments inside a function turning global positional arguments into
+  `kosong`, `untuk` variables being block-scoped, `x = a jika c selain b`
+  skipping the assignment). Read `WINDOWS.md` section 7 before touching those
+  areas. Fixing them follows the normal feature workflow.
 
 ## Build
 

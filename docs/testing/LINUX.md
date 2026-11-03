@@ -1058,6 +1058,15 @@ temuan dengan kode `T-L<n>`, mengikuti bentuk bagian 7 di `WINDOWS.md`.
 | 5. Suite otomatis | ⬜ |
 | 6. Khusus Linux | ⬜ |
 
+**Uji ulang temuan Windows yang tidak khas Windows.** Uji ekstensif
+Windows 1.4.0 menemukan bug bahasa T-U2–T-U16 dan 120-an temuan lain yang
+kemungkinan juga terjadi di OS ini (lihat `WINDOWS.md` bagian 7 dan
+[`lampiran/WINDOWS-1.4.0-uji-ekstensif.md`](lampiran/WINDOWS-1.4.0-uji-ekstensif.md)).
+Jalankan reproduksi minimal di lampiran itu dengan biner OS ini, lalu catat
+mana yang terulang di tabel temuan (kode `T-L<n>`, sebutkan kode
+Windows-nya). Temuan khas Windows T-W8 (crash kompilator pada nesting
+dalam) juga perlu diuji ambangnya di sini.
+
 ## 8. Riwayat pengujian
 
 | Tanggal | Versi | Paket | Penguji | Hasil |
