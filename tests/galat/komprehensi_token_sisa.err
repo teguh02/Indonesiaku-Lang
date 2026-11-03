@@ -1,0 +1,3 @@
+[baris 2, kolom 31] Kesalahan di 'selain': Harapkan ']' di akhir comprehension.
+    cetak([x untuk x dalam [1, 2] selain 5])
+                                  ^^^^^^
