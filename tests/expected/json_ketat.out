@@ -1,0 +1,34 @@
+ok  "é"
+ok  ""
+err json_urai: escape tidak sah '\q' pada posisi 3
+ok  "😀"
+err json_urai: surrogate tinggi \u tanpa pasangan
+err json_urai: surrogate rendah \u tanpa pasangan
+err json_urai: \u harus diikuti empat digit heksa pada posisi 6
+err json_urai: \u harus diikuti empat digit heksa pada posisi 6
+err json_urai: data tambahan setelah nilai pada posisi 2
+err json_urai: data tambahan setelah nilai pada posisi 3
+err json_urai: data tambahan setelah nilai pada posisi 4
+err json_urai: angka tidak sah pada posisi 1
+err json_urai: data tambahan setelah nilai pada posisi 1
+err json_urai: angka tidak sah pada posisi 2
+err json_urai: angka tidak sah pada posisi 2
+ok  0
+ok  0.5
+ok  -1500.0
+ok  100.0
+ok  [1, {"a": kosong}]
+err json_urai: harapkan string pada posisi 1
+err json_urai: harapkan string pada posisi 8
+err json_urai: karakter tak terduga pada posisi 3
+err json_urai: karakter kontrol mentah di dalam string pada posisi 4
+ok  "/"
+err json_urai: karakter tak terduga pada posisi 0
+ok  "\"\\u0001a\\u001f\""
+err json_teks: takhingga bukan angka JSON yang sah
+err json_teks: nan bukan angka JSON yang sah
+ok  "{\"1\":\"satu\",\"true\":2,\"null\":3,\"1.5\":4}"
+err json_teks: kunci kamus harus teks, angka, logika, atau kosong, bukan tupel
+ok  "[\"é\",\"\\n\",1.0,0,10000000000000000]"
+bolak-balik: benar
+\b\f -> [8, 12]

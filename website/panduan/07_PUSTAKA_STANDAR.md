@@ -1003,6 +1003,17 @@ impor "pustaka/json.idk"
 | `json_teks(nilai)` | Serialisasi kamus/list/angka/string/boolean/kosong → string JSON |
 | `json_urai(teks)` | Parsing string JSON → nilai Indonesiaku (kesalahan dapat ditangkap) |
 
+Keduanya mengikuti RFC 8259, seperti modul `json` di Python:
+
+- `json_urai` mendekode `\uXXXX` (termasuk pasangan surrogate untuk emoji),
+  `\b`, `\f`, dan escape baku lainnya. Galat dinaikkan untuk escape tidak
+  sah, karakter kontrol mentah di dalam string, angka cacat (`01`, `1.`,
+  `-`), kunci objek yang bukan string, dan data tambahan setelah nilai
+  (`"1 2"`, `"[1]x"`).
+- `json_teks` meng-escape karakter kontrol (`\u0001`), menolak `nan` dan
+  `takhingga` (JSON tidak punya bentuk untuknya), dan mengubah kunci
+  angka/logika/kosong menjadi teks (`{1: "a"}` → `{"1":"a"}`).
+
 Contoh:
 ```python
 db = kamus()

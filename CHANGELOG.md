@@ -29,6 +29,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **`json_urai` dan `json_teks` mengikuti RFC 8259** (T-U15).
+  `json_urai` kini mendekode `\uXXXX` (termasuk pasangan surrogate), `\b`,
+  dan `\f`, serta menolak escape tidak sah, karakter kontrol mentah, angka
+  cacat (`01`, `1.`, `-`), dan data tambahan (`"1 2"`), yang dulu diterima
+  diam-diam. `json_teks` meng-escape karakter kontrol, menolak
+  `nan`/`takhingga`, dan mengubah kunci angka/logika/kosong menjadi teks
+  seperti `json.dumps`, alih-alih crash. Regresi: `examples/json_ketat.idk`.
+
 - **`bulat`/`lantai`/`atap`/`bulatkan` dari `nan` menaikkan `GalatNilai`**
   (T-U12). Di 1.4.0 hasilnya diam-diam `-9223372036854775808`, karena NaN
   lolos dari pemeriksaan jangkauan lalu sampai ke cast C yang tidak
