@@ -29,6 +29,11 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Argumen bernama di dalam fungsi tidak lagi mengosongkan argumen posisi**
+  (T-U3). Di 1.4.0, `g(D, b = 2)` di dalam fungsi membaca global/upvalue `D`
+  sebagai `kosong` karena prescan K3 menganggap `D, b =` sebagai
+  pembongkaran `a, b = ...`. Contohnya `statistik.kuantil(DATA, n = 2)` di
+  dalam fungsi. Regresi: `examples/argumen_bernama_lingkup.idk`.
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
