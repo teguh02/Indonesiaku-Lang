@@ -1383,8 +1383,15 @@ static void literal(bool canAssign) {
 // '(' already consumed. (x) is plain grouping; a comma after the first
 // expression makes a tupel (K17): (a, b), (a,), (a, b,). () is the empty
 // tupel. Newlines inside are free: '(' raises the scanner's grouping depth.
+// Where the last non-empty tupel literal `( ... , ... )` began (its '(') and
+// where its bytecode ended. assertStatement uses it to reject
+// `pastikan(kondisi, pesan)`, whose condition is an always-true tupel.
+static const char* lastTupleStart = NULL;
+static int lastTupleEnd = -1;
+
 static void grouping(bool canAssign) {
     (void)canAssign;
+    const char* openParen = parser.previous.start;
     if (match(TOKEN_RIGHT_PAREN)) {
         emitBytes(OP_BUILD_TUPLE, 0);
         return;
@@ -1421,6 +1428,8 @@ static void grouping(bool canAssign) {
     }
     consume(TOKEN_RIGHT_PAREN, "Harapkan ')' setelah elemen tupel.");
     emitBytes(OP_BUILD_TUPLE, (uint8_t)count);
+    lastTupleStart = openParen;
+    lastTupleEnd = currentChunk()->count;
 }
 
 // Numeric literal. Handles `_` separators and 0b/0o/0x bases (Fase 1) and
@@ -2928,7 +2937,18 @@ static void raiseStatement() {
 // The message is compiled INSIDE the failure branch so it is only evaluated
 // when the assertion fails, like Python.
 static void assertStatement() {
+    const char* conditionStart = parser.current.start;
+    bool startsWithParen = check(TOKEN_LEFT_PAREN);
+    lastTupleStart = NULL;
     expression();
+    // `pastikan(kondisi, pesan)` is ONE tupel condition, which is always true,
+    // so the assertion could never fail (T-U5). Python only warns; we reject
+    // it, because a silently disabled assertion is worse than an error.
+    if (startsWithParen && lastTupleStart == conditionStart &&
+        lastTupleEnd == currentChunk()->count) {
+        semanticError("Kondisi 'pastikan' berupa tupel sehingga selalu benar. "
+                      "Tulis tanpa kurung: pastikan kondisi, \"pesan\".");
+    }
     int failJump = emitJump(OP_JUMP_IF_FALSE);
     emitByte(OP_POP);                       // condition was true: discard it
     int doneJump = emitJump(OP_JUMP);
