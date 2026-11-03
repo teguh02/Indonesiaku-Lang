@@ -2407,6 +2407,7 @@ static InterpretResult run() {
                         return INTERPRET_RUNTIME_ERROR;
                     }
                     if (!dictDelete(AS_DICT(container), key)) {
+                        RESOLVE_MAGIC_ERROR();  // _sama_ raised (T-U7)
                         vm.runtimeErrorClass = vm.galatKunci;
                         if (IS_STRING(key)) {
                             runtimeError("Kunci '%s' tidak ada di kamus.", AS_CSTRING(key));
@@ -2834,9 +2835,14 @@ static InterpretResult run() {
                 push(NUMBER_VAL(pow(a, b)));
                 break;
             }
-            case OP_NOT:
-                push(BOOL_VAL(isFalsey(pop())));
+            case OP_NOT: {
+                // peek, not pop: _logika_ runs user code (K19), and a raise
+                // there must abort 'tidak' instead of yielding a value (T-U7).
+                bool falsey = isFalsey(peek(0));
+                RESOLVE_MAGIC_ERROR();
+                vm.stackTop[-1] = BOOL_VAL(falsey);
                 break;
+            }
             case OP_NEGATE: {
                 if (!IS_NUMBER(peek(0))) {
                     vm.runtimeErrorClass = vm.galatTipe;
@@ -2892,7 +2898,10 @@ static InterpretResult run() {
             }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
-                if (isFalsey(peek(0))) {
+                bool falsey = isFalsey(peek(0));
+                // A _logika_ that raised must not pick a branch (T-U7).
+                RESOLVE_MAGIC_ERROR();
+                if (falsey) {
                     frame->ip += offset;
                 }
                 break;
@@ -3188,6 +3197,7 @@ static InterpretResult run() {
                     // runs: it compares with _sama_, whose call allocates and
                     // can trigger a GC that would otherwise free them.
                     bool ada = valueTableGet(&dict->table, key, &value);
+                    RESOLVE_MAGIC_ERROR();      // _sama_ raised (T-U7)
                     vm.stackTop -= 2;
                     if (!ada) {
                         push(KOSONG_VAL);
@@ -3274,6 +3284,7 @@ static InterpretResult run() {
                         return INTERPRET_RUNTIME_ERROR;
                     }
                     dictSet(dict, key, value);
+                    RESOLVE_MAGIC_ERROR();      // _sama_ raised: nothing inserted
                     pop();  // value
                     pop();  // key
                     pop();  // dict
