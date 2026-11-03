@@ -29,6 +29,11 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **`x = a jika c selain b` meng-assign hasil kondisional** (T-U2). Di 1.4.0
+  bentuk ini dikompilasi sebagai `(x = a) jika c selain b`, jadi bila
+  kondisinya salah `x` tidak di-assign sama sekali. Sisi kanan assignment
+  ke nama kini ekspresi penuh, sama seperti `o.x = ...` dan `d[i] = ...`.
+  Regresi: `examples/kondisional_assignment.idk`.
 - **Argumen bernama di dalam fungsi tidak lagi mengosongkan argumen posisi**
   (T-U3). Di 1.4.0, `g(D, b = 2)` di dalam fungsi membaca global/upvalue `D`
   sebagai `kosong` karena prescan K3 menganggap `D, b =` sebagai
