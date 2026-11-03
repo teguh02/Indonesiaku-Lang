@@ -207,6 +207,13 @@ Before committing:
   shadows a builtin in the module table instead of mutating the shared one.
   `compileInModule()` stamps `function->module`; `compile()` is the no-module
   wrapper. Both `compilingModule` and `function->module` are GC roots.
+- **`impor "file.idk"` runs the file INTO the importer's module**
+  (`compileInModule(source, importer)`), cached under `fileImportKey(path,
+  module)`, so it runs once per importer. It used to compile with no module,
+  so its top level wrote into `vm.globals`, the builtin table every module
+  reads: a library defining `panjang`, or doing `dari bita impor ke_teks`,
+  silently replaced the builtin inside `pustaka/json.idk` (T-U8). Never let a
+  user-level definition reach `vm.globals`.
 - **A module name is an identifier, so language keywords cannot be path
   components:** `impor paket.dalam` fails because `dalam` is the `in` operator.
   Name module files accordingly.
@@ -335,7 +342,7 @@ allocates and can trigger a GC. Two rules follow, both learned from real bugs:
 - An uncaught typed galat rethrown by `OP_THROW` (no `kecuali` matched) prints its `.pesan` via `errorMessage`; it used to lose the message. Regression: `tests/galat/galat_bertipe_diteruskan`.
 - A single chunk holds at most **256 constants** (one-byte index, as in clox). A long top-level script full of literals hits "Terlalu banyak konstanta dalam satu chunk"; goldens split sections into functions (each has its own table, see `examples/tupel.idk`). Lifting this needs an `OP_CONSTANT_LONG`.
 - `+` accepts two lists (`concatenateLists`, both operands stay on the stack while the result grows); `*` accepts list/teks × angka in either order. `repeatCount` rejects non-integers (`GalatTipe`) and caps results at `REPEAT_MAX` 65535 (`GalatNilai`) so `[0] * 1e9` can't exhaust memory. Negative/zero factors give an empty result, as in Python.
-- Implemented: closures/upvalues, lists `[..]` + indexing, dicts via `kamus()` + string indexing, `untuk x dalam list { }`, `hentikan`/`lanjut`, classes (`kelas`, `init`, `diri`, `<` inheritance, `super`), `naikkan` + `coba/kecuali`, `impor "file.idk"` (shared global namespace, cached).
+- Implemented: closures/upvalues, lists `[..]` + indexing, dicts via `kamus()` + string indexing, `untuk x dalam list { }`, `hentikan`/`lanjut`, classes (`kelas`, `init`, `diri`, `<` inheritance, `super`), `naikkan` + `coba/kecuali`, `impor "file.idk"` (runs in the IMPORTER's module namespace, cached once per importer; see T-U8 below).
 - Catchable vs fatal: **every** `runtimeError` is catchable by `kecuali` (the caught value is the message string). When a handler is active, `runtimeError` only records the message (`vm.runtimeErrorPending`, no allocation) and `run()` returns; `interpret()` then unwinds via `throwValue`, pushes the message, and calls `run()` again. Only `fatalError` (stack underflow, bad jump offset — VM bugs) is never catchable. Natives still use `nativeRaise`. Uncaught errors print and exit 70.
 - `coba` handlers: `OP_RETURN` drops handlers registered by the returning frame; `hentikan`/`lanjut` emit `OP_TRY_END` for each `coba` they leave (`Compiler.tryDepth` vs `LoopCtx.tryDepth`).
 - **Several `kecuali` clauses chain by jump, and `catchClause()` does NOT emit its own rethrow.** It returns the unpatched "no match" jump; `tryStatement` patches it onto the next clause and only the last one falls through to `OP_POP` + `OP_THROW`. An untyped `kecuali e` returns -1 (always matches) and must be last — `semanticError`, not `error`, so there is no panic-mode cascade. `scanTryClauses` must skip EVERY `kecuali` clause in its lookahead loop, otherwise a trailing `akhirnya` goes undetected and its outer handler is never registered.

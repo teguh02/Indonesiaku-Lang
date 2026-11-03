@@ -2573,8 +2573,8 @@ kelas Kosong { lewati }
 
 Ada dua bentuk impor. Bentuk **bermodul** (`impor nama`) memberi tiap berkas
 namespace sendiri; bentuk **berkas** (`impor "file.idk"`) menjalankan berkas
-lain dalam namespace yang sama. Keduanya di-cache: berkas yang sama tidak
-pernah dijalankan dua kali.
+lain dalam namespace pengimpornya. Keduanya di-cache: modul bernama dijalankan
+sekali per program, berkas dijalankan sekali per pengimpor.
 
 ### `impor nama` — tiap modul punya namespace sendiri
 
@@ -2649,8 +2649,12 @@ jika __nama__ == "__utama__" {
 
 ### Bentuk berkas: `impor "file.idk"`
 
-Bentuk lama tetap berlaku dan **tidak berubah**: berkas dijalankan dalam
-namespace yang sama, sehingga semua namanya langsung tersedia tanpa awalan.
+Bentuk lama tetap berlaku: berkas dijalankan dalam namespace **pengimpornya**,
+sehingga semua namanya langsung tersedia tanpa awalan. Namanya tidak bocor ke
+modul lain. Kalau berkas yang diimpor mendefinisikan `panjang`, hanya
+pengimpornya yang melihat `panjang` itu, dan `impor json` tetap memakai
+builtin aslinya. Modul bernamespace yang mengimpor berkas yang sama
+mendapat salinannya sendiri.
 
 ```indonesiaku
 impor "pustaka/teks.idk"

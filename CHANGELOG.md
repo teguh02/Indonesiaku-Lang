@@ -29,6 +29,15 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **`impor "berkas.idk"` tidak lagi menulis ke tabel builtin bersama**
+  (T-U8). Berkas itu kini dijalankan di namespace pengimpornya, sekali per
+  pengimpor. Di 1.4.0, `fungsi panjang(x)` di berkas yang diimpor dengan cara
+  ini membajak `panjang()` di dalam modul bernamespace, termasuk pustaka
+  standar: `impor "pustaka/base64.idk"` lalu `impor json` merusak
+  `json.json_teks`. Modul yang selama ini memakai nama dari berkas yang
+  hanya diimpor oleh skrip utama kini perlu mengimpornya sendiri. Regresi:
+  `examples/impor_berkas_namespace.idk`.
+
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
