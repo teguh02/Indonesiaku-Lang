@@ -29,6 +29,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **`bita.ke_teks` menolak UTF-8 tidak sah** (T-U16). Dulu hanya byte pemimpin
+  yang diperiksa, sehingga `[0xC0, 0x80]` (*overlong*) menjadi NUL dan byte
+  lanjutan yang salah, surrogate, serta kode di atas `U+10FFFF` diterima.
+  Kini `GalatBita` dinaikkan untuk setiap urutan yang juga ditolak
+  `bytes.decode("utf-8")`. Regresi: `examples/bita_utf8_ketat.idk`.
+
 - ⚠️ **`json_urai` dan `json_teks` mengikuti RFC 8259** (T-U15).
   `json_urai` kini mendekode `\uXXXX` (termasuk pasangan surrogate), `\b`,
   dan `\f`, serta menolak escape tidak sah, karakter kontrol mentah, angka
