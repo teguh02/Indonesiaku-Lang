@@ -223,6 +223,11 @@ void fatalError(const char* format, ...) {
 // the native returns, so `coba/kecuali` can catch it. Unlike runtimeError,
 // this does not tear down the VM.
 void nativeRaise(const char* format, ...) {
+    // Same reason as runtimeError: a helper that already raised (a _hash_ that
+    // hit the depth limit inside setAdd, say) holds the real error. Its caller
+    // only sees `false` and would overwrite it with a generic message, so the
+    // first error wins.
+    if (vm.nativeErrorPending) return;
     char buffer[512];
     va_list args;
     va_start(args, format);
@@ -236,6 +241,7 @@ void nativeRaise(const char* format, ...) {
 // Same as nativeRaise, but picks the error class (GalatTipe, GalatBagiNol, ...)
 // so `kecuali GalatTipe` can select it.
 void nativeRaiseKelas(ObjClass* klass, const char* format, ...) {
+    if (vm.nativeErrorPending) return;   // see nativeRaise
     char buffer[512];
     va_list args;
     va_start(args, format);
@@ -3827,6 +3833,22 @@ static InterpretResult run() {
             case OP_IS_INSTANCE: {
                 Value target = pop();
                 push(BOOL_VAL(valueIsInstanceOf(peek(0), target)));
+                break;
+            }
+            case OP_CATCH_TEST: {
+                // `kecuali X { ... }` tanpa `sebagai`. Dulu X selalu menjadi
+                // nama pengikat, jadi `kecuali GalatNilai {` diam-diam
+                // menangkap SEMUA galat dan mengikatnya ke nama GalatNilai.
+                // Kini X dicari dulu: kalau ia merujuk sebuah kelas, klausa
+                // ini bertipe seperti `except ValueError:` di Python. Kalau
+                // bukan (nama belum ada, atau berisi non-kelas), X tetap nama
+                // pengikat dan klausa menangkap semua, persis seperti dulu.
+                // Menghasilkan satu bool, sama seperti OP_IS_INSTANCE, supaya
+                // rangkaian lompatan di catchClause() tidak perlu berubah.
+                ObjString* name = READ_STRING();
+                Value klass;
+                bool isClass = getGlobalValue(frame, name, &klass) && IS_CLASS(klass);
+                push(BOOL_VAL(isClass ? valueIsInstanceOf(peek(0), klass) : true));
                 break;
             }
             case OP_IMPORT_MODULE: {

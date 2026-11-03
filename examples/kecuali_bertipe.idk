@@ -1,0 +1,71 @@
+# `kecuali X { ... }` tanpa `sebagai` kini BERTIPE bila X merujuk kelas galat,
+# seperti `except ValueError:` di Python. Sebelum perbaikan ini X selalu
+# menjadi nama pengikat, jadi bentuk itu diam-diam menangkap SEMUA galat.
+
+# Bertipe: yang cocok tertangkap.
+coba {
+    "a" + 1
+} kecuali GalatTipe {
+    cetak("GalatTipe tertangkap")
+}
+
+# Bertipe: yang TIDAK cocok tidak tertangkap -- dulu justru tertangkap.
+coba {
+    coba {
+        "a" + 1
+    } kecuali GalatNilai {
+        cetak("SALAH: GalatTipe tertangkap oleh GalatNilai")
+    }
+} kecuali e {
+    cetak("lolos ke luar, benar")
+}
+
+# Kelas induk tetap menangkap turunannya.
+coba {
+    cetak(1 / 0)
+} kecuali GalatAritmetika {
+    cetak("induk menangkap turunan")
+}
+
+# Nama biasa tetap menangkap semua dan tetap terikat ke galatnya.
+coba {
+    "a" + 1
+} kecuali e {
+    cetak("tangkap-semua masih jalan:", e != kosong)
+}
+
+# Kelas galat buatan sendiri, termasuk yang namanya tidak diawali "Galat".
+kelas GalatKu < Galat {
+    init(pesan) { diri.pesan = pesan }
+}
+kelas N1 < GalatNilai { }
+
+coba {
+    naikkan GalatKu("aduh")
+} kecuali GalatKu {
+    cetak("kelas kustom cocok")
+}
+
+coba {
+    naikkan N1()
+} kecuali N1 {
+    cetak("nama tanpa awalan Galat cocok")
+}
+
+# Kelas kustom tidak tertangkap oleh kelas lain yang tidak berkerabat.
+coba {
+    coba {
+        naikkan GalatKu("lagi")
+    } kecuali GalatNilai {
+        cetak("SALAH: GalatKu bukan GalatNilai")
+    }
+} kecuali e {
+    cetak("kustom lolos ke luar, benar")
+}
+
+# Nama kelas tetap bisa dibaca di dalam blok.
+coba {
+    "a" + 1
+} kecuali GalatTipe {
+    cetak("nama kelas masih terbaca:", GalatTipe != kosong)
+}
