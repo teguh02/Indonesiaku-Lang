@@ -39,6 +39,101 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   luar dengan variabel loop kini menimpanya. Regresi:
   `examples/untuk_lingkup.idk`.
 
+- **`bita.ke_teks` menolak UTF-8 tidak sah** (T-U16). Dulu hanya byte pemimpin
+  yang diperiksa, sehingga `[0xC0, 0x80]` (*overlong*) menjadi NUL dan byte
+  lanjutan yang salah, surrogate, serta kode di atas `U+10FFFF` diterima.
+  Kini `GalatBita` dinaikkan untuk setiap urutan yang juga ditolak
+  `bytes.decode("utf-8")`. Regresi: `examples/bita_utf8_ketat.idk`.
+
+- ⚠️ **`json_urai` dan `json_teks` mengikuti RFC 8259** (T-U15).
+  `json_urai` kini mendekode `\uXXXX` (termasuk pasangan surrogate), `\b`,
+  dan `\f`, serta menolak escape tidak sah, karakter kontrol mentah, angka
+  cacat (`01`, `1.`, `-`), dan data tambahan (`"1 2"`), yang dulu diterima
+  diam-diam. `json_teks` meng-escape karakter kontrol, menolak
+  `nan`/`takhingga`, dan mengubah kunci angka/logika/kosong menjadi teks
+  seperti `json.dumps`, alih-alih crash. Regresi: `examples/json_ketat.idk`.
+
+- **`bulat`/`lantai`/`atap`/`bulatkan` dari `nan` menaikkan `GalatNilai`**
+  (T-U12). Di 1.4.0 hasilnya diam-diam `-9223372036854775808`, karena NaN
+  lolos dari pemeriksaan jangkauan lalu sampai ke cast C yang tidak
+  terdefinisi. `bulatkan(takhingga)` kini menaikkan `GalatLuapan` dan tidak
+  lagi mengembalikan desimal, dan argumen `bulat` di atas 2^53 dikembalikan
+  utuh. Regresi: `examples/nan_ke_bulat.idk`.
+
+- ⚠️ **`==` dan hash pada struktur sangat dalam menaikkan `GalatRekursi`**
+  (T-U13, T-U14). Dulu `==` berhenti di 64 tingkat dan diam-diam menjawab
+  `salah`, termasuk untuk dua daftar yang identik, dan hash tupel bersarang
+  ribuan tingkat sebagai kunci kamus membuat interpreter crash. Kini batasnya
+  1000 tingkat, seperti `RecursionError` di Python. Daftar yang memuat dirinya
+  sendiri juga menaikkan galat, bukan lagi `salah`. Regresi:
+  `examples/kedalaman_sama_hash.idk`, `tests/galat/hash_tupel_dalam.idk`.
+
+- ⚠️ **`impor "berkas.idk"` tidak lagi menulis ke tabel builtin bersama**
+  (T-U8). Berkas itu kini dijalankan di namespace pengimpornya, sekali per
+  pengimpor. Di 1.4.0, `fungsi panjang(x)` di berkas yang diimpor dengan cara
+  ini membajak `panjang()` di dalam modul bernamespace, termasuk pustaka
+  standar: `impor "pustaka/base64.idk"` lalu `impor json` merusak
+  `json.json_teks`. Modul yang selama ini memakai nama dari berkas yang
+  hanya diimpor oleh skrip utama kini perlu mengimpornya sendiri. Regresi:
+  `examples/impor_berkas_namespace.idk`.
+
+- ⚠️ **Comprehension menolak token setelah syaratnya** (T-U9). `jika` kedua,
+  `untuk` kedua, atau token sampah sebelum kurung penutup dulu dibuang
+  diam-diam, jadi `[x untuk x dalam a jika p jika q]` mengabaikan `q`. Kini
+  bentuk itu galat kompilasi dengan pesan yang menyebut sebabnya. Regresi:
+  `tests/galat/komprehensi_*`.
+
+- **Galat dari `_logika_` dan `_sama_` langsung membatalkan operasinya**
+  (T-U7). Di 1.4.0, `jika B() { ... }` dengan `_logika_` yang naik tetap
+  menjalankan cabangnya. Pada tabrakan hash, `d[k] = v` dengan `_sama_`
+  yang naik juga tetap menyisipkan kunci kedua, dan galatnya baru muncul
+  belakangan dengan jenis yang hilang. Tabel kamus kini menyimpan hash
+  setiap kunci, sehingga `_sama_` hanya dipanggil bila hash-nya sama (seperti
+  Python) dan resize tidak lagi memanggil `_hash_`. Regresi:
+  `examples/oop/galat_ajaib_langsung.idk`.
+
+- **Subkelas galat bawaan mewarisi seluruh leluhurnya** (T-U6). Di 1.4.0,
+  `kelas B2 < GalatBagiNol { }` tidak tertangkap oleh `kecuali
+  GalatAritmetika` maupun `kecuali Galat`: MRO C3 menganggap kelas galat yang
+  didefinisikan dari C tidak punya leluhur. Regresi:
+  `examples/galat_turunan_bawaan.idk`.
+
+- ⚠️ **`pastikan(kondisi, pesan)` dengan kurung ditolak saat kompilasi**
+  (T-U5). Kurung dengan koma membentuk satu tupel yang selalu benar, jadi di
+  1.4.0 penegasan itu tidak pernah gagal, padahal panduan sudah menyebutnya
+  sebagai galat kompilasi. `pastikan(kondisi)` dan tupel di dalam ekspresi
+  yang lebih besar tetap sah. Regresi: `tests/galat/pastikan_tupel.idk`.
+
+- **`x = a jika c selain b` meng-assign hasil kondisional** (T-U2). Di 1.4.0
+  bentuk ini dikompilasi sebagai `(x = a) jika c selain b`, jadi bila
+  kondisinya salah `x` tidak di-assign sama sekali. Sisi kanan assignment
+  ke nama kini ekspresi penuh, sama seperti `o.x = ...` dan `d[i] = ...`.
+  Regresi: `examples/kondisional_assignment.idk`.
+- **Argumen bernama di dalam fungsi tidak lagi mengosongkan argumen posisi**
+  (T-U3). Di 1.4.0, `g(D, b = 2)` di dalam fungsi membaca global/upvalue `D`
+  sebagai `kosong` karena prescan K3 menganggap `D, b =` sebagai
+  pembongkaran `a, b = ...`. Contohnya `statistik.kuantil(DATA, n = 2)` di
+  dalam fungsi. Regresi: `examples/argumen_bernama_lingkup.idk`.
+- **Windows: jalur dan nama berkas di luar code page ANSI** (T-W1 dari uji
+  paket 1.4.0). `indk 日本\s.idk` dulu gagal dengan
+  `Tidak dapat membuka file "??/s.idk".` (kode 74), dan
+  `tulis_semua("keluaran_☕.txt", ...)` membuat berkas bernama
+  `keluaran_â˜•.txt`. Sekarang `argumen` diambil dari baris perintah Unicode
+  (`GetCommandLineW`) dan diubah ke UTF-8. Semua pembukaan berkas lewat
+  `_wfopen`/`_wremove`: skrip, modul `impor`, `buka_berkas`, `baca_semua`,
+  `tulis_semua`, `tambah_berkas`, `ada_berkas`, `hapus_berkas`,
+  `rapikan --tulis`. `INDK_PATH` dan `ambil_lingkungan()` dibaca sebagai
+  Unicode, dan `_jalur_nyata()` memakai `_wfullpath`. Di Linux/macOS tidak
+  ada perubahan.
+- **Berkas sumber UTF-8 dengan BOM diterima** (T-W2, semua OS). BOM
+  `EF BB BF` di awal skrip atau modul dulu ditolak dengan
+  `Karakter tidak dikenal`; sekarang dilewati, seperti Python. Pembacaan data
+  (`baca_semua`) tetap tidak membuang BOM.
+- **Windows: teks non-ASCII terbaca benar di konsol** (T-W3). `cetak("☕")`
+  dulu tampil `Γÿò` di konsol code page 437/850. `indk` sekarang mengubah
+  code page konsol ke UTF-8 selama berjalan dan mengembalikannya saat keluar,
+  jadi `chcp 65001` tidak lagi diperlukan. Keluaran yang dialihkan ke berkas
+  atau pipa tidak berubah (selalu byte UTF-8).
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
@@ -221,6 +316,16 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   **merusak data** di bawah `sql_mode = NO_BACKSLASH_ESCAPES`: `x\` tersimpan
   sebagai `x\\`. Escaping yang benar mustahil tanpa melacak sql_mode server,
   jadi jalur itu diganti prepared statement.
+- Sisa draf COM_QUERY (`_kutip`, `_rakit`) dan enam fungsi yang tersalin dua
+  kali masih tertinggal di `pustaka/my.idk`. Definisi kedua menimpa yang
+  pertama, jadi perilaku tidak terpengaruh, tetapi berkasnya menyimpan 195
+  baris mati termasuk perakit SQL berbasis penggabungan teks yang sudah
+  ditinggalkan. Seluruh sisa itu dihapus.
+- Ekstensi VS Code tidak menyorot `teks_gabung`, `hmac_sha256`,
+  `pbkdf2_sha256`, dan `soket_baca_bita` karena daftar builtinnya diketik
+  tangan dan tertinggal dari `defineNative()`. Daftar di `language-data.js`
+  dan pola `tmLanguage.json` kini diselaraskan, dan `tests/builtin_konsisten.sh`
+  menjaga keduanya tetap sama persis dengan VM.
 
 ## [1.4.0] - 2026-10-29
 

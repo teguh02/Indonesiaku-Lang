@@ -1,0 +1,2 @@
+# Regresi T-U9: jika kedua tidak boleh diabaikan diam-diam.
+cetak([x untuk x dalam rentang(10) jika x > 2 jika x < 5])

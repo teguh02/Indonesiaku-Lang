@@ -1,0 +1,3 @@
+[baris 2, kolom 44] Kesalahan di 'lalu': Harapkan ')' di akhir comprehension.
+    …ak(daftar(x untuk x dalam [0, 1] jika x lalu))
+                                             ^^^^

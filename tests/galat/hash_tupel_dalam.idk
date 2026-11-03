@@ -1,0 +1,6 @@
+# Regresi T-U14: hash tupel bersarang dalam dulu membuat interpreter crash.
+t = ()
+untuk i dalam rentang(3000) { t = (t,) }
+d = {}
+d[t] = 1
+cetak("tidak")

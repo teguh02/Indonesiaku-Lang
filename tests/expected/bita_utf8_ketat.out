@@ -1,0 +1,15 @@
+ascii -> 2 [104, 105]
+é -> 1 [233]
+€ -> 1 [8364]
+emoji -> 1 [128512]
+U+10FFFF -> 1 [1114111]
+overlong NUL -> GalatBita: ke_teks: byte pemimpin tidak sah 192
+overlong 3 -> GalatBita: ke_teks: urutan UTF-8 overlong
+overlong 4 -> GalatBita: ke_teks: urutan UTF-8 overlong
+surrogate -> GalatBita: ke_teks: surrogate UTF-16 bukan karakter yang sah
+di atas 10FFFF -> GalatBita: ke_teks: kode di atas U+10FFFF
+pemimpin F5 -> GalatBita: ke_teks: byte pemimpin tidak sah 245
+lanjutan salah -> GalatBita: ke_teks: byte lanjutan UTF-8 tidak sah
+lanjutan menggantung -> GalatBita: ke_teks: byte 128..191 tanpa pemimpin
+terpotong -> GalatBita: ke_teks: urutan UTF-8 terpotong
+bolak-balik: benar
