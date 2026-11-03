@@ -1,0 +1,11 @@
+jenis: sqlite
+baris masuk: 1
+  Budi: 85.5
+  Ani: 91.0
+satu: Ani
+tidak ada: kosong
+tanpa parameter: 3
+setelah batal: 3
+setelah komit: 4
+ditolak: jenis basis data tidak dikenal: 'oracle'; yang didukung: sqlite, mysql, postgres
+tutup dua kali: aman

@@ -353,6 +353,10 @@ kelas Koneksi {
         }
     }
 
+    # jenis() memudahkan kode portabel mengenali backend tanpa menebak dari
+    # bentuk galat atau dialek SQL.
+    jenis() { kembalikan "postgres" }
+
     # eksekusi(sql, parameter) -> jumlah baris terpengaruh.
     eksekusi(sql, parameter = kosong) {
         jika parameter == kosong { parameter = daftar() }

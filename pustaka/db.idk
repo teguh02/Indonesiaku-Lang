@@ -1,0 +1,110 @@
+# Pustaka db: satu API untuk SQLite, MySQL/MariaDB, dan PostgreSQL.
+#
+# Ketiga backend sudah bisa dipakai langsung (`db_*`, `my.sambung`,
+# `pg.sambung`) dan semuanya tetap berjalan tanpa perubahan. Berkas ini hanya
+# menyeragamkan bentuk pemanggilannya, supaya kode yang berpindah backend tidak
+# perlu ditulis ulang hanya karena SQLite memakai fungsi global sementara dua
+# lainnya memakai metode objek.
+#
+# YANG TIDAK DILAKUKAN: menerjemahkan placeholder. PostgreSQL memakai $1,
+# SQLite dan MySQL memakai ?. Menerjemahkannya berarti memindai teks SQL, dan
+# pemindai yang tidak memahami literal string akan merusak query yang sah:
+#
+#     SELECT * FROM t WHERE nama = 'siapa?' AND id = ?
+#
+# Tanda tanya pertama ada di dalam literal, bukan parameter. SQL tetap ditulis
+# sesuai dialek backend-nya.
+
+impor my
+impor pg
+
+kelas GalatDb < GalatOS {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+# Nama jenis yang dikenali. Sengaja dibatasi: jenis asing ditolak dengan pesan
+# jelas, bukan dibiarkan gagal jauh di dalam driver.
+variabel JENIS_SQLITE = "sqlite"
+variabel JENIS_MYSQL = "mysql"
+variabel JENIS_POSTGRES = "postgres"
+
+
+# Pembungkus SQLite: db_* adalah fungsi global, jadi di sinilah bentuknya
+# disamakan dengan dua driver lain yang sudah berupa objek.
+kelas KoneksiSqlite {
+    init(pegangan) {
+        diri.d = pegangan
+    }
+
+    jenis() { kembalikan JENIS_SQLITE }
+
+    # db_eksekusi() mengembalikan kosong, sedangkan pg dan my mengembalikan
+    # jumlah baris terpengaruh. Tanpa penyesuaian ini kode portabel akan
+    # menerima kosong di SQLite dan angka di tempat lain.
+    eksekusi(sql, parameter = kosong) {
+        jika parameter == kosong { parameter = daftar() }
+        db_eksekusi(diri.d, sql, parameter)
+        kembalikan db_baris_terpengaruh(diri.d)
+    }
+
+    ambil_semua(sql, parameter = kosong) {
+        jika parameter == kosong { parameter = daftar() }
+        kembalikan db_ambil_semua(diri.d, sql, parameter)
+    }
+
+    ambil_satu(sql, parameter = kosong) {
+        jika parameter == kosong { parameter = daftar() }
+        kembalikan db_ambil_satu(diri.d, sql, parameter)
+    }
+
+    id_terakhir() { kembalikan db_id_terakhir(diri.d) }
+
+    mulai() { db_mulai(diri.d) }
+    komit() { db_komit(diri.d) }
+    batal() { db_batal(diri.d) }
+
+    # db_tutup() sudah idempoten, sama seperti tutup() di my dan pg.
+    tutup() { db_tutup(diri.d) }
+}
+
+
+fungsi _wajib(konfigurasi, kunci, jenis) {
+    jika (kunci dalam konfigurasi) == salah {
+        naikkan GalatDb("konfigurasi '" + jenis + "' wajib memuat '" + kunci + "'")
+    }
+    kembalikan konfigurasi[kunci]
+}
+
+
+# sambung(konfigurasi) -> objek koneksi.
+#
+# konfigurasi["jenis"] memilih backend:
+#   {"jenis": "sqlite",   "berkas": "data.db"}
+#   {"jenis": "mysql",    "host": ..., "pengguna": ..., "sandi": ..., "basisdata": ...}
+#   {"jenis": "postgres", "host": ..., "pengguna": ..., "sandi": ..., "basisdata": ...}
+#
+# Kunci selain "jenis" diteruskan apa adanya ke driver masing-masing, jadi
+# opsi khusus driver (mis. "tls" pada postgres) tetap bisa dipakai.
+fungsi sambung(konfigurasi) {
+    jika ("jenis" dalam konfigurasi) == salah {
+        naikkan GalatDb("konfigurasi wajib memuat 'jenis': " +
+                        JENIS_SQLITE + ", " + JENIS_MYSQL + ", atau " + JENIS_POSTGRES)
+    }
+    variabel jenis = konfigurasi["jenis"]
+
+    jika jenis == JENIS_SQLITE {
+        kembalikan KoneksiSqlite(db_buka(_wajib(konfigurasi, "berkas", JENIS_SQLITE)))
+    }
+    jika jenis == JENIS_MYSQL {
+        kembalikan my.sambung(konfigurasi)
+    }
+    jika jenis == JENIS_POSTGRES {
+        kembalikan pg.sambung(konfigurasi)
+    }
+
+    naikkan GalatDb("jenis basis data tidak dikenal: '" + ke_teks(jenis) +
+                    "'; yang didukung: " + JENIS_SQLITE + ", " + JENIS_MYSQL +
+                    ", " + JENIS_POSTGRES)
+}
