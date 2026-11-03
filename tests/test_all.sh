@@ -123,6 +123,17 @@ if [ -f tests/test_baca_sumber.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Jalur skrip/argumen/nama berkas non-ASCII (T-W1): regresi permanen.
+if [ -f tests/test_jalur_unicode.sh ]; then
+    echo ""
+    if bash tests/test_jalur_unicode.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES jalur-unicode"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Performa parsing badan: urlencoded harus LINEAR, bukan kuadratik.
 # Yang diperiksa bentuk pertumbuhan (2x ukuran -> ~2x waktu), bukan ambang
 # detik, supaya runner lambat tidak membuatnya merah palsu.
@@ -197,6 +208,20 @@ if [ -f tests/api_siswa_pg_server.sh ]; then
         echo -e "  ${RED}x${NC} api_siswa_pg_server"
         sed 's/^/      /' /tmp/idk_apipg_uji.log
         FAILED=$((FAILED+1)); FAILURES="$FAILURES api_siswa_pg_server"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
+# Daftar builtin ekstensi VS Code harus sama persis dengan defineNative().
+# Daftar yang diketik tangan pernah tertinggal 4 builtin tanpa gejala apa pun.
+if [ -f tests/builtin_konsisten.sh ]; then
+    if bash tests/builtin_konsisten.sh > /tmp/idk_builtin_kons.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} builtin_konsisten"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} builtin_konsisten"
+        sed 's/^/      /' /tmp/idk_builtin_kons.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES builtin_konsisten"
     fi
     TOTAL=$((TOTAL+1))
 fi

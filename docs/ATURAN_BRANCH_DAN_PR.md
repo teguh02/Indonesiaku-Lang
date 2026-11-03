@@ -74,11 +74,47 @@ git push -u origin fitur/123-driver-postgresql
 
 Contoh singkat kategori lain: `perbaikan/galat-iterasi`, `docs/referensi-api`, `keamanan/batas-rekursi`, `ci/pengujian-sanitizer`, `rilis/1.5.0`.
 
-## 6. Pemeriksaan kepatuhan
+## 6. Perbaikan bertahap: satu temuan, satu branch, satu PR
+
+Saat mengerjakan daftar temuan satu per satu (misalnya hasil uji di
+`docs/TESTING/`, laporan audit, atau daftar bug dari issue), **setiap temuan
+mendapat branch dan PR sendiri**. Jangan mengumpulkannya menjadi satu PR
+raksasa. Contohnya adalah perbaikan T-U2–T-U16 dari uji Windows 1.4.0: satu
+cabang `perbaikan/...` per temuan, masing-masing menuju `main` (PR #41–#55).
+
+- **Setiap branch dibuat dari `main` terbaru**, bukan dari branch perbaikan
+  lain. Branch boleh ditumpuk hanya bila memang ada ketergantungan, dan
+  ketergantungan itu ditulis di deskripsi PR.
+- **Gabungkan hanya temuan yang tidak bisa dipisah**, misalnya karena akar
+  masalah atau baris kodenya sama (T-U13 + T-U14). Tulis alasannya di PR.
+- **Setiap PR lengkap dan teruji sendiri:** rencana di
+  `docs/RENCANA_FITUR/`, regression test (golden/`tests/galat`/skrip uji),
+  entri `CHANGELOG.md`, dokumentasi yang terdampak, dan bukti tes di
+  deskripsi PR. PR tidak boleh bergantung pada PR lain untuk lulus CI.
+- **Temuan yang mengubah semantik** (keputusan K) ditanyakan dulu ke
+  maintainer. Temuan seperti itu tidak boleh menahan PR lain: kerjakan yang
+  lain lebih dulu, lalu buat PR terpisah setelah keputusan dicatat.
+- **Jangan mengganggu pekerjaan lain.** Orang atau agen lain bisa sedang
+  bekerja di `main`, di branch lain, atau di worktree/checkout lain. Jangan
+  mengedit berkas, menjalankan build, atau mengubah branch di worktree milik
+  orang/sesi lain. Untuk menguji beberapa branch sekaligus, ekspor salinan
+  (`git -c core.autocrlf=false archive <commit>`) ke folder sementara.
+  Menambah commit ke branch PR milik orang lain hanya boleh lewat push
+  *fast-forward*, setelah memastikan checkout pemiliknya bersih dan sinkron,
+  dan **tidak pernah** dengan force-push.
+- **Konflik `CHANGELOG.md` itu wajar.** Setiap PR menambah entri di awal
+  bagian yang sama, jadi PR yang di-merge belakangan perlu di-rebase. Saat
+  menyelesaikan konflik, pertahankan semua entri.
+- **Catat status per temuan** (temuan → PR/branch → status) di tempat yang
+  dibaca semua orang, misalnya deskripsi PR induk atau berkas hasil uji, agar
+  tidak ada temuan yang dikerjakan dua kali atau terlewat.
+
+## 7. Pemeriksaan kepatuhan
 
 - [ ] Branch mengikuti kategori dan pola yang relevan; nomor issue akurat.
 - [ ] Tidak membuat perubahan langsung pada `main` tanpa alasan dan persetujuan.
 - [ ] Satu PR punya satu tujuan logis, dan tidak mengandung rahasia.
+- [ ] Daftar temuan dikerjakan sebagai satu branch + satu PR per temuan dari `main` terbaru (§6), tanpa menyentuh worktree atau branch orang lain.
 - [ ] Feature plan/bug reproduction sudah ada sesuai jenis perubahan.
 - [ ] Tes, dokumen, contoh, kompatibilitas dan keamanan diperiksa.
 - [ ] CI hijau dan reviewer menyetujui sebelum merge.

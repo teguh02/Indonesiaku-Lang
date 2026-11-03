@@ -1065,15 +1065,20 @@ static bool c3Linearize(ObjClass* klass, ObjClass** bases, int baseCount) {
         return false;
     }
 
+    // L(Bi) via ancestors(): a class defined from C (the built-in error
+    // classes) has no mro array, its superclass chain IS its MRO. Copying
+    // only `mro` gave GalatBagiNol an empty list, so `B2 < GalatBagiNol`
+    // lost GalatAritmetika and Galat and `kecuali Galat` missed it (T-U6).
     for (int i = 0; i < baseCount; i++) {
-        if (bases[i]->mroCount > MRO_MAX) {
-            runtimeError("Rantai pewarisan terlalu panjang.");
-            return false;
+        int n = 0;
+        for (AncestorIter it = ancestors(bases[i]); ancestorNext(&it); ) {
+            if (n >= MRO_MAX) {
+                runtimeError("Rantai pewarisan terlalu panjang.");
+                return false;
+            }
+            lists[i][n++] = it.klass;
         }
-        for (int j = 0; j < bases[i]->mroCount; j++) {
-            lists[i][j] = bases[i]->mro[j];
-        }
-        lengths[i] = bases[i]->mroCount;
+        lengths[i] = n;
     }
     for (int i = 0; i < baseCount; i++) lists[baseCount][i] = bases[i];
     lengths[baseCount] = baseCount;
@@ -1209,7 +1214,7 @@ static void defineMethod(ObjString* name) {
 
 // Read an entire file into a NUL-terminated heap buffer, or NULL on failure.
 static char* readModuleSource(const char* path) {
-    FILE* file = fopen(path, "rb");
+    FILE* file = sistemBukaBerkas(path, "rb");
     if (file == NULL) return NULL;
 
     fseek(file, 0L, SEEK_END);
@@ -1222,6 +1227,7 @@ static char* readModuleSource(const char* path) {
 
     size_t read = fread(buffer, sizeof(char), (size_t)size, file);
     buffer[read] = '\0';
+    read = stripUtf8Bom(buffer, read);
     normalizeNewlines(buffer, read);
     fclose(file);
     return buffer;
@@ -1256,7 +1262,7 @@ static bool getGlobalValue(CallFrame* frame, ObjString* name, Value* out) {
 #endif
 
 static bool fileExists(const char* path) {
-    FILE* f = fopen(path, "rb");
+    FILE* f = sistemBukaBerkas(path, "rb");
     if (f == NULL) return false;
     fclose(f);
     return true;
@@ -1301,8 +1307,9 @@ static bool moduleNameToRelPath(const char* name, char* out, size_t outSize) {
 
 // `rel` inside each directory of INDK_PATH, in order.
 static bool findInSearchPath(const char* rel, char* out, size_t outSize) {
-    const char* search = getenv("INDK_PATH");
+    char* search = sistemAmbilLingkungan("INDK_PATH");
     if (search == NULL) return false;
+    bool found = false;
     const char* start = search;
     while (*start != '\0') {
         const char* end = strchr(start, INDK_PATH_SEP);
@@ -1313,13 +1320,15 @@ static bool findInSearchPath(const char* rel, char* out, size_t outSize) {
             dir[partLen] = '\0';
             if (snprintf(out, outSize, "%s%c%s", dir, INDK_DIR_SEP, rel) < (int)outSize &&
                 fileExists(out)) {
-                return true;
+                found = true;
+                break;
             }
         }
         if (end == NULL) break;
         start = end + 1;
     }
-    return false;
+    free(search);
+    return found;
 }
 
 // Standard-library directories located from the RUNNING INTERPRETER, so an

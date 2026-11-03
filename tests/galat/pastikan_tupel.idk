@@ -1,0 +1,3 @@
+# Regresi T-U5: kurung dengan koma membentuk tupel yang selalu benar.
+pastikan(1 == 2, "harus gagal")
+cetak("tidak boleh tercetak")
