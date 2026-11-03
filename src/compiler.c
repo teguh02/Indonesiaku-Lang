@@ -1783,7 +1783,11 @@ static void namedVariable(Token name, bool canAssign) {
     if (reads && getOp == OP_GET_LOCAL && arg >= 0) current->locals[arg].used = true;
 
     if (canAssign && match(TOKEN_EQUAL)) {
-        parsePrecedence(PREC_ASSIGNMENT);
+        // expression(), not parsePrecedence(): the right side may be a
+        // conditional `a jika c selain b`, which only expression() parses.
+        // With parsePrecedence the statement became `(x = a) jika c selain b`
+        // and a false condition skipped the assignment (T-U2).
+        expression();
         maybeTupleTail();           // x = 1, 2
         if (setOp == OP_SET_GLOBAL) {
             emitBytes(OP_DEFINE_GLOBAL, (uint8_t)arg);
