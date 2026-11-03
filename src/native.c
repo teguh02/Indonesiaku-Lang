@@ -167,6 +167,23 @@ Value nativeFnPangkat(int argCount, Value* args) {
     return NUMBER_VAL(pow(AS_NUMBER(args[0]), AS_NUMBER(args[1])));
 }
 
+// double -> bulat for bulat()/lantai()/atap()/bulatkan(). NaN must be checked
+// explicitly: every range comparison with NaN is false, so it used to reach
+// the (int64_t) cast, which is undefined and gave INT64_MIN (T-U12). Python
+// raises ValueError for NaN and OverflowError for infinity.
+static bool doubleToBulat(const char* fn, double hasil, Value* out) {
+    if (isnan(hasil)) {
+        nativeRaiseKelas(vm.galatNilai, "%s() tidak dapat mengubah nan menjadi bilangan bulat", fn);
+        return false;
+    }
+    if (hasil >= 9223372036854775808.0 || hasil < -9223372036854775808.0) {
+        nativeRaiseKelas(vm.galatLuapan, "%s() melebihi jangkauan bilangan bulat", fn);
+        return false;
+    }
+    *out = INT_VAL((int64_t)hasil);
+    return true;
+}
+
 Value nativeFnBulat(int argCount, Value* args) {
     if (argCount != 1) {
         nativeRaise("bulat() memerlukan 1 argumen");
@@ -177,12 +194,12 @@ Value nativeFnBulat(int argCount, Value* args) {
         return NUMBER_VAL(0);
     }
     // Python's round() returns an int.
-    double hasil = round(AS_NUMBER(args[0]));
-    if (hasil >= 9223372036854775808.0 || hasil < -9223372036854775808.0) {
-        nativeRaiseKelas(vm.galatLuapan, "bulat() melebihi jangkauan bilangan bulat");
-        return NUMBER_VAL(0);
-    }
-    return INT_VAL((int64_t)hasil);
+    // A bulat is already whole; widening it to double would round
+    // values beyond 2^53.
+    if (IS_INT(args[0])) return args[0];
+    Value hasil;
+    if (!doubleToBulat("bulat", round(AS_NUMBER(args[0])), &hasil)) return NUMBER_VAL(0);
+    return hasil;
 }
 
 Value nativeFnLantai(int argCount, Value* args) {
@@ -195,12 +212,12 @@ Value nativeFnLantai(int argCount, Value* args) {
         return NUMBER_VAL(0);
     }
     // math.floor() returns an int in Python.
-    double hasil = floor(AS_NUMBER(args[0]));
-    if (hasil >= 9223372036854775808.0 || hasil < -9223372036854775808.0) {
-        nativeRaiseKelas(vm.galatLuapan, "lantai() melebihi jangkauan bilangan bulat");
-        return NUMBER_VAL(0);
-    }
-    return INT_VAL((int64_t)hasil);
+    // A bulat is already whole; widening it to double would round
+    // values beyond 2^53.
+    if (IS_INT(args[0])) return args[0];
+    Value hasil;
+    if (!doubleToBulat("lantai", floor(AS_NUMBER(args[0])), &hasil)) return NUMBER_VAL(0);
+    return hasil;
 }
 
 Value nativeFnAtap(int argCount, Value* args) {
@@ -213,12 +230,12 @@ Value nativeFnAtap(int argCount, Value* args) {
         return NUMBER_VAL(0);
     }
     // math.ceil() returns an int in Python.
-    double hasil = ceil(AS_NUMBER(args[0]));
-    if (hasil >= 9223372036854775808.0 || hasil < -9223372036854775808.0) {
-        nativeRaiseKelas(vm.galatLuapan, "atap() melebihi jangkauan bilangan bulat");
-        return NUMBER_VAL(0);
-    }
-    return INT_VAL((int64_t)hasil);
+    // A bulat is already whole; widening it to double would round
+    // values beyond 2^53.
+    if (IS_INT(args[0])) return args[0];
+    Value hasil;
+    if (!doubleToBulat("atap", ceil(AS_NUMBER(args[0])), &hasil)) return NUMBER_VAL(0);
+    return hasil;
 }
 
 Value nativeFnAcak(int argCount, Value* args) {
@@ -360,16 +377,20 @@ Value nativeFnBulatkan(int argCount, Value* args) {
         if (d < -320) return NUMBER_VAL(x < 0 ? -0.0 : 0.0);
         digit = (int)d;
     }
+    // Python's round(x) with no digit returns an int (banker's rounding),
+    // so nan/takhingga raise instead of coming back as desimal.
+    if (argCount == 1) {
+        if (IS_INT(args[0])) return args[0];
+        Value hasil;
+        if (!doubleToBulat("bulatkan", nearbyint(x), &hasil)) return NUMBER_VAL(0);
+        return hasil;
+    }
     if (!isfinite(x)) return NUMBER_VAL(x);
-
-    // Python's round(x) with no digit returns an int (banker's rounding).
     if (digit == 0) {
-        double hasil = nearbyint(x);
-        if (hasil >= 9223372036854775808.0 || hasil < -9223372036854775808.0) {
-            nativeRaiseKelas(vm.galatLuapan, "bulatkan() melebihi jangkauan bilangan bulat");
-            return NUMBER_VAL(0);
-        }
-        return INT_VAL((int64_t)hasil);
+        // bulatkan(x, 0) has always returned a bulat; kept as is here.
+        Value hasil;
+        if (!doubleToBulat("bulatkan", nearbyint(x), &hasil)) return NUMBER_VAL(0);
+        return hasil;
     }
 
     if (digit < 0) {
