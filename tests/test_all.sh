@@ -123,6 +123,17 @@ if [ -f tests/test_baca_sumber.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Jalur skrip/argumen/nama berkas non-ASCII (T-W1): regresi permanen.
+if [ -f tests/test_jalur_unicode.sh ]; then
+    echo ""
+    if bash tests/test_jalur_unicode.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES jalur-unicode"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Performa parsing badan: urlencoded harus LINEAR, bukan kuadratik.
 # Yang diperiksa bentuk pertumbuhan (2x ukuran -> ~2x waktu), bukan ambang
 # detik, supaya runner lambat tidak membuatnya merah palsu.
