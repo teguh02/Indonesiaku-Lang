@@ -29,6 +29,15 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **`impor "berkas.idk"` tidak lagi menulis ke tabel builtin bersama**
+  (T-U8). Berkas itu kini dijalankan di namespace pengimpornya, sekali per
+  pengimpor. Di 1.4.0, `fungsi panjang(x)` di berkas yang diimpor dengan cara
+  ini membajak `panjang()` di dalam modul bernamespace, termasuk pustaka
+  standar: `impor "pustaka/base64.idk"` lalu `impor json` merusak
+  `json.json_teks`. Modul yang selama ini memakai nama dari berkas yang
+  hanya diimpor oleh skrip utama kini perlu mengimpornya sendiri. Regresi:
+  `examples/impor_berkas_namespace.idk`.
+
 - ⚠️ **Comprehension menolak token setelah syaratnya** (T-U9). `jika` kedua,
   `untuk` kedua, atau token sampah sebelum kurung penutup dulu dibuang
   diam-diam, jadi `[x untuk x dalam a jika p jika q]` mengabaikan `q`. Kini

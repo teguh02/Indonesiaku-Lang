@@ -1,0 +1,20 @@
+# Regresi T-U8: impor "berkas.idk" menaruh definisinya di namespace
+# PENGIMPOR, bukan di tabel builtin bersama yang dibaca semua modul.
+impor "examples/modul_contoh/bajak_panjang.idk"
+cetak("pengimpor melihat definisinya:", panjang("abc"), nilai_bersama)
+
+# Modul bernamespace lain tetap melihat builtin aslinya.
+impor modul_contoh.sapaan
+cetak("modul lain:", sapaan.asal)
+impor json
+cetak("json tidak terganggu:", json.json_teks([1, "dua"]))
+
+# Modul yang mengimpor berkas yang sama mendapat salinannya sendiri,
+# dan berkas itu tetap dijalankan sekali per pengimpor.
+impor modul_contoh.hitung_panjang
+cetak("modul pengimpor:", hitung_panjang.ukur("xy"))
+
+# Impor kedua dari pengimpor yang sama tidak menjalankan ulang berkasnya.
+nilai_bersama = 7
+impor "examples/modul_contoh/bajak_panjang.idk"
+cetak("tidak dijalankan ulang:", nilai_bersama)

@@ -1474,10 +1474,27 @@ static bool loadModule(ObjString* name, Value* out) {
     return true;
 }
 
-static bool importModule(ObjString* path) {
-    // Already loaded? Skip.
+// Cache key of `impor "path"` run INTO `into`: once per importing module.
+// Modules are never freed (loadedModules / vm.mainModule root them), so
+// their address is a stable identity for the process lifetime.
+static ObjString* fileImportKey(ObjString* path, ObjModule* into) {
+    if (into == NULL) return path;
+    char key[700];
+    int n = snprintf(key, sizeof key, "%p%s", (void*)into, path->chars);
+    if (n < 0 || n >= (int)sizeof key) n = (int)sizeof key - 1;
+    return copyString(key, n);
+}
+
+// `impor "berkas.idk"`: the file's top level runs in the IMPORTER's module,
+// so its definitions land in the importer's globals -- the shared namespace
+// the old form promises, without the builtin table. It used to be compiled
+// with no module, writing into vm.globals, which every namespace module
+// reads: `fungsi panjang(x)` in such a file hijacked panjang() inside the
+// standard library (T-U8).
+static bool importModule(ObjString* path, ObjModule* into) {
+    ObjString* key = fileImportKey(path, into);
     Value dummy;
-    if (tableGet(&vm.loadedModules, path, &dummy)) {
+    if (tableGet(&vm.loadedModules, key, &dummy)) {
         return true;
     }
 
@@ -1500,10 +1517,13 @@ static bool importModule(ObjString* path) {
         return false;
     }
 
-    // Mark as loaded before running to break import cycles.
-    tableSet(&vm.loadedModules, path, BOOL_VAL(true));
+    // Mark as loaded before running to break import cycles. Root the key:
+    // tableSet may grow the table and collect it.
+    push(OBJ_VAL(key));
+    tableSet(&vm.loadedModules, key, BOOL_VAL(true));
+    pop();
 
-    ObjFunction* function = compile(source);
+    ObjFunction* function = compileInModule(source, into);
     free(source);
     if (function == NULL) {
         runtimeError("Gagal mengompilasi modul '%s'.", path->chars);
@@ -3809,13 +3829,14 @@ static InterpretResult run() {
                 break;
             }
             case OP_IMPORT: {
-                ObjString* path = AS_STRING(pop());
-                bool alreadyLoaded = false;
+                // peek, not pop: building the cache key allocates.
+                ObjString* path = AS_STRING(peek(0));
+                ObjModule* into = frame->closure->function->module;
+                ObjString* key = fileImportKey(path, into);
                 Value dummy;
-                if (tableGet(&vm.loadedModules, path, &dummy)) {
-                    alreadyLoaded = true;
-                }
-                if (!importModule(path)) {
+                bool alreadyLoaded = tableGet(&vm.loadedModules, key, &dummy);
+                pop();
+                if (!importModule(path, into)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 if (alreadyLoaded) {
