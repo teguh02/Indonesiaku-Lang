@@ -321,6 +321,13 @@ allocates and can trigger a GC. Two rules follow, both learned from real bugs:
   (`object.c`) is the only correct way to read a rentang element if you want
   bulat elements. Truthiness: `0` and `0.0` are false.
 - Truthiness is Python's (K1, `isFalsey` in `vm.c`): `salah`, `kosong`, `0`, `""`, empty list/kamus/rentang are false; every instance is true. Collection emptiness uses live counts (`dictLength` skips tombstones).
+- **The `untuk` loop variable is NOT a block local (K21).** `forStatement`
+  stores each element with `assignToName()` exactly like `x = elemen`, and
+  `prescanFunctionBody` pre-declares the name after a statement-level `untuk`
+  as a function-local (K3). Only at statement start (previous token newline,
+  `{`, `}` or `;`): a comprehension's `untuk` follows an expression, and its
+  variable must stay private (Python 3). Do not reintroduce `addLocal` for the
+  loop variable.
 - `rentang()` returns an `OBJ_RANGE` (start/stop/step doubles, no list). `untuk` is desugared to `OP_LIST_LEN` + `OP_INDEX_GET`, so any sequence those two opcodes accept is iterable — currently list, rentang, and teks (per character). Add a type there to make it iterable.
 - `x dalam y` / `x tidak dalam y` compile to `OP_IN` (+ `OP_NOT`) at `PREC_COMPARISON` (`containsValue` in `vm.c`). `TOKEN_TIDAK` now has an infix rule (`notIn`), so because of B16 a line starting with `tidak` right after an expression is a compile error ("Harapkan 'dalam'"). Comparison chaining is not implemented yet.
 - **`{` is position-dependent.** `statement()` consumes `{` as a block; everywhere else the Pratt prefix rule `dictLiteral` reads it as a dict literal (`OP_BUILD_DICT`). A bare `{"a": 1}` statement is therefore a block, not a dict — the guides say to write `x = {"a": 1}`. `{` does NOT raise the scanner's `groupingDepth` (blocks need newline tokens), so `dictLiteral` skips `TOKEN_NEWLINE` by hand for multi-line literals. Dict keys must evaluate to strings.

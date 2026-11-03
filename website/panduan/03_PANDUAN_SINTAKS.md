@@ -1175,6 +1175,30 @@ untuk huruf dalam "halo" {
 ```
 > Contoh: [`examples/untuk_dalam.idk`](../examples/untuk_dalam.idk)
 
+### Lingkup variabel `untuk`
+
+Seperti Python, variabel `untuk` di-assign seperti `x = elemen`, bukan
+variabel baru yang hanya hidup di dalam blok. Akibatnya, ia menimpa nama yang
+sudah ada dan tetap bernilai elemen terakhir setelah loop selesai:
+
+```indonesiaku
+k = 99
+untuk k dalam rentang(3) { }
+cetak(k)                 # 2, bukan 99
+
+untuk q dalam ["a", "b"] { }
+cetak(q)                 # b
+```
+
+Di dalam fungsi, variabel `untuk` menjadi variabel lokal fungsi itu (K3),
+kecuali dinyatakan `global`/`nonlokal`. Kalau urutannya kosong, variabel
+tidak pernah di-assign. Di tingkat skrip membacanya menaikkan galat "tidak
+terdefinisi", sedangkan di dalam fungsi nilainya `kosong`, sama seperti
+lokal lain yang baris assignment-nya tidak pernah berjalan. Variabel
+*comprehension* berbeda: ia tetap privat (lihat di bawah).
+
+> Contoh: [`examples/untuk_lingkup.idk`](../examples/untuk_lingkup.idk)
+
 ### Perulangan angka dengan `rentang()`
 
 `rentang()` menghasilkan deret bilangan bulat, seperti `range()` di Python:
@@ -1205,7 +1229,8 @@ cetak([k[0] untuk k dalam ["apel", "bunga"]])        # [a, b]
 ```
 
 - Satu `untuk` dan satu `jika` opsional (gabungkan syarat dengan `dan`/`atau`).
-- Variabel loop hanya hidup di dalam comprehension; nama di luar tidak berubah.
+- Variabel loop hanya hidup di dalam comprehension; nama di luar tidak berubah
+  (beda dengan pernyataan `untuk`, seperti di Python 3).
 - Boleh bersarang: `[[a * b untuk b dalam rentang(1, 3)] untuk a dalam [1, 2]]`.
 
 > Contoh: [`examples/komprehensi.idk`](../examples/komprehensi.idk)

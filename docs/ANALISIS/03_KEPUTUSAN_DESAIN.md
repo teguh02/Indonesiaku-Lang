@@ -35,6 +35,7 @@ kebijakan K14: dicatat di `CHANGELOG.md` dan didahului peringatan bila perlu
 | K16 | Argumen bernama | `f(b=2)`, boleh melewati parameter di tengah | Ya | disetujui — selesai ✅ (Fase 1) |
 | K17 | Sintaks tupel & himpunan | Tupel `(1, 2)`/`(1,)`/`()` seperti Python; himpunan **hanya** lewat `himpunan([...])`, tanpa literal `{1, 2}` | Tidak | disetujui (2026-10-25) |
 | K19 | Metode ajaib | Nama Indonesia berpola `_nama_` (06 §10), dicari di kelas; cerminan untuk perbandingan; `_sama_` membuat instansi tidak hashable | Tidak (perilaku baru; perbaikan NaN pada `>=`/`<=`/`!=`) | selesai ✅ (Fase 4) |
+| K21 | Lingkup variabel `untuk` | Ikuti Python: di-assign seperti `x = elemen` (bukan lokal blok); variabel comprehension tetap privat | Ya (nama yang dibayangi kini tertimpa) | disetujui (2026-11-03) — selesai ✅ |
 
 ---
 
@@ -407,3 +408,33 @@ sudah dipakai sejak awal.
 **Ditolak:** nama Python apa adanya (`__add__`) — bertentangan dengan prinsip
 penamaan Indonesia; dua garis bawah (`__tambah__`) — lebih berisik tanpa
 manfaat, karena nama berpola `_x_` belum dipakai siapa pun.
+
+## K21 — Variabel `untuk` mengikuti lingkup Python (disetujui 2026-11-03)
+
+**Masalah (T-U4, uji ekstensif 1.4.0):** `untuk x dalam ...` membuat lokal
+*blok* baru. Variabel lama bernama sama tidak berubah (`k = 99; untuk k dalam
+rentang(3) { }` → `k` tetap 99, hasil salah tanpa galat), dan nama itu tidak
+terdefinisi setelah loop. Python me-rebind nama di lingkup yang melingkupi.
+
+**Keputusan (pemilik proyek):** ikuti Python. Setiap elemen di-assign
+persis seperti `x = elemen`:
+
+- di tingkat skrip/modul → global (define-or-update);
+- di dalam fungsi → lokal fungsi (K3), kecuali `global`/`nonlokal`;
+- nama tetap terdefinisi setelah loop dengan nilai elemen terakhir;
+- variabel **comprehension** tetap privat (Python 3), tidak berubah.
+
+Loop atas urutan kosong tidak meng-assign apa pun. Di tingkat skrip,
+membacanya menaikkan "tidak terdefinisi" (`NameError` di Python). Di dalam
+fungsi nilainya `kosong`, sama seperti setiap lokal K3 yang assignment-nya
+tidak dijalankan (Python: `UnboundLocalError`). Ini batasan K3 yang sudah
+ada, bukan khusus `untuk`.
+
+**Kompatibilitas:** merusak untuk kode yang sengaja membayangi nama di luar
+dengan variabel loop. Tidak ada golden atau pustaka di repo yang bergantung
+pada perilaku lama. Dicatat ⚠️ di `CHANGELOG.md`.
+
+**Implementasi:** `forStatement` memakai `assignToName()` alih-alih
+`addLocal`, dan `prescanFunctionBody` mendeklarasikan nama setelah `untuk` di
+awal pernyataan sebagai lokal fungsi. `untuk` milik comprehension didahului
+ekspresi, jadi tidak ikut terhitung.

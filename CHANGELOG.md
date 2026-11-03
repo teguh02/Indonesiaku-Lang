@@ -29,6 +29,16 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **Variabel `untuk` mengikuti lingkup Python** (T-U4, keputusan K21).
+  Dulu ia menjadi lokal blok baru: `k = 99; untuk k dalam rentang(3) { }`
+  menyisakan `k` = 99 (hasil salah tanpa galat), dan nama itu tidak
+  terdefinisi setelah loop. Kini setiap elemen di-assign seperti
+  `k = elemen`: global di tingkat skrip, lokal fungsi (K3) di dalam fungsi,
+  dan mengikuti `global`/`nonlokal`, sehingga nilainya tetap elemen terakhir.
+  Variabel comprehension tetap privat. Kode yang sengaja membayangi nama di
+  luar dengan variabel loop kini menimpanya. Regresi:
+  `examples/untuk_lingkup.idk`.
+
 - **`my.eksekusi(sql)` tanpa parameter galat, padahal `pg.eksekusi(sql)` jalan.**
   `kueri`/`eksekusi`/`ambil_semua`/`ambil_satu` di `pustaka/my.idk` tidak punya
   nilai bawaan untuk `parameter`, sehingga kode yang sah di PostgreSQL gagal
