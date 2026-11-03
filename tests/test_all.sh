@@ -185,6 +185,20 @@ if [ -f tests/pg_driver.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# API bersama db.idk: satu skrip .idk dijalankan terhadap ketiga backend dan
+# harus menghasilkan keluaran identik (WDB-04).
+if [ -f tests/db_bersama.sh ]; then
+    if bash tests/db_bersama.sh > /tmp/idk_dbbersama.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} db_bersama"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} db_bersama"
+        sed 's/^/      /' /tmp/idk_dbbersama.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES db_bersama"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # REST API di atas PostgreSQL (Fase 11 langkah 7): CRUD lewat HTTP sungguhan.
 if [ -f tests/api_siswa_pg_server.sh ]; then
     if bash tests/api_siswa_pg_server.sh > /tmp/idk_apipg_uji.log 2>&1; then

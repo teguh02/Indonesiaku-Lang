@@ -1,0 +1,60 @@
+# Satu API untuk tiga backend basis data.
+#
+# Contoh ini memakai SQLite supaya bisa dijalankan tanpa server. Baris
+# db.sambung() di bawah adalah satu-satunya tempat yang perlu diubah untuk
+# berpindah ke MySQL atau PostgreSQL:
+#
+#   db.sambung({"jenis": "mysql",    "host": "127.0.0.1", "pengguna": "root",
+#               "sandi": "...", "basisdata": "sekolah"})
+#   db.sambung({"jenis": "postgres", "host": "127.0.0.1", "pengguna": "postgres",
+#               "sandi": "...", "basisdata": "sekolah"})
+#
+# Catatan: SQL tetap ditulis sesuai dialek backend. PostgreSQL memakai $1,
+# SQLite dan MySQL memakai ?.
+
+impor db
+
+variabel k = db.sambung({"jenis": "sqlite", "berkas": ":memory:"})
+
+cetak("jenis:", k.jenis())
+
+k.eksekusi("CREATE TABLE siswa (id INTEGER PRIMARY KEY, nama TEXT, nilai REAL)")
+
+cetak("baris masuk:", k.eksekusi("INSERT INTO siswa (nama, nilai) VALUES (?, ?)", ["Budi", 85.5]))
+k.eksekusi("INSERT INTO siswa (nama, nilai) VALUES (?, ?)", ["Ani", 91])
+k.eksekusi("INSERT INTO siswa (nama, nilai) VALUES (?, ?)", ["Cici", 78])
+
+untuk b dalam k.ambil_semua("SELECT nama, nilai FROM siswa WHERE nilai > ? ORDER BY nilai", [80]) {
+    cetak("  " + b["nama"] + ":", b["nilai"])
+}
+
+variabel satu = k.ambil_satu("SELECT nama FROM siswa WHERE nama = ?", ["Ani"])
+cetak("satu:", satu["nama"])
+
+cetak("tidak ada:", k.ambil_satu("SELECT nama FROM siswa WHERE nama = ?", ["Zaki"]))
+
+# parameter boleh diabaikan
+cetak("tanpa parameter:", k.ambil_satu("SELECT COUNT(*) AS jml FROM siswa")["jml"])
+
+# transaksi: batal() benar-benar membatalkan
+k.mulai()
+k.eksekusi("INSERT INTO siswa (nama, nilai) VALUES (?, ?)", ["Sementara", 10])
+k.batal()
+cetak("setelah batal:", k.ambil_satu("SELECT COUNT(*) AS jml FROM siswa")["jml"])
+
+k.mulai()
+k.eksekusi("INSERT INTO siswa (nama, nilai) VALUES (?, ?)", ["Tetap", 70])
+k.komit()
+cetak("setelah komit:", k.ambil_satu("SELECT COUNT(*) AS jml FROM siswa")["jml"])
+
+# jenis tidak dikenal ditolak dengan pesan jelas
+coba {
+    db.sambung({"jenis": "oracle"})
+} kecuali GalatOS sebagai g {
+    cetak("ditolak:", g.pesan)
+}
+
+# tutup() idempoten
+k.tutup()
+k.tutup()
+cetak("tutup dua kali: aman")
