@@ -29,6 +29,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **`bulat`/`lantai`/`atap`/`bulatkan` dari `nan` menaikkan `GalatNilai`**
+  (T-U12). Di 1.4.0 hasilnya diam-diam `-9223372036854775808`, karena NaN
+  lolos dari pemeriksaan jangkauan lalu sampai ke cast C yang tidak
+  terdefinisi. `bulatkan(takhingga)` kini menaikkan `GalatLuapan` dan tidak
+  lagi mengembalikan desimal, dan argumen `bulat` di atas 2^53 dikembalikan
+  utuh. Regresi: `examples/nan_ke_bulat.idk`.
+
 - ⚠️ **`==` dan hash pada struktur sangat dalam menaikkan `GalatRekursi`**
   (T-U13, T-U14). Dulu `==` berhenti di 64 tingkat dan diam-diam menjawab
   `salah`, termasuk untuk dua daftar yang identik, dan hash tupel bersarang
