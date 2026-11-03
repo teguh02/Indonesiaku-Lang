@@ -4,6 +4,15 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
+
+// A NUL byte in source would end the text for the scanner, which works on C
+// strings: everything after it was silently ignored when running, and
+// `rapikan --tulis` wrote the truncated text back to disk (T-U11). Python
+// rejects such source too; every source reader must check this.
+static inline bool sourceHasNul(const char* text, size_t length) {
+    return memchr(text, '\0', length) != NULL;
+}
 
 // Uncomment untuk debugging
 // #define DEBUG_PRINT_CODE

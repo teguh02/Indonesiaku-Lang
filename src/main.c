@@ -107,6 +107,11 @@ static char* readFile(const char* path) {
         fprintf(stderr, "Tidak dapat membaca file \"%s\".\n", path);
         exit(74);
     }
+    if (sourceHasNul(buffer, bytesRead)) {
+        free(buffer);
+        fprintf(stderr, "Berkas \"%s\" berisi bita NUL; kode sumber tidak boleh memuatnya.\n", path);
+        exit(65);
+    }
 
     buffer[bytesRead] = '\0';
     normalizeNewlines(buffer, bytesRead);
