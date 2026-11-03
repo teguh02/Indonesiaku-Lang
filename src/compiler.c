@@ -2148,11 +2148,28 @@ static void prescanFunctionBody() {
     ScannerState saved = saveScanner();
     Token saveCurrent = parser.current;
 
+    // One entry per open '(' / '[': is it a call's argument list? There
+    // `nama =` is a keyword argument, never an assignment, and a comma does
+    // not chain names into an unpack -- `g(D, b = 2)` once made both D and b
+    // function-locals, so D was read as kosong.
+    bool callGroup[UINT8_COUNT];
+    int groupDepth = 0;
     int depth = 1;
     Token prev2 = parser.previous;
     Token prev = parser.previous;   // the '{' we just consumed
     Token token = parser.current;   // already-scanned lookahead: start here
     while (depth > 0 && token.type != TOKEN_EOF) {
+        if (token.type == TOKEN_LEFT_PAREN || token.type == TOKEN_LEFT_BRACKET) {
+            if (groupDepth < UINT8_COUNT) {
+                callGroup[groupDepth] = token.type == TOKEN_LEFT_PAREN &&
+                    (prev.type == TOKEN_IDENTIFIER || prev.type == TOKEN_RIGHT_PAREN ||
+                     prev.type == TOKEN_RIGHT_BRACKET || prev.type == TOKEN_SUPER);
+            }
+            groupDepth++;
+        } else if (token.type == TOKEN_RIGHT_PAREN || token.type == TOKEN_RIGHT_BRACKET) {
+            if (groupDepth > 0) groupDepth--;
+        }
+
         if (token.type == TOKEN_LEFT_BRACE) depth++;
         else if (token.type == TOKEN_RIGHT_BRACE) { if (--depth == 0) break; }
         else if (token.type == TOKEN_FUNGSI || token.type == TOKEN_KELAS) {
@@ -2203,8 +2220,11 @@ static void prescanFunctionBody() {
         } else if (token.type == TOKEN_EQUAL || isCompoundAssign(token.type)) {
             // Only a bare name is a candidate: diri.x = and a[i] = assign
             // through an object, and `variabel x =` declares its own local.
+            bool keywordArg = token.type == TOKEN_EQUAL && groupDepth > 0 &&
+                groupDepth <= UINT8_COUNT && callGroup[groupDepth - 1] &&
+                (prev2.type == TOKEN_LEFT_PAREN || prev2.type == TOKEN_COMMA);
             if (prev.type == TOKEN_IDENTIFIER && prev2.type != TOKEN_DOT &&
-                prev2.type != TOKEN_VARIABEL) {
+                prev2.type != TOKEN_VARIABEL && !keywordArg) {
                 // `a, b = ...` assigns EVERY name in the list, not just the last
                 // one — otherwise 'a' would silently become a global (K3).
                 if (chainCount > 1) {

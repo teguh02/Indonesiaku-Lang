@@ -1,0 +1,55 @@
+# Regresi T-U3: argumen bernama di dalam fungsi tidak boleh membuat argumen
+# posisi (global/upvalue) menjadi lokal kosong.
+fungsi g(a, b = 0) {
+    kembalikan [a, b]
+}
+
+D = 7
+b = 5
+cetak(g(D, b = 2))
+
+fungsi dari_global() {
+    kembalikan g(D, b = 2)
+}
+cetak(dari_global())
+
+# Nama argumen bernama sama dengan global yang dibaca: tetap global.
+fungsi nama_sama() {
+    kembalikan g(b, b = b)
+}
+cetak(nama_sama())
+
+# Upvalue dari fungsi luar.
+fungsi luar() {
+    U = 1
+    fungsi dalam_fungsi() {
+        kembalikan g(U, b = U)
+    }
+    kembalikan dalam_fungsi()
+}
+cetak(luar())
+
+# Pemanggilan metode, berantai, dan bersarang.
+kelas K {
+    m(a, b = 0) {
+        kembalikan a + b
+    }
+}
+fungsi buat() {
+    kembalikan g
+}
+fungsi campur() {
+    o = K()
+    cetak(o.m(D, b = 1), buat()(D, b = 3), g(g(D, b = 1), b = [D, b]))
+}
+campur()
+
+# Assignment biasa di dalam fungsi tetap membuat lokal (K3), termasuk
+# pembongkaran dan assignment di dalam kurung pengelompokan.
+fungsi tetap_lokal() {
+    D = 1
+    p, q = g(D, b = 2)
+    r = (s = 3)
+    kembalikan [D, p, q, r, s]
+}
+cetak(tetap_lokal(), D)
