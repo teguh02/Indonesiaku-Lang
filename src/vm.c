@@ -709,7 +709,11 @@ static ObjString* namaTerdekat(ObjString* name) {
 }
 
 // Raise "undefined variable", appending a suggestion when one is close.
+// Python raises NameError here, and the guide ("Menghapus dengan buang")
+// promises GalatNama, so every reader of an undefined name goes through
+// this one helper and gets that class.
 static void undefinedVariable(ObjString* name) {
+    vm.runtimeErrorClass = vm.galatNama;
     ObjString* suggestion = namaTerdekat(name);
     if (suggestion != NULL) {
         runtimeError("Variabel tidak terdefinisi '%s'. Mungkin maksudmu '%s'?",
