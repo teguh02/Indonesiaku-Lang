@@ -1,0 +1,26 @@
+# Nama berkas dan direktori di luar ASCII (huruf Jepang, emoji).
+# Di Windows jalur UTF-8 dulu dibuka lewat fopen() ANSI, sehingga berkas
+# tercipta dengan nama rusak (keluaran_â˜•.txt). isi_direktori() memakai
+# API Unicode, jadi nama yang tercetak di bawah membuktikan nama aslinya.
+
+dir = "_contoh_unicode_日本"
+berkas = dir + "/keluaran_☕.txt"
+
+buat_direktori(dir)
+tulis_semua(berkas, "kopi ☕\n")
+tambah_berkas(berkas, "teh 🍵\n")
+cetak(isi_direktori(dir))
+cetak(ada_berkas(berkas))
+cetak(baca_semua(berkas))
+
+f = buka_berkas(berkas, "b")
+cetak(baca_baris(f))
+tutup(f)
+
+cetak(_info_jalur(berkas)[0], _info_jalur(dir)[0])
+cetak(_jalur_nyata(berkas) != kosong)
+
+hapus_berkas(berkas)
+cetak(ada_berkas(berkas), isi_direktori(dir))
+hapus_direktori(dir)
+cetak(_info_jalur(dir))

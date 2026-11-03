@@ -36,6 +36,11 @@ luar jangkauan.
 | `acak()` | Angka acak `[0, 1)` |
 | `acak_bulat(min, maks)` | Bilangan bulat acak `[min, maks]` |
 
+`bulat`, `lantai`, `atap`, dan `bulatkan` tanpa `digit` selalu menghasilkan
+`bulat`. Karena itu `nan` menaikkan `GalatNilai`, sedangkan `takhingga` atau
+hasil di luar jangkauan int64 menaikkan `GalatLuapan`, seperti `math.floor`
+di Python.
+
 #### Trigonometri — radian, bukan derajat
 
 ```indonesiaku

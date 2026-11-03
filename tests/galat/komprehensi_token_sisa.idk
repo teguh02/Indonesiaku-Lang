@@ -1,0 +1,2 @@
+# Regresi T-U9: token sisa setelah iterable.
+cetak([x untuk x dalam [1, 2] selain 5])

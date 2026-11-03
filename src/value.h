@@ -90,6 +90,11 @@ extern InstanceEqualFn instanceEqualHook;
 typedef int (*InstanceHashFn)(Value value, uint32_t* out);
 extern InstanceHashFn instanceHashHook;
 
+// Called when == or hashing nests deeper than `limit` levels. The VM raises
+// GalatRekursi and leaves it pending; the operation then returns false.
+typedef void (*ValueDepthFn)(const char* what, int limit);
+extern ValueDepthFn valueDepthHook;
+
 // --- K2: int64 arithmetic ------------------------------------------------
 // Each returns true when the mathematical result does not fit in int64; *out
 // is then unspecified. Callers raise GalatLuapan instead of wrapping silently.

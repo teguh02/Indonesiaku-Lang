@@ -67,6 +67,14 @@ Satu butir dinyatakan selesai bila seluruhnya terpenuhi:
    ke BUILTINS, sintaks baru yang layak ke `snippets/`.
 5. **Status dibalik di sini dan di `ANALISIS/02_PETA_FITUR_PYTHON.md`**, dan
    pitfall baru dicatat di `AGENTS.md`.
+6. **Rencana uji lintas OS diperbarui** — setiap perilaku baru yang terlihat
+   pengguna (sintaks, builtin, modul, perintah/opsi CLI) mendapat kasus uji
+   di **ketiga** berkas [`TESTING/WINDOWS.md`](TESTING/WINDOWS.md),
+   [`TESTING/MACOS.md`](TESTING/MACOS.md), dan
+   [`TESTING/LINUX.md`](TESTING/LINUX.md); bagian bersamanya harus tetap
+   identik. **Sebuah fase tidak boleh ditandai ✅ sebelum ketiga berkas ini
+   diperbarui**, siapa pun yang mengerjakannya — maintainer, kontributor,
+   maupun AI agent.
 
 Interpreter, uji, dokumentasi, dan tooling editor adalah **satu kesatuan** —
 fitur yang menyala di terminal tapi tidak di editor, atau tidak ada di
@@ -421,7 +429,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 1. **Development / belum dirilis:** mulai dari dokumen rencana, implementasi pada branch, PR terpisah untuk subfitur, dan pengujian otomatis. Perubahan yang belum stabil tidak dijanjikan sebagai API publik.
 2. **Alpha (opsional, mis. `v1.4.0-alpha.1`):** dipakai bila perlu uji pengguna lebih awal; daftar fitur belum final, disertai peringatan ketidakstabilan. Jangan dorong artefak alpha ke tag Docker `latest`.
 3. **Release candidate (mis. `v1.4.0-rc.1`):** semua cakupan wajib fase sudah code-complete, docs dan examples cocok, CI lintas OS hijau, tes negatif/keamanan dan sanitizer yang relevan lulus, serta artefak instalasi diuji pada mesin bersih.
-4. **Rilis stabil (mis. `v1.4.0`):** setelah umpan balik RC ditindaklanjuti dan tidak ada blocker; finalisasi CHANGELOG, versi `src/common.h`, installer, Docker, situs, tag git, checksums serta release notes. Pastikan paket rilis benar-benar dapat dijalankan; keberhasilan build saja tidak cukup.
+4. **Rilis stabil (mis. `v1.4.0`):** setelah umpan balik RC ditindaklanjuti dan tidak ada blocker; finalisasi CHANGELOG, versi `src/common.h`, installer, Docker, situs, tag git, checksums serta release notes. Pastikan paket rilis benar-benar dapat dijalankan; keberhasilan build saja tidak cukup: uji paket rilis di Windows, macOS, dan Linux mengikuti `docs/TESTING/` lalu catat hasilnya (satu baris riwayat per OS). OS yang belum diuji ditulis apa adanya di catatan rilis.
 5. **Patch hotfix (mis. `v1.4.1`):** ketika ada bug/kerentanan/regresi pada rilis yang sudah ada. Backport perbaikan dan uji tanpa menunggu fase berikutnya, termasuk compatibility checks. Jangan mengemas fitur besar baru di patch.
 6. **Penyesuaian jadwal:** fitur tertunda boleh dipindah ke minor berikutnya bila tidak merusak kontrak, namun item fase yang wajib tidak boleh ditandai selesai dan batasan harus tertulis. Jika fase selesai tidak berbarengan dengan versi minor, jelaskan mapping faktual di CHANGELOG dan roadmap.
 

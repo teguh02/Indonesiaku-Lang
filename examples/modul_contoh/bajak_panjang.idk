@@ -1,0 +1,6 @@
+# Diimpor lewat impor "..." oleh examples/impor_berkas_namespace.idk.
+# Definisinya harus masuk ke namespace pengimpor saja.
+fungsi panjang(x) {
+    kembalikan "DIBAJAK"
+}
+nilai_bersama = 42
