@@ -29,6 +29,22 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **`kecuali X { ... }` tanpa `sebagai` kini bertipe** (GALAT-03). Dulu
+  bentuk ini selalu diartikan sebagai klausa tangkap-semua dengan `X` sebagai
+  nama pengikat, jadi `kecuali GalatNilai {` diam-diam menangkap **semua**
+  galat — termasuk di contoh yang ikut dirilis (`db_batas_tunggu.idk`,
+  `db_blob.idk`, `http_pengalihan.idk`, `web_router.idk`). Kini `X` dicari
+  saat jalan: bila ia merujuk sebuah kelas galat, klausanya bertipe seperti
+  `except ValueError:` di Python; bila tidak, ia tetap nama pengikat yang
+  menangkap semua. Nama itu tetap terikat di dalam blok pada kedua kasus.
+  Bentuk ini tetap wajib menjadi klausa terakhir. Regresi:
+  `examples/kecuali_bertipe.idk`.
+
+- **Galat pertama tidak lagi ditimpa pemanggilnya** di `nativeRaise()` dan
+  `nativeRaiseKelas()`. `himpunan([t])` pada tupel bersiklus melaporkan
+  `GalatTipe` padahal `setAdd` sudah menaikkan `GalatRekursi`.
+  `runtimeError()` sudah punya penjagaan ini; kedua fungsi tadi belum.
+
 - **Nama yang tidak terdefinisi menaikkan `GalatNama`** (GALAT-06,
   ALUR-FUNGSI-09). Dulu kelasnya `Galat` biasa, sehingga
   `kecuali GalatNama` tidak pernah cocok padahal panduan sudah menjanjikan

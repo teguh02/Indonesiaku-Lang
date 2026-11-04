@@ -88,6 +88,10 @@ typedef enum {
     OP_THROW,
     OP_PASTIKAN,
     OP_IS_INSTANCE,
+    // kecuali X { ... } tanpa 'sebagai': konstanta = nama X. Memutuskan saat
+    // jalan apakah X adalah kelas galat (klausa bertipe) atau nama pengikat
+    // baru (klausa tangkap-semua). Lihat catchClause() di compiler.c.
+    OP_CATCH_TEST,
     OP_IMPORT,
     OP_IMPORT_MODULE,   // impor nama; konstanta = nama modul -> ObjModule di stack
     OP_IMPORT_FROM,     // dari m impor x; konstanta = nama anggota

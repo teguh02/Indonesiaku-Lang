@@ -253,6 +253,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_PASTIKAN", offset);
         case OP_IS_INSTANCE:
             return simpleInstruction("OP_IS_INSTANCE", offset);
+        case OP_CATCH_TEST:
+            return constantInstruction("OP_CATCH_TEST", chunk, offset);
         case OP_IMPORT:
             return simpleInstruction("OP_IMPORT", offset);
         case OP_IMPORT_MODULE:

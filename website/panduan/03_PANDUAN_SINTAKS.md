@@ -391,6 +391,29 @@ Karena `kecuali e` tanpa tipe menangkap semuanya, ia wajib menjadi klausa
 satu pun klausa yang cocok, galatnya dilempar ulang ke `coba` di luarnya
 (atau menghentikan program bila tidak ada).
 
+`sebagai` boleh dilewati bila objek galatnya tidak dipakai. Nama setelah
+`kecuali` lalu diartikan menurut isinya: kalau ia merujuk sebuah kelas galat,
+klausanya **bertipe**; kalau tidak, ia menjadi nama pengikat dan klausanya
+menangkap semua.
+
+```indonesiaku
+coba {
+    cetak(1 / 0)
+} kecuali GalatAritmetika {     # bertipe: GalatAritmetika adalah kelas
+    cetak("tidak bisa dibagi")
+}
+
+coba {
+    cetak(1 / 0)
+} kecuali e {                   # tangkap-semua: 'e' bukan kelas
+    cetak(e)
+}
+```
+
+Bentuk tanpa `sebagai` ini **wajib menjadi klausa terakhir**, karena
+tipe-tidaknya baru diketahui saat program berjalan. Untuk merantai beberapa
+kelas, pakai `sebagai` atau bentuk tupel `kecuali (A, B) sebagai e`.
+
 ### Operator Logika
 
 ```indonesiaku
