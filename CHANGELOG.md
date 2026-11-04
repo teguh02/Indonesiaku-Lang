@@ -45,6 +45,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `GalatTipe` padahal `setAdd` sudah menaikkan `GalatRekursi`.
   `runtimeError()` sudah punya penjagaan ini; kedua fungsi tadi belum.
 
+- **Nama yang tidak terdefinisi menaikkan `GalatNama`** (GALAT-06,
+  ALUR-FUNGSI-09). Dulu kelasnya `Galat` biasa, sehingga
+  `kecuali GalatNama` tidak pernah cocok padahal panduan sudah menjanjikan
+  kelas itu. Berlaku untuk pembacaan di tingkat atas, di dalam fungsi, dan
+  setelah `buang`, karena semuanya lewat satu helper yang sama. Galat lain
+  tidak ikut berubah. Regresi: `examples/galat_nama.idk`.
+
 - **Sumber berisi bita NUL ditolak** (T-U11). Dulu sumber berakhir di NUL
   pertama: `indk rapikan --tulis` memotong berkasnya (data hilang, exit 0),
   dan menjalankannya diam-diam mengabaikan kode setelah NUL. Kini berkas
