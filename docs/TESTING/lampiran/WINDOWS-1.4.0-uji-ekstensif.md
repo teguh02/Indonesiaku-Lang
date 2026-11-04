@@ -1850,6 +1850,41 @@ takhingga
 exit=0
 ```
 
+### GALAT-19 — [sedang] Kelas galat BAWAAN menolak pesan konstruktor, sehingga `GalatNilai("x")` gagal sedangkan subkelas buatan pengguna berhasil
+
+Ditemukan saat menyusun `examples/fitur_lengkap.idk`. Semua kelas galat bawaan dibuat di C lewat `defineErrorClass()` (`src/vm.c`), yang hanya menyetel `klass->superclass` tanpa menyalin metode induk. Pewarisan di VM ini memakai **copy-down** (`OP_INHERIT` menyalin tabel metode induk ke subkelas), jadi kelas yang dibuat dari C tidak pernah memperoleh `init` — tabel metodenya kosong. `callValue()` kemudian jatuh ke cabang `argCount != 0` dan menolak argumen.
+
+Akibatnya pustaka standar harus mendefinisikan ulang subkelasnya sendiri hanya untuk bisa membawa pesan (`kelas GalatBita < Galat { init(pesan) { diri.pesan = pesan } }` di `pustaka/bita.idk`, dan pola yang sama di `GalatDb`, `GalatJalur`, `GalatJaringan`, `GalatKoleksi`, dan lainnya) — 62 pemanggilan `naikkan XxX("pesan")` di pustaka bergantung pada pengulangan itu.
+
+Yang menyamarkan bug ini: `naikkan GalatNilai("x")` **terlihat** berhasil ketika ditangkap `kecuali` tanpa `sebagai`, karena yang tertangkap sebenarnya adalah galat runtime "Harapkan 0 argumen tetapi mendapat 1", bukan `GalatNilai`. Pesan aslinya hilang diam-diam.
+
+Reproduksi:
+
+```text
+variabel e = GalatNilai("pesan saya")
+```
+
+Keluaran 1.4.0:
+
+```text
+Harapkan 0 argumen tetapi mendapat 1.
+exit=70
+```
+
+Bandingkan — subkelas buatan pengguna bekerja seperti yang diharapkan:
+
+```text
+kelas GalatUji < Galat { init(pesan) { diri.pesan = pesan } }
+coba { naikkan GalatUji("rusak") } kecuali GalatUji sebagai e { cetak(e.pesan) }
+```
+
+```text
+rusak
+exit=0
+```
+
+Perbaikan yang disarankan: beri kelas galat bawaan sebuah `init` yang menerima pesan opsional (atau salin metode induk di `defineErrorClass`, menyamai perilaku `OP_INHERIT`), lalu hapus subkelas duplikat di pustaka.
+
 
 ## Modul pustaka standar
 

@@ -3218,10 +3218,12 @@ static void scanTryClauses(bool* hasCatch, bool* hasFinally,
 // not match must fall through to the NEXT clause, so instead of emitting the
 // rethrow itself this returns the unpatched "no match" jump; the caller
 // chains it to the following clause, or patches it to OP_THROW when the
-// chain ends. Returns -1 for an untyped clause, which always matches.
-static int catchClause(int* doneJumps, int* doneCount) {
+// chain ends. *bare is set for `kecuali X { ... }` written without 'sebagai',
+// which must still be the last clause (see tryStatement).
+static int catchClause(int* doneJumps, int* doneCount, bool* bare) {
     consume(TOKEN_KECUALI, "Harapkan 'kecuali' atau 'akhirnya' setelah blok 'coba'.");
     bool typed = false;
+    bool bareForm = false;
     Token caught;
     int successJumps[UINT8_COUNT];
     int successCount = 0;
@@ -3253,6 +3255,15 @@ static int catchClause(int* doneJumps, int* doneCount) {
             emitByte(OP_IS_INSTANCE);
             consume(TOKEN_IDENTIFIER, "Harapkan nama variabel setelah 'sebagai'.");
             caught = parser.previous;
+        } else {
+            // `kecuali X { ... }`. Whether X is a type to match or a name to
+            // bind is only knowable at run time: the builtin error classes
+            // live in globals, and a library may define its own
+            // (`kelas GalatJaringan < GalatOS`). OP_CATCH_TEST looks X up and
+            // decides. X stays bound inside the block either way.
+            typed = true;
+            bareForm = true;
+            emitBytes(OP_CATCH_TEST, identifierConstant(&first));
         }
     }
 
@@ -3272,8 +3283,10 @@ static int catchClause(int* doneJumps, int* doneCount) {
 
     if (typed) {
         doneJumps[(*doneCount)++] = emitJump(OP_JUMP);
+        if (bare != NULL) *bare = bareForm;
         return rethrow;   // caller chains this to the next clause
     }
+    if (bare != NULL) *bare = false;
     return -1;            // untyped: always matches, ends the chain
 }
 
@@ -3366,8 +3379,11 @@ static void tryStatement() {
             if (sawUntyped) {
                 semanticError("'kecuali' tanpa tipe harus menjadi yang terakhir.");
             }
-            pending = catchClause(doneJumps, &doneCount);
-            if (pending == -1) sawUntyped = true;
+            bool bare = false;
+            pending = catchClause(doneJumps, &doneCount, &bare);
+            // `kecuali X { ... }` may or may not be typed — only run time
+            // knows — so it keeps the stricter rule and must come last.
+            if (pending == -1 || bare) sawUntyped = true;
         } while (check(TOKEN_KECUALI));
 
         if (pending != -1) {
