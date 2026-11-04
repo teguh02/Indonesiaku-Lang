@@ -10,6 +10,7 @@
 set -u
 
 INDK="${INDK:-./indk}"
+[ -x "$INDK" ] || INDK=./indk.exe   # Windows (Git Bash): make menghasilkan indk.exe
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 gagal=0

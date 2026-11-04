@@ -1,0 +1,258 @@
+# Uji menyeluruh fitur bahasa yang sudah ada, dalam SATU berkas golden.
+#
+# Berkas ini sengaja dibuat agar ikut dijalankan oleh ketiga harness
+# (Linux, macOS, Windows), karena golden runner adalah satu-satunya bagian
+# suite yang benar-benar sama di tiga OS. Sub-suite `tests/*.sh` hanya jalan
+# di Linux/macOS, jadi fitur yang hanya diuji di sana tidak terlindungi di
+# Windows.
+#
+# Menambah fitur bahasa baru? Tambahkan kasusnya DI SINI juga, bukan hanya di
+# contoh terpisah — agar fitur itu ikut teruji di semua OS.
+
+# Catatan: kelas galat BAWAAN belum menerima pesan konstruktor
+# (lihat GALAT-07), jadi kegagalan dicetak lalu ditandai lewat variabel.
+variabel gagal = 0
+
+fungsi harus(syarat, nama) {
+    jika !syarat {
+        gagal = gagal + 1
+        cetak("GAGAL: " + nama)
+    }
+}
+
+# ---------- 1. Percabangan ----------
+fungsi uji_1() {
+    variabel n = 7
+    jika n > 10 {
+        harus(salah, "cabang jika salah diambil")
+    } jika_lain n > 5 {
+        harus(benar, "jika_lain")
+    } selain {
+        harus(salah, "cabang selain salah diambil")
+    }
+
+    # ekspresi kondisional
+    variabel label = "besar" jika n > 5 selain "kecil"
+    harus(label == "besar", "ekspresi kondisional")
+}
+
+# ---------- 2. Perulangan ----------
+fungsi uji_2() {
+    variabel jumlah = 0
+    variabel i = 0
+    selagi i < 5 {
+        jumlah = jumlah + i
+        i = i + 1
+    }
+    harus(jumlah == 10, "selagi")
+
+    # 5 ikut dijumlah HANYA jika `hentikan` tidak benar-benar menghentikan
+    # loop: dengan `hentikan` hasilnya 3, dengan `lanjut` hasilnya 8.
+    variabel hasil = 0
+    variabel masuk = 0
+    untuk x dalam [1, 2, 3, 4, 5] {
+        masuk = masuk + 1
+        jika x == 3 { lanjut }
+        jika x == 4 { hentikan }
+        hasil = hasil + x
+    }
+    # `hasil` saja tidak cukup: `lanjut` dan `hentikan` yang tertukar
+    # sama-sama memberi 3. `masuk` membedakannya -- badan loop dimasuki
+    # 4 kali (x=1..4), bukan 3 (berhenti di x=3) atau 5 (tak berhenti).
+    harus(hasil == 3, "untuk + lanjut + hentikan: jumlah")
+    harus(masuk == 4, "untuk + lanjut + hentikan: iterasi")
+
+    variabel nilai_rentang = 0
+    untuk x dalam rentang(1, 5) {
+        nilai_rentang = nilai_rentang + x
+    }
+    harus(nilai_rentang == 10, "rentang")
+}
+
+# ---------- 3. Fungsi, bawaan, argumen bernama, closure ----------
+fungsi uji_3() {
+    fungsi tambah(a, b = 10) {
+        kembalikan a + b
+    }
+    harus(tambah(1) == 11, "parameter bawaan")
+    harus(tambah(1, 2) == 3, "argumen posisi")
+    harus(tambah(b = 5, a = 1) == 6, "argumen bernama")
+
+    fungsi pencacah() {
+        variabel hitung = 0
+        fungsi naik() {
+            nonlokal hitung
+            hitung = hitung + 1
+            kembalikan hitung
+        }
+        kembalikan naik
+    }
+    variabel c = pencacah()
+    c()
+    c()
+    harus(c() == 3, "closure menyimpan keadaan")
+
+    fungsi faktorial(k) {
+        jika k <= 1 { kembalikan 1 }
+        kembalikan k * faktorial(k - 1)
+    }
+    harus(faktorial(5) == 120, "rekursi")
+}
+
+# ---------- 4. OOP: kelas, pewarisan, metode, super ----------
+fungsi uji_4() {
+    kelas Hewan {
+        init(nama) {
+            diri.nama = nama
+        }
+        suara() {
+            kembalikan "..."
+        }
+        perkenalan() {
+            kembalikan diri.nama + " berkata " + diri.suara()
+        }
+    }
+
+    kelas Kucing < Hewan {
+        suara() {
+            kembalikan "meong"
+        }
+    }
+
+    kelas Anak < Kucing {
+        suara() {
+            kembalikan "kecil " + super.suara()
+        }
+    }
+
+    variabel k = Kucing("Mimi")
+    harus(k.perkenalan() == "Mimi berkata meong", "pewarisan + override")
+    harus(Anak("Momo").suara() == "kecil meong", "super")
+    variabel k2 = k
+    harus(k2 adalah k, "adalah = identitas objek")
+    harus((Kucing("Lain") adalah k) == salah, "objek berbeda bukan identitas")
+}
+
+# ---------- 5. Koleksi ----------
+fungsi uji_5() {
+    variabel daftar_angka = [3, 1, 2]
+    daftar_angka.tambah(4)
+    harus(panjang(daftar_angka) == 4, "daftar tambah")
+    harus(terurut(daftar_angka) == [1, 2, 3, 4], "terurut")
+    harus(daftar_angka[0] == 3, "indeks daftar")
+    harus(daftar_angka[-1] == 4, "indeks negatif")
+    harus(daftar_angka[1:3] == [1, 2], "irisan")
+
+    variabel kamus = {"a": 1, "b": 2}
+    kamus["c"] = 3
+    harus(panjang(kamus) == 3, "kamus tulis")
+    harus(kamus["b"] == 2, "kamus baca")
+    harus("a" dalam kamus, "operator dalam pada kamus")
+
+    variabel himpunan_angka = himpunan([1, 2, 2, 3])
+    harus(panjang(himpunan_angka) == 3, "himpunan membuang duplikat")
+
+    variabel pasangan = (1, 2)
+    harus(pasangan[0] == 1, "tupel")
+}
+
+# ---------- 6. Teks ----------
+fungsi uji_6() {
+    harus("halo".huruf_besar() == "HALO", "metode teks")
+    harus(panjang("héllo") == 5, "panjang menghitung karakter")
+    harus(teks_gabung(["a", "b"], "-") == "a-b", "teks_gabung")
+    variabel fn = 7
+    harus(f"n={fn}" == "n=7", "f-string")
+}
+
+kelas GalatUji < Galat {
+    init(pesan) { diri.pesan = pesan }
+}
+
+# ---------- 7. Galat: naikkan, coba/kecuali/akhirnya ----------
+fungsi uji_7() {
+    variabel jejak = []
+    coba {
+        naikkan GalatUji("rusak")
+    } kecuali GalatUji sebagai e {
+        jejak.tambah("tertangkap")
+        harus(e.pesan == "rusak", "pesan galat terbawa")
+    } akhirnya {
+        jejak.tambah("akhirnya")
+    }
+    harus(jejak == ["tertangkap", "akhirnya"], "coba/kecuali/akhirnya")
+
+    variabel kena = salah
+    coba {
+        variabel buruk = [1][5]
+    } kecuali Galat {
+        kena = benar
+    }
+    harus(kena, "galat indeks tertangkap sebagai Galat")
+}
+
+# ---------- 8. cocokkan ----------
+fungsi uji_8() {
+    fungsi jenis(v) {
+        cocokkan v {
+            kasus 0 { kembalikan "nol" }
+            kasus 1 atau 2 { kembalikan "kecil" }
+            kasus _ { kembalikan "lain" }
+        }
+    }
+    harus(jenis(0) == "nol", "cocokkan literal")
+    harus(jenis(2) == "kecil", "cocokkan alternatif")
+    harus(jenis(9) == "lain", "cocokkan bawaan")
+}
+
+# ---------- 9. Komprehensi dan generator ----------
+fungsi uji_9() {
+    variabel kuadrat = [x * x untuk x dalam rentang(1, 5)]
+    harus(kuadrat == [1, 4, 9, 16], "komprehensi daftar")
+    variabel genap = [x untuk x dalam rentang(1, 10) jika x % 2 == 0]
+    harus(genap == [2, 4, 6, 8], "komprehensi dengan filter")
+
+    fungsi hitung_sampai(batas) {
+        variabel j = 0
+        selagi j < batas {
+            hasilkan j
+            j = j + 1
+        }
+    }
+    variabel dari_generator = []
+    untuk v dalam hitung_sampai(3) {
+        dari_generator.tambah(v)
+    }
+    harus(dari_generator == [0, 1, 2], "generator")
+}
+
+# ---------- 10. Operator dan angka ----------
+fungsi uji_10() {
+    harus(7 // 2 == 3, "pembagian bulat")
+    harus(7 % 3 == 1, "modulo")
+    harus(2 ** 10 == 1024, "pangkat")
+    harus(ke_bulat("42") == 42, "konversi ke_bulat")
+    harus(ke_teks(42) == "42", "ke_teks")
+    harus((benar dan salah) == salah, "operator dan")
+    harus((benar atau salah) == benar, "operator atau")
+
+    }
+
+# Tiap seksi adalah fungsi tersendiri: satu chunk bytecode per seksi,
+# supaya berkas ini tidak menabrak batas 256 konstanta per chunk.
+uji_1()
+uji_2()
+uji_3()
+uji_4()
+uji_5()
+uji_6()
+uji_7()
+uji_8()
+uji_9()
+uji_10()
+
+jika gagal > 0 {
+    cetak(ke_teks(gagal) + " PEMERIKSAAN GAGAL")
+} selain {
+    cetak("SEMUA FITUR BAHASA LULUS")
+}
