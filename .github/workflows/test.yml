@@ -408,6 +408,11 @@ jobs:
       # di sana tidak terlindungi di sini. Runner windows-latest punya Git
       # Bash, jadi sub-suite yang tidak butuh docker/curl/dpkg bisa dijalankan
       # apa adanya -- tanpa menduplikasi tesnya ke PowerShell.
+      #
+      # test_baca_sumber.sh sengaja TIDAK ikut: ia menguji readFile() pada pipe
+      # lewat /proc/self/fd/0, konstruksi POSIX yang tidak ada padanannya di
+      # Windows (indk juga belum menerima '-' sebagai nama berkas stdin). Tes
+      # itu tetap jalan di Linux dan macOS.
       - name: Run shell-based sub-suites (Git Bash)
         shell: bash
         run: |
@@ -415,7 +420,6 @@ jobs:
           gagal=0
           for t in tests/builtin_konsisten.sh \
                    tests/test_anotasi_bytecode.sh \
-                   tests/test_baca_sumber.sh \
                    tests/test_baris_panjang.sh \
                    tests/test_format.sh \
                    tests/test_impor_lokasi.sh \
