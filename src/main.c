@@ -305,6 +305,19 @@ int main(int argc, const char* argv[]) {
             freeVM();
             return code;
         }
+        if (strcmp(argv[1], "awakutu") == 0) {
+            if (argc < 3) {
+                fprintf(stderr, "Penggunaan: indk awakutu <skrip.idk>\n");
+                return 64;
+            }
+            initVM();
+            defineArgs(argc, argv, 3);
+            fprintf(stderr, "Debugger Indonesiaku. Ketik 'bantuan' untuk daftar perintah.\n");
+            mulaiAwakutu();
+            int code = runFile(argv[2]);
+            freeVM();
+            return code;
+        }
         if (strcmp(argv[1], "profil") == 0) {
             if (argc < 3) {
                 fprintf(stderr, "Penggunaan: indk profil <skrip.idk>\n");
@@ -381,6 +394,7 @@ int main(int argc, const char* argv[]) {
             printf("  uji <skrip>     Jalankan fungsi uji_* dalam skrip\n");
             printf("  rapikan <skrip> Rapikan format kode (--tulis, --periksa)\n");
             printf("  profil <skrip>  Hitung opcode dan panggilan (laporan ke stderr)\n");
+            printf("  awakutu <skrip> Debugger: breakpoint, langkah, lihat variabel\n");
             return 0;
         }
     }

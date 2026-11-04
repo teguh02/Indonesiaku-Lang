@@ -390,6 +390,233 @@ void cetakProfil(double detik) {
     }
 }
 
+static Table* frameGlobals(CallFrame* frame);
+
+// --- indk awakutu ------------------------------------------------------
+// Debugger CLI. Program berhenti di breakpoint atau saat melangkah, lalu
+// membuka prompt untuk memeriksa keadaan.
+//
+// Perintah: henti <baris>, hapus <baris>, daftar, lanjut, langkah, keluar,
+//           lihat <nama>, tumpukan, bantuan
+//
+// Batas sadar: `lihat` membaca variabel GLOBAL dan PARAMETER fungsi, bukan
+// `variabel` lokal di dalam badan fungsi. Nama lokal hanya ada saat
+// kompilasi; menyimpannya sampai runtime berarti menambah larik ObjString*
+// per fungsi beserta penandaan GC-nya. ObjFunction.paramNames sudah ada dan
+// sudah ditandai GC, jadi parameter gratis. Simpan nama slot lokal hanya
+// kalau pemakaian nyata menuntutnya.
+
+void mulaiAwakutu(void) {
+    vm.debugging = true;
+    vm.debugStep = true;        // berhenti di instruksi pertama
+    vm.debugStepFrame = -1;
+    vm.debugBreakCount = 0;
+}
+
+static void awakutuBantuan(void) {
+    fprintf(stderr, "  henti <baris>   pasang breakpoint di baris itu\n");
+    fprintf(stderr, "  hapus <baris>   lepas breakpoint\n");
+    fprintf(stderr, "  daftar          tampilkan breakpoint\n");
+    fprintf(stderr, "  langkah         jalankan satu baris\n");
+    fprintf(stderr, "  lanjut          jalan sampai breakpoint berikutnya\n");
+    fprintf(stderr, "  lihat <nama>    isi variabel global atau parameter fungsi\n");
+    fprintf(stderr, "  tumpukan        rantai pemanggilan\n");
+    fprintf(stderr, "  keluar          hentikan program\n");
+}
+
+// Cetak satu nilai bernama, dipakai `lihat`. Ke stderr seperti seluruh
+// antarmuka debugger, supaya stdout tetap murni keluaran program: `indk
+// awakutu x.idk > hasil.txt` harus menghasilkan berkas yang sama dengan
+// menjalankan programnya biasa.
+static void awakutuCetakNilai(const char* nama, Value nilai) {
+    TextBuf buf;
+    initTextBuf(&buf);
+    formatValue(&buf, nilai, false, false);
+    fprintf(stderr, "  %s = %.*s\n", nama, (int)buf.length,
+            buf.length > 0 ? buf.chars : "");
+    freeTextBuf(&buf);
+}
+
+// `lihat <nama>`: parameter frame aktif lebih dulu (lebih spesifik), lalu
+// global. Mengembalikan false kalau namanya tidak dikenal di keduanya.
+static bool awakutuLihat(CallFrame* frame, const char* nama) {
+    ObjFunction* fn = frame->closure->function;
+    if (fn->paramNames != NULL) {
+        for (int i = 0; i < fn->arity; i++) {
+            ObjString* p = fn->paramNames[i];
+            if (p != NULL && strcmp(p->chars, nama) == 0) {
+                awakutuCetakNilai(nama, frame->slots[i + 1]);
+                return true;
+            }
+        }
+    }
+    ObjString* kunci = copyString(nama, (int)strlen(nama));
+    Value nilai;
+    // Urutan resolusi sama dengan VM: tabel modul fungsi yang sedang jalan
+    // dulu, baru vm.globals (builtin + kelas galat). Membaca vm.globals saja
+    // membuat variabel skrip biasa tidak pernah ketemu.
+    if (tableGet(frameGlobals(frame), kunci, &nilai)) {
+        awakutuCetakNilai(nama, nilai);
+        return true;
+    }
+    if (tableGet(&vm.globals, kunci, &nilai)) {
+        awakutuCetakNilai(nama, nilai);
+        return true;
+    }
+    return false;
+}
+
+static void awakutuTumpukan(void) {
+    for (int i = vm.frameCount - 1; i >= 0; i--) {
+        CallFrame* f = &vm.frames[i];
+        ObjFunction* fn = f->closure->function;
+        size_t ins = f->ip - fn->chunk.code - 1;
+        int baris = fn->chunk.lines[ins];
+        fprintf(stderr, "  #%d [baris %d] %s\n", vm.frameCount - 1 - i, baris,
+               fn->name == NULL ? "skrip" : fn->name->chars);
+    }
+}
+
+// Prompt saat program beku. Kembali ketika pengguna menyuruh jalan lagi;
+// mengembalikan false kalau pengguna minta berhenti.
+static bool awakutuPrompt(CallFrame* frame, int baris) {
+    ObjFunction* fn = frame->closure->function;
+    size_t ins = frame->ip - fn->chunk.code - 1;
+    int kolom = fn->chunk.columns == NULL ? 0 : fn->chunk.columns[ins];
+
+    fprintf(stderr, "\n[baris %d] %s\n", baris,
+           fn->name == NULL ? "skrip" : fn->name->chars);
+    printRuntimeSnippet(fn->chunk.source, baris, kolom);
+
+    for (;;) {
+        fprintf(stderr, "(awakutu) ");
+        fflush(stdout);
+        size_t panjang;
+        char* baris_in = readLineAlloc(stdin, &panjang);
+        if (baris_in == NULL) {          // EOF: perlakukan sebagai 'lanjut'
+            fprintf(stderr, "\n");
+            vm.debugStep = false;
+            return true;
+        }
+
+        // Pisahkan perintah dan argumennya. Buang dulu newline di ujung
+        // baris: readLineAlloc mempertahankannya, dan tanpa ini perintah
+        // tanpa argumen ikut membawa "\n" sehingga tidak pernah cocok.
+        char* p = baris_in;
+        for (char* q = p; *q != '\0'; q++) {
+            if (*q == '\n' || *q == '\r') { *q = '\0'; break; }
+        }
+        while (*p == ' ' || *p == '\t') p++;
+        char* arg = p;
+        while (*arg != '\0' && *arg != ' ' && *arg != '\t') arg++;
+        if (*arg != '\0') { *arg = '\0'; arg++; }
+        while (*arg == ' ' || *arg == '\t') arg++;
+
+        bool selesai = false;
+        bool jalan = true;
+
+        if (*p == '\0') {
+            // Enter kosong = langkah, kebiasaan dari gdb/pdb.
+            vm.debugStep = true;
+            vm.debugStepFrame = vm.frameCount;
+            selesai = true;
+        } else if (strcmp(p, "lanjut") == 0 || strcmp(p, "l") == 0) {
+            vm.debugStep = false;
+            selesai = true;
+        } else if (strcmp(p, "langkah") == 0 || strcmp(p, "s") == 0) {
+            vm.debugStep = true;
+            vm.debugStepFrame = vm.frameCount;
+            selesai = true;
+        } else if (strcmp(p, "keluar") == 0 || strcmp(p, "q") == 0) {
+            selesai = true;
+            jalan = false;
+        } else if (strcmp(p, "henti") == 0) {
+            int n = atoi(arg);
+            if (n <= 0) {
+                fprintf(stderr, "  Perlu nomor baris, misalnya: henti 12\n");
+            } else if (vm.debugBreakCount >= DEBUG_BREAK_MAX) {
+                fprintf(stderr, "  Breakpoint penuh (maksimum %d).\n", DEBUG_BREAK_MAX);
+            } else {
+                vm.debugBreakLines[vm.debugBreakCount++] = n;
+                fprintf(stderr, "  Breakpoint di baris %d.\n", n);
+            }
+        } else if (strcmp(p, "hapus") == 0) {
+            int n = atoi(arg);
+            bool ketemu = false;
+            for (int i = 0; i < vm.debugBreakCount; i++) {
+                if (vm.debugBreakLines[i] == n) {
+                    vm.debugBreakLines[i] = vm.debugBreakLines[--vm.debugBreakCount];
+                    ketemu = true;
+                    break;
+                }
+            }
+            fprintf(stderr, ketemu ? "  Breakpoint baris %d dilepas.\n"
+                          : "  Tidak ada breakpoint di baris %d.\n", n);
+        } else if (strcmp(p, "daftar") == 0) {
+            if (vm.debugBreakCount == 0) {
+                fprintf(stderr, "  (belum ada breakpoint)\n");
+            } else {
+                for (int i = 0; i < vm.debugBreakCount; i++) {
+                    fprintf(stderr, "  baris %d\n", vm.debugBreakLines[i]);
+                }
+            }
+        } else if (strcmp(p, "lihat") == 0) {
+            if (*arg == '\0') {
+                fprintf(stderr, "  Perlu nama variabel, misalnya: lihat total\n");
+            } else if (!awakutuLihat(frame, arg)) {
+                fprintf(stderr, "  '%s' tidak dikenal di sini (global dan parameter "
+                       "saja; variabel lokal belum didukung).\n", arg);
+            }
+        } else if (strcmp(p, "tumpukan") == 0 || strcmp(p, "t") == 0) {
+            awakutuTumpukan();
+        } else if (strcmp(p, "bantuan") == 0 || strcmp(p, "?") == 0) {
+            awakutuBantuan();
+        } else {
+            fprintf(stderr, "  Perintah '%s' tidak dikenal; ketik 'bantuan'.\n", p);
+        }
+
+        free(baris_in);
+        if (selesai) return jalan;
+    }
+}
+
+// Dipanggil sebelum setiap instruksi saat debugging aktif. Berhenti hanya
+// pada instruksi PERTAMA dari sebuah baris sumber, supaya satu baris tidak
+// berhenti belasan kali (satu per opcode).
+static bool awakutuPeriksa(CallFrame* frame) {
+    ObjFunction* fn = frame->closure->function;
+    size_t ins = (size_t)(frame->ip - fn->chunk.code);
+    if (ins >= (size_t)fn->chunk.count) return true;
+    int baris = fn->chunk.lines[ins];
+
+    // Berhenti hanya pada opcode PERTAMA sebuah baris sumber, ditentukan dari
+    // chunk itu sendiri (opcode sebelumnya milik baris lain) dan bukan dari
+    // penanda "baris terakhir" yang disimpan di VM. Penanda global itu salah
+    // dua arah sekaligus: sebuah breakpoint di dalam loop hanya kena sekali
+    // karena barisnya tak pernah terlihat baru lagi, DAN sebuah baris yang
+    // memanggil fungsi berhenti dua kali, karena kembalinya dari fungsi
+    // membuat baris itu terlihat baru untuk kedua kalinya -- berhenti kedua
+    // terjadi sebelum hasil panggilan disimpan, sehingga `lihat` menampilkan
+    // nilai lama dan tampak seperti program tidak berubah.
+    if (ins > 0 && fn->chunk.lines[ins - 1] == baris) return true;
+
+    bool berhenti = false;
+    if (vm.debugStep && (vm.debugStepFrame < 0 || vm.frameCount <= vm.debugStepFrame)) {
+        berhenti = true;
+    }
+    for (int i = 0; i < vm.debugBreakCount && !berhenti; i++) {
+        if (vm.debugBreakLines[i] == baris) berhenti = true;
+    }
+    if (!berhenti) return true;
+
+    // ip sudah maju satu byte di dalam prompt (snippet memakai ins-1), jadi
+    // majukan sementara agar pelaporan barisnya konsisten dengan jejak galat.
+    frame->ip++;
+    bool jalan = awakutuPrompt(frame, baris);
+    frame->ip--;
+    return jalan;
+}
+
 void initVM() {
     resetStack();
     vm.objects = NULL;
@@ -409,6 +636,10 @@ void initVM() {
 
     vm.profiling = false;
     vm.callCount = 0;
+    vm.debugging = false;
+    vm.debugStep = false;
+    vm.debugStepFrame = -1;
+    vm.debugBreakCount = 0;
     memset(vm.opCounts, 0, sizeof(vm.opCounts));
 
     initTable(&vm.globals);
@@ -2459,6 +2690,11 @@ static InterpretResult run() {
         }
 
         uint8_t instruction;
+        // Debugger: periksa SEBELUM instruksi dibaca, supaya baris yang
+        // dilaporkan adalah baris yang akan dijalankan, bukan yang barusan.
+        if (vm.debugging && !awakutuPeriksa(frame)) {
+            return INTERPRET_RUNTIME_ERROR;
+        }
         instruction = READ_BYTE();
         // Profil hanya aktif lewat `indk profil`; jalur normal membayar satu
         // tes boolean yang mudah ditebak cabangnya.
