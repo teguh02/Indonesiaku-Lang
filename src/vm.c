@@ -288,6 +288,16 @@ static ObjString* errorMessage(ObjInstance* instance) {
     return NULL;
 }
 
+// Apakah klass merupakan Galat atau turunannya? Dipakai agar kelas galat
+// yang dibuat dari C bisa menerima pesan konstruktor tanpa masing-masing
+// perlu punya 'init' sendiri.
+static bool isErrorClass(ObjClass* klass) {
+    for (AncestorIter it = ancestors(klass); ancestorNext(&it); ) {
+        if (it.klass == vm.galat) return true;
+    }
+    return false;
+}
+
 static ObjInstance* newError(ObjClass* klass, const char* message) {
     ObjInstance* error = newInstance(klass);
     push(OBJ_VAL(error));
@@ -755,6 +765,22 @@ static bool callValue(Value callee, int argCount, ObjList* names) {
                 Value initializer;
                 if (tableGet(&klass->methods, vm.initString, &initializer)) {
                     return call(AS_CLOSURE(initializer), argCount, names);
+                } else if (argCount == 1 && names == NULL && IS_STRING(peek(0)) &&
+                           isErrorClass(klass)) {
+                    // Kelas galat bawaan dibuat di C lewat defineErrorClass(),
+                    // yang hanya menyetel superclass. Pewarisan di VM ini
+                    // memakai copy-down (OP_INHERIT menyalin tabel metode
+                    // induk), jadi kelas dari C tidak pernah memperoleh 'init'
+                    // dan dulu menolak pesan: GalatNilai("x") gagal sementara
+                    // subkelas buatan pengguna berhasil. Pesan disetel di sini
+                    // supaya semua kelas galat berperilaku sama.
+                    ObjInstance* instance = AS_INSTANCE(vm.stackTop[-argCount - 1]);
+                    ObjString* key = copyString("pesan", 5);
+                    push(OBJ_VAL(key));   // jaga key tetap terjangkau GC
+                    tableSet(&instance->fields, key, peek(1));
+                    pop();                // key
+                    pop();                // argumen pesan
+                    return true;
                 } else if (argCount != 0) {
                     runtimeError("Harapkan 0 argumen tetapi mendapat %d.", argCount);
                     return false;

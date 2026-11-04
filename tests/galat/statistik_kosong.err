@@ -1,6 +1,6 @@
 rata_rata: urutan kosong
-[baris 20, kolom 56] dalam _data()
+[baris 18, kolom 56] dalam _data()
     … GalatStatistik(nama + ": urutan kosong")
                                              ^
-[baris 27, kolom 46] dalam rata_rata()
+[baris 25, kolom 46] dalam rata_rata()
 [baris 3, kolom 29] dalam skrip

@@ -7,6 +7,25 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Diperbaiki
+
+- **Kelas galat bawaan menerima pesan konstruktor** (GALAT-19).
+  `GalatNilai("x")` dulu gagal dengan "Harapkan 0 argumen tetapi mendapat 1",
+  sementara subkelas buatan pengguna berhasil. Penyebabnya
+  `defineErrorClass()` di `src/vm.c` hanya menyetel `superclass`, padahal
+  pewarisan VM memakai copy-down (`OP_INHERIT` menyalin tabel metode induk) —
+  kelas yang dibuat dari C tidak pernah memperoleh `init`.
+
+  Bug ini tersamarkan karena `naikkan GalatNilai("x")` **terlihat** jalan saat
+  ditangkap `kecuali` tanpa `sebagai`: yang tertangkap sebenarnya galat
+  runtime tadi, bukan `GalatNilai`, dan pesan aslinya hilang diam-diam.
+
+  Kini semua kelas galat berperilaku sama. Akibatnya enam subkelas di pustaka
+  standar yang hanya ada untuk membawa pesan (`GalatBita`, `GalatFungsional`,
+  `GalatIterasi`, `GalatKoleksi`, `GalatStatistik`, `GalatWeb`) tidak lagi
+  perlu `init` duplikat. Kelas **bukan** galat tanpa `init` tetap menolak
+  argumen seperti sebelumnya. Regresi: `examples/galat_bawaan_pesan.idk`.
+
 ### Ditambahkan
 
 - **API basis data bersama** (`pustaka/db.idk`): `db.sambung({"jenis": ...})`

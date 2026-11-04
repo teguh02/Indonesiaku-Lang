@@ -1488,7 +1488,7 @@ Pemeriksaan: **243/270 lulus**; temuan terkonfirmasi: **18**.
 | keluar(n) and CLI exit codes 74 (k01-k17, missing file/dir/flag/empty) | 21/21 |
 | Errors inside imported modules (m01-m10) | 8/10 |
 
-### GALAT-01 — [tinggi] pastikan(kondisi, pesan) with parentheses always passes silently (docs say compile error)
+### GALAT-01 — [tinggi] ✅ **Diperbaiki (terverifikasi ulang 1.4.0).** pastikan(kondisi, pesan) with parentheses always passes silently (docs say compile error)
 
 03_PANDUAN_SINTAKS 'Penegasan (pastikan)' says this form is rejected at compile time with "Harapkan ')' setelah ekspresi" and does not silently pass. The binary parses it as a non-empty tupel, which is always truthy. So a documented guarantee is broken, and a false assertion passes without any sign. The parser behaves the same on every OS.
 
@@ -1506,7 +1506,7 @@ LOLOS padahal kondisi salah
 exit=0
 ```
 
-### GALAT-02 — [tinggi] User subclass of a built-in error loses ancestors above its direct parent, so kecuali Galat / GalatAritmetika does not catch it
+### GALAT-02 — [tinggi] ✅ **Diperbaiki (terverifikasi ulang 1.4.0).** User subclass of a built-in error loses ancestors above its direct parent, so kecuali Galat / GalatAritmetika does not catch it
 
 Reproduced. A plain chain C<B<A is transitive, and so is a user chain G2<G1<Galat. A user class that derives from a built-in subclass is not: N1<GalatNilai is not an instance of Galat, and B2<GalatBagiNol is not caught by kecuali GalatAritmetika. The guide says to catch errors with a parent class ('Gunakan kelas induk'), and Python's issubclass is transitive. This is OS-independent VM logic.
 
@@ -1850,7 +1850,7 @@ takhingga
 exit=0
 ```
 
-### GALAT-19 — [sedang] Kelas galat BAWAAN menolak pesan konstruktor, sehingga `GalatNilai("x")` gagal sedangkan subkelas buatan pengguna berhasil
+### GALAT-19 — [sedang] ✅ **Diperbaiki.** Kelas galat BAWAAN menolak pesan konstruktor, sehingga `GalatNilai("x")` gagal sedangkan subkelas buatan pengguna berhasil
 
 Ditemukan saat menyusun `examples/fitur_lengkap.idk`. Semua kelas galat bawaan dibuat di C lewat `defineErrorClass()` (`src/vm.c`), yang hanya menyetel `klass->superclass` tanpa menyalin metode induk. Pewarisan di VM ini memakai **copy-down** (`OP_INHERIT` menyalin tabel metode induk ke subkelas), jadi kelas yang dibuat dari C tidak pernah memperoleh `init` — tabel metodenya kosong. `callValue()` kemudian jatuh ke cabang `argCount != 0` dan menolak argumen.
 
@@ -1939,7 +1939,7 @@ Keluaran 1.4.0:
 DIBAJAK (exit 0); varian v01b: impor "pustaka/base64.idk" / impor json / cetak(json.json_teks(5)) -> 'panjang() hanya menerima string, ...' [baris 48] dalam ke_teks() [baris 50] dalam json_teks(), exit 70
 ```
 
-### PUSTAKA-02 — [tinggi] Argumen kata kunci di dalam fungsi membuat argumen posisi berupa global/upvalue menjadi kosong
+### PUSTAKA-02 — [tinggi] ✅ **Diperbaiki (terverifikasi ulang 1.4.0).** Argumen kata kunci di dalam fungsi membuat argumen posisi berupa global/upvalue menjadi kosong
 
 Direproduksi. g(D, b = 2) di level skrip -> [7, 2], di dalam fungsi -> [kosong, 2]; dengan upvalue -> [kosong, 1]. Cocok dengan hipotesis prescanFunctionBody membaca 'D, b =' sebagai pembongkaran 'a, b = ...' sehingga D jadi lokal. Mengenai statistik.kuantil(DATA, n = 2) dan csv.urai(t, pemisah = ";") di dalam closure. Bug kompilator, tidak bergantung OS.
 
@@ -1964,7 +1964,7 @@ Keluaran 1.4.0:
 [kosong, 2]
 ```
 
-### PUSTAKA-03 — [tinggi] json_urai tidak mendekode \uXXXX, \b, \f, dan menerima escape tidak sah
+### PUSTAKA-03 — [tinggi] ✅ **Diperbaiki (terverifikasi ulang 1.4.0).** json_urai tidak mendekode \uXXXX, \b, \f, dan menerima escape tidak sah
 
 Direproduksi: "é" -> "u00e9", "\b\f" -> "bf", "a\qb" -> "aqb" tanpa galat. 07 §2.5 menjanjikan parsing JSON; RFC 8259 mewajibkan \uXXXX dan menolak escape lain. Data rusak diam-diam.
 
@@ -2002,7 +2002,7 @@ Keluaran 1.4.0:
 -9223372036854775808 -9223372036854775808 -9223372036854775808 (exit 0)
 ```
 
-### PUSTAKA-05 — [tinggi] bita.ke_teks menerima UTF-8 overlong (C0 80 dan E0 80 80 menjadi NUL)
+### PUSTAKA-05 — [tinggi] ✅ **Diperbaiki (terverifikasi ulang 1.4.0).** bita.ke_teks menerima UTF-8 overlong (C0 80 dan E0 80 80 menjadi NUL)
 
 Direproduksi: [0xC0,0x80] dan [0xE0,0x80,0x80] menghasilkan teks 1 karakter dengan ord 0, tanpa GalatBita. 07 §2.18: ke_teks menaikkan GalatBita bila urutannya tidak sah; overlong tidak sah menurut UTF-8 (RFC 3629).
 
