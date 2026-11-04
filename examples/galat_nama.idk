@@ -1,0 +1,45 @@
+# GalatNama: membaca nama yang tidak terdefinisi.
+# Python menaikkan NameError; sebelum perbaikan ini Indonesiaku menaikkan
+# Galat biasa sehingga `kecuali GalatNama` tidak pernah cocok.
+
+# Di tingkat atas.
+coba {
+    cetak(tidak_pernah_dideklarasikan)
+} kecuali GalatNama sebagai e {
+    cetak("atas: GalatNama")
+}
+
+# Di dalam fungsi: jalurnya sama, kelasnya harus sama.
+fungsi baca() {
+    kembalikan juga_tidak_ada
+}
+
+coba {
+    baca()
+} kecuali GalatNama sebagai e {
+    cetak("fungsi: GalatNama")
+}
+
+# buang pada nama yang tidak ada juga GalatNama.
+coba {
+    buang entah_apa
+} kecuali GalatNama sebagai e {
+    cetak("buang: GalatNama")
+}
+
+# Galat lain tidak ikut berubah menjadi GalatNama.
+coba {
+    cetak(1 / 0)
+} kecuali GalatNama sebagai e {
+    cetak("SALAH: bagi nol jadi GalatNama")
+} kecuali GalatBagiNol sebagai e {
+    cetak("bagi nol: GalatBagiNol")
+}
+
+coba {
+    cetak("a" + 1)
+} kecuali GalatNama sebagai e {
+    cetak("SALAH: tipe jadi GalatNama")
+} kecuali GalatTipe sebagai e {
+    cetak("tipe: GalatTipe")
+}
