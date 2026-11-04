@@ -1,0 +1,40 @@
+# GALAT-04: blok `coba` di dalam fungsi rekursif dulu berhenti di kedalaman 64.
+#
+# TRY_MAX bernilai 64 sementara FRAMES_MAX bernilai 1000, jadi try-handler
+# menjadi batas yang jauh lebih ketat daripada rekursi itu sendiri. Lebih
+# buruk lagi: galat "Terlalu banyak blok 'coba' bersarang" ditangkap oleh
+# `kecuali` di level luar, sehingga program mengembalikan JAWABAN SALAH
+# diam-diam alih-alih berhenti.
+
+fungsi turun(n) {
+    jika n <= 0 {
+        kembalikan 0
+    }
+    coba {
+        kembalikan turun(n - 1) + 1
+    } kecuali Galat {
+        kembalikan -1
+    }
+}
+
+# Di bawah batas lama (64) -- selalu benar, bahkan sebelum perbaikan.
+cetak(turun(10))
+cetak(turun(63))
+
+# Tepat di dan di atas batas lama. Sebelum perbaikan, turun(65) mencetak 62:
+# bukan galat, bukan 65, melainkan hasil yang salah tanpa peringatan apa pun.
+cetak(turun(64))
+cetak(turun(65))
+
+# Jauh di atas batas lama, masih di bawah FRAMES_MAX.
+cetak(turun(100))
+cetak(turun(500))
+
+# Nesting statis tetap bekerja seperti sebelumnya.
+coba {
+    coba {
+        coba {
+            cetak("bersarang statis")
+        } kecuali Galat { cetak("salah") }
+    } kecuali Galat { cetak("salah") }
+} kecuali Galat { cetak("salah") }

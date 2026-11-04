@@ -1562,6 +1562,19 @@ lain: Terlalu banyak blok 'coba' bersarang.
 exit=0
 ```
 
+✅ **Diperbaiki.** `TRY_MAX` disamakan dengan `FRAMES_MAX` (1000), jadi
+try-handler tidak lagi menjadi batas yang lebih ketat daripada kedalaman
+rekursi. Biayanya 24 B × 1000 = 23 KB pada VM yang sudah memakai 4 MB.
+Reproduksi di atas sekarang mencetak `rekursi` — `GalatRekursi` yang benar.
+
+Lebih buruk daripada yang tercatat semula: galat batas itu **ditangkap** oleh
+`kecuali` di level luar, jadi tidak berhenti melainkan mengembalikan jawaban
+salah diam-diam. `turun(65)` mengembalikan **62**, bukan 65 dan bukan galat.
+Regresi dijaga `examples/coba_dalam_rekursi.idk`.
+
+Penjaga `TRY_MAX` sendiri tetap bisa tercapai (mis. 2 blok `coba` per level
+× 500 level), jadi batasnya naik, bukan hilang.
+
 ### GALAT-05 — [sedang] Uncaught error that passes through akhirnya or an unmatched kecuali reports the closing '}' instead of the original line
 
 Reproduced. The division by zero is on line 3, but the error is reported at [baris 7, kolom 1] with the snippet '}', because the rethrow site replaces the original location. The guide says the snippet is printed for the place where the error actually happened ('tempat galat benar-benar terjadi'). This is OS-independent.
