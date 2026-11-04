@@ -1,0 +1,25 @@
+# Beban benchmark: kamus, himpunan, dan pengurutan.
+# Menutup hashing dan OP_INDEX_GET/SET yang dominan pada kode nyata.
+# Lihat tests/benchmark.sh.
+
+variabel hitung = {}
+variabel i = 0
+selagi i < 120000 {
+    variabel kunci = "k" + ke_teks(i % 311)
+    jika kunci dalam hitung { hitung[kunci] = hitung[kunci] + 1 }
+    selain { hitung[kunci] = 1 }
+    i = i + 1
+}
+
+variabel unik = himpunan()
+variabel j = 0
+selagi j < 90000 {
+    unik.tambah(j % 457)
+    j = j + 1
+}
+
+variabel nilai = daftar()
+untuk k dalam kunci(hitung) { nilai.tambah(hitung[k]) }
+variabel urut = terurut(nilai)
+
+cetak(panjang(hitung), panjang(unik), urut[0], urut[panjang(urut) - 1])

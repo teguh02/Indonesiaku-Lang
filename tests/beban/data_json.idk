@@ -1,0 +1,34 @@
+# Beban benchmark: olah data berstruktur.
+# Mewakili kerja nyata — bangun kamus, serialisasi, urai, saring, agregasi —
+# bukan loop kosong. Lihat tests/benchmark.sh.
+impor json
+
+fungsi bangun(n) {
+    variabel rekaman = daftar()
+    untuk i dalam rentang(0, n) {
+        rekaman.tambah({
+            "id": i,
+            "nama": "pengguna" + ke_teks(i),
+            "skor": i % 97,
+            "aktif": i % 3 == 0
+        })
+    }
+    kembalikan rekaman
+}
+
+fungsi ringkas(rekaman) {
+    variabel total = 0
+    variabel jumlah_aktif = 0
+    untuk r dalam rekaman {
+        jika r["skor"] > 50 { total = total + r["skor"] }
+        jika r["aktif"] { jumlah_aktif = jumlah_aktif + 1 }
+    }
+    kembalikan [total, jumlah_aktif]
+}
+
+variabel data = bangun(600)
+variabel teks = json.json_teks(data)
+variabel kembali = json.json_urai(teks)
+variabel hasil = ringkas(kembali)
+
+cetak(hasil[0], hasil[1], panjang(teks))

@@ -1,0 +1,26 @@
+# Beban benchmark: manipulasi teks.
+# teks_gabung dan metode string dipakai berat oleh pustaka web/json, jadi
+# regresi di sini terasa luas. Lihat tests/benchmark.sh.
+impor teks
+
+variabel potongan = daftar()
+variabel i = 0
+selagi i < 12000 {
+    potongan.tambah("baris-" + ke_teks(i) + ";nilai=" + ke_teks(i % 53))
+    i = i + 1
+}
+
+variabel gabung = teks_gabung(potongan, "\n")
+variabel baris = teks.teks_pisah(gabung, "\n")
+
+variabel panjang_total = 0
+variabel cocok = 0
+untuk b dalam baris {
+    panjang_total = panjang_total + panjang(b)
+    jika teks.teks_akhiri_dengan(b, "=0") { cocok = cocok + 1 }
+}
+
+variabel besar = gabung.huruf_besar()
+variabel diganti = gabung.ganti("baris", "row")
+
+cetak(panjang(baris), panjang_total, cocok, panjang(besar), panjang(diganti))
