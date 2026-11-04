@@ -18,7 +18,12 @@
 // the classic way to get here.
 #define NATIVE_CALL_MAX 200
 #define STACK_MAX (FRAMES_MAX * UINT8_COUNT)
-#define TRY_MAX 64
+// Batas blok 'coba' aktif sekaligus. Disamakan dengan FRAMES_MAX supaya
+// try-handler tidak pernah jadi batas yang lebih ketat daripada kedalaman
+// rekursi itu sendiri: nilainya dulu 64, jadi `coba` di dalam fungsi
+// rekursif berhenti di kedalaman 64 padahal rekursi biasa sanggup 1000.
+// Biaya memorinya 24 B x 1000 = 23 KB, sepele dibanding VM yang sudah 4 MB.
+#define TRY_MAX FRAMES_MAX
 
 // Stack protection checks
 #define STACK_UNDERFLOW_CHECK(count) \

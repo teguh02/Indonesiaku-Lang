@@ -988,6 +988,50 @@ stdout yang diharapkan:
 [{"nama": "Ani", "nilai": 95}, {"nama": "Budi", "nilai": 80}]
 ```
 
+### GALAT — Penanganan galat
+
+#### GALAT-04 — Blok `coba` di dalam fungsi rekursif
+
+Berkas `GALAT-04.idk`:
+
+```indonesiaku
+# Blok `coba` di dalam fungsi rekursif tidak boleh menjadi batas sendiri.
+fungsi turun(n) {
+    jika n <= 0 {
+        kembalikan 0
+    }
+    coba {
+        kembalikan turun(n - 1) + 1
+    } kecuali Galat {
+        kembalikan -1
+    }
+}
+
+cetak(turun(63))
+cetak(turun(65))
+cetak(turun(500))
+
+# Rekursi tak terbatas tetap berhenti sebagai GalatRekursi, bukan galat
+# "terlalu banyak blok coba".
+fungsi s(n) { coba { kembalikan s(n + 1) } kecuali GalatTipe sebagai e { kembalikan 0 } }
+coba { s(0) } kecuali GalatRekursi sebagai e { cetak("rekursi") } kecuali e { cetak("lain:", e.pesan) }
+```
+
+Jalankan `indk GALAT-04.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+63
+65
+500
+rekursi
+```
+
+Sebelum perbaikan, `turun(65)` mencetak `62` — bukan galat, melainkan jawaban
+salah diam-diam, karena galat batas `coba` ditangkap oleh `kecuali` di level
+luar.
+
 <!-- BERSAMA:AKHIR -->
 
 ## 5. Suite otomatis dari tag rilis

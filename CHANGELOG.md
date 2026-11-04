@@ -36,6 +36,15 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Blok `coba` di dalam fungsi rekursif berhenti di kedalaman 64**
+  (GALAT-04). `TRY_MAX` bernilai 64 sementara `FRAMES_MAX` bernilai 1000,
+  jadi try-handler menjadi batas yang jauh lebih ketat daripada rekursi itu
+  sendiri. Galat batas itu ditangkap oleh `kecuali` di level luar, sehingga
+  program mengembalikan **jawaban salah diam-diam** alih-alih berhenti:
+  sebuah fungsi rekursif berisi `coba` yang dipanggil dengan 65 mengembalikan
+  62. `TRY_MAX` kini disamakan dengan `FRAMES_MAX`; biayanya 23 KB pada VM
+  yang sudah memakai 4 MB.
+
 - **Kelas galat bawaan menerima pesan konstruktor** (GALAT-19).
   `GalatNilai("x")` dulu gagal dengan "Harapkan 0 argumen tetapi mendapat 1",
   sementara subkelas buatan pengguna berhasil. Penyebabnya
