@@ -423,6 +423,16 @@ if [ -f tests/test_uji.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+if [ -f tests/test_profil.sh ]; then
+    echo ""
+    if bash tests/test_profil.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES profil"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 if [ -f tests/test_format.sh ]; then
     echo ""
     if bash tests/test_format.sh; then

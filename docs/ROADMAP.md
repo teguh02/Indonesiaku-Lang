@@ -322,6 +322,15 @@ ada, jadi tidak ada sintaks tes baru.
 ([`editors/vscode-indonesiaku/`](../editors/vscode-indonesiaku/)). Mendelegasikan
 ke interpreter, bukan mengimplementasi ulang aturan format di JavaScript.
 
+✅ **`indk profil <skrip.idk>`** — histogram opcode + hitung panggilan fungsi.
+Penghitung, bukan sampling waktu: hasilnya **deterministik** (dua jalanan atas
+masukan sama memberi angka identik) dan tidak terganggu unwinding galat atau
+generator yang membekukan frame. Laporan ke **stderr**, jadi stdout program
+tetap bisa dipipa. Overhead saat tidak dipakai: satu tes boolean per
+instruksi, tidak terukur pada benchmark (0,040 s dengan dan tanpa profil).
+Batas sadar: tidak memberi waktu per fungsi — untuk itu pakai `perf` atau
+`valgrind --tool=callgrind` pada binernya.
+
 Belum: debugger, playground via **WebAssembly**, cache `.idkc`, computed goto,
 superinstruksi, inline cache, NaN-boxing, GC generasional, utas/asinkron.
 Ref: 04 §1, §8–10, §12.
@@ -333,6 +342,22 @@ Ref: 04 §1, §8–10, §12.
 > itu. Build sudah `-O2`. Kerjakan hanya dengan profil yang menunjukkan
 > dispatch benar-benar jadi hambatan, dan konversi satu per satu disertai
 > pemeriksaan tiap `break`.
+>
+> **Profil pertama (`indk profil`, 2026-11-04).** Beban 7,0 juta instruksi
+> (fib(24) rekursif + loop 200.000 iterasi) jalan pada **160 juta
+> instruksi/detik**. Sebarannya rata — opcode teratas `OP_GET_LOCAL` hanya
+> 19,6%, dan butuh 15 opcode untuk mencapai 94%. Sebaran rata begini berarti
+> tabel lompat tidak punya satu cabang dominan untuk dimenangkan; tetap
+> ditunda.
+>
+> **Temuan sampingan yang lebih menjanjikan:** `OP_TRY_BEGIN`/`OP_TRY_END`
+> muncul **200.000 kali** pada beban itu padahal programnya tidak memuat satu
+> pun `coba`. Penyebabnya setiap iterasi `untuk` memasang lalu membongkar
+> penangan galat untuk menangkap `HentiIterasi` — **5,7% dari seluruh
+> instruksi** hanya untuk itu. Memindahkan pemeriksaan habisnya iterator ke
+> `OP_ITER_NEXT` akan menghapus dua instruksi per iterasi di setiap `untuk`
+> yang pernah dijalankan siapa pun. Itu kandidat optimasi berikutnya, bukan
+> computed goto.
 
 > **Catatan `indk rapikan`.** Penghalangnya sudah dibereskan, bukan dihindari.
 > Dulu `skipWhitespace()` di `src/scanner.c` membuang komentar sepenuhnya —

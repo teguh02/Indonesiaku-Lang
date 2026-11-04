@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>   // clock() untuk `indk profil`
 
 #include "common.h"
 #include "chunk.h"
@@ -304,6 +305,24 @@ int main(int argc, const char* argv[]) {
             freeVM();
             return code;
         }
+        if (strcmp(argv[1], "profil") == 0) {
+            if (argc < 3) {
+                fprintf(stderr, "Penggunaan: indk profil <skrip.idk>\n");
+                return 64;
+            }
+            initVM();
+            defineArgs(argc, argv, 3);
+            // Laporan ke stderr: program yang diprofilkan tetap boleh dipipa
+            // ke berkas tanpa tercampur angka profil.
+            mulaiProfil();
+            clock_t mulai = clock();
+            int code = runFile(argv[2]);
+            double detik = (double)(clock() - mulai) / CLOCKS_PER_SEC;
+            fflush(stdout);
+            cetakProfil(detik);
+            freeVM();
+            return code;
+        }
         if (strcmp(argv[1], "periksa") == 0) {
             if (argc < 3) {
                 fprintf(stderr, "Penggunaan: indk periksa <skrip.idk>\n");
@@ -361,6 +380,7 @@ int main(int argc, const char* argv[]) {
             printf("  periksa <skrip> Laporkan variabel lokal tidak terpakai\n");
             printf("  uji <skrip>     Jalankan fungsi uji_* dalam skrip\n");
             printf("  rapikan <skrip> Rapikan format kode (--tulis, --periksa)\n");
+            printf("  profil <skrip>  Hitung opcode dan panggilan (laporan ke stderr)\n");
             return 0;
         }
     }

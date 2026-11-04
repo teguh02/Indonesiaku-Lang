@@ -424,6 +424,7 @@ jobs:
                    tests/test_format.sh \
                    tests/test_impor_lokasi.sh \
                    tests/test_lint.sh \
+                   tests/test_profil.sh \
                    tests/test_uji.sh; do
             echo "=== $t ==="
             if bash "$t"; then echo "  ok"; else echo "  GAGAL: $t"; gagal=1; fi

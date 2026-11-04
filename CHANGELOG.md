@@ -7,6 +7,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Ditambahkan
+
+- **`indk profil <skrip.idk>`** — histogram opcode + hitung panggilan fungsi,
+  untuk memutuskan optimasi berdasarkan ukuran, bukan dugaan. Penghitung
+  (bukan sampling waktu), jadi hasilnya deterministik dan tidak terganggu
+  unwinding galat maupun generator. Laporan ke stderr; stdout program tetap
+  bersih untuk dipipa. Overhead saat tidak dipakai tidak terukur.
+
 ### Diperbaiki
 
 - **Kelas galat bawaan menerima pesan konstruktor** (GALAT-19).
