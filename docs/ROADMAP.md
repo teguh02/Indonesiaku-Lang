@@ -331,7 +331,21 @@ instruksi, tidak terukur pada benchmark (0,040 s dengan dan tanpa profil).
 Batas sadar: tidak memberi waktu per fungsi — untuk itu pakai `perf` atau
 `valgrind --tool=callgrind` pada binernya.
 
-Belum: debugger, playground via **WebAssembly**, cache `.idkc`, computed goto,
+✅ **`indk awakutu <skrip.idk>`** — debugger CLI. Perintah: `henti <baris>`,
+`hapus <baris>`, `daftar`, `langkah`, `lanjut`, `lihat <nama>`, `tumpukan`,
+`keluar`; Enter kosong = `langkah`. Seluruh antarmuka debugger ke **stderr**,
+jadi `indk awakutu x.idk > hasil.txt` menghasilkan berkas yang identik dengan
+menjalankan programnya biasa. Berhenti pada opcode pertama tiap baris sumber,
+jadi satu baris berhenti sekali per iterasi — bukan sekali per opcode, dan
+bukan sekali seumur loop.
+Batas sadar: `lihat` membaca variabel **global dan parameter fungsi**, belum
+`variabel` lokal di dalam badan fungsi — nama lokal hanya ada saat kompilasi,
+sedangkan `ObjFunction.paramNames` sudah tersimpan dan sudah ditandai GC.
+Menyimpan nama slot lokal sampai runtime menambah larik `ObjString*` per
+fungsi; kerjakan kalau pemakaian nyata menuntutnya. Tidak ada protokol DAP
+dan integrasi VS Code: tambahkan setelah CLI-nya terbukti dipakai.
+
+Belum: playground via **WebAssembly**, cache `.idkc`, computed goto,
 superinstruksi, inline cache, NaN-boxing, GC generasional, utas/asinkron.
 Ref: 04 §1, §8–10, §12.
 

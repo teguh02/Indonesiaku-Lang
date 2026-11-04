@@ -9,6 +9,9 @@
 // stack is sized for the worst case (256 slots per frame) and lives in the
 // global `vm`, so it costs static memory, not C stack.
 #define FRAMES_MAX 1000
+// Jumlah breakpoint maksimum untuk `indk awakutu`. Larik tetap: daftar
+// breakpoint selalu kecil dan dimasukkan manusia lewat perintah.
+#define DEBUG_BREAK_MAX 64
 // Nesting limit for natives calling back into Indonesiaku (callFromNative):
 // each level costs a C run() frame plus the native's own C frame, so the C
 // stack would overflow long before FRAMES_MAX. _teks_ calling cetak(diri) is
@@ -130,6 +133,14 @@ typedef struct {
     bool profiling;
     uint64_t opCounts[OP__COUNT];
     uint64_t callCount;
+
+    // `indk awakutu`: debugger CLI. Dimatikan di jalur normal, jadi run()
+    // hanya membayar satu tes boolean per instruksi -- sama seperti profil.
+    bool debugging;
+    bool debugStep;              // berhenti di instruksi berikutnya (langkah)
+    int debugStepFrame;          // kedalaman frame saat 'langkah' diminta
+    int debugBreakLines[DEBUG_BREAK_MAX];
+    int debugBreakCount;
 } VM;
 
 typedef enum {
@@ -147,6 +158,8 @@ void defineArgs(int argc, const char* argv[], int start);
 void setScriptPath(const char* path);
 // `indk profil`: hidupkan penghitung sebelum interpret(), lalu cetak laporan.
 void mulaiProfil(void);
+// `indk awakutu`: jalankan skrip di bawah kendali debugger CLI.
+void mulaiAwakutu(void);
 void cetakProfil(double detik);
 InterpretResult interpret(const char* source);
 

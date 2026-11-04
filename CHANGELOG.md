@@ -9,6 +9,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **`indk awakutu <skrip.idk>`** — debugger CLI: `henti <baris>`,
+  `hapus <baris>`, `daftar`, `langkah`, `lanjut`, `lihat <nama>`, `tumpukan`,
+  `keluar` (Enter kosong = `langkah`). Seluruh antarmukanya ke stderr, jadi
+  stdout program tetap murni dan bisa dipipa. `lihat` membaca variabel global
+  dan parameter fungsi; variabel lokal di dalam badan fungsi belum didukung.
+
 - **`indk profil <skrip.idk>`** — histogram opcode + hitung panggilan fungsi,
   untuk memutuskan optimasi berdasarkan ukuran, bukan dugaan. Penghitung
   (bukan sampling waktu), jadi hasilnya deterministik dan tidak terganggu

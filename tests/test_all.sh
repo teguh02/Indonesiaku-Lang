@@ -423,6 +423,16 @@ if [ -f tests/test_uji.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+if [ -f tests/test_awakutu.sh ]; then
+    echo ""
+    if bash tests/test_awakutu.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES awakutu"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 if [ -f tests/test_benchmark.sh ]; then
     echo ""
     if bash tests/test_benchmark.sh; then
