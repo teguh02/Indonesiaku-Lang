@@ -345,6 +345,19 @@ Menyimpan nama slot lokal sampai runtime menambah larik `ObjString*` per
 fungsi; kerjakan kalau pemakaian nyata menuntutnya. Tidak ada protokol DAP
 dan integrasi VS Code: tambahkan setelah CLI-nya terbukti dipakai.
 
+✅ **Mask pengganti modulo pada tabel hash**
+([rencana](RENCANA_FITUR/selesai/mask_tabel_hash.md)). `perf` menunjuk
+`findValueEntry` di **10,18%** waktu eksekusi. Kapasitas tabel selalu pangkat
+dua, jadi `hash & (capacity - 1)` menggantikan `hash % capacity` di tiga
+fungsi pencarian. Beban `kamus_himpunan` dan `olah_teks` turun **−43,8%**
+(114,6 → 64,4 ms); jumlah instruksi dan keluaran identik. Penjaga di
+`adjustCapacity`/`adjustValueCapacity` menolak kapasitas non-pangkat-dua
+dengan exit 70.
+Catatan pengukuran: mengganti modulo di `findEntry`/`tableFindString` **saja**
+tidak mengubah waktu sama sekali, walaupun 12 instruksi `div` terbukti hilang
+dari assembly. Keuntungan baru muncul setelah `findValueEntry` ikut diganti —
+assembly yang berubah bukan bukti program jadi lebih cepat.
+
 Belum: playground via **WebAssembly**, cache `.idkc`, computed goto,
 superinstruksi, inline cache, NaN-boxing, GC generasional, utas/asinkron.
 Ref: 04 §1, §8–10, §12.
