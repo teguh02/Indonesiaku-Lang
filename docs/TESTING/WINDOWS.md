@@ -1128,7 +1128,7 @@ sebagai bug hanya temuan terkonfirmasi.
 | T-W5 | Sedang | Isi `argumen` dengan karakter di luar code page ANSI menjadi `?` (`"日本"` → `[63, 63]`); akar masalahnya sama dengan T-W1 (`main` ANSI, bukan `wmain`) |
 | T-W6 | Tinggi | Temuan keamanan pada menjalankan proses anak. Rincian dilaporkan lewat jalur privat, tidak dicantumkan di sini sampai diperbaiki |
 | T-W7 | Tinggi | Temuan keamanan pada soket server. Rincian dilaporkan lewat jalur privat, tidak dicantumkan di sini sampai diperbaiki |
-| T-W8 | Tinggi | Kompilator crash (`0xC00000FD` stack overflow, tanpa pesan) pada 32 `fungsi` bersarang atau ±2500 kurung bersarang. Rekursinya tanpa batas di semua OS, tetapi stack 1 MB Windows membuat ambangnya sangat rendah |
+| T-W8 | Tinggi | ✅ **Diperbaiki (1.4.1).** Kompilator crash (`0xC00000FD` stack overflow, tanpa pesan) pada 32 `fungsi` bersarang atau ±2500 kurung bersarang. Pengukuran ulang per bentuk: `fungsi` jatuh pada **16 level**, sedangkan kurung dan `jika` aman sampai 1000 — sebabnya frame `function()` sebesar 42.640 byte di stack, bukan rekursi parser umum. Struct `Compiler` dan larik parameter dipindah ke heap (frame turun ke 224 byte) dan ditambah penjaga `NESTING_MAX = 200` yang memberi galat kompilasi rapi |
 | T-W9 | Sedang | `ada_berkas()` memberi `salah` untuk berkas yang ada tetapi sedang dikunci proses lain (memakai `fopen`, bukan `stat`); `jalur.ada()` benar |
 | T-W10 | Sedang | Jalur lebih dari 260 karakter tidak didukung: `ada_berkas` salah, `baca_semua` dan `isi_direktori` gagal, walau `LongPathsEnabled=1` |
 | T-W11 | Rendah | `jam()` mengukur waktu dinding di Windows, padahal dokumentasi menyebut waktu CPU (`clock()` di UCRT) |
