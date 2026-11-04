@@ -1,0 +1,70 @@
+# Sarang yang masih sah harus tetap dikompilasi.
+#
+# Perbaikan T-W8 memasang batas kedalaman (NESTING_MAX). Contoh ini menjaga
+# agar batas itu tidak dipasang terlalu ketat: sarang yang jauh lebih dalam
+# daripada kode manusia wajar pun tetap harus berjalan, bukan ditolak.
+#
+# 60 blok `jika` bersarang, 40 kurung bersarang, dan 12 fungsi bersarang.
+
+fungsi dalam_sekali(n) {
+    # 40 kurung bersarang di satu ekspresi
+    variabel x = ((((((((((((((((((((((((((((((((((((((((n))))))))))))))))))))))))))))))))))))))))
+    kembalikan x
+}
+
+cetak(dalam_sekali(7))
+
+# 12 fungsi bersarang, masing-masing menutup variabel induknya
+fungsi t1() {
+fungsi t2() {
+fungsi t3() {
+fungsi t4() {
+fungsi t5() {
+fungsi t6() {
+fungsi t7() {
+fungsi t8() {
+fungsi t9() {
+fungsi t10() {
+fungsi t11() {
+fungsi t12() {
+    kembalikan 12
+}
+    kembalikan t12()
+}
+    kembalikan t11()
+}
+    kembalikan t10()
+}
+    kembalikan t9()
+}
+    kembalikan t8()
+}
+    kembalikan t7()
+}
+    kembalikan t6()
+}
+    kembalikan t5()
+}
+    kembalikan t4()
+}
+    kembalikan t3()
+}
+    kembalikan t2()
+}
+
+cetak(t1())
+
+# Blok bersarang dalam: 60 level `jika`
+variabel kedalaman = 0
+jika benar { jika benar { jika benar { jika benar { jika benar {
+jika benar { jika benar { jika benar { jika benar { jika benar {
+jika benar { jika benar { jika benar { jika benar { jika benar {
+jika benar { jika benar { jika benar { jika benar { jika benar {
+jika benar { jika benar { jika benar { jika benar { jika benar {
+jika benar { jika benar { jika benar { jika benar { jika benar {
+    kedalaman = 30
+} } } } } } } } } }
+} } } } } } } } } }
+} } } } } } } } } }
+
+cetak(kedalaman)

@@ -2067,11 +2067,43 @@ ParseRule rules[] = {
   [TOKEN_POWER_EQUAL]   = {NULL,     NULL,   PREC_NONE},
   [TOKEN_ERROR]         = {NULL,     NULL,   PREC_NONE},
   [TOKEN_EOF]           = {NULL,     NULL,   PREC_NONE},
-};static void parsePrecedence(Precedence precedence) {
+};// Batas kedalaman sarang parser. Tanpa ini, rekursi parser pada kode yang
+// sangat bersarang menghabiskan stack C dan proses mati TANPA pesan: SIGSEGV
+// di Linux/macOS, 0xC00000FD di Windows (T-W8). Ambangnya dipilih jauh di atas
+// kode manusia yang wajar (sarang 100 level pun tetap dikompilasi) tetapi jauh
+// di bawah kedalaman yang mengancam stack 1 MB bawaan Windows.
+#define NESTING_MAX 200
+
+static int nestingDepth = 0;
+
+// Melewati batas dilaporkan sekali: panicMode menekan galat susulan, tetapi
+// nestingDepth tetap dihitung turun dengan benar oleh pemanggilnya.
+static bool nestingPush() {
+    if (nestingDepth >= NESTING_MAX) {
+        error("Sarang terlalu dalam (maksimum 200); sederhanakan kode.");
+        // Parser berhenti turun di sini, jadi setiap blok induk gagal menemukan
+        // '}' miliknya dan akan melapor lagi: 220 level sarang menghasilkan
+        // ratusan galat susulan yang mengubur pesan sebenarnya. Mekanisme yang
+        // sudah dipakai batas 'akhirnya' dipakai ulang; ia direset di awal
+        // setiap kompilasi, jadi REPL dan impor berikutnya tidak ikut bisu.
+        suppressFurtherErrors = true;
+        return false;
+    }
+    nestingDepth++;
+    return true;
+}
+
+static void nestingPop(void) {
+    if (nestingDepth > 0) nestingDepth--;
+}
+
+static void parsePrecedence(Precedence precedence) {
+    if (!nestingPush()) return;
     advance();
     ParseFn prefixRule = getRule(parser.previous.type)->prefix;
     if (prefixRule == NULL) {
         error("Harapkan ekspresi.");
+        nestingPop();
         return;
     }
 
@@ -2087,6 +2119,7 @@ ParseRule rules[] = {
     if (canAssign && match(TOKEN_EQUAL)) {
         error("Target assignment tidak valid.");
     }
+    nestingPop();
 }
 
 static ParseRule* getRule(TokenType type) {
@@ -2157,11 +2190,13 @@ static void expression() {
 }
 
 static void block() {
+    if (!nestingPush()) return;
     while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
         declaration();
     }
 
     consume(TOKEN_RIGHT_BRACE, "Harapkan '}' setelah blok.");
+    nestingPop();
 }
 
 static bool skipBalancedBraces();
@@ -2364,8 +2399,17 @@ static void skipDefaultExpression() {
 
 static void function(FunctionType type) {
     bool anonymous = (type == TYPE_FUNCTION && parser.previous.type == TOKEN_FUNGSI);
-    Compiler compiler;
-    initCompiler(&compiler, type);
+    // Compiler berisi empat larik UINT8_COUNT (locals, upvalues, globals,
+    // nonlocals) plus finallies: ~24 KB. Di stack, 16 fungsi bersarang sudah
+    // menghabiskan stack 1 MB bawaan Windows dan prosesnya mati TANPA pesan
+    // (T-W8). Di heap, satu level sarang hanya memakai beberapa puluh byte
+    // stack, jadi kedalaman dibatasi oleh NESTING_MAX yang memberi galat rapi.
+    Compiler* compilerHeap = (Compiler*)malloc(sizeof(Compiler));
+    if (compilerHeap == NULL) {
+        error("Memori habis saat mengompilasi fungsi.");
+        return;
+    }
+    initCompiler(compilerHeap, type);
     beginScope();
 
     // A function body is a fresh compilation unit with its own chunk. The
@@ -2381,10 +2425,27 @@ static void function(FunctionType type) {
     // Parameter names are declared first; their default expressions are
     // compiled afterwards as a conditional prologue (see below), so we
     // remember where each '=' sits and rewind the scanner to it.
-    ScannerState defaultStarts[UINT8_COUNT];
-    Token defaultTokens[UINT8_COUNT];
-    int defaultSlots[UINT8_COUNT];
-    Token paramTokens[UINT8_COUNT];
+    // Empat larik ini (bersama ~24 KB struct Compiler di atas) membuat frame
+    // function() sebesar 42 KB saat masih di stack: 16 fungsi bersarang sudah
+    // menghabiskan stack 1 MB bawaan Windows (T-W8). Semuanya disatukan dalam
+    // satu alokasi heap agar hanya ada satu malloc dan satu free.
+    struct FunctionScratch {
+        ScannerState defaultStarts[UINT8_COUNT];
+        Token defaultTokens[UINT8_COUNT];
+        int defaultSlots[UINT8_COUNT];
+        Token paramTokens[UINT8_COUNT];
+    };
+    struct FunctionScratch* scratch =
+        (struct FunctionScratch*)malloc(sizeof(struct FunctionScratch));
+    if (scratch == NULL) {
+        error("Memori habis saat mengompilasi parameter fungsi.");
+        free(compilerHeap);
+        return;
+    }
+    ScannerState* defaultStarts = scratch->defaultStarts;
+    Token* defaultTokens = scratch->defaultTokens;
+    int* defaultSlots = scratch->defaultSlots;
+    Token* paramTokens = scratch->paramTokens;
     int defaultCount = 0;
     if (!check(TOKEN_RIGHT_PAREN)) {
         do {
@@ -2476,9 +2537,13 @@ static void function(FunctionType type) {
     emitBytes(OP_CLOSURE, makeConstant(OBJ_VAL(function)));
 
     for (int i = 0; i < function->upvalueCount; i++) {
-        emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
-        emitByte(compiler.upvalues[i].index);
+        emitByte(compilerHeap->upvalues[i].isLocal ? 1 : 0);
+        emitByte(compilerHeap->upvalues[i].index);
     }
+    // endCompiler() sudah mengembalikan `current` ke compiler induk, dan
+    // ObjFunction hidup di heap GC, jadi struct ini tidak dirujuk lagi.
+    free(scratch);
+    free(compilerHeap);
 }
 
 #define DECORATOR_MAX 16
@@ -3987,6 +4052,10 @@ static void statement() {
 
 ObjFunction* compileInModule(const char* source, ObjModule* module) {
     initScanner(source);
+    // Kompilasi sebelumnya bisa berhenti di tengah karena galat, meninggalkan
+    // nestingDepth bukan nol. Tanpa reset, REPL atau impor berikutnya mewarisi
+    // hitungan itu dan akhirnya menolak kode yang sah.
+    nestingDepth = 0;
     // Keep the source alive as a GC object: module sources are freed by the
     // caller right after compile(), but runtime errors need them later.
     compilingSource = copyString(source, (int)strlen(source));

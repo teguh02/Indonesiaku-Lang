@@ -1,0 +1,442 @@
+# T-W8: fungsi bersarang sangat dalam harus memberi galat, bukan crash.
+fungsi f0() {
+fungsi f1() {
+fungsi f2() {
+fungsi f3() {
+fungsi f4() {
+fungsi f5() {
+fungsi f6() {
+fungsi f7() {
+fungsi f8() {
+fungsi f9() {
+fungsi f10() {
+fungsi f11() {
+fungsi f12() {
+fungsi f13() {
+fungsi f14() {
+fungsi f15() {
+fungsi f16() {
+fungsi f17() {
+fungsi f18() {
+fungsi f19() {
+fungsi f20() {
+fungsi f21() {
+fungsi f22() {
+fungsi f23() {
+fungsi f24() {
+fungsi f25() {
+fungsi f26() {
+fungsi f27() {
+fungsi f28() {
+fungsi f29() {
+fungsi f30() {
+fungsi f31() {
+fungsi f32() {
+fungsi f33() {
+fungsi f34() {
+fungsi f35() {
+fungsi f36() {
+fungsi f37() {
+fungsi f38() {
+fungsi f39() {
+fungsi f40() {
+fungsi f41() {
+fungsi f42() {
+fungsi f43() {
+fungsi f44() {
+fungsi f45() {
+fungsi f46() {
+fungsi f47() {
+fungsi f48() {
+fungsi f49() {
+fungsi f50() {
+fungsi f51() {
+fungsi f52() {
+fungsi f53() {
+fungsi f54() {
+fungsi f55() {
+fungsi f56() {
+fungsi f57() {
+fungsi f58() {
+fungsi f59() {
+fungsi f60() {
+fungsi f61() {
+fungsi f62() {
+fungsi f63() {
+fungsi f64() {
+fungsi f65() {
+fungsi f66() {
+fungsi f67() {
+fungsi f68() {
+fungsi f69() {
+fungsi f70() {
+fungsi f71() {
+fungsi f72() {
+fungsi f73() {
+fungsi f74() {
+fungsi f75() {
+fungsi f76() {
+fungsi f77() {
+fungsi f78() {
+fungsi f79() {
+fungsi f80() {
+fungsi f81() {
+fungsi f82() {
+fungsi f83() {
+fungsi f84() {
+fungsi f85() {
+fungsi f86() {
+fungsi f87() {
+fungsi f88() {
+fungsi f89() {
+fungsi f90() {
+fungsi f91() {
+fungsi f92() {
+fungsi f93() {
+fungsi f94() {
+fungsi f95() {
+fungsi f96() {
+fungsi f97() {
+fungsi f98() {
+fungsi f99() {
+fungsi f100() {
+fungsi f101() {
+fungsi f102() {
+fungsi f103() {
+fungsi f104() {
+fungsi f105() {
+fungsi f106() {
+fungsi f107() {
+fungsi f108() {
+fungsi f109() {
+fungsi f110() {
+fungsi f111() {
+fungsi f112() {
+fungsi f113() {
+fungsi f114() {
+fungsi f115() {
+fungsi f116() {
+fungsi f117() {
+fungsi f118() {
+fungsi f119() {
+fungsi f120() {
+fungsi f121() {
+fungsi f122() {
+fungsi f123() {
+fungsi f124() {
+fungsi f125() {
+fungsi f126() {
+fungsi f127() {
+fungsi f128() {
+fungsi f129() {
+fungsi f130() {
+fungsi f131() {
+fungsi f132() {
+fungsi f133() {
+fungsi f134() {
+fungsi f135() {
+fungsi f136() {
+fungsi f137() {
+fungsi f138() {
+fungsi f139() {
+fungsi f140() {
+fungsi f141() {
+fungsi f142() {
+fungsi f143() {
+fungsi f144() {
+fungsi f145() {
+fungsi f146() {
+fungsi f147() {
+fungsi f148() {
+fungsi f149() {
+fungsi f150() {
+fungsi f151() {
+fungsi f152() {
+fungsi f153() {
+fungsi f154() {
+fungsi f155() {
+fungsi f156() {
+fungsi f157() {
+fungsi f158() {
+fungsi f159() {
+fungsi f160() {
+fungsi f161() {
+fungsi f162() {
+fungsi f163() {
+fungsi f164() {
+fungsi f165() {
+fungsi f166() {
+fungsi f167() {
+fungsi f168() {
+fungsi f169() {
+fungsi f170() {
+fungsi f171() {
+fungsi f172() {
+fungsi f173() {
+fungsi f174() {
+fungsi f175() {
+fungsi f176() {
+fungsi f177() {
+fungsi f178() {
+fungsi f179() {
+fungsi f180() {
+fungsi f181() {
+fungsi f182() {
+fungsi f183() {
+fungsi f184() {
+fungsi f185() {
+fungsi f186() {
+fungsi f187() {
+fungsi f188() {
+fungsi f189() {
+fungsi f190() {
+fungsi f191() {
+fungsi f192() {
+fungsi f193() {
+fungsi f194() {
+fungsi f195() {
+fungsi f196() {
+fungsi f197() {
+fungsi f198() {
+fungsi f199() {
+fungsi f200() {
+fungsi f201() {
+fungsi f202() {
+fungsi f203() {
+fungsi f204() {
+fungsi f205() {
+fungsi f206() {
+fungsi f207() {
+fungsi f208() {
+fungsi f209() {
+fungsi f210() {
+fungsi f211() {
+fungsi f212() {
+fungsi f213() {
+fungsi f214() {
+fungsi f215() {
+fungsi f216() {
+fungsi f217() {
+fungsi f218() {
+fungsi f219() {
+cetak(1)
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}

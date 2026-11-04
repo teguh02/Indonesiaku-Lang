@@ -1,0 +1,3 @@
+[baris 202, kolom 15] Kesalahan di '{': Sarang terlalu dalam (maksimum 200); sederhanakan kode.
+    fungsi f200() {
+                  ^

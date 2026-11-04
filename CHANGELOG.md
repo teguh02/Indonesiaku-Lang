@@ -29,6 +29,37 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Kompilator tidak lagi mati tanpa pesan pada kode sangat bersarang**
+  (T-W8). Sebelumnya proses berakhir dengan SIGSEGV di Linux/macOS dan
+  `0xC00000FD` di Windows — tanpa baris, kolom, maupun sebab.
+
+  Akar masalahnya bukan rekursi parser secara umum, melainkan ukuran frame
+  `function()` di `src/compiler.c`: struct `Compiler` (empat larik
+  `UINT8_COUNT`) ditambah empat larik parameter, totalnya **42.640 byte di
+  stack per level sarang**. Pada stack 1 MB bawaan thread utama Windows,
+  **16 `fungsi` bersarang** sudah menghabiskannya. Sebagai pembanding, kurung
+  dan `jika` bersarang — yang hanya memakai frame parser biasa — tetap aman
+  sampai 1.000 level. Catatan temuan asli menyebut ambang "32 fungsi atau
+  ±2500 kurung"; pengukuran ulang per bentuk memberi angka yang jauh berbeda.
+
+  Keduanya kini dipindahkan ke heap, sehingga frame `function()` turun dari
+  42.640 menjadi **224 byte**. Ditambah satu penjaga kedalaman
+  (`NESTING_MAX = 200`) pada dua corong rekursi — `parsePrecedence()` untuk
+  ekspresi dan `block()` untuk pernyataan — kode yang melewati batas kini
+  mendapat galat kompilasi biasa:
+
+  ```
+  [baris 202, kolom 15] Kesalahan di '{': Sarang terlalu dalam (maksimum 200);
+  sederhanakan kode.
+  ```
+
+  Galat susulan diredam: tanpa itu, 220 level sarang menghasilkan 220 pesan
+  "Harapkan '}'" yang mengubur pesan sebenarnya. Sarang yang masih wajar tidak
+  terpengaruh — `examples/sarang_dalam.idk` (60 `jika`, 40 kurung, 12 `fungsi`
+  bersarang) tetap berjalan. Regresi:
+  `tests/galat/sarang_terlalu_dalam.*` dan
+  `tests/galat/sarang_fungsi_terlalu_dalam.*`.
+
 - ⚠️ **`kecuali X { ... }` tanpa `sebagai` kini bertipe** (GALAT-03). Dulu
   bentuk ini selalu diartikan sebagai klausa tangkap-semua dengan `X` sebagai
   nama pengikat, jadi `kecuali GalatNilai {` diam-diam menangkap **semua**
