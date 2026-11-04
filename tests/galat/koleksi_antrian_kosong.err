@@ -1,5 +1,5 @@
 Antrian.ambil_kiri: antrian kosong
-[baris 304, kolom 70] dalam ambil_kiri()
+[baris 302, kolom 70] dalam ambil_kiri()
     …ksi("Antrian.ambil_kiri: antrian kosong")
                                              ^
 [baris 3, kolom 28] dalam skrip

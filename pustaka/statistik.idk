@@ -9,9 +9,7 @@
 
 # Python menaikkan StatisticsError; di sini subkelas Galat agar bisa
 # ditangkap `kecuali GalatStatistik sebagai e` dan membawa `.pesan`.
-kelas GalatStatistik < Galat {
-    init(pesan) { diri.pesan = pesan }
-}
+kelas GalatStatistik < Galat {}
 
 # _data(urutan, nama) -> salinan daftar; galat bila kosong.
 fungsi _data(urutan, nama) {

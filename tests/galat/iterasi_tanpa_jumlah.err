@@ -1,5 +1,5 @@
 hitung_naik: sebutkan `jumlah` (versi eager punya batas)
-[baris 25, kolom 88] dalam hitung_naik()
+[baris 23, kolom 88] dalam hitung_naik()
     …tkan `jumlah` (versi eager punya batas)")
                                              ^
 [baris 3, kolom 19] dalam skrip

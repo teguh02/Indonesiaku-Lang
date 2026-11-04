@@ -12,9 +12,7 @@
 # sejumlah urutan (`chain`, `product`) di sini menerima SATU DAFTAR urutan;
 # `peta_bintang` meneruskan tupel argumen sebagai satu nilai (lihat panduan).
 
-kelas GalatIterasi < Galat {
-    init(pesan) { diri.pesan = pesan }
-}
+kelas GalatIterasi < Galat {}
 
 # --- pembangkit jumlah terbatas ------------------------------------------
 

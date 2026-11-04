@@ -11,9 +11,7 @@
 # belum punya `*args` (lihat docs/RENCANA_FITUR/pustaka_fase6_modul_dasar.md).
 
 # Kelas galat bawaan belum punya `init`, jadi pesan kustom butuh subkelas.
-kelas GalatKoleksi < Galat {
-    init(pesan) { diri.pesan = pesan }
-}
+kelas GalatKoleksi < Galat {}
 
 # --- Penghitung (Counter) -------------------------------------------------
 

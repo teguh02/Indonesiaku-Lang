@@ -1,0 +1,60 @@
+# Regresi GALAT-19: kelas galat BAWAAN harus menerima pesan konstruktor.
+#
+# Kelas galat bawaan dibuat di C lewat defineErrorClass(), yang hanya
+# menyetel superclass. Pewarisan VM memakai copy-down (OP_INHERIT menyalin
+# tabel metode induk), jadi kelas dari C tidak pernah memperoleh `init` dan
+# dulu menolak argumen: GalatNilai("x") gagal dengan "Harapkan 0 argumen
+# tetapi mendapat 1", sementara subkelas buatan pengguna berhasil.
+#
+# Yang menyamarkan bug itu: `naikkan GalatNilai("x")` TERLIHAT jalan ketika
+# ditangkap `kecuali` tanpa `sebagai`, karena yang tertangkap sebenarnya
+# galat runtime tadi -- bukan GalatNilai. Pesan aslinya hilang diam-diam.
+
+# 1. Membuat objek galat bawaan dengan pesan.
+variabel e = GalatNilai("pesan saya")
+cetak(e.pesan)
+
+# 2. Dinaikkan lalu ditangkap dengan tipe yang sama: pesan harus utuh.
+coba {
+    naikkan GalatNilai("rusak")
+} kecuali GalatNilai sebagai x {
+    cetak(x.pesan)
+}
+
+# 3. Ditangkap lewat kelas induk: tetap GalatIndeks, pesan tetap terbawa.
+coba {
+    naikkan GalatIndeks("di luar jangkauan")
+} kecuali Galat sebagai x {
+    cetak(x.pesan)
+}
+
+# 4. Tanpa argumen tetap sah.
+variabel tanpa_pesan = Galat()
+cetak("tanpa argumen ok")
+
+# 5. Subkelas pengguna yang punya init sendiri TIDAK boleh tertimpa.
+kelas GalatKhusus < Galat {
+    init(pesan) { diri.pesan = "DARI-INIT: " + pesan }
+}
+cetak(GalatKhusus("halo").pesan)
+
+# 6. Subkelas pengguna tanpa init ikut mewarisi perilaku ini.
+kelas GalatTurunan < GalatNilai {}
+cetak(GalatTurunan("turunan").pesan)
+
+# 7. Kelas BIASA (bukan galat) tanpa init harus tetap menolak argumen.
+kelas Kotak {}
+coba {
+    variabel k = Kotak("x")
+    cetak("SALAH: kelas biasa menerima argumen")
+} kecuali Galat sebagai x {
+    cetak("kelas biasa tetap menolak")
+}
+
+# 8. Dua argumen tetap ditolak walau kelas galat.
+coba {
+    variabel d = GalatNilai("a", "b")
+    cetak("SALAH: dua argumen diterima")
+} kecuali Galat sebagai x {
+    cetak("dua argumen tetap ditolak")
+}

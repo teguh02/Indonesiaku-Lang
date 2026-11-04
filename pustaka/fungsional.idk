@@ -9,9 +9,7 @@
 # keduanya butuh fungsi variadik / penyuntikan metode saat runtime (lihat
 # docs/RENCANA_FITUR/pustaka_fase6_modul_dasar.md).
 
-kelas GalatFungsional < Galat {
-    init(pesan) { diri.pesan = pesan }
-}
+kelas GalatFungsional < Galat {}
 
 # _terapkan(f, args) -> panggil `f` dengan argumen dari daftar `args`.
 # Pengganti `f(*args)` yang belum ada di bahasa ini; dibatasi 5 argumen.

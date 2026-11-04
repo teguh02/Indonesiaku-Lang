@@ -15,9 +15,7 @@ impor "pustaka/http.idk"
 impor "pustaka/json.idk"
 impor log
 
-kelas GalatWeb < Galat {
-    init(pesan) { diri.pesan = pesan }
-}
+kelas GalatWeb < Galat {}
 
 # _web_nilai_heks(c) -> 0..15, atau -1 bila bukan digit heksadesimal.
 fungsi _web_nilai_heks(c) {

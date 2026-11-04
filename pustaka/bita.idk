@@ -9,9 +9,7 @@
 # tipe `bita` sendiri, fungsi di modul ini tetap bisa dipertahankan sebagai
 # pembungkus.
 
-kelas GalatBita < Galat {
-    init(pesan) { diri.pesan = pesan }
-}
+kelas GalatBita < Galat {}
 
 # _tambah_utf8(kode, hasil) -> tambahkan encoding UTF-8 dari satu code point.
 fungsi _tambah_utf8(kode, hasil) {
