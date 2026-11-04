@@ -350,14 +350,33 @@ Ref: 04 §1, §8–10, §12.
 > tabel lompat tidak punya satu cabang dominan untuk dimenangkan; tetap
 > ditunda.
 >
-> **Temuan sampingan yang lebih menjanjikan:** `OP_TRY_BEGIN`/`OP_TRY_END`
-> muncul **200.000 kali** pada beban itu padahal programnya tidak memuat satu
-> pun `coba`. Penyebabnya setiap iterasi `untuk` memasang lalu membongkar
-> penangan galat untuk menangkap `HentiIterasi` — **5,7% dari seluruh
-> instruksi** hanya untuk itu. Memindahkan pemeriksaan habisnya iterator ke
-> `OP_ITER_NEXT` akan menghapus dua instruksi per iterasi di setiap `untuk`
-> yang pernah dijalankan siapa pun. Itu kandidat optimasi berikutnya, bukan
-> computed goto.
+> **Temuan sampingan — DIUKUR ULANG, ternyata tidak layak dikerjakan.**
+> `OP_TRY_BEGIN`/`OP_TRY_END` muncul 200.000 kali pada beban itu padahal
+> programnya tidak memuat satu pun `coba`: setiap iterasi `untuk` memasang
+> lalu membongkar penangan galat untuk menangkap `HentiIterasi`. Angka
+> pertama, 5,7%, membuatnya tampak menjanjikan. Pengukuran lanjutan
+> membatalkannya:
+>
+> | Beban | Porsi `OP_TRY_BEGIN`+`END` |
+> |---|---|
+> | Loop sintetis, badan `t = t + i` | 5,7% |
+> | Loop sintetis atas daftar 1000 | 8,4% |
+> | **Beban realistis** (JSON, kamus, panggilan fungsi) | **0,12%** |
+>
+> Porsi besar itu artefak badan loop yang nyaris kosong — begitu badan loop
+> berisi kerja nyata, dua opcode overhead itu tenggelam. Menonaktifkan
+> seluruh isi `OP_TRY_BEGIN` (penyimpanan `handlerIp`/`frameCount`/
+> `stackTop`) memberi **0,0%**: tidak ada kerja mahal untuk dihapus, hanya
+> biaya dispatch ~5,6 ns per instruksi. Sementara itu menghapusnya bukan
+> perubahan kecil — blok try itu menangani `HentiIterasi` dari **generator**
+> dan iterator kelas `__berikutnya__`, sedangkan cek `OP_LESS` yang sudah ada
+> hanya berlaku untuk urutan berindeks. Mengubah protokol iterasi bercabang
+> tiga demi 0,12% tidak sepadan.
+>
+> **Pelajarannya, dan alasan `tests/beban/` ada:** benchmark lama mengukur
+> `examples/performance_stress.idk` — 4 baris komentar dan satu `cetak`,
+> 6 instruksi. Tanpa beban yang representatif, profil apa pun akan menunjuk
+> target yang salah. Ukur pada beban nyata sebelum mempercayai persentase.
 
 > **Catatan `indk rapikan`.** Penghalangnya sudah dibereskan, bukan dihindari.
 > Dulu `skipWhitespace()` di `src/scanner.c` membuang komentar sepenuhnya —

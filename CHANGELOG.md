@@ -15,6 +15,19 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   unwinding galat maupun generator. Laporan ke stderr; stdout program tetap
   bersih untuk dipipa. Overhead saat tidak dipakai tidak terukur.
 
+### Diubah
+
+- **Benchmark mengukur beban nyata.** `tests/benchmark.sh` dulu mengukur
+  `examples/performance_stress.idk`, `loop_nested.idk` dan
+  `mutual_recursion.idk` — ketiganya placeholder "v0.2" berisi 4 baris
+  komentar dan satu `cetak` (6 instruksi), padahal fiturnya sudah lama ada.
+  Beban baru di `tests/beban/` (JSON, teks, kamus/himpunan, rekursi+OOP)
+  masing-masing 3,5–6,4 juta instruksi. Laporannya kini memuat jumlah
+  instruksi dari `indk profil` — deterministik, jadi regresi bytecode
+  terlihat tanpa terganggu derau waktu. `date +%s.%N` dan `bc` diganti
+  karena keduanya tidak ada di macOS, yang membuat benchmark lama mencetak
+  baris kosong di sana.
+
 ### Diperbaiki
 
 - **Kelas galat bawaan menerima pesan konstruktor** (GALAT-19).

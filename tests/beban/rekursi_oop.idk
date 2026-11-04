@@ -1,0 +1,42 @@
+# Beban benchmark: rekursi, kelas, pewarisan, dan metode.
+# Menutup jalur OP_CALL / OP_INVOKE / OP_GET_PROPERTY yang tidak disentuh
+# beban berbasis loop. Lihat tests/benchmark.sh.
+
+kelas Simpul {
+    init(nilai) {
+        diri.nilai = nilai
+        diri.kiri = kosong
+        diri.kanan = kosong
+    }
+
+    sisip(n) {
+        jika n < diri.nilai {
+            jika diri.kiri == kosong { diri.kiri = Simpul(n) }
+            selain { diri.kiri.sisip(n) }
+        } selain {
+            jika diri.kanan == kosong { diri.kanan = Simpul(n) }
+            selain { diri.kanan.sisip(n) }
+        }
+    }
+
+    jumlah() {
+        variabel t = diri.nilai
+        jika diri.kiri != kosong { t = t + diri.kiri.jumlah() }
+        jika diri.kanan != kosong { t = t + diri.kanan.jumlah() }
+        kembalikan t
+    }
+}
+
+fungsi fib(n) {
+    jika n < 2 { kembalikan n }
+    kembalikan fib(n - 1) + fib(n - 2)
+}
+
+variabel akar = Simpul(500)
+variabel i = 0
+selagi i < 4000 {
+    akar.sisip((i * 37) % 1000)
+    i = i + 1
+}
+
+cetak(akar.jumlah(), fib(23))
