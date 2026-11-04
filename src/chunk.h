@@ -96,7 +96,15 @@ typedef enum {
     OP_IMPORT_MODULE,   // impor nama; konstanta = nama modul -> ObjModule di stack
     OP_IMPORT_FROM,     // dari m impor x; konstanta = nama anggota
     OP_RETURN,
+    OP__COUNT,   // jumlah opcode; bukan instruksi -- dipakai larik profil
 } OpCode;
+
+// Nama opcode untuk `indk profil`. Disassembler punya tabelnya sendiri yang
+// menyatu dengan pencetakan operand, jadi tidak bisa dipakai ulang di sini.
+const char* opcodeName(uint8_t op);
+// Benar jika setiap opcode punya nama. Dipakai `indk profil` untuk menolak
+// laporan yang akan berisi "OP_?" karena opcode baru lupa didaftarkan.
+bool opcodeNamesLengkap(int* pertamaKosong);
 
 typedef enum {
     CHAIN_EQUAL,

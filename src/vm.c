@@ -320,6 +320,76 @@ static void defineNative(const char* name, NativeFn function) {
     pop();
 }
 
+// --- indk profil -------------------------------------------------------
+// Penghitung, bukan sampling waktu: hasilnya deterministik (dua jalanan atas
+// masukan sama memberi angka identik) dan tidak terganggu unwinding galat
+// maupun generator yang membekukan frame. Yang TIDAK diberikannya: waktu per
+// fungsi -- untuk itu pakai `perf`/`valgrind --tool=callgrind` pada biner.
+
+void mulaiProfil(void) {
+    int kosong = -1;
+    if (!opcodeNamesLengkap(&kosong)) {
+        // Galat programmer saat menambah opcode, bukan galat pengguna:
+        // fatalError() hanya melapor lalu lanjut, dan laporan profil yang
+        // menyesatkan lebih buruk daripada tidak ada laporan sama sekali.
+        fprintf(stderr,
+                "Opcode %d belum didaftarkan di namaOpcode (src/chunk.c); "
+                "laporan profil akan menyesatkan.\n", kosong);
+        exit(70);
+    }
+    vm.profiling = true;
+    vm.callCount = 0;
+    memset(vm.opCounts, 0, sizeof(vm.opCounts));
+}
+
+static int bandingTurun(const void* a, const void* b) {
+    int ia = *(const int*)a, ib = *(const int*)b;
+    if (vm.opCounts[ia] < vm.opCounts[ib]) return 1;
+    if (vm.opCounts[ia] > vm.opCounts[ib]) return -1;
+    return ia - ib;   // seri: urut opcode, supaya keluaran stabil
+}
+
+void cetakProfil(double detik) {
+    uint64_t total = 0;
+    for (int i = 0; i < OP__COUNT; i++) total += vm.opCounts[i];
+
+    fprintf(stderr, "Profil eksekusi\n");
+    fprintf(stderr, "  instruksi : %llu\n", (unsigned long long)total);
+    fprintf(stderr, "  panggilan : %llu\n", (unsigned long long)vm.callCount);
+    fprintf(stderr, "  waktu     : %.3f detik\n", detik);
+    if (detik > 0.0) {
+        fprintf(stderr, "  laju      : %.1f juta instruksi/detik\n",
+               (double)total / detik / 1e6);
+    }
+
+    if (total == 0) {
+        fprintf(stderr, "\n  (tidak ada instruksi dijalankan)\n");
+        return;
+    }
+
+    int urut[OP__COUNT];
+    for (int i = 0; i < OP__COUNT; i++) urut[i] = i;
+    qsort(urut, OP__COUNT, sizeof(int), bandingTurun);
+
+    fprintf(stderr, "\n  %-22s %12s %7s %7s\n", "OPCODE", "JUMLAH", "%", "KUMUL");
+    double kumulatif = 0.0;
+    for (int i = 0; i < OP__COUNT; i++) {
+        uint64_t n = vm.opCounts[urut[i]];
+        if (n == 0) break;
+        double persen = (double)n * 100.0 / (double)total;
+        kumulatif += persen;
+        fprintf(stderr, "  %-22s %12llu %6.2f%% %6.1f%%\n",
+               opcodeName((uint8_t)urut[i]), (unsigned long long)n,
+               persen, kumulatif);
+        // Setelah 95% sisanya ekor panjang yang tidak menentukan keputusan
+        // optimasi; dipotong supaya laporan tetap terbaca.
+        if (kumulatif >= 95.0) {
+            fprintf(stderr, "  %-22s %12s %7s %6.1f%%\n", "(sisanya)", "", "", 100.0);
+            break;
+        }
+    }
+}
+
 void initVM() {
     resetStack();
     vm.objects = NULL;
@@ -336,6 +406,10 @@ void initVM() {
     vm.grayCount = 0;
     vm.grayCapacity = 0;
     vm.grayStack = NULL;
+
+    vm.profiling = false;
+    vm.callCount = 0;
+    memset(vm.opCounts, 0, sizeof(vm.opCounts));
 
     initTable(&vm.globals);
     initTable(&vm.strings);
@@ -583,6 +657,7 @@ static Value peek(int distance) {
 // names != NULL: the last names->items.count arguments on the stack were
 // passed by name and must be moved to the slots their names select.
 static bool call(ObjClosure* closure, int argCount, ObjList* names) {
+    if (vm.profiling) vm.callCount++;
     ObjFunction* fn = closure->function;
     int namedCount = names == NULL ? 0 : names->items.count;
     int positional = argCount - namedCount;
@@ -2384,7 +2459,11 @@ static InterpretResult run() {
         }
 
         uint8_t instruction;
-        switch (instruction = READ_BYTE()) {
+        instruction = READ_BYTE();
+        // Profil hanya aktif lewat `indk profil`; jalur normal membayar satu
+        // tes boolean yang mudah ditebak cabangnya.
+        if (vm.profiling) vm.opCounts[instruction]++;
+        switch (instruction) {
             case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
                 push(constant);

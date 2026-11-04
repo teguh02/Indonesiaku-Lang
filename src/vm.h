@@ -122,6 +122,14 @@ typedef struct {
     int grayCount;
     int grayCapacity;
     Obj** grayStack;
+
+    // `indk profil`: histogram opcode + hitung panggilan fungsi. Dimatikan
+    // (profiling = false) di jalur normal, jadi run() hanya membayar satu
+    // tes boolean per instruksi. Counter, bukan sampling waktu: hasilnya
+    // deterministik dan tahan terhadap unwinding galat/generator.
+    bool profiling;
+    uint64_t opCounts[OP__COUNT];
+    uint64_t callCount;
 } VM;
 
 typedef enum {
@@ -137,6 +145,9 @@ void freeVM();
 void defineArgs(int argc, const char* argv[], int start);
 // Directory of the entry script, used as the first import search path.
 void setScriptPath(const char* path);
+// `indk profil`: hidupkan penghitung sebelum interpret(), lalu cetak laporan.
+void mulaiProfil(void);
+void cetakProfil(double detik);
 InterpretResult interpret(const char* source);
 
 // indk uji: run top-level uji_* functions. Returns failures, or -1 if none found.
