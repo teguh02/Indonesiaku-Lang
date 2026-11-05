@@ -9,6 +9,20 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **`pustaka/templat.idk`** — mesin templat HTML server-side (SSR-01…04,
+  SSR-06). Berkas `.html` biasa dengan `{{ nilai }}`,
+  `{% untuk x dalam y %}…{% akhiruntuk %}`, dan
+  `{% jika c %}…{% selain %}…{% akhirjika %}`; `render_teks(sumber, data)`
+  untuk string dan `mesin(akar).render(nama, data)` untuk berkas.
+  Auto-escaping aktif sejak interpolasi pertama dan hanya bisa dilewati lewat
+  `templat.aman()`. `{{ }}` sengaja **bukan** kode Indonesiaku — hanya rantai
+  akses `a.b[0]`, sehingga berkas `.html` tidak menjadi titik eksekusi kode.
+  Nama templat ber-`..` ditolak, variabel `{% untuk %}` tidak bocor keluar
+  blok, dan rendering linear terhadap ukuran data (bukan kuadratik seperti
+  merangkai string dengan `+`). Dijaga `examples/templat_dasar.idk` dan
+  `tests/templat_sabotase.sh` (9 jaminan, semuanya terbukti merah saat
+  dilucuti).
+
 - **`pustaka/migrasi.idk`** — lapisan migrasi skema (WDB-05) di atas
   `pustaka/db.idk`: `langkah()`, `naikkan_semua()`, `turunkan_satu()`,
   `status()`. Versi terpasang dicatat di tabel `_migrasi_indk`, jadi

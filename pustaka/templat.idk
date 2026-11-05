@@ -1,0 +1,524 @@
+# Mesin templat HTML server-side.
+#
+# Berkas templat adalah HTML biasa dengan dua penanda:
+#   {{ ekspresi }}            interpolasi, SELALU di-escape
+#   {% untuk x dalam y %}…{% akhiruntuk %}
+#   {% jika x %}…{% selain %}…{% akhirjika %}
+#
+# Dua keputusan keamanan yang tidak boleh dilonggarkan tanpa alasan kuat:
+#
+# 1. `{{ }}` BUKAN kode Indonesiaku. Yang diterima hanya rantai akses
+#    (`a`, `a.b`, `a[0]`). Tidak ada pemanggilan fungsi, tidak ada operator.
+#    Kalau templat bisa memanggil fungsi, setiap berkas .html menjadi titik
+#    eksekusi kode arbitrer — persis yang dilarang SSR-03.
+# 2. Escaping terjadi di titik interpolasi, bukan diserahkan ke pemanggil.
+#    Konten tepercaya harus lewat `aman()` yang namanya sengaja mencolok.
+
+impor jalur
+
+kelas GalatTemplat < Galat {
+    init(pesan) { diri.pesan = pesan }
+}
+
+# Batas supaya templat rusak/berbahaya tidak menghabiskan memori (SSR-02).
+_T_MAKS_SUMBER = 1048576
+_T_MAKS_TAG = 10000
+_T_MAKS_DALAM = 64
+_T_ANGKA = "0123456789"
+
+
+# --- escaping ---------------------------------------------------------------
+
+fungsi _t_escape(t) {
+    # Urutan wajib: `&` lebih dulu, kalau tidak `&lt;` dari langkah berikutnya
+    # ikut ter-escape lagi menjadi `&amp;lt;`.
+    variabel h = ganti(t, "&", "&amp;")
+    h = ganti(h, "<", "&lt;")
+    h = ganti(h, ">", "&gt;")
+    h = ganti(h, "\"", "&quot;")
+    h = ganti(h, "'", "&#39;")
+    kembalikan h
+}
+
+# Penanda konten tepercaya. Dibungkus kelas, bukan ditandai lewat konvensi
+# string, supaya tidak bisa dipalsukan oleh data yang datang dari luar.
+kelas Aman {
+    init(teks) { diri.teks = teks }
+}
+
+fungsi aman(teks) {
+    kembalikan Aman(ke_teks(teks))
+}
+
+
+# --- penguraian ekspresi ----------------------------------------------------
+
+fungsi _t_spasi(c) {
+    kembalikan c == " " atau c == "\t" atau c == "\n" atau c == "\r"
+}
+
+fungsi _t_rapikan(t) {
+    # `potong()` di bahasa ini berarti substring, bukan trim, dan tidak ada
+    # builtin trim — jadi dipangkas manual.
+    variabel a = 0
+    variabel b = panjang(t)
+    selagi a < b {
+        jika _t_spasi(t[a]) { a = a + 1 } selain { b = b kembalikan _t_rapikan_akhir(t, a, b) }
+    }
+    kembalikan ""
+}
+
+fungsi _t_rapikan_akhir(t, a, b) {
+    variabel e = b
+    selagi e > a {
+        jika _t_spasi(t[e - 1]) { e = e - 1 } selain { kembalikan t[a:e] }
+    }
+    kembalikan ""
+}
+
+fungsi _t_baris_pada(sumber, pos) {
+    variabel n = 1
+    variabel i = 0
+    selagi i < pos {
+        jika sumber[i] == "\n" { n = n + 1 }
+        i = i + 1
+    }
+    kembalikan n
+}
+
+# Mengurai "a.b[0].c" menjadi ["a", "b", 0, "c"].
+# Menolak apa pun yang bukan rantai akses — inilah pagar SSR-03.
+fungsi _t_urai_jalan(ekspr, baris) {
+    variabel e = _t_rapikan(ekspr)
+    jika panjang(e) == 0 {
+        naikkan GalatTemplat("baris " + ke_teks(baris) + ": ekspresi kosong")
+    }
+    variabel terlarang = ["(", ")", "+", "-", "*", "/", "=", "<", ">", "!",
+                          "&", "|", ",", "%", "{", "}"]
+    untuk op dalam terlarang {
+        jika op dalam e {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris) + ": '" + op + "' tidak diizinkan "
+                + "di dalam templat (hanya nama, .kunci dan [indeks]): '"
+                + e + "'")
+        }
+    }
+
+    variabel jalan = daftar()
+    variabel kini = ""
+    variabel i = 0
+    selagi i < panjang(e) {
+        variabel c = e[i]
+        jika c == "." {
+            jika panjang(kini) == 0 {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris) + ": titik tanpa nama pada '"
+                    + e + "'")
+            }
+            jalan.tambah(kini)
+            kini = ""
+        } selain {
+            jika c == "[" {
+                jika panjang(kini) > 0 {
+                    jalan.tambah(kini)
+                    kini = ""
+                }
+                variabel tutup = 0 - 1
+                variabel j = i + 1
+                selagi j < panjang(e) {
+                    jika e[j] == "]" {
+                        tutup = j
+                        j = panjang(e)
+                    } selain {
+                        j = j + 1
+                    }
+                }
+                jika tutup == 0 - 1 {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris) + ": '[' tanpa ']' pada '"
+                        + e + "'")
+                }
+                variabel indeks = _t_rapikan(e[i + 1:tutup])
+                jika panjang(indeks) == 0 {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris) + ": indeks kosong pada '"
+                        + e + "'")
+                }
+                variabel angka = benar
+                untuk d dalam indeks {
+                    jika !(d dalam _T_ANGKA) { angka = salah }
+                }
+                jika angka {
+                    jalan.tambah(ke_bulat(indeks))
+                } selain {
+                    variabel bersih = indeks
+                    jika panjang(bersih) >= 2 {
+                        variabel a0 = bersih[0]
+                        jika a0 == "\"" {
+                            bersih = bersih[1:panjang(bersih) - 1]
+                        } selain {
+                            jika a0 == "'" {
+                                bersih = bersih[1:panjang(bersih) - 1]
+                            }
+                        }
+                    }
+                    jalan.tambah(bersih)
+                }
+                i = tutup
+            } selain {
+                kini = kini + c
+            }
+        }
+        i = i + 1
+    }
+    jika panjang(kini) > 0 { jalan.tambah(kini) }
+    jika panjang(jalan) == 0 {
+        naikkan GalatTemplat(
+            "baris " + ke_teks(baris) + ": ekspresi tidak sah '" + e + "'")
+    }
+    kembalikan jalan
+}
+
+
+# --- parser -----------------------------------------------------------------
+#
+# Node berupa kamus dengan kunci "jenis":
+#   {"jenis": "teks",  "isi": "..."}
+#   {"jenis": "nilai", "jalan": [...], "baris": n}
+#   {"jenis": "untuk", "nama": "x", "jalan": [...], "badan": [...], "baris": n}
+#   {"jenis": "jika",  "jalan": [...], "badan": [...], "lain": [...], "baris": n}
+
+fungsi _t_cari(sumber, pola, mulai) {
+    variabel n = panjang(sumber)
+    variabel m = panjang(pola)
+    variabel i = mulai
+    selagi i + m <= n {
+        jika sumber[i:i + m] == pola { kembalikan i }
+        i = i + 1
+    }
+    kembalikan 0 - 1
+}
+
+# Mengurai sampai salah satu penanda di `henti` ditemukan.
+# Mengembalikan [node, posisi_setelah_tag_henti, nama_tag_henti].
+fungsi _t_urai_blok(sumber, pos, henti, kedalaman, hitung) {
+    jika kedalaman > _T_MAKS_DALAM {
+        naikkan GalatTemplat(
+            "templat terlalu dalam (maksimum " + ke_teks(_T_MAKS_DALAM) + ")")
+    }
+    variabel node = daftar()
+    variabel i = pos
+    variabel n = panjang(sumber)
+
+    selagi i < n {
+        variabel a = _t_cari(sumber, "{{", i)
+        variabel b = _t_cari(sumber, "{%", i)
+
+        variabel titik = 0 - 1
+        variabel jenis = ""
+        jika a == 0 - 1 {
+            jika b != 0 - 1 { titik = b jenis = "tag" }
+        } selain {
+            jika b == 0 - 1 {
+                titik = a
+                jenis = "nilai"
+            } selain {
+                jika a < b { titik = a jenis = "nilai" } selain { titik = b jenis = "tag" }
+            }
+        }
+
+        jika titik == 0 - 1 {
+            jika panjang(henti) > 0 {
+                naikkan GalatTemplat(
+                    "tag '" + henti[0] + "' tidak ditemukan sampai akhir berkas")
+            }
+            jika i < n { node.tambah({"jenis": "teks", "isi": sumber[i:n]}) }
+            kembalikan [node, n, ""]
+        }
+
+        jika titik > i {
+            node.tambah({"jenis": "teks", "isi": sumber[i:titik]})
+        }
+
+        hitung[0] = hitung[0] + 1
+        jika hitung[0] > _T_MAKS_TAG {
+            naikkan GalatTemplat(
+                "terlalu banyak tag (maksimum " + ke_teks(_T_MAKS_TAG) + ")")
+        }
+        variabel baris = _t_baris_pada(sumber, titik)
+
+        jika jenis == "nilai" {
+            variabel tutup = _t_cari(sumber, "}}", titik)
+            jika tutup == 0 - 1 {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris) + ": '{{' tanpa '}}'")
+            }
+            variabel isi = sumber[titik + 2:tutup]
+            node.tambah({"jenis": "nilai",
+                         "jalan": _t_urai_jalan(isi, baris),
+                         "baris": baris})
+            i = tutup + 2
+        } selain {
+            variabel tutup2 = _t_cari(sumber, "%}", titik)
+            jika tutup2 == 0 - 1 {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris) + ": '{%' tanpa '%}'")
+            }
+            variabel badan_tag = _t_rapikan(sumber[titik + 2:tutup2])
+            variabel sesudah = tutup2 + 2
+            variabel bagian = _t_pisah_spasi(badan_tag)
+            jika panjang(bagian) == 0 {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris) + ": tag kosong '{% %}'")
+            }
+            variabel kata = bagian[0]
+
+            variabel selesai = salah
+            untuk h dalam henti {
+                jika kata == h {
+                    kembalikan [node, sesudah, kata]
+                }
+            }
+
+            jika kata == "untuk" {
+                # {% untuk x dalam y %}
+                jika panjang(bagian) != 4 {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris)
+                        + ": bentuk harus '{% untuk x dalam y %}', dapat '"
+                        + badan_tag + "'")
+                }
+                jika bagian[2] != "dalam" {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris)
+                        + ": harapkan 'dalam', dapat '" + bagian[2] + "'")
+                }
+                variabel hasil_u = _t_urai_blok(sumber, sesudah, ["akhiruntuk"],
+                                                kedalaman + 1, hitung)
+                node.tambah({"jenis": "untuk",
+                             "nama": bagian[1],
+                             "jalan": _t_urai_jalan(bagian[3], baris),
+                             "badan": hasil_u[0],
+                             "baris": baris})
+                i = hasil_u[1]
+            } selain {
+                jika kata == "jika" {
+                    jika panjang(bagian) != 2 {
+                        naikkan GalatTemplat(
+                            "baris " + ke_teks(baris)
+                            + ": bentuk harus '{% jika x %}', dapat '"
+                            + badan_tag + "'")
+                    }
+                    variabel hasil_j = _t_urai_blok(sumber, sesudah,
+                                                    ["selain", "akhirjika"],
+                                                    kedalaman + 1, hitung)
+                    variabel lain = daftar()
+                    variabel akhir = hasil_j[1]
+                    jika hasil_j[2] == "selain" {
+                        variabel hasil_l = _t_urai_blok(sumber, hasil_j[1],
+                                                        ["akhirjika"],
+                                                        kedalaman + 1, hitung)
+                        lain = hasil_l[0]
+                        akhir = hasil_l[1]
+                    }
+                    node.tambah({"jenis": "jika",
+                                 "jalan": _t_urai_jalan(bagian[1], baris),
+                                 "badan": hasil_j[0],
+                                 "lain": lain,
+                                 "baris": baris})
+                    i = akhir
+                } selain {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris) + ": tag tidak dikenal '"
+                        + kata + "'")
+                }
+            }
+        }
+    }
+
+    jika panjang(henti) > 0 {
+        naikkan GalatTemplat(
+            "tag '" + henti[0] + "' tidak ditemukan sampai akhir berkas")
+    }
+    kembalikan [node, n, ""]
+}
+
+fungsi _t_pisah_spasi(t) {
+    variabel hasil = daftar()
+    variabel kini = ""
+    untuk c dalam t {
+        jika c == " " atau c == "\t" atau c == "\n" atau c == "\r" {
+            jika panjang(kini) > 0 { hasil.tambah(kini) kini = "" }
+        } selain {
+            kini = kini + c
+        }
+    }
+    jika panjang(kini) > 0 { hasil.tambah(kini) }
+    kembalikan hasil
+}
+
+fungsi urai(sumber) {
+    jika panjang(sumber) > _T_MAKS_SUMBER {
+        naikkan GalatTemplat(
+            "sumber templat melebihi " + ke_teks(_T_MAKS_SUMBER) + " bita")
+    }
+    variabel hitung = [0]
+    variabel hasil = _t_urai_blok(sumber, 0, daftar(), 0, hitung)
+    kembalikan hasil[0]
+}
+
+
+# --- renderer ---------------------------------------------------------------
+
+fungsi _t_ambil(data, jalan, baris) {
+    variabel kini = data
+    variabel ditempuh = ""
+    untuk bagian dalam jalan {
+        jika panjang(ditempuh) > 0 { ditempuh = ditempuh + "." }
+        ditempuh = ditempuh + ke_teks(bagian)
+
+        variabel j = jenis(kini)
+        jika j == "kamus" {
+            jika !(bagian dalam kini) {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris) + ": '" + ditempuh
+                    + "' tidak ada di data")
+            }
+            kini = kini[bagian]
+        } selain {
+            jika j == "daftar" atau j == "tupel" {
+                jika jenis(bagian) != "angka" {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris) + ": '" + ditempuh
+                        + "' bukan indeks angka untuk " + j)
+                }
+                jika bagian >= panjang(kini) {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris) + ": indeks " + ke_teks(bagian)
+                        + " di luar jangkauan pada '" + ditempuh + "'")
+                }
+                kini = kini[bagian]
+            } selain {
+                jika punya_atribut(kini, ke_teks(bagian)) {
+                    kini = ambil_atribut(kini, ke_teks(bagian))
+                } selain {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris) + ": '" + ditempuh
+                        + "' tidak ada di data")
+                }
+            }
+        }
+    }
+    kembalikan kini
+}
+
+fungsi _t_benarkah(n) {
+    jika n == kosong { kembalikan salah }
+    variabel j = jenis(n)
+    jika j == "logika" { kembalikan n }
+    jika j == "daftar" atau j == "tupel" atau j == "teks" atau j == "kamus" {
+        kembalikan panjang(n) > 0
+    }
+    jika j == "angka" { kembalikan n != 0 }
+    kembalikan benar
+}
+
+fungsi _t_render_node(node, data, keluar) {
+    untuk n dalam node {
+        variabel j = n["jenis"]
+        jika j == "teks" {
+            keluar.tambah(n["isi"])
+        } selain {
+            jika j == "nilai" {
+                variabel v = _t_ambil(data, n["jalan"], n["baris"])
+                jika v == kosong {
+                    keluar.tambah("")
+                } selain {
+                    jika adalah_instansi(v, Aman) {
+                        keluar.tambah(v.teks)
+                    } selain {
+                        keluar.tambah(_t_escape(ke_teks(v)))
+                    }
+                }
+            } selain {
+                jika j == "untuk" {
+                    variabel urut = _t_ambil(data, n["jalan"], n["baris"])
+                    variabel ju = jenis(urut)
+                    jika ju != "daftar" dan ju != "tupel" dan ju != "teks" {
+                        naikkan GalatTemplat(
+                            "baris " + ke_teks(n["baris"]) + ": nilai untuk "
+                            + "'untuk' bukan daftar, tupel atau teks (" + ju + ")")
+                    }
+                    # Salin dangkal supaya variabel loop tidak bocor keluar
+                    # blok dan tidak menimpa kunci data bernama sama.
+                    untuk item dalam urut {
+                        variabel lokal = kamus()
+                        untuk k dalam kunci(data) { lokal[k] = data[k] }
+                        lokal[n["nama"]] = item
+                        _t_render_node(n["badan"], lokal, keluar)
+                    }
+                } selain {
+                    jika j == "jika" {
+                        variabel c = _t_ambil(data, n["jalan"], n["baris"])
+                        jika _t_benarkah(c) {
+                            _t_render_node(n["badan"], data, keluar)
+                        } selain {
+                            _t_render_node(n["lain"], data, keluar)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fungsi render_teks(sumber, data = kosong) {
+    variabel d = data
+    jika d == kosong { d = kamus() }
+    # Kumpulkan ke daftar lalu gabung sekali. `hasil = hasil + bagian` di dalam
+    # loop menyalin seluruh string tiap iterasi (kuadratik) — pola itu sudah
+    # pernah membuat server di repo ini DoS, dan renderer berada persis di
+    # jalur input eksternal.
+    variabel keluar = daftar()
+    _t_render_node(urai(sumber), d, keluar)
+    kembalikan teks_gabung(keluar, "")
+}
+
+
+# --- mesin berbasis berkas --------------------------------------------------
+
+kelas Mesin {
+    init(akar) {
+        diri.akar = akar
+        diri.cache = kamus()
+    }
+
+    # Menolak path yang keluar dari akar: templat dipilih lewat nama yang bisa
+    # datang dari rute HTTP, jadi "../../etc/passwd" harus mati di sini.
+    _jalur(nama) {
+        jika ".." dalam nama {
+            naikkan GalatTemplat(
+                "nama templat tidak boleh mengandung '..': '" + nama + "'")
+        }
+        jika panjang(nama) > 0 {
+            jika nama[0] == "/" atau nama[0] == "\\" {
+                naikkan GalatTemplat(
+                    "nama templat harus relatif: '" + nama + "'")
+            }
+        }
+        kembalikan jalur.gabung(diri.akar, nama)
+    }
+
+    render(nama, data = kosong) {
+        variabel jalur = diri._jalur(nama)
+        jika !ada_berkas(jalur) {
+            naikkan GalatTemplat("templat tidak ditemukan: '" + jalur + "'")
+        }
+        variabel sumber = baca_semua(jalur)
+        kembalikan render_teks(sumber, data)
+    }
+}
+
+fungsi mesin(akar) {
+    kembalikan Mesin(akar)
+}

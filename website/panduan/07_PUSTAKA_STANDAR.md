@@ -1925,6 +1925,78 @@ Angka di SVG dibulatkan 2 desimal, jadi gambar yang sama selalu menghasilkan
 teks yang sama persis. Kesalahan argumen menimbulkan `GalatKura`. Belum ada:
 isian bentuk (`begin_fill`), teks (`write`), dan kanvas animasi di playground.
 
+### 2.22 `pustaka/templat.idk` — templat HTML server-side
+
+Merangkai HTML dengan `+` di dalam loop punya dua masalah: data pengguna
+masuk mentah ke halaman (XSS), dan penggabungan string berulang bersifat
+kuadratik. Pustaka `templat` menyelesaikan keduanya.
+
+```indonesiaku
+impor templat
+
+# Dari string
+cetak(templat.render_teks("<h1>{{ judul }}</h1>", {"judul": "Daftar"}))
+
+# Dari berkas, dengan akar yang dikunci
+buat_direktori("tampilan")
+tulis_semua("tampilan/siswa.html",
+            "<ul>\n{% untuk s dalam siswa %}  <li>{{ s }}</li>\n{% akhiruntuk %}</ul>")
+variabel m = templat.mesin("tampilan")
+cetak(m.render("siswa.html", {"siswa": ["Budi", "Ani"]}))
+hapus_berkas("tampilan/siswa.html")
+hapus_direktori("tampilan")
+```
+
+Berkas templat adalah HTML biasa dengan dua penanda:
+
+```html
+<h1>{{ judul }}</h1>
+<ul>
+{% untuk s dalam siswa %}  <li>{{ s }}</li>
+{% akhiruntuk %}</ul>
+{% jika kosong %}<p>Belum ada data.</p>{% akhirjika %}
+```
+
+| Penanda | Arti |
+|---|---|
+| `{{ a }}`, `{{ a.b }}`, `{{ a[0] }}` | Interpolasi, **selalu di-escape** |
+| `{% untuk x dalam y %}` … `{% akhiruntuk %}` | Perulangan |
+| `{% jika x %}` … `{% selain %}` … `{% akhirjika %}` | Kondisi |
+
+| Fungsi | Keterangan |
+|---|---|
+| `render_teks(sumber, data)` | Render dari string |
+| `mesin(akar)` → `.render(nama, data)` | Render berkas di bawah `akar` |
+| `aman(teks)` | Tandai HTML tepercaya agar tidak di-escape |
+| `GalatTemplat` | Kelas galat; semua kesalahan templat bisa di-`coba`/`kecuali` |
+
+**`{{ }}` bukan kode Indonesiaku.** Yang diterima hanya rantai akses: nama,
+`.kunci`, dan `[indeks]`. Pemanggilan fungsi dan operator ditolak dengan galat,
+supaya berkas `.html` tidak pernah menjadi titik eksekusi kode.
+
+**Escaping otomatis dan tidak bisa dimatikan per-templat.** `&`, `<`, `>`,
+`"`, dan `'` selalu diganti. Satu-satunya jalan keluar adalah `aman()`, yang
+namanya sengaja mencolok saat ditinjau. Nama yang tidak ada di data menaikkan
+`GalatTemplat` dengan nomor baris — typo tidak berubah menjadi string kosong
+diam-diam. Nama templat yang memuat `..` atau dimulai dari akar ditolak, karena
+nama itu sering datang dari rute HTTP.
+
+**Batas yang perlu diketahui.** Escaping ini benar untuk isi elemen dan untuk
+nilai atribut yang diapit kutip — kutip tunggal maupun ganda, karena keduanya
+di-escape. Ia **tidak** cukup untuk tiga konteks lain:
+
+- atribut tanpa kutip (`<a title={{ x }}>`) — selalu apit dengan kutip;
+- URL (`<a href="{{ u }}">`) — nilai `javascript:...` tetap lolos, periksa
+  skema URL sendiri sebelum memasukkannya;
+- di dalam `<script>` atau `<style>` — aturan escaping JS/CSS berbeda sama
+  sekali; jangan interpolasi data pengguna ke sana.
+
+Variabel `{% untuk %}` hanya hidup di dalam bloknya dan tidak menimpa data
+bernama sama. Batas bawaan: sumber 1 MB, 10.000 tag, kedalaman 64.
+
+Belum ada: `{% sertakan %}`, pewarisan templat (`{% perluas %}`), filter
+(`{{ x | huruf_besar }}`), dan cache hasil parsing.
+
 ## 3. Aplikasi Contoh: Todo-list JSON DB
 
 Dua aplikasi contoh lengkap menunjukkan penggunaan pustaka standar untuk

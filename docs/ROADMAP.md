@@ -670,16 +670,16 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 ### Fase 12 — HTML template engine dan Server-Side Rendering (SSR)
 
-**Tujuan:** file .idk menjalankan logika backend, file .html berisi tampilan standar; server merender HTML dinamis tanpa SPA/React. Template engine dibuat independen dari server agar dapat diuji sendiri. **Status:** ⬜ belum. **Pemetaan:** SSR-01–10.
+**Tujuan:** file .idk menjalankan logika backend, file .html berisi tampilan standar; server merender HTML dinamis tanpa SPA/React. Template engine dibuat independen dari server agar dapat diuji sendiri. **Status:** 🔶 sebagian — inti mesin templat (SSR-01…04, SSR-06) selesai di `pustaka/templat.idk`; include/inheritance (SSR-05), integrasi respons web (SSR-07), cache (SSR-08), dan aplikasi contoh (SSR-09/10) belum. **Pemetaan:** SSR-01–10.
 
 **Rekomendasi rilis fase: `v1.7.0` (minor), kandidat `v1.7.0-rc.1`; patch `v1.7.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Template engine dengan escaping aman, loop/percabangan, include/layout dan integrasi SSR memiliki tes golden, XSS dan regresi.\n\n
 **Langkah pengembangan:**
 
-1. [ ] Rancang docs/RENCANA_FITUR/ssr_template_engine.md. Definisikan modul terpisah (mis. pustaka/templat.idk atau engine native C jika hasil profil membutuhkannya), template root, render(nama,data), render_teks(sumber,data), error dan scope (**SSR-01**).
-2. [ ] Bangun loader dan parser yang memisahkan literal HTML, interpolasi {{ nama }} dan tag {% ... %}, dengan penanda path/baris/kolom, batas ukuran dan kedalaman (**SSR-02**).
-3. [ ] Implementasikan interpolasi variabel, akses kamus dan atribut yang dibolehkan, serta error untuk nilai yang tidak tersedia; **jangan evaluasi string menjadi kode .idk arbitrer** (**SSR-03**).
-4. [ ] Tambahkan kondisi dan loop bertingkat dengan sintaks yang konsisten, misalnya {% jika ... %} / {% selain %} / {% akhirjika %}, {% untuk ... %} / {% akhiruntuk %}, dan uji scoping (**SSR-04**).
-5. [ ] Tambahkan HTML auto-escaping **sejak awal interpolasi** (**SSR-06**); tangani &, <, >, kutip, dan aturan khusus atribut/URL; hindari menyatakan aman untuk ekspresi di JS/CSS inline. Konten HTML tepercaya hanya melalui API eksplisit yang diaudit.
+1. [x] Rancang docs/RENCANA_FITUR/ssr_template_engine.md. Definisikan modul terpisah (mis. pustaka/templat.idk atau engine native C jika hasil profil membutuhkannya), template root, render(nama,data), render_teks(sumber,data), error dan scope (**SSR-01**).
+2. [x] Bangun loader dan parser yang memisahkan literal HTML, interpolasi {{ nama }} dan tag {% ... %}, dengan penanda path/baris/kolom, batas ukuran dan kedalaman (**SSR-02**).
+3. [x] Implementasikan interpolasi variabel, akses kamus dan atribut yang dibolehkan, serta error untuk nilai yang tidak tersedia; **jangan evaluasi string menjadi kode .idk arbitrer** (**SSR-03**).
+4. [x] Tambahkan kondisi dan loop bertingkat dengan sintaks yang konsisten, misalnya {% jika ... %} / {% selain %} / {% akhirjika %}, {% untuk ... %} / {% akhiruntuk %}, dan uji scoping (**SSR-04**).
+5. [x] Tambahkan HTML auto-escaping **sejak awal interpolasi** (**SSR-06**); tangani &, <, >, kutip, dan aturan khusus atribut/URL; hindari menyatakan aman untuk ekspresi di JS/CSS inline. Konten HTML tepercaya hanya melalui API eksplisit yang diaudit. **Sebagian:** escaping `& < > " '` berlaku untuk isi elemen dan atribut ber-kutip, dan `templat.aman()` adalah satu-satunya jalan keluar. Escaper khusus URL (menolak `javascript:`) dan konteks `<script>`/`<style>` BELUM ada — batas ini dinyatakan eksplisit di panduan alih-alih disiratkan aman.
 6. [ ] Tambahkan include komponen, template inheritance dan block override; batasi path dalam root template dan cegah siklus (**SSR-05**).
 7. [ ] Integrasikan render ke response web Fase 11 dengan Content-Type text/html; charset=utf-8, status/headers yang tepat dan halaman error yang tidak membocorkan rahasia (**SSR-07**).
 8. [ ] Tambahkan cache parsing, invalidasi dalam mode development, pembatasan memori dan kesetaraan hasil dengan mode tanpa cache (**SSR-08**).
