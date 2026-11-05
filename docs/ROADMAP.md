@@ -296,7 +296,16 @@ Lanjutan yang sengaja di luar Fase 6: HTTPS (butuh TLS, Fase 8), kanvas
 penyuntikan metode saat runtime. Alasannya dicatat di
 [`RENCANA_FITUR/selesai/pustaka_fase6_modul_dasar.md`](RENCANA_FITUR/selesai/pustaka_fase6_modul_dasar.md).
 
-### Fase 7 — Perkakas & kinerja
+### Fase 7 — Perkakas & kinerja — ✅ perkakas selesai, kinerja berdasarkan ukuran
+
+> **Status.** Seluruh perkakas yang direncanakan sudah ada: `--dis`, `periksa`,
+> `uji`, `rapikan`, formatter VS Code, `profil`, `awakutu`, dan benchmark beban
+> nyata. Sisi kinerja dikerjakan **hanya bila pengukuran menunjukkan untung**:
+> mask tabel hash memberi −43,8% dan dikerjakan; computed goto, `OP_TRY_BEGIN`,
+> cache `.idkc` dan playground WASM diukur lalu **ditolak beralasan** (catatan
+> masing-masing ada di bawah). Yang tersisa — superinstruksi, inline cache,
+> NaN-boxing, GC generasional, utas/asinkron — perubahan arsitektur yang belum
+> ada datanya untuk dibenarkan.
 
 ✅ `indk --dis` — tampilkan bytecode tanpa menjalankan, termasuk fungsi
 bersarang.
@@ -358,9 +367,18 @@ tidak mengubah waktu sama sekali, walaupun 12 instruksi `div` terbukti hilang
 dari assembly. Keuntungan baru muncul setelah `findValueEntry` ikut diganti —
 assembly yang berubah bukan bukti program jadi lebih cepat.
 
-Belum: playground via **WebAssembly**, cache `.idkc`, computed goto,
-superinstruksi, inline cache, NaN-boxing, GC generasional, utas/asinkron.
+Belum: cache `.idkc`, computed goto, superinstruksi, inline cache, NaN-boxing,
+GC generasional, utas/asinkron.
 Ref: 04 §1, §8–10, §12.
+
+> **Catatan playground WebAssembly — tidak dikerjakan, sudah ada padanannya.**
+> `docker/playground/` berisi playground server-side yang sudah berjalan,
+> lengkap dengan isolasi (`read_only`, `cap_drop: ALL`, `pids_limit`,
+> jaringan `internal: true`). WASM akan menduplikasi fungsi yang sudah bekerja,
+> sambil menambah target build kedua (Emscripten) yang harus ikut diuji di CI.
+> Alasan sah untuk meninjau ulang: bila playground perlu jalan **tanpa server**
+> sama sekali (mis. disematkan di halaman dokumentasi statis). Itu kebutuhan
+> yang berbeda, bukan optimasi dari yang sekarang.
 
 > **Catatan computed goto.** Diukur dulu, belum dikerjakan. `run()` punya 85
 > opcode dengan 93 `case`, dan **19 di antaranya mengandung `for`/`while`** —
@@ -467,7 +485,7 @@ Ref: 04 §11–13, 05.
 
 ## Roadmap implementasi per fase — setelah v1.4.0
 
-Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR-01–10, serta kebutuhan transfer berkas dan keamanan runtime yang sebelumnya tersebar dalam beberapa tabel. **Fase 0–6 sudah selesai, Fase 7 baru sebagian, dan Fase 8 baru sebagian (anotasi tipe, distribusi paket native, pemberitahuan pembaruan). Fase 9 selesai di v1.4.0; Fase 10 dan 11 baru sebagian.** Fase 12 dan seterusnya adalah urutan kerja yang **diusulkan**, bukan penanda implementasi saat ini. Nomor ID lama tetap dipakai sebagai jejak rencana.
+Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR-01–10, serta kebutuhan transfer berkas dan keamanan runtime yang sebelumnya tersebar dalam beberapa tabel. **Fase 0–6 sudah selesai; Fase 7 perkakasnya selesai sedangkan sisi kinerjanya dikerjakan hanya bila pengukuran membenarkan (mask tabel hash dikerjakan, computed goto / `OP_TRY_BEGIN` / cache `.idkc` / WASM ditolak beralasan); dan Fase 8 baru sebagian (anotasi tipe, distribusi paket native, pemberitahuan pembaruan). Fase 9 selesai di v1.4.0; Fase 10 dan 11 baru sebagian.** Fase 12 dan seterusnya adalah urutan kerja yang **diusulkan**, bukan penanda implementasi saat ini. Nomor ID lama tetap dipakai sebagai jejak rencana.
 
 **Cara membaca:** setiap fase memiliki tujuan, kebutuhan awal, langkah implementasi berurutan, contoh API target, pengujian wajib, serta definisi selesai. Tanda [ ] berarti belum. Implementasi dapat dibuat dalam pull request kecil; jangan memaksa seluruh fase dalam satu PR. Semua perubahan tetap tunduk pada "Definisi selesai" dan "Feature workflow" di AGENTS.md, termasuk rencana detail sebelum kode, golden test, negative test, dokumentasi dan editor.
 
@@ -765,7 +783,7 @@ kalkulator-indonesiaku/
 1. [ ] Buat rencana docs/RENCANA_FITUR/playground_wasm.md; siapkan Emscripten, bangun interpreter ke WebAssembly dan tentukan pembatasan fitur OS, file, network dan resource.
 2. [ ] Jalankan playground .idk langsung dalam browser untuk kode lokal tanpa bergantung pada eksekusi server (**P7**); pertahankan Docker playground yang sudah ada sebagai alternatif.
 3. [ ] Tambahkan tes kesetaraan hasil interpreter native vs WASM, timeout/memory guard, penanganan error dan perbedaan runtime browser.
-4. [ ] Profilkan program nyata lebih dulu sebelum menilai cache .idkc, computed goto, superinstruksi, inline cache, NaN-boxing dan GC generasional. Tuliskan benchmark sebelum/sesudah dan rollback plan; optimasi yang tidak terbukti bermanfaat tetap ditunda.
+4. [x] Profilkan program nyata lebih dulu sebelum menilai cache .idkc, computed goto dan optimasi lain. **Selesai (v1.4.0).** `tests/beban/*.idk` + `indk profil` + `perf`. Hasilnya: mask tabel hash dikerjakan (−43,8%); cache `.idkc` ditunda (kompilasi berkas terbesar hanya 1,8 ms); computed goto ditolak (sebaran opcode rata, 15 opcode untuk 94%); `OP_TRY_BEGIN` ditolak (0,12% pada beban nyata). Catatan lengkap di bagian Fase 7.
 5. [ ] Rencanakan threading/asinkron, GUI, AOT/bundel executable dan penguatan sandbox sebagai subproyek terpisah; jangan klaim selesai tanpa spesifikasi, tes isolasi dan deployment yang aman.
 
 **Selesai jika:** playground WASM bekerja pada contoh yang didukung, perbedaan fitur terdokumentasi, serta optimasi hanya digabung setelah benchmark dan regresi membuktikan manfaat.
