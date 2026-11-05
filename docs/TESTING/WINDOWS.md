@@ -1224,25 +1224,27 @@ sebagai bug hanya temuan terkonfirmasi.
 | T-W11 | Rendah | `jam()` mengukur waktu dinding di Windows, padahal dokumentasi menyebut waktu CPU (`clock()` di UCRT) |
 
 **Temuan tingkat tinggi yang tidak khas Windows** (bug bahasa, kemungkinan
-sama di macOS dan Linux; uji ulang di sana):
+sama di macOS dan Linux). **Semuanya sudah diperbaiki.** Kolom Regresi menyebut
+berkas yang menjaga tiap temuan; semuanya ikut `tests/test_all.sh` (307/307),
+jadi temuan ini tidak bisa kembali tanpa membuat suite merah.
 
-| Kode | Temuan |
-|---|---|
-| T-U2 | `x = a jika c selain b` tanpa `variabel` dikompilasi sebagai `(x = a) jika c selain b`: bila kondisinya salah, `x` tidak di-assign sama sekali |
-| T-U3 | Di dalam fungsi, panggilan dengan argumen bernama membuat argumen posisi yang berupa global/upvalue menjadi `kosong`: `g(D, b = 2)` → `[kosong, 2]` (di tingkat skrip benar `[7, 2]`) |
-| T-U4 | Variabel `untuk` berlingkup blok: variabel lama bernama sama tidak berubah setelah loop (`99`), dan nama itu tidak terdefinisi setelah loop — berbeda dengan Python |
-| T-U5 | `pastikan(kondisi, "pesan")` dengan kurung selalu lolos karena membentuk tupel yang selalu benar |
-| T-U6 | Subkelas buatan pengguna dari galat bawaan kehilangan leluhur di atas induk langsungnya, sehingga `kecuali Galat` tidak menangkapnya |
-| T-U7 | Galat yang dinaikkan `_logika_` atau `_sama_` tertunda: cabang `jika` tetap dijalankan dan kamus tetap diubah sebelum galatnya muncul |
-| T-U8 | `impor "berkas.idk"` menulis global ke tabel builtin bersama dan mencemari modul bernamespace, termasuk pustaka standar (mis. `impor "pustaka/base64.idk"` lalu `impor json` merusak `json.json_teks`) |
-| T-U9 | Komprehensi diam-diam mengabaikan token setelah filter pertama (`jika` kedua, `untuk` kedua, token sampah) |
-| T-U10 | `input()` dan REPL memotong baris pada 1023 byte; sisanya muncul pada pembacaan berikutnya |
-| T-U11 | `indk rapikan --tulis` memotong berkas pada byte NUL (kehilangan data) dan menulis ulang berkas bergalat sintaks dengan kode keluar 0 |
-| T-U12 | `lantai`/`atap`/`bulat` dari `nan` diam-diam memberi `-9223372036854775808`; `bulatkan(nan/inf)` memberi desimal |
-| T-U13 | `==` pada struktur bersarang lebih dari ±64 tingkat diam-diam `salah` (Python membandingkan atau melempar `RecursionError`) |
-| T-U14 | Meng-hash tupel bersarang sangat dalam (kunci kamus, anggota himpunan) membuat interpreter crash |
-| T-U15 | `json_urai` tidak mendekode `\uXXXX`, `\b`, `\f` dan menerima JSON tidak sah; `json_teks` bisa menghasilkan JSON tidak sah (karakter kontrol mentah, `takhingga`/`nan`) |
-| T-U16 | `bita.ke_teks` menerima UTF-8 *overlong* (`C0 80` menjadi NUL) |
+| Kode | Temuan | Status | Regresi |
+|---|---|---|---|
+| T-U2 | `x = a jika c selain b` tanpa `variabel` dikompilasi sebagai `(x = a) jika c selain b`: bila kondisinya salah, `x` tidak di-assign sama sekali | ✅ selesai | `examples/kondisional_assignment.idk` |
+| T-U3 | Di dalam fungsi, panggilan dengan argumen bernama membuat argumen posisi yang berupa global/upvalue menjadi `kosong`: `g(D, b = 2)` → `[kosong, 2]` (di tingkat skrip benar `[7, 2]`) | ✅ selesai | `examples/argumen_bernama_lingkup.idk` |
+| T-U4 | Variabel `untuk` berlingkup blok: variabel lama bernama sama tidak berubah setelah loop (`99`), dan nama itu tidak terdefinisi setelah loop — berbeda dengan Python | ✅ selesai | `examples/untuk_lingkup.idk` |
+| T-U5 | `pastikan(kondisi, "pesan")` dengan kurung selalu lolos karena membentuk tupel yang selalu benar | ✅ selesai | `examples/pastikan.idk` + `tests/galat/pastikan_tupel.idk` |
+| T-U6 | Subkelas buatan pengguna dari galat bawaan kehilangan leluhur di atas induk langsungnya, sehingga `kecuali Galat` tidak menangkapnya | ✅ selesai | `examples/galat_turunan_bawaan.idk` |
+| T-U7 | Galat yang dinaikkan `_logika_` atau `_sama_` tertunda: cabang `jika` tetap dijalankan dan kamus tetap diubah sebelum galatnya muncul | ✅ selesai | `examples/oop/galat_ajaib_langsung.idk` |
+| T-U8 | `impor "berkas.idk"` menulis global ke tabel builtin bersama dan mencemari modul bernamespace, termasuk pustaka standar (mis. `impor "pustaka/base64.idk"` lalu `impor json` merusak `json.json_teks`) | ✅ selesai | `examples/impor_berkas_namespace.idk` |
+| T-U9 | Komprehensi diam-diam mengabaikan token setelah filter pertama (`jika` kedua, `untuk` kedua, token sampah) | ✅ selesai | `tests/galat/komprehensi_jika_kedua.idk` |
+| T-U10 | `input()` dan REPL memotong baris pada 1023 byte; sisanya muncul pada pembacaan berikutnya | ✅ selesai | `tests/test_baris_panjang.sh` |
+| T-U11 | `indk rapikan --tulis` memotong berkas pada byte NUL (kehilangan data) dan menulis ulang berkas bergalat sintaks dengan kode keluar 0 | ✅ selesai | `tests/galat/sumber_nul.idk` + `tests/test_format.sh` |
+| T-U12 | `lantai`/`atap`/`bulat` dari `nan` diam-diam memberi `-9223372036854775808`; `bulatkan(nan/inf)` memberi desimal | ✅ selesai | `examples/nan_ke_bulat.idk` |
+| T-U13 | `==` pada struktur bersarang lebih dari ±64 tingkat diam-diam `salah` (Python membandingkan atau melempar `RecursionError`) | ✅ selesai | `examples/kedalaman_sama_hash.idk` |
+| T-U14 | Meng-hash tupel bersarang sangat dalam (kunci kamus, anggota himpunan) membuat interpreter crash | ✅ selesai | `tests/galat/hash_tupel_dalam.idk` |
+| T-U15 | `json_urai` tidak mendekode `\uXXXX`, `\b`, `\f` dan menerima JSON tidak sah; `json_teks` bisa menghasilkan JSON tidak sah (karakter kontrol mentah, `takhingga`/`nan`) | ✅ selesai | `examples/json_ketat.idk` |
+| T-U16 | `bita.ke_teks` menerima UTF-8 *overlong* (`C0 80` menjadi NUL) | ✅ selesai | `examples/bita_utf8_ketat.idk` |
 
 Temuan tingkat sedang yang paling berdampak (lengkapnya di lampiran):
 - Jenis galat tidak sesuai dokumentasi: nama tak terdefinisi bukan
