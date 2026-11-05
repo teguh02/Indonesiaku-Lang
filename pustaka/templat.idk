@@ -24,6 +24,9 @@ kelas GalatTemplat < Galat {
 _T_MAKS_SUMBER = 1048576
 _T_MAKS_TAG = 10000
 _T_MAKS_DALAM = 64
+# Batas sendiri, terpisah dari kedalaman tag: rantai sertakan/perluas yang
+# panjang menghabiskan stack walau tiap berkasnya dangkal.
+_T_MAKS_SERTAKAN = 32
 _T_ANGKA = "0123456789"
 
 
@@ -280,7 +283,46 @@ fungsi _t_urai_blok(sumber, pos, henti, kedalaman, hitung) {
                 }
             }
 
-            jika kata == "untuk" {
+            jika kata == "sertakan" {
+                # Nama templat adalah literal berkutip, BUKAN ekspresi: nama
+                # yang datang dari data berarti penyerang memilih berkas mana
+                # yang dibaca. Alasan sama dengan `{{ }}` yang bukan kode.
+                jika panjang(bagian) != 2 {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris)
+                        + ": bentuk harus '{% sertakan \"berkas.html\" %}', dapat '"
+                        + badan_tag + "'")
+                }
+                node.tambah({"jenis": "sertakan",
+                             "nama": _t_literal(bagian[1], baris),
+                             "baris": baris})
+                i = sesudah
+            } jika_lain kata == "perluas" {
+                jika panjang(bagian) != 2 {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris)
+                        + ": bentuk harus '{% perluas \"induk.html\" %}', dapat '"
+                        + badan_tag + "'")
+                }
+                node.tambah({"jenis": "perluas",
+                             "nama": _t_literal(bagian[1], baris),
+                             "baris": baris})
+                i = sesudah
+            } jika_lain kata == "blok" {
+                jika panjang(bagian) != 2 {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris)
+                        + ": bentuk harus '{% blok nama %}', dapat '"
+                        + badan_tag + "'")
+                }
+                variabel hasil_b = _t_urai_blok(sumber, sesudah, ["akhirblok"],
+                                                kedalaman + 1, hitung)
+                node.tambah({"jenis": "blok",
+                             "nama": bagian[1],
+                             "badan": hasil_b[0],
+                             "baris": baris})
+                i = hasil_b[1]
+            } jika_lain kata == "untuk" {
                 # {% untuk x dalam y %}
                 jika panjang(bagian) != 4 {
                     naikkan GalatTemplat(
@@ -341,6 +383,34 @@ fungsi _t_urai_blok(sumber, pos, henti, kedalaman, hitung) {
             "tag '" + henti[0] + "' tidak ditemukan sampai akhir berkas")
     }
     kembalikan [node, n, ""]
+}
+
+fungsi _t_literal(t, baris) {
+    # Nama templat wajib literal berkutip. Tanpa kutip, `{% sertakan nama %}`
+    # terlihat seperti variabel dan mengundang implementasi yang membaca nama
+    # dari data — artinya penyerang memilih berkas yang dibuka.
+    jika panjang(t) < 2 {
+        naikkan GalatTemplat(
+            "baris " + ke_teks(baris) + ": nama templat harus di dalam tanda "
+            + "kutip, dapat '" + t + "'")
+    }
+    variabel k = t[0]
+    jika k != "\"" dan k != "'" {
+        naikkan GalatTemplat(
+            "baris " + ke_teks(baris) + ": nama templat harus di dalam tanda "
+            + "kutip, dapat '" + t + "'")
+    }
+    jika t[panjang(t) - 1] != k {
+        naikkan GalatTemplat(
+            "baris " + ke_teks(baris) + ": kutip penutup nama templat hilang: '"
+            + t + "'")
+    }
+    variabel isi = t[1:panjang(t) - 1]
+    jika panjang(isi) == 0 {
+        naikkan GalatTemplat(
+            "baris " + ke_teks(baris) + ": nama templat kosong")
+    }
+    kembalikan isi
 }
 
 fungsi _t_pisah_spasi(t) {
@@ -423,11 +493,47 @@ fungsi _t_benarkah(n) {
     kembalikan benar
 }
 
-fungsi _t_render_node(node, data, keluar) {
+fungsi _t_konteks(mesin) {
+    # `blok` = override dari anak; `tumpukan` = rantai berkas yang sedang
+    # dirender, dipakai untuk mendeteksi siklus.
+    kembalikan {"mesin": mesin, "blok": kamus(), "tumpukan": daftar()}
+}
+
+fungsi _t_sertakan(n, data, keluar, ktx) {
+    variabel m = ktx["mesin"]
+    jika m == kosong {
+        # render_teks() tidak punya akar templat, jadi tidak ada yang bisa
+        # membatasi berkas mana yang boleh dibaca. Menebak direktori kerja di
+        # sini akan menjadi pembacaan berkas sembarangan.
+        naikkan GalatTemplat(
+            "baris " + ke_teks(n["baris"]) + ": '{% sertakan %}' hanya bisa "
+            + "dipakai lewat templat.mesin(akar), bukan render_teks()")
+    }
+    m._render_berkas(n["nama"], data, keluar, ktx)
+}
+
+fungsi _t_render_node(node, data, keluar, ktx) {
     untuk n dalam node {
         variabel j = n["jenis"]
         jika j == "teks" {
             keluar.tambah(n["isi"])
+        } jika_lain j == "sertakan" {
+            _t_sertakan(n, data, keluar, ktx)
+        } jika_lain j == "perluas" {
+            # Ditangani sebelum render oleh _t_render_berkas; kalau sampai ke
+            # sini berarti tag muncul di tempat yang tidak didukung.
+            naikkan GalatTemplat(
+                "baris " + ke_teks(n["baris"])
+                + ": '{% perluas %}' harus menjadi tag pertama di berkas")
+        } jika_lain j == "blok" {
+            # Anak menimpa blok induk bila namanya terdaftar; kalau tidak,
+            # badan milik induk sendiri yang dipakai.
+            variabel timpa = ktx["blok"]
+            jika n["nama"] dalam timpa {
+                _t_render_node(timpa[n["nama"]], data, keluar, ktx)
+            } selain {
+                _t_render_node(n["badan"], data, keluar, ktx)
+            }
         } selain {
             jika j == "nilai" {
                 variabel v = _t_ambil(data, n["jalan"], n["baris"])
@@ -455,15 +561,15 @@ fungsi _t_render_node(node, data, keluar) {
                         variabel lokal = kamus()
                         untuk k dalam kunci(data) { lokal[k] = data[k] }
                         lokal[n["nama"]] = item
-                        _t_render_node(n["badan"], lokal, keluar)
+                        _t_render_node(n["badan"], lokal, keluar, ktx)
                     }
                 } selain {
                     jika j == "jika" {
                         variabel c = _t_ambil(data, n["jalan"], n["baris"])
                         jika _t_benarkah(c) {
-                            _t_render_node(n["badan"], data, keluar)
+                            _t_render_node(n["badan"], data, keluar, ktx)
                         } selain {
-                            _t_render_node(n["lain"], data, keluar)
+                            _t_render_node(n["lain"], data, keluar, ktx)
                         }
                     }
                 }
@@ -480,7 +586,7 @@ fungsi render_teks(sumber, data = kosong) {
     # pernah membuat server di repo ini DoS, dan renderer berada persis di
     # jalur input eksternal.
     variabel keluar = daftar()
-    _t_render_node(urai(sumber), d, keluar)
+    _t_render_node(urai(sumber), d, keluar, _t_konteks(kosong))
     kembalikan teks_gabung(keluar, "")
 }
 
@@ -510,12 +616,120 @@ kelas Mesin {
     }
 
     render(nama, data = kosong) {
+        variabel d = data
+        jika d == kosong { d = kamus() }
+        variabel keluar = daftar()
+        diri._render_berkas(nama, d, keluar, _t_konteks(diri))
+        kembalikan teks_gabung(keluar, "")
+    }
+
+    _baca(nama, baris) {
         variabel jalur = diri._jalur(nama)
         jika !ada_berkas(jalur) {
             naikkan GalatTemplat("templat tidak ditemukan: '" + jalur + "'")
         }
-        variabel sumber = baca_semua(jalur)
-        kembalikan render_teks(sumber, data)
+        kembalikan baca_semua(jalur)
+    }
+
+    # Satu titik masuk untuk render(), {% sertakan %} dan {% perluas %}, jadi
+    # pembatasan path, deteksi siklus dan batas kedalaman tidak bisa dilewati
+    # oleh salah satu jalur saja.
+    _render_berkas(nama, data, keluar, ktx) {
+        variabel tumpukan = ktx["tumpukan"]
+
+        # Siklus harus mati dengan pesan, bukan menggantung sampai kehabisan
+        # memori: a.html menyertakan b.html yang menyertakan a.html lagi.
+        untuk s dalam tumpukan {
+            jika s == nama {
+                variabel rantai = daftar()
+                untuk t dalam tumpukan { rantai.tambah(t) }
+                rantai.tambah(nama)
+                naikkan GalatTemplat(
+                    "siklus templat: " + teks_gabung(rantai, " -> "))
+            }
+        }
+        jika panjang(tumpukan) >= _T_MAKS_SERTAKAN {
+            naikkan GalatTemplat(
+                "sertakan terlalu dalam (maksimum "
+                + ke_teks(_T_MAKS_SERTAKAN) + ")")
+        }
+
+        variabel node = urai(diri._baca(nama, 0))
+        tumpukan.tambah(nama)
+
+        variabel induk = diri._induk(node, nama)
+        jika induk == kosong {
+            _t_render_node(node, data, keluar, ktx)
+        } selain {
+            # Blok anak dikumpulkan lalu INDUK yang dirender: kerangka halaman
+            # milik induk, anak hanya mengisi lubangnya.
+            variabel timpa = ktx["blok"]
+            untuk n dalam node {
+                jika n["jenis"] == "blok" {
+                    # Blok terluar menang: induk terdekat sudah menimpa, dan
+                    # kakeknya tidak boleh menimpa balik.
+                    jika !(n["nama"] dalam timpa) {
+                        timpa[n["nama"]] = n["badan"]
+                    }
+                }
+            }
+            diri._render_berkas(induk, data, keluar, ktx)
+        }
+
+        tumpukan.hapus_pada(panjang(tumpukan) - 1)
+    }
+
+    # Mengembalikan nama induk bila berkas memakai {% perluas %}, dan
+    # memastikan berkas anak hanya berisi definisi blok.
+    _induk(node, nama) {
+        jika panjang(node) == 0 { kembalikan kosong }
+
+        variabel induk = kosong
+        variabel idx = 0
+        untuk n dalam node {
+            jika n["jenis"] == "perluas" {
+                jika idx != 0 {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(n["baris"]) + ": '{% perluas %}' "
+                        + "harus menjadi tag pertama di '" + nama + "'")
+                }
+                induk = n["nama"]
+            }
+            idx = idx + 1
+        }
+        jika induk == kosong { kembalikan kosong }
+
+        # Teks di luar blok pada berkas anak tidak punya tempat di keluaran.
+        # Mengabaikannya diam-diam membuat isi hilang tanpa jejak, jadi
+        # ditolak. Spasi antar tag tetap diizinkan supaya berkas bisa dirapikan.
+        variabel terlihat = daftar()
+        untuk n dalam node {
+            variabel j = n["jenis"]
+            jika j == "perluas" {
+                lanjut
+            }
+            jika j == "teks" {
+                jika panjang(_t_rapikan(n["isi"])) == 0 { lanjut }
+                naikkan GalatTemplat(
+                    "berkas '" + nama + "' memakai '{% perluas %}', jadi isinya "
+                    + "harus seluruhnya di dalam '{% blok %}'")
+            }
+            jika j != "blok" {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(n["baris"]) + ": berkas '" + nama
+                    + "' memakai '{% perluas %}', jadi isinya harus seluruhnya "
+                    + "di dalam '{% blok %}'")
+            }
+            untuk t dalam terlihat {
+                jika t == n["nama"] {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(n["baris"]) + ": blok '" + n["nama"]
+                        + "' didefinisikan dua kali di '" + nama + "'")
+                }
+            }
+            terlihat.tambah(n["nama"])
+        }
+        kembalikan induk
     }
 }
 

@@ -13,6 +13,8 @@ INDK="./indk"
 PUSTAKA="pustaka/templat.idk"
 GOLDEN="tests/expected/templat_dasar.out"
 CONTOH="examples/templat_dasar.idk"
+GOLDEN_W="tests/expected/templat_warisan.out"
+CONTOH_W="examples/templat_warisan.idk"
 CADANGAN="$(mktemp)"
 GAGAL=0
 JUMLAH=0
@@ -32,15 +34,22 @@ open(p, "w", encoding="utf-8").write(t.replace(lama, baru, 1))
 PY
 }
 
-# Baseline: tanpa sabotase harus hijau, kalau tidak seluruh skrip tak bermakna.
+# Baseline: tanpa sabotase keduanya harus hijau, kalau tidak seluruh skrip tak
+# bermakna.
 if ! diff -q <("$INDK" "$CONTOH" 2>/dev/null | bersihkan) \
              <(bersihkan < "$GOLDEN") >/dev/null; then
     echo "x baseline sudah merah sebelum sabotase apa pun"
     exit 1
 fi
+if ! diff -q <("$INDK" "$CONTOH_W" 2>/dev/null | bersihkan) \
+             <(bersihkan < "$GOLDEN_W") >/dev/null; then
+    echo "x baseline warisan sudah merah sebelum sabotase apa pun"
+    exit 1
+fi
 
 sabotase() {
     nama="$1"; lama="$2"; baru="$3"
+    c="${4:-$CONTOH}"; g="${5:-$GOLDEN}"
     JUMLAH=$((JUMLAH + 1))
     pulihkan
     if ! grep -qF -- "$lama" "$PUSTAKA"; then
@@ -49,8 +58,13 @@ sabotase() {
         return
     fi
     terapkan "$lama" "$baru"
-    if diff -q <("$INDK" "$CONTOH" 2>/dev/null | bersihkan) \
-               <(bersihkan < "$GOLDEN") >/dev/null; then
+    # Timeout wajib: sabotase deteksi siklus membuat render berputar tanpa
+    # batas, dan tanpa batas waktu skrip ini berhenti diam-diam alih-alih
+    # melaporkan sabotase itu merah. timeout(1) tidak ada di macOS bawaan.
+    BATAS=""
+    command -v timeout >/dev/null 2>&1 && BATAS="timeout 30"
+    if diff -q <($BATAS "$INDK" "$c" 2>/dev/null | bersihkan) \
+               <(bersihkan < "$g") >/dev/null; then
         echo "x $nama -- LOLOS (tes tidak menangkapnya)"
         GAGAL=$((GAGAL + 1))
     else
@@ -112,6 +126,56 @@ sabotase "isolasi variabel loop dicabut" \
 sabotase "penolakan '..' pada nama templat dicabut" \
     '        jika ".." dalam nama {' \
     '        jika salah {'
+
+# --- SSR-05: include dan inheritance ----------------------------------------
+
+# 10. Deteksi siklus dicabut -> a.html -> b.html -> a.html menggantung sampai
+#     kehabisan memori, bukan melapor.
+sabotase "deteksi siklus sertakan dicabut" \
+    '        untuk s dalam tumpukan {
+            jika s == nama {' \
+    '        untuk s dalam tumpukan {
+            jika salah {' \
+    "$CONTOH_W" "$GOLDEN_W"
+
+# 11. Batas kedalaman sertakan dicabut -> rantai panjang menghabiskan stack.
+sabotase "batas kedalaman sertakan dicabut" \
+    '        jika panjang(tumpukan) >= _T_MAKS_SERTAKAN {' \
+    '        jika salah {' \
+    "$CONTOH_W" "$GOLDEN_W"
+
+# 12. Syarat literal berkutip dicabut -> `{% sertakan nama %}` diterima, dan
+#     nama templat bisa datang dari data pengguna.
+sabotase "syarat nama templat berkutip dicabut" \
+    '    jika k != "\"" dan k != "'"'"'" {' \
+    '    jika salah {' \
+    "$CONTOH_W" "$GOLDEN_W"
+
+# 13. Aturan "perluas harus tag pertama" dicabut -> isi sebelum tag diam-diam
+#     hilang dari keluaran.
+sabotase "aturan perluas-harus-pertama dicabut" \
+    '                jika idx != 0 {' \
+    '                jika salah {' \
+    "$CONTOH_W" "$GOLDEN_W"
+
+# 14. Penolakan teks di luar blok dicabut -> isi berkas anak lenyap tanpa jejak.
+sabotase "penolakan teks di luar blok dicabut" \
+    '                jika panjang(_t_rapikan(n["isi"])) == 0 { lanjut }' \
+    '                lanjut' \
+    "$CONTOH_W" "$GOLDEN_W"
+
+# 15. Penolakan blok ganda dicabut -> definisi kedua menang diam-diam.
+sabotase "penolakan blok ganda dicabut" \
+    '                jika t == n["nama"] {' \
+    '                jika salah {' \
+    "$CONTOH_W" "$GOLDEN_W"
+
+# 16. Penolakan sertakan tanpa mesin dicabut -> render_teks() ikut membaca
+#     berkas dari direktori kerja, tanpa akar yang membatasinya.
+sabotase "penolakan sertakan tanpa mesin dicabut" \
+    '    jika m == kosong {' \
+    '    jika salah {' \
+    "$CONTOH_W" "$GOLDEN_W"
 
 pulihkan
 echo

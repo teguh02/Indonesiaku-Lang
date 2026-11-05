@@ -1,0 +1,82 @@
+# SSR-05: include komponen dan template inheritance.
+#
+# Memeriksa bahwa kerangka halaman bisa dipakai ulang tanpa kembali merangkai
+# string HTML di .idk — dan bahwa setiap pagar keamanannya menolak dengan
+# pesan yang menyebut SEBABNYA, bukan sekadar "ada galat". Memeriksa pesan
+# itu penting: sebuah sabotase sebelumnya lolos karena templat tetap ditolak,
+# tapi karena alasan yang sama sekali berbeda.
+
+impor templat
+impor jalur
+
+variabel m = templat.mesin("tests/data/templat")
+
+cetak("== anak menimpa blok induk ==")
+cetak(m.render("anak.html", {"judul": "Judul", "nama": "<b>Budi</b>"}))
+
+cetak("== anak memakai isi bawaan induk ==")
+cetak(m.render("anak_bawaan.html", {"judul": "Judul2"}))
+
+cetak("== sertakan komponen di dalam loop ==")
+cetak(m.render("pakai_sertakan.html",
+               {"siswa": [{"nama": "Ani"}, {"nama": "<script>"}]}))
+
+cetak("== yang harus ditolak ==")
+
+variabel uji = [["siklus langsung", "siklus_diri.html"],
+                ["siklus tidak langsung", "siklus_a.html"],
+                ["perluas bukan tag pertama", "perluas_telat.html"],
+                ["teks di luar blok", "teks_luar_blok.html"],
+                ["blok ganda", "blok_ganda.html"],
+                ["nama templat non-literal", "sertakan_var.html"],
+                ["path traversal", "sertakan_traversal.html"],
+                ["templat tidak ada", "sertakan_hilang.html"]]
+
+untuk u dalam uji {
+    coba {
+        m.render(u[1], {"judul": "J", "nama": "x"})
+        cetak("GAGAL (tidak ditolak): " + u[0])
+    } kecuali Galat sebagai e {
+        cetak(u[0] + " -> " + e.pesan)
+    }
+}
+
+# render_teks() tidak punya akar templat, jadi tidak ada yang membatasi berkas
+# mana yang boleh dibaca. Harus menolak, bukan menebak direktori kerja.
+coba {
+    templat.render_teks("{% sertakan \"x.html\" %}", kamus())
+    cetak("GAGAL: render_teks seharusnya menolak sertakan")
+} kecuali Galat sebagai e {
+    cetak("render_teks tanpa mesin -> " + e.pesan)
+}
+
+# Rantai sertakan yang panjang harus mati dengan pesan, bukan menghabiskan
+# stack. Berkasnya dibuat di sini, bukan di-commit: 40 berkas statis untuk satu
+# asersi hanya menambah berkas yang harus dibaca orang lain.
+variabel akar = jalur.gabung("tests", "data")
+variabel dir_dalam = jalur.gabung(jalur.gabung(akar, "templat"), "dalam")
+buat_direktori(dir_dalam)
+variabel i = 0
+selagi i < 40 {
+    variabel isi = "akhir"
+    jika i < 39 {
+        isi = "{% sertakan \"dalam/n" + ke_teks(i + 1) + ".html\" %}"
+    }
+    tulis_semua(jalur.gabung(dir_dalam, "n" + ke_teks(i) + ".html"), isi)
+    i = i + 1
+}
+
+coba {
+    m.render("dalam/n0.html", kamus())
+    cetak("GAGAL: rantai sertakan tidak dibatasi")
+} kecuali Galat sebagai e {
+    cetak("rantai terlalu dalam -> " + e.pesan)
+}
+
+# hapus_direktori() tidak rekursif, jadi isinya dibersihkan lebih dulu.
+variabel b = 0
+selagi b < 40 {
+    hapus_berkas(jalur.gabung(dir_dalam, "n" + ke_teks(b) + ".html"))
+    b = b + 1
+}
+hapus_direktori(dir_dalam)
