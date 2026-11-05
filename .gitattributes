@@ -1,3 +1,10 @@
 # examples/bom_utf8.idk diawali BOM UTF-8 dengan sengaja (uji T-W2).
 # -text: git tidak boleh menormalkan isinya; ujinya justru byte di awal berkas.
 examples/bom_utf8.idk -text
+
+# Berkas templat uji harus LF di semua OS. Isinya DIRENDER ke stdout, jadi
+# kalau git men-checkout CRLF di Windows maka '\r' masuk ke keluaran; stdout
+# text-mode lalu mengubah '\n' jadi '\r\n' sehingga baris menjadi '\r\r\n'
+# dan golden tidak pernah cocok. Sama seperti aturan "golden tak boleh memuat
+# raw \r" di AGENTS.md, tetapi di sisi masukan.
+tests/data/templat/*.html text eol=lf

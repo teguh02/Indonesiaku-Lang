@@ -70,7 +70,13 @@ untuk uji dalam tolak {
 
 cetak("== templat dari berkas ==")
 variabel m = templat.mesin("tests/data/templat")
-cetak(m.render("halaman.html", {"judul": "Judul", "siswa": ["Budi", "Ani"]}))
+variabel halaman = m.render("halaman.html", {"judul": "Judul", "siswa": ["Budi", "Ani"]})
+# Kalau berkas templat ter-checkout CRLF (Windows), '\r' ikut terender; stdout
+# text-mode lalu menulisnya '\r\r\n' dan golden tidak pernah cocok dengan
+# pesan "output mismatch" yang tidak menyebut sebabnya. .gitattributes mengunci
+# berkas itu ke LF; asersi ini yang menyebutkan sebabnya kalau kuncinya lepas.
+pastikan !("\r" dalam halaman), "templat ter-checkout CRLF, lihat .gitattributes"
+cetak(halaman)
 coba {
     m.render("../rahasia.txt")
     cetak("GAGAL: path traversal seharusnya ditolak")
