@@ -1080,6 +1080,52 @@ Yang diperiksa: migrasi berjalan urut menaik menurut versi meski didaftarkan
 terbalik (kalau tidak, `ALTER` jalan sebelum tabelnya ada), rerun tidak
 mengulang DDL, dan rollback mengambil versi TERBARU.
 
+#### SSR-TPL-01 — Templat HTML: interpolasi, escaping, dan batas `{{ }}`
+
+```indonesiaku
+impor templat
+
+variabel data = {"judul": "Daftar Siswa",
+                 "siswa": ["Budi", "<script>alert(1)</script>"],
+                 "catatan": templat.aman("<b>resmi</b>")}
+
+cetak(templat.render_teks("<h1>{{ judul }}</h1>", data))
+
+untuk s dalam data["siswa"] {
+    cetak(templat.render_teks("<li>{{ x }}</li>", {"x": s}))
+}
+
+cetak(templat.render_teks("{{ catatan }}", data))
+cetak(templat.render_teks("{% jika siswa %}ada{% selain %}kosong{% akhirjika %}", data))
+
+# {{ }} bukan kode: pemanggilan fungsi harus ditolak, bukan dijalankan.
+coba {
+    templat.render_teks("{{ keluar() }}", data)
+    cetak("GAGAL: seharusnya ditolak")
+} kecuali Galat sebagai e {
+    cetak("ditolak: " + e.pesan)
+}
+```
+
+Jalankan `indk SSR-TPL-01.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+<h1>Daftar Siswa</h1>
+<li>Budi</li>
+<li>&lt;script&gt;alert(1)&lt;/script&gt;</li>
+<b>resmi</b>
+ada
+ditolak: baris 1: '(' tidak diizinkan di dalam templat (hanya nama, .kunci dan [indeks]): 'keluar()'
+```
+
+Yang diperiksa: data pengguna selalu di-escape (baris kedua dan ketiga berasal
+dari daftar yang sama, hanya isinya berbeda), `templat.aman()` adalah
+satu-satunya jalan agar HTML lolos utuh, dan `{{ }}` menolak pemanggilan
+fungsi alih-alih mengeksekusinya — kalau penolakan ini hilang, setiap berkas
+`.html` menjadi titik eksekusi kode.
+
 <!-- BERSAMA:AKHIR -->
 
 ## 5. Suite otomatis dari tag rilis

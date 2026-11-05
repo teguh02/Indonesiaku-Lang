@@ -1,6 +1,6 @@
 # Rencana Fitur: mesin templat HTML server-side (SSR-01…04, SSR-06)
 
-- **Status:** dikerjakan
+- **Status:** selesai (SSR-01…04 + SSR-06; SSR-05, 07–10 di luar lingkup rencana ini)
 - **Target versi:** 1.7.0
 - **Pemilik:** teguh02
 
