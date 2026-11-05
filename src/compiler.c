@@ -2098,7 +2098,20 @@ static void nestingPop(void) {
 }
 
 static void parsePrecedence(Precedence precedence) {
-    if (!nestingPush()) return;
+    if (!nestingPush()) {
+        // Tetap konsumsi satu token. Tanpa ini parser bisa berhenti maju:
+        // `synchronize()` berhenti PADA token sinkronisasi ('fungsi', 'jika',
+        // 'kelas', …) tanpa memakannya, karena normalnya pemanggilnya yang
+        // memakai token itu. Di sini tidak ada yang memakainya — `fungsi(`
+        // adalah fungsi anonim, jadi `declaration()` melemparnya ke jalur
+        // ekspresi, dan jalur itu justru yang menolak turun. Hasilnya
+        // block() → declaration() → parsePrecedence() → synchronize()
+        // berputar selamanya pada token yang sama dan kompilasi menggantung
+        // sambil terus mengalokasi (200 '{' lalu `fungsi(` menggantung tanpa
+        // batas; ditemukan fuzzer).
+        advance();
+        return;
+    }
     advance();
     ParseFn prefixRule = getRule(parser.previous.type)->prefix;
     if (prefixRule == NULL) {

@@ -1,0 +1,5 @@
+# Regresi: 200 '{' lalu 'fungsi(' dulu MENGGANTUNG compiler tanpa batas.
+# parsePrecedence() menolak turun di batas sarang tanpa memakan token,
+# dan synchronize() berhenti PADA 'fungsi' tanpa memakannya juga, jadi
+# block() berputar selamanya. Harus melapor galat, bukan menggantung.
+{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{fungsi(
