@@ -1,0 +1,11 @@
+impor db
+impor migrasi
+
+variabel k = db.sambung({"jenis": "sqlite", "berkas": ":memory:"})
+
+variabel m = daftar()
+m.tambah(migrasi.langkah("001", "tabel tanpa rollback",
+    fungsi(k) { k.eksekusi("CREATE TABLE a (id INTEGER)") }))
+
+migrasi.naikkan_semua(k, m)
+migrasi.turunkan_satu(k, m)

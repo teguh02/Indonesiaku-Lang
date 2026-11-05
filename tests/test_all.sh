@@ -210,6 +210,25 @@ if [ -f tests/db_bersama.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Sabotase migrasi skema (WDB-05): tiap jaminan dilucuti dan wajib membuat
+# golden/tes galat merah. Hanya butuh SQLite, jadi selalu bisa dijalankan.
+#
+# Linux/macOS saja, dan itu disengaja: ini meta-test yang memeriksa apakah tes
+# LAIN menangkap kerusakan. Tes perilakunya sendiri — golden
+# tests/expected/migrasi_skema.out plus tests/galat/migrasi_*.err — ditemukan
+# otomatis oleh harness di ketiga OS termasuk tests/test_all.ps1.
+if [ -f tests/migrasi_sabotase.sh ]; then
+    if bash tests/migrasi_sabotase.sh > /tmp/idk_migrasi_sab.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} migrasi_sabotase"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} migrasi_sabotase"
+        sed 's/^/      /' /tmp/idk_migrasi_sab.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES migrasi_sabotase"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # REST API di atas PostgreSQL (Fase 11 langkah 7): CRUD lewat HTTP sungguhan.
 if [ -f tests/api_siswa_pg_server.sh ]; then
     if bash tests/api_siswa_pg_server.sh > /tmp/idk_apipg_uji.log 2>&1; then

@@ -1,0 +1,168 @@
+# Pustaka migrasi: perubahan skema basis data yang tercatat dan bisa diulang.
+#
+#     impor db
+#     impor migrasi
+#
+#     variabel k = db.sambung({"jenis": "sqlite", "berkas": "app.db"})
+#     variabel m = daftar()
+#     m.tambah(migrasi.langkah("001", "buat tabel siswa",
+#         fungsi(k) { k.eksekusi("CREATE TABLE siswa (id INTEGER PRIMARY KEY)") },
+#         fungsi(k) { k.eksekusi("DROP TABLE siswa") }))
+#     migrasi.naikkan_semua(k, m)
+#
+# Versi yang sudah terpasang dicatat di tabel _migrasi_indk, jadi menjalankan
+# program dua kali tidak menjalankan ulang DDL yang sama.
+#
+# YANG TIDAK DILAKUKAN: merakit SQL. Sama seperti db.idk, dialek dan penanda
+# parameter tetap milik pemanggil ($1 di PostgreSQL, ? di SQLite dan MySQL).
+#
+# PERINGATAN MySQL: DDL di MySQL/MariaDB memicu implicit commit, jadi batal()
+# tidak bisa mengembalikan CREATE/ALTER yang sudah terlanjur jalan. Rollback
+# transaksional di sini hanya sepenuhnya aman pada SQLite dan PostgreSQL.
+
+impor db
+
+variabel TABEL = "_migrasi_indk"
+
+kelas GalatMigrasi < GalatOS {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+
+# langkah(versi, nama, naik, turun) -> satu migrasi.
+#
+# `naik` dan `turun` adalah fungsi yang menerima koneksi. `turun` boleh kosong
+# bila migrasi memang tidak bisa dibatalkan; turunkan_satu() akan menolak
+# dengan jelas alih-alih menghapus catatan versi tanpa mengubah skema.
+fungsi langkah(versi, nama, naik, turun = kosong) {
+    jika ke_teks(versi) != versi {
+        naikkan GalatMigrasi("versi migrasi harus teks, dapat: " + repr(versi))
+    }
+    kembalikan {"versi": versi, "nama": nama, "naik": naik, "turun": turun}
+}
+
+
+fungsi _siapkan(k) {
+    k.eksekusi("CREATE TABLE IF NOT EXISTS " + TABEL +
+               " (versi VARCHAR(64) PRIMARY KEY, nama VARCHAR(255), diterapkan_pada VARCHAR(32))")
+}
+
+
+# Versi yang sudah terpasang, sebagai himpunan agar pemeriksaan tidak O(n^2).
+fungsi _terpasang(k) {
+    _siapkan(k)
+    variabel h = himpunan()
+    untuk b dalam k.ambil_semua("SELECT versi FROM " + TABEL) {
+        h.tambah(b["versi"])
+    }
+    kembalikan h
+}
+
+
+# Urut menaik menurut versi, sekaligus menolak versi ganda. Tanpa pengurutan,
+# migrasi berjalan sesuai urutan penulisan di berkas — yang diam-diam berbeda
+# antar lingkungan bila daftarnya dirakit dari beberapa tempat.
+fungsi _urut(daftar_migrasi) {
+    variabel versi = daftar()
+    untuk m dalam daftar_migrasi { versi.tambah(m["versi"]) }
+
+    variabel terlihat = himpunan()
+    untuk v dalam versi {
+        jika v dalam terlihat {
+            naikkan GalatMigrasi("versi migrasi ganda: '" + v + "'")
+        }
+        terlihat.tambah(v)
+    }
+
+    variabel hasil = daftar()
+    untuk v dalam terurut(versi) {
+        untuk m dalam daftar_migrasi {
+            jika m["versi"] == v { hasil.tambah(m) }
+        }
+    }
+    kembalikan hasil
+}
+
+
+fungsi _catat(k, m) {
+    k.eksekusi("INSERT INTO " + TABEL + " (versi, nama, diterapkan_pada) VALUES (?, ?, ?)",
+               [m["versi"], m["nama"], format_tanggal("%Y-%m-%d %H:%M:%S")])
+}
+
+
+# naikkan_semua(k, daftar_migrasi) -> jumlah langkah yang dijalankan.
+#
+# Hanya versi yang belum tercatat yang dijalankan, urut menaik. Tiap langkah
+# berjalan di dalam transaksinya sendiri; galat memicu batal() lalu dinaikkan
+# ulang sebagai GalatMigrasi, dan langkah sesudahnya tidak dijalankan.
+fungsi naikkan_semua(k, daftar_migrasi) {
+    variabel urut = _urut(daftar_migrasi)
+    variabel sudah = _terpasang(k)
+    variabel jalan = 0
+
+    untuk m dalam urut {
+        jika (m["versi"] dalam sudah) == salah {
+            k.mulai()
+            coba {
+                variabel naik = m["naik"]
+                naik(k)
+                _catat(k, m)
+                k.komit()
+            } kecuali Galat sebagai e {
+                k.batal()
+                naikkan GalatMigrasi("migrasi '" + m["versi"] + "' (" + m["nama"] +
+                                     ") gagal: " + ke_teks(e.pesan))
+            }
+            jalan = jalan + 1
+        }
+    }
+    kembalikan jalan
+}
+
+
+# turunkan_satu(k, daftar_migrasi) -> versi yang dibatalkan, atau kosong bila
+# tidak ada yang terpasang.
+fungsi turunkan_satu(k, daftar_migrasi) {
+    variabel urut = _urut(daftar_migrasi)
+    variabel sudah = _terpasang(k)
+
+    variabel i = panjang(urut) - 1
+    selagi i >= 0 {
+        variabel m = urut[i]
+        jika m["versi"] dalam sudah {
+            jika m["turun"] == kosong {
+                naikkan GalatMigrasi("migrasi '" + m["versi"] + "' (" + m["nama"] +
+                                     ") tidak punya fungsi turun")
+            }
+            k.mulai()
+            coba {
+                variabel turun = m["turun"]
+                turun(k)
+                k.eksekusi("DELETE FROM " + TABEL + " WHERE versi = ?", [m["versi"]])
+                k.komit()
+            } kecuali Galat sebagai e {
+                k.batal()
+                naikkan GalatMigrasi("rollback '" + m["versi"] + "' gagal: " +
+                                     ke_teks(e.pesan))
+            }
+            kembalikan m["versi"]
+        }
+        i = i - 1
+    }
+    kembalikan kosong
+}
+
+
+# status(k, daftar_migrasi) -> daftar {"versi", "nama", "terpasang"} urut naik.
+fungsi status(k, daftar_migrasi) {
+    variabel urut = _urut(daftar_migrasi)
+    variabel sudah = _terpasang(k)
+    variabel hasil = daftar()
+    untuk m dalam urut {
+        hasil.tambah({"versi": m["versi"], "nama": m["nama"],
+                      "terpasang": m["versi"] dalam sudah})
+    }
+    kembalikan hasil
+}

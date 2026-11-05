@@ -1,0 +1,5 @@
+migrasi '001' (tabel tanpa rollback) tidak punya fungsi turun
+[baris 137, kolom 66] dalam turunkan_satu()
+    …            ") tidak punya fungsi turun")
+                                             ^
+[baris 11, kolom 27] dalam skrip

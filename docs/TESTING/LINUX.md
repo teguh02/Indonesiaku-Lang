@@ -1033,6 +1033,52 @@ Sebelum perbaikan, `turun(65)` mencetak `62` — bukan galat, melainkan jawaban
 salah diam-diam, karena galat batas `coba` ditangkap oleh `kecuali` di level
 luar.
 
+#### DB-MIG-01 — Migrasi skema tercatat dan bisa dibatalkan
+
+```indonesiaku
+impor db
+impor migrasi
+
+variabel k = db.sambung({"jenis": "sqlite", "berkas": ":memory:"})
+
+variabel m = daftar()
+
+# Sengaja didaftarkan tidak urut: 002 lebih dulu.
+m.tambah(migrasi.langkah("002", "tambah kolom nilai",
+    fungsi(k) { k.eksekusi("ALTER TABLE siswa ADD COLUMN nilai REAL") },
+    fungsi(k) { k.eksekusi("ALTER TABLE siswa DROP COLUMN nilai") }))
+
+m.tambah(migrasi.langkah("001", "buat tabel siswa",
+    fungsi(k) { k.eksekusi("CREATE TABLE siswa (id INTEGER PRIMARY KEY, nama TEXT)") },
+    fungsi(k) { k.eksekusi("DROP TABLE siswa") }))
+
+cetak("dijalankan:", migrasi.naikkan_semua(k, m))
+cetak("dijalankan lagi:", migrasi.naikkan_semua(k, m))
+cetak("dibatalkan:", migrasi.turunkan_satu(k, m))
+
+untuk s dalam migrasi.status(k, m) {
+    cetak("  " + s["versi"], s["nama"], s["terpasang"])
+}
+
+k.tutup()
+```
+
+Jalankan `indk DB-MIG-01.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+dijalankan: 2
+dijalankan lagi: 0
+dibatalkan: 002
+  001 buat tabel siswa benar
+  002 tambah kolom nilai salah
+```
+
+Yang diperiksa: migrasi berjalan urut menaik menurut versi meski didaftarkan
+terbalik (kalau tidak, `ALTER` jalan sebelum tabelnya ada), rerun tidak
+mengulang DDL, dan rollback mengambil versi TERBARU.
+
 <!-- BERSAMA:AKHIR -->
 
 ## 5. Suite otomatis dari tag rilis

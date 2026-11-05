@@ -915,7 +915,47 @@ dalam literal, bukan parameter.
 **API lama tetap berjalan**: `db_*` untuk SQLite serta `my.sambung`/`pg.sambung`
 langsung. `db.idk` adalah lapisan tipis di atasnya, bukan penggantinya.
 
-Belum termasuk: pool koneksi, ORM, migrasi skema, dan penyeragaman tipe data
+## Migrasi skema: `pustaka/migrasi.idk`
+
+Perubahan skema yang tercatat, jadi menjalankan program dua kali tidak
+menjalankan ulang `CREATE TABLE` yang sama.
+
+```python
+impor db
+impor migrasi
+
+variabel k = db.sambung({"jenis": "sqlite", "berkas": "app.db"})
+
+variabel m = daftar()
+m.tambah(migrasi.langkah("001", "buat tabel siswa",
+    fungsi(k) { k.eksekusi("CREATE TABLE siswa (id INTEGER PRIMARY KEY, nama TEXT)") },
+    fungsi(k) { k.eksekusi("DROP TABLE siswa") }))
+
+cetak(migrasi.naikkan_semua(k, m))   # 1 pada run pertama, 0 sesudahnya
+```
+
+| Fungsi | Hasil |
+|---|---|
+| `migrasi.langkah(versi, nama, naik, turun)` | Satu migrasi. `versi` harus teks; `turun` boleh `kosong` |
+| `migrasi.naikkan_semua(k, daftar)` | Jumlah langkah yang baru dijalankan |
+| `migrasi.turunkan_satu(k, daftar)` | Versi yang dibatalkan, atau `kosong` bila tidak ada yang terpasang |
+| `migrasi.status(k, daftar)` | Daftar `{"versi", "nama", "terpasang"}`, urut menaik |
+
+Versi terpasang dicatat di tabel `_migrasi_indk`, dibuat otomatis. Langkah
+dijalankan **urut menaik menurut versi**, bukan urutan penulisan, dan berhenti
+pada galat pertama. Versi ganda dan `turunkan_satu` pada langkah tanpa `turun`
+ditolak dengan `GalatMigrasi` yang bisa ditangkap `coba/kecuali`.
+
+> **Peringatan MySQL/MariaDB.** DDL di MySQL memicu *implicit commit*, jadi
+> `batal()` tidak bisa mengembalikan `CREATE`/`ALTER` yang sudah terlanjur
+> jalan. Rollback transaksional di sini hanya sepenuhnya aman pada SQLite dan
+> PostgreSQL; pada MySQL sebuah langkah yang gagal di tengah dapat
+> meninggalkan skema separuh jadi.
+
+SQL di dalam `naik`/`turun` tetap ditulis sesuai dialek backend — pustaka ini
+tidak merakit maupun menerjemahkan SQL.
+
+Belum termasuk: pool koneksi, ORM, query builder, dan penyeragaman tipe data
 antar backend.
 
 
