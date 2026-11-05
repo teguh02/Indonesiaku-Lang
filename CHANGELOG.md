@@ -74,6 +74,29 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Kompilasi MENGGANTUNG tanpa batas pada sarang dalam diikuti fungsi
+  anonim.** `{` sebanyak 200 lalu `fungsi(` membuat `indk` berputar selamanya
+  sambil terus mengalokasi memori (~70 MB/detik) alih-alih melaporkan galat.
+  Penyebabnya rantai dua fungsi yang sama-sama tidak memajukan parser:
+  `parsePrecedence()` menolak turun di batas sarang dan `return` **tanpa
+  mengonsumsi token**, lalu `synchronize()` berhenti PADA token sinkronisasi
+  (`fungsi`, `jika`, `kelas`, …) tanpa memakannya juga — karena normalnya
+  pemanggilnya yang memakai token itu. Untuk `fungsi(` tidak ada yang
+  memakainya: itu fungsi anonim, jadi `declaration()` melemparnya ke jalur
+  ekspresi, dan jalur itu justru yang menolak turun. Hasilnya
+  `block()` → `declaration()` → `parsePrecedence()` → `synchronize()`
+  berputar pada token yang sama. `parsePrecedence()` kini selalu mengonsumsi
+  satu token saat menolak. Ditemukan oleh job fuzz CI; unit pemicunya
+  diminimalkan dari 1987 menjadi 207 bita. Regresi:
+  `tests/galat/sarang_fungsi_anonim_hang.idk`.
+- **Harness tes galat menghitung tes yang MENGGANTUNG sebagai lulus.**
+  `tests/test_all.sh` dan `tests/test_all.ps1` menjalankan `tests/galat/*.idk`
+  tanpa batas waktu, jadi regresi parser seperti di atas menghentikan seluruh
+  suite diam-diam sampai CI membunuhnya. Keduanya kini memakai batas 30 detik
+  **dan** menolak hasilnya secara eksplisit: galat sudah tercetak sebelum
+  parser menggantung, sehingga stderr tetap cocok dan exit code tetap bukan
+  nol — tanpa penolakan eksplisit, tes yang menggantung justru dihitung hijau.
+
 - **Blok `coba` di dalam fungsi rekursif berhenti di kedalaman 64**
   (GALAT-04). `TRY_MAX` bernilai 64 sementara `FRAMES_MAX` bernilai 1000,
   jadi try-handler menjadi batas yang jauh lebih ketat daripada rekursi itu

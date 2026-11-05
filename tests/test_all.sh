@@ -85,8 +85,25 @@ if [ -d tests/galat ]; then
             FAILED=$((FAILED+1)); FAILURES="$FAILURES galat/$name"; continue
         fi
 
-        stderr="$(./indk "$src" 2>&1 >/dev/null)"; code=$?
+        # Timeout wajib: sebuah regresi parser bisa membuat kompilasi
+        # MENGGANTUNG, bukan gagal. Tanpa batas ini suite berhenti diam-diam
+        # sampai CI membunuhnya dan tidak ada yang tahu tes mana penyebabnya
+        # (lihat tests/galat/sarang_fungsi_anonim_hang.idk). timeout(1) tidak ada di
+        # macOS bawaan, jadi dipakai hanya bila tersedia.
+        if command -v timeout >/dev/null 2>&1; then
+            stderr="$(timeout 30 ./indk "$src" 2>&1 >/dev/null)"; code=$?
+        else
+            stderr="$(./indk "$src" 2>&1 >/dev/null)"; code=$?
+        fi
         expected="$(cat "$exp")"
+
+        if [ "$code" -eq 124 ]; then
+            # timeout(1) memakai 124. Galatnya sudah tercetak SEBELUM parser
+            # menggantung, jadi stderr cocok dan exit != 0: tanpa cek ini tes
+            # yang menggantung malah dihitung LULUS.
+            echo -e "  ${RED}x${NC} galat/$name  (menggantung >30 detik)"
+            FAILED=$((FAILED+1)); FAILURES="$FAILURES galat/$name"; continue
+        fi
 
         if [ "$code" -ne 0 ] && [ "$stderr" = "$expected" ]; then
             echo -e "  ${GREEN}+${NC} galat/$name"

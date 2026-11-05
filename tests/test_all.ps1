@@ -89,8 +89,17 @@ if (Test-Path $errorDir) {
 
         $outFile = [System.IO.Path]::GetTempFileName()
         $errFile = [System.IO.Path]::GetTempFileName()
-        $proc = Start-Process -FilePath $exe -ArgumentList $src -NoNewWindow -Wait -PassThru `
+        # Tanpa -Wait + WaitForExit berbatas, sebuah regresi parser yang
+        # membuat kompilasi MENGGANTUNG akan menghentikan seluruh suite diam-
+        # diam sampai CI membunuhnya (lihat tests/galat/sarang_fungsi_anonim_hang.idk).
+        $proc = Start-Process -FilePath $exe -ArgumentList $src -NoNewWindow -PassThru `
             -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+        $hung = $false
+        if (-not $proc.WaitForExit(30000)) {
+            $hung = $true
+            try { $proc.Kill() } catch { }
+            $proc.WaitForExit()
+        }
         $code = $proc.ExitCode
         $stderr = Get-Content -Raw -Path $errFile -ErrorAction SilentlyContinue
         Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
@@ -101,7 +110,13 @@ if (Test-Path $errorDir) {
         $a = ($stderr -replace "`r`n", "`n").TrimEnd("`n")
         $e = ($expectedText -replace "`r`n", "`n").TrimEnd("`n")
 
-        if ($code -ne 0 -and $a -eq $e) {
+        if ($hung) {
+            # Galatnya sudah tercetak SEBELUM parser menggantung, jadi stderr
+            # cocok dan exit != 0: tanpa cabang ini tes yang menggantung malah
+            # dihitung lulus.
+            Write-Host "  x galat/$name  (menggantung >30 detik)" -ForegroundColor Red
+            $failed++; $failures += "galat/$name"
+        } elseif ($code -ne 0 -and $a -eq $e) {
             Write-Host "  + galat/$name" -ForegroundColor Green
             $passed++
         } else {
