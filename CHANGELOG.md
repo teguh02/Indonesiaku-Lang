@@ -9,6 +9,17 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **`{% sertakan %}` dan pewarisan templat (`{% perluas %}` / `{% blok %}`)**
+  di `pustaka/templat.idk` (SSR-05). Komponen bisa dipakai ulang dan kerangka
+  halaman tidak perlu disalin ke tiap templat; blok yang tidak ditimpa anak
+  memakai isi bawaan induk. Nama templat wajib literal berkutip — nama yang
+  datang dari data berarti pemanggil HTTP yang memilih berkas mana dibuka.
+  Siklus sertakan ditolak dengan menyebut rantainya (bukan menggantung),
+  kedalaman dibatasi 32, dan teks di luar `{% blok %}` pada berkas yang
+  memakai `{% perluas %}` ditolak alih-alih hilang diam-diam dari keluaran.
+  `render_teks()` menolak `{% sertakan %}`: tanpa akar templat tidak ada yang
+  membatasi berkas mana yang boleh dibaca.
+
 - **`pustaka/templat.idk`** — mesin templat HTML server-side (SSR-01…04,
   SSR-06). Berkas `.html` biasa dengan `{{ nilai }}`,
   `{% untuk x dalam y %}…{% akhiruntuk %}`, dan

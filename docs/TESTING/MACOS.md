@@ -1126,6 +1126,74 @@ satu-satunya jalan agar HTML lolos utuh, dan `{{ }}` menolak pemanggilan
 fungsi alih-alih mengeksekusinya — kalau penolakan ini hilang, setiap berkas
 `.html` menjadi titik eksekusi kode.
 
+#### SSR-TPL-02 — Templat: pewarisan, blok bawaan, dan siklus sertakan
+
+Buat direktori `tampilan/` berisi empat berkas:
+
+`tampilan/dasar.html`:
+
+```html
+<!doctype html>
+<title>{{ judul }}</title>
+<body>{% blok isi %}isi bawaan{% akhirblok %}</body>
+```
+
+`tampilan/anak.html`:
+
+```html
+{% perluas "dasar.html" %}
+{% blok isi %}<p>Halo {{ nama }}</p>{% akhirblok %}
+```
+
+`tampilan/anak_bawaan.html`:
+
+```html
+{% perluas "dasar.html" %}
+```
+
+`tampilan/siklus_a.html` dan `tampilan/siklus_b.html` yang saling menyertakan:
+
+```html
+{% sertakan "siklus_b.html" %}
+```
+
+```html
+{% sertakan "siklus_a.html" %}
+```
+
+Lalu `SSR-TPL-02.idk`:
+
+```indonesiaku
+impor templat
+variabel m = templat.mesin("tampilan")
+cetak(m.render("anak.html", {"judul": "Daftar Siswa", "nama": "<b>Budi</b>"}))
+cetak(m.render("anak_bawaan.html", {"judul": "Tanpa Timpa"}))
+coba {
+    m.render("siklus_a.html", kamus())
+} kecuali Galat sebagai e { cetak("siklus -> " + e.pesan) }
+```
+
+Jalankan `indk SSR-TPL-02.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+<!doctype html>
+<title>Daftar Siswa</title>
+<body><p>Halo &lt;b&gt;Budi&lt;/b&gt;</p></body>
+
+<!doctype html>
+<title>Tanpa Timpa</title>
+<body>isi bawaan</body>
+
+siklus -> siklus templat: siklus_a.html -> siklus_b.html -> siklus_a.html
+```
+
+Yang diperiksa: anak mengisi lubang `{% blok %}` milik induk sementara kerangka
+halaman tetap milik induk, blok yang tidak ditimpa memakai isi bawaan, escaping
+tetap berlaku di dalam blok yang diwariskan, dan siklus sertakan mati dengan
+menyebut rantainya alih-alih menggantung sampai kehabisan memori.
+
 <!-- BERSAMA:AKHIR -->
 
 ## 5. Suite otomatis dari tag rilis

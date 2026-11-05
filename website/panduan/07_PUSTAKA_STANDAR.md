@@ -1996,8 +1996,59 @@ di-escape. Ia **tidak** cukup untuk tiga konteks lain:
 Variabel `{% untuk %}` hanya hidup di dalam bloknya dan tidak menimpa data
 bernama sama. Batas bawaan: sumber 1 MB, 10.000 tag, kedalaman 64.
 
-Belum ada: `{% sertakan %}`, pewarisan templat (`{% perluas %}`), filter
-(`{{ x | huruf_besar }}`), dan cache hasil parsing.
+**Komponen dan kerangka halaman.** `{% sertakan "komponen/kartu.html" %}`
+menyisipkan templat lain dengan data yang sama, dan `{% perluas "dasar.html" %}`
+membuat sebuah berkas mengisi lubang `{% blok %}` milik induknya:
+
+```indonesiaku
+impor templat
+impor jalur
+
+# Contoh ini membuat templatnya sendiri supaya benar-benar bisa dijalankan:
+# contoh yang tak pernah dieksekusi gampang busuk.
+buat_direktori("tampilan")
+tulis_semua(jalur.gabung("tampilan", "dasar.html"),
+    "<!doctype html>\n<title>{{ judul }}</title>\n"
+    + "<body>{% blok isi %}isi bawaan{% akhirblok %}</body>\n")
+tulis_semua(jalur.gabung("tampilan", "anak.html"),
+    "{% perluas \"dasar.html\" %}\n"
+    + "{% blok isi %}<p>Halo {{ nama }}</p>{% akhirblok %}\n")
+
+variabel m = templat.mesin("tampilan")
+cetak(m.render("anak.html", {"judul": "Daftar", "nama": "Budi"}))
+
+hapus_berkas(jalur.gabung("tampilan", "dasar.html"))
+hapus_berkas(jalur.gabung("tampilan", "anak.html"))
+hapus_direktori("tampilan")
+```
+
+Isi kedua berkas di atas:
+
+```html
+<!-- tampilan/dasar.html -->
+<!doctype html>
+<title>{{ judul }}</title>
+<body>{% blok isi %}isi bawaan{% akhirblok %}</body>
+```
+
+```html
+<!-- tampilan/anak.html -->
+{% perluas "dasar.html" %}
+{% blok isi %}<p>Halo {{ nama }}</p>{% akhirblok %}
+```
+
+Blok yang tidak ditimpa anak memakai isi bawaan induk. Aturan yang berlaku:
+
+- nama templat wajib literal berkutip, bukan ekspresi — nama yang berasal dari
+  data berarti penyerang memilih berkas mana yang dibuka;
+- `{% perluas %}` harus menjadi tag pertama, dan berkas yang memakainya hanya
+  boleh berisi `{% blok %}` (teks di luar blok ditolak, bukan dibuang diam-diam);
+- siklus (`a` → `b` → `a`) ditolak dengan menyebut rantainya, bukan
+  menggantung; kedalaman sertakan dibatasi 32;
+- `{% sertakan %}` hanya tersedia lewat `templat.mesin(akar)`. `render_teks()`
+  menolaknya karena tanpa akar tidak ada yang membatasi berkas yang dibaca.
+
+Belum ada: filter (`{{ x | huruf_besar }}`) dan cache hasil parsing.
 
 ## 3. Aplikasi Contoh: Todo-list JSON DB
 

@@ -8,3 +8,4 @@ examples/bom_utf8.idk -text
 # dan golden tidak pernah cocok. Sama seperti aturan "golden tak boleh memuat
 # raw \r" di AGENTS.md, tetapi di sisi masukan.
 tests/data/templat/*.html text eol=lf
+tests/data/templat/**/*.html text eol=lf
