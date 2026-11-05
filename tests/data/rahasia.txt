@@ -1,0 +1,6 @@
+Berkas umpan untuk tes path traversal, bukan rahasia sungguhan.
+
+examples/templat_dasar.idk memakai akar templat tests/data/templat/ lalu
+meminta "../rahasia.txt". Berkas ini harus BENAR-BENAR ADA, supaya penolakan
+yang diuji datang dari pagar '..' di pustaka/templat.idk -- bukan sekadar
+karena berkasnya kebetulan tidak ditemukan.

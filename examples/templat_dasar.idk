@@ -1,0 +1,79 @@
+# Mesin templat HTML server-side: interpolasi, kondisi, perulangan, escaping.
+impor templat
+
+cetak("== interpolasi ==")
+cetak(templat.render_teks("<h1>{{ judul }}</h1>", {"judul": "Daftar Siswa"}))
+cetak(templat.render_teks("{{ d.nama }} kelas {{ d.kelas }}",
+                          {"d": {"nama": "Budi", "kelas": "XII"}}))
+cetak(templat.render_teks("{{ xs[1] }}", {"xs": ["p", "q", "r"]}))
+
+cetak("== auto-escaping ==")
+# Ini jaminan utama: data dari luar TIDAK PERNAH menjadi HTML.
+cetak(templat.render_teks("<p>{{ x }}</p>", {"x": "<script>alert(1)</script>"}))
+cetak(templat.render_teks("<a title='{{ x }}'>t</a>", {"x": "\" onload=jahat()"}))
+cetak(templat.render_teks("{{ x }}", {"x": "a & b"}))
+
+cetak("== konten tepercaya lewat aman() ==")
+cetak(templat.render_teks("{{ x }}", {"x": templat.aman("<b>tebal</b>")}))
+
+cetak("== perulangan ==")
+cetak(templat.render_teks(
+    "{% untuk s dalam siswa %}<li>{{ s }}</li>{% akhiruntuk %}",
+    {"siswa": ["Budi", "Ani"]}))
+
+cetak("== kondisi ==")
+cetak(templat.render_teks("{% jika ada %}ADA{% selain %}KOSONG{% akhirjika %}",
+                          {"ada": benar}))
+cetak(templat.render_teks("{% jika ada %}ADA{% selain %}KOSONG{% akhirjika %}",
+                          {"ada": salah}))
+cetak(templat.render_teks("{% jika xs %}ISI{% selain %}HAMPA{% akhirjika %}",
+                          {"xs": daftar()}))
+
+cetak("== bersarang ==")
+cetak(templat.render_teks(
+    "{% untuk r dalam rs %}{% jika r.ok %}[{{ r.n }}]{% selain %}-{% akhirjika %}{% akhiruntuk %}",
+    {"rs": [{"ok": benar, "n": "a"}, {"ok": salah, "n": "b"}]}))
+
+cetak("== variabel loop tidak bocor ==")
+cetak(templat.render_teks("{% untuk i dalam xs %}{{ i }}{% akhiruntuk %}|{{ i }}",
+                          {"xs": [1, 2], "i": "luar"}))
+
+cetak("== unicode dan kosong ==")
+cetak(templat.render_teks("{{ u }}", {"u": "halo é 世界"}))
+cetak("[" + templat.render_teks("{{ k }}", {"k": kosong}) + "]")
+cetak("[" + templat.render_teks("", kamus()) + "]")
+
+cetak("== yang ditolak ==")
+variabel tolak = [
+    ["panggilan fungsi", "{{ keluar() }}", "'(' tidak diizinkan"],
+    ["operator", "{{ a + b }}", "'+' tidak diizinkan"],
+    ["variabel tidak ada", "{{ tidakada }}", "tidak ada di data"],
+    ["untuk tanpa penutup", "{% untuk x dalam xs %}y", "akhiruntuk"],
+    ["kurung tidak ditutup", "<p>{{ a", "tanpa '}}'"],
+    ["tag tidak dikenal", "{% impor os %}", "tidak dikenal"]
+]
+# Memeriksa ALASAN penolakan, bukan sekadar "ada galat": `{{ keluar() }}`
+# juga akan ditolak sebagai "variabel tidak ada" kalau pagar SSR-03 dicabut,
+# sehingga tes yang hanya mengecek "ditolak" tidak menangkap pencabutan itu.
+untuk uji dalam tolak {
+    coba {
+        templat.render_teks(uji[1], {"a": 1, "b": 2, "xs": [1]})
+        cetak("GAGAL: " + uji[0] + " seharusnya ditolak")
+    } kecuali Galat sebagai e {
+        jika uji[2] dalam e.pesan {
+            cetak("ditolak: " + uji[0])
+        } selain {
+            cetak("GAGAL: " + uji[0] + " ditolak dengan alasan salah: " + e.pesan)
+        }
+    }
+}
+
+cetak("== templat dari berkas ==")
+variabel m = templat.mesin("tests/data/templat")
+cetak(m.render("halaman.html", {"judul": "Judul", "siswa": ["Budi", "Ani"]}))
+coba {
+    m.render("../rahasia.txt")
+    cetak("GAGAL: path traversal seharusnya ditolak")
+} kecuali Galat {
+    cetak("ditolak: path traversal")
+}

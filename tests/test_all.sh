@@ -229,6 +229,25 @@ if [ -f tests/migrasi_sabotase.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Sabotase mesin templat (SSR-01..04, SSR-06): tiap jaminan keamanan dilucuti
+# dan wajib membuat golden merah. Murni .idk, tanpa dependensi eksternal.
+#
+# Linux/macOS saja, alasan sama seperti migrasi di atas: ini meta-test. Tes
+# perilakunya — examples/templat_dasar.idk + tests/expected/templat_dasar.out —
+# ditemukan otomatis oleh harness golden di ketiga OS, termasuk
+# tests/test_all.ps1.
+if [ -f tests/templat_sabotase.sh ]; then
+    if bash tests/templat_sabotase.sh > /tmp/idk_templat_sab.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} templat_sabotase"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} templat_sabotase"
+        sed 's/^/      /' /tmp/idk_templat_sab.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES templat_sabotase"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # REST API di atas PostgreSQL (Fase 11 langkah 7): CRUD lewat HTTP sungguhan.
 if [ -f tests/api_siswa_pg_server.sh ]; then
     if bash tests/api_siswa_pg_server.sh > /tmp/idk_apipg_uji.log 2>&1; then

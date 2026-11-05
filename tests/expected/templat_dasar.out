@@ -1,0 +1,39 @@
+== interpolasi ==
+<h1>Daftar Siswa</h1>
+Budi kelas XII
+q
+== auto-escaping ==
+<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>
+<a title='&quot; onload=jahat()'>t</a>
+a &amp; b
+== konten tepercaya lewat aman() ==
+<b>tebal</b>
+== perulangan ==
+<li>Budi</li><li>Ani</li>
+== kondisi ==
+ADA
+KOSONG
+HAMPA
+== bersarang ==
+[a]-
+== variabel loop tidak bocor ==
+12|luar
+== unicode dan kosong ==
+halo é 世界
+[]
+[]
+== yang ditolak ==
+ditolak: panggilan fungsi
+ditolak: operator
+ditolak: variabel tidak ada
+ditolak: untuk tanpa penutup
+ditolak: kurung tidak ditutup
+ditolak: tag tidak dikenal
+== templat dari berkas ==
+<h1>Judul</h1>
+<ul>
+  <li>Budi</li>
+  <li>Ani</li>
+</ul>
+
+ditolak: path traversal
