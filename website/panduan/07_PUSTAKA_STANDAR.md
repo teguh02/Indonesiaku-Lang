@@ -1933,17 +1933,19 @@ kuadratik. Pustaka `templat` menyelesaikan keduanya.
 
 ```indonesiaku
 impor templat
+impor jalur
 
 # Dari string
 cetak(templat.render_teks("<h1>{{ judul }}</h1>", {"judul": "Daftar"}))
 
 # Dari berkas, dengan akar yang dikunci
 buat_direktori("tampilan")
-tulis_semua("tampilan/siswa.html",
+variabel berkas = jalur.gabung("tampilan", "siswa.html")
+tulis_semua(berkas,
             "<ul>\n{% untuk s dalam siswa %}  <li>{{ s }}</li>\n{% akhiruntuk %}</ul>")
 variabel m = templat.mesin("tampilan")
 cetak(m.render("siswa.html", {"siswa": ["Budi", "Ani"]}))
-hapus_berkas("tampilan/siswa.html")
+hapus_berkas(berkas)
 hapus_direktori("tampilan")
 ```
 

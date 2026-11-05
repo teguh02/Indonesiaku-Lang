@@ -413,6 +413,17 @@ jobs:
       # lewat /proc/self/fd/0, konstruksi POSIX yang tidak ada padanannya di
       # Windows (indk juga belum menerima '-' sebagai nama berkas stdin). Tes
       # itu tetap jalan di Linux dan macOS.
+      #
+      # test_panduan.sh ikut: ia hanya butuh awk/sed/grep/mktemp dan sudah
+      # menangani absennya `timeout` (GNU coreutils) dengan menjalankan blok
+      # tanpa batas waktu. 202 contoh di website/panduan/ sebelumnya tidak
+      # pernah dieksekusi di Windows sama sekali.
+      #
+      # templat_sabotase.sh TIDAK ikut, dua alasan: ia meta-test (memeriksa
+      # apakah tes LAIN menangkap kerusakan, sama seperti migrasi_sabotase.sh),
+      # dan ia memanggil `python3` yang di Git Bash Windows biasanya bernama
+      # `python`. Perilaku templat sendiri diuji di Windows lewat golden
+      # examples/templat_dasar.idk yang dipindai tests/test_all.ps1.
       - name: Run shell-based sub-suites (Git Bash)
         shell: bash
         run: |
@@ -428,7 +439,8 @@ jobs:
                    tests/test_benchmark.sh \
                    tests/test_lint.sh \
                    tests/test_profil.sh \
-                   tests/test_uji.sh; do
+                   tests/test_uji.sh \
+                   tests/test_panduan.sh; do
             echo "=== $t ==="
             if bash "$t"; then echo "  ok"; else echo "  GAGAL: $t"; gagal=1; fi
           done
