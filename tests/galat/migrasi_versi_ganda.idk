@@ -1,0 +1,12 @@
+impor db
+impor migrasi
+
+variabel k = db.sambung({"jenis": "sqlite", "berkas": ":memory:"})
+
+variabel m = daftar()
+m.tambah(migrasi.langkah("001", "pertama",
+    fungsi(k) { k.eksekusi("CREATE TABLE a (id INTEGER)") }))
+m.tambah(migrasi.langkah("001", "kedua dengan versi sama",
+    fungsi(k) { k.eksekusi("CREATE TABLE b (id INTEGER)") }))
+
+migrasi.naikkan_semua(k, m)

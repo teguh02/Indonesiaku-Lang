@@ -1,0 +1,9 @@
+dijalankan: 2
+dijalankan lagi: 0
+nilai Budi: 85.5
+  001 buat tabel siswa benar
+  002 tambah kolom nilai benar
+dibatalkan: 002
+  001 buat tabel siswa benar
+  002 tambah kolom nilai salah
+kolom nilai sudah hilang

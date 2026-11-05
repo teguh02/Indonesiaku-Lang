@@ -1,0 +1,55 @@
+# Migrasi skema: perubahan basis data yang tercatat, idempoten, dan bisa
+# dibatalkan. Memakai SQLite di memori supaya bisa dijalankan tanpa server.
+
+impor db
+impor migrasi
+
+variabel k = db.sambung({"jenis": "sqlite", "berkas": ":memory:"})
+
+variabel m = daftar()
+
+# Sengaja didaftarkan TIDAK urut: 002 lebih dulu. naikkan_semua() mengurutkan
+# menurut versi, jadi CREATE tetap jalan sebelum ALTER.
+m.tambah(migrasi.langkah("002", "tambah kolom nilai",
+    fungsi(k) {
+        k.eksekusi("ALTER TABLE siswa ADD COLUMN nilai REAL")
+    },
+    fungsi(k) {
+        k.eksekusi("ALTER TABLE siswa DROP COLUMN nilai")
+    }))
+
+m.tambah(migrasi.langkah("001", "buat tabel siswa",
+    fungsi(k) {
+        k.eksekusi("CREATE TABLE siswa (id INTEGER PRIMARY KEY, nama TEXT)")
+    },
+    fungsi(k) {
+        k.eksekusi("DROP TABLE siswa")
+    }))
+
+cetak("dijalankan:", migrasi.naikkan_semua(k, m))
+
+# Menjalankan ulang tidak mengulang DDL yang sama.
+cetak("dijalankan lagi:", migrasi.naikkan_semua(k, m))
+
+k.eksekusi("INSERT INTO siswa (nama, nilai) VALUES (?, ?)", ["Budi", 85.5])
+cetak("nilai Budi:", k.ambil_satu("SELECT nilai FROM siswa")["nilai"])
+
+untuk s dalam migrasi.status(k, m) {
+    cetak("  " + s["versi"], s["nama"], s["terpasang"])
+}
+
+cetak("dibatalkan:", migrasi.turunkan_satu(k, m))
+
+untuk s dalam migrasi.status(k, m) {
+    cetak("  " + s["versi"], s["nama"], s["terpasang"])
+}
+
+# Kolom nilai sudah hilang setelah rollback.
+coba {
+    k.ambil_satu("SELECT nilai FROM siswa")
+    cetak("kolom nilai masih ada")
+} kecuali Galat {
+    cetak("kolom nilai sudah hilang")
+}
+
+k.tutup()

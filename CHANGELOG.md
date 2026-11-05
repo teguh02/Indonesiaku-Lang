@@ -9,6 +9,18 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **`pustaka/migrasi.idk`** — lapisan migrasi skema (WDB-05) di atas
+  `pustaka/db.idk`: `langkah()`, `naikkan_semua()`, `turunkan_satu()`,
+  `status()`. Versi terpasang dicatat di tabel `_migrasi_indk`, jadi
+  menjalankan program dua kali tidak mengulang DDL yang sama. Langkah berjalan
+  urut menaik menurut versi (bukan urutan penulisan), masing-masing di dalam
+  transaksinya sendiri, dan berhenti pada galat pertama. Versi ganda serta
+  `turunkan_satu` pada langkah tanpa `turun` ditolak dengan `GalatMigrasi`.
+  Catatan: DDL di MySQL/MariaDB memicu implicit commit, jadi rollback
+  transaksional hanya sepenuhnya aman di SQLite dan PostgreSQL. Query builder
+  sengaja belum dikerjakan — ia harus memutuskan dialek SQL, yang justru
+  sengaja tidak disembunyikan oleh `db.idk`.
+
 - **`indk awakutu <skrip.idk>`** — debugger CLI: `henti <baris>`,
   `hapus <baris>`, `daftar`, `langkah`, `lanjut`, `lihat <nama>`, `tumpukan`,
   `keluar` (Enter kosong = `langkah`). Seluruh antarmukanya ke stderr, jadi

@@ -578,7 +578,13 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
    - Diuji terhadap ketiga backend sungguhan (`tests/db_bersama.sh`): satu skrip `.idk` yang sama dijalankan tiga kali dan harus menghasilkan keluaran identik.
    - Belum: pool koneksi, ORM, penyeragaman tipe data antar backend.
 
-6. [ ] Tambahkan lapisan migrasi skema dan query builder parameterized ringan (**WDB-05**); simpan versi migrasi dan catat aturan rollback. ORM penuh tidak wajib.
+6. [x] Tambahkan lapisan migrasi skema dan query builder parameterized ringan (**WDB-05**); simpan versi migrasi dan catat aturan rollback. ORM penuh tidak wajib.
+   - `pustaka/migrasi.idk`: `langkah(versi, nama, naik, turun)`, `naikkan_semua()`, `turunkan_satu()`, `status()`. Versi terpasang dicatat di tabel `_migrasi_indk` sehingga rerun tidak mengulang DDL.
+   - Langkah dijalankan **urut menaik menurut versi**, bukan urutan penulisan: daftar yang dirakit dari beberapa tempat jika tidak diurutkan akan berjalan berbeda antar lingkungan. Contoh goldennya sengaja mendaftarkan `002` sebelum `001`.
+   - Tiap langkah berada di dalam transaksinya sendiri; galat memicu `batal()` lalu dinaikkan ulang sebagai `GalatMigrasi` dan langkah sesudahnya tidak dijalankan.
+   - **Rollback transaksional hanya aman penuh di SQLite dan PostgreSQL.** MySQL/MariaDB melakukan implicit commit pada DDL, jadi langkah yang gagal di tengah bisa meninggalkan skema separuh jadi. Dicatat di panduan, tidak disembunyikan.
+   - **Query builder sengaja ditunda**, bukan terlupakan: merakit SQL otomatis menuntut keputusan dialek, padahal `db.idk` justru memutuskan untuk TIDAK menyembunyikan dialek dan penanda parameter. Itu keputusan desain tersendiri.
+   - Dijaga `tests/migrasi_sabotase.sh`: tujuh jaminan (pencatatan versi, pemeriksaan versi terpasang, penghapusan catatan saat rollback, arah rollback, pengurutan versi, penolakan `turun` kosong, penolakan versi ganda) masing-masing dilucuti dan wajib membuat tes merah — 7/7.
 7. [ ] Siapkan database uji MySQL, MariaDB, PostgreSQL dalam container CI yang terisolasi; jalankan suite bersama untuk koneksi, CRUD, transaksi, rollback, NULL, Unicode, BLOB, kegagalan TLS, kredensial salah, timeout, SQL injection dan cleanup.
 8. [ ] Perbarui docs/SPESIFIKASI.md bila kontrak bahasa berubah, website/panduan/07_PUSTAKA_STANDAR.md, examples/, CHANGELOG.md dan instalasi dependensi per OS.
 
@@ -1058,7 +1064,7 @@ kalkulator-indonesiaku/
 | Fase | Fokus | Status |
 |---|---|---|
 | 9 | LSP dan dukungan editor | ✅ selesai (v1.4.0) |
-| 10 | SQLite, MySQL/MariaDB, PostgreSQL | 🟨 sebagian — SQLite lengkap; **PostgreSQL** (wire protocol v3 + SCRAM-SHA-256) dan **MySQL/MariaDB** (prepared statement) jalan, diuji ke PG 16 dan MariaDB 11 sungguhan. MySQL 8 tak terverifikasi (CPU tanpa x86-64-v2). WDB-04 terhalang namespace impor; WDB-05 belum |
+| 10 | SQLite, MySQL/MariaDB, PostgreSQL | 🟨 sebagian — SQLite lengkap; **PostgreSQL** (wire protocol v3 + SCRAM-SHA-256) dan **MySQL/MariaDB** (prepared statement) jalan, diuji ke PG 16 dan MariaDB 11 sungguhan. MySQL 8 tak terverifikasi (CPU tanpa x86-64-v2). WDB-04 (`db.idk`) dan WDB-05 migrasi skema (`migrasi.idk`) selesai; query builder ditunda sengaja |
 | 11 | HTTP/HTTPS dan backend server | 🟨 sebagian — langkah 1–6 dan 8 `[x]`; langkah 7 tinggal **race** saja (butuh worker/thread, Fase 20). CRUD di atas DB Fase 10 sudah terpenuhi lewat `examples/api_siswa_pg.idk` |
 | 12 | Server-Side Rendering / HTML template | ⬜ belum |
 | 13 | Session, keamanan, login dan otorisasi | ⬜ belum |

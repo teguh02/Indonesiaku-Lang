@@ -1,0 +1,6 @@
+versi migrasi ganda: '001'
+[baris 74, kolom 68] dalam _urut()
+    …grasi("versi migrasi ganda: '" + v + "'")
+                                             ^
+[baris 101, kolom 41] dalam naikkan_semua()
+[baris 12, kolom 27] dalam skrip
