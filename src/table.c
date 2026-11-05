@@ -1,4 +1,6 @@
 #include <string.h>
+#include <stdio.h>    // fprintf/stderr untuk penjaga kapasitas
+#include <stdlib.h>   // exit
 
 #include "memory.h"
 #include "object.h"
@@ -26,7 +28,10 @@ void freeValueTable(ValueTable* table) {
 // (T-U7: d[k] = v used to insert a second key and carry on).
 static ValueEntry* findValueEntry(ValueEntry* entries, int capacity,
                                   Value key, uint32_t hash) {
-    uint32_t index = hash % (uint32_t)capacity;
+    // Pangkat dua, sama seperti findEntry(): mask menggantikan modulo.
+    // Jalur ini dipakai setiap indeks kamus dan setiap operasi himpunan.
+    uint32_t mask = (uint32_t)capacity - 1;
+    uint32_t index = hash & mask;
     ValueEntry* tombstone = NULL;
 
     for (;;) {
@@ -40,7 +45,7 @@ static ValueEntry* findValueEntry(ValueEntry* entries, int capacity,
             if (valuesEqual(entry->key, key)) return entry;
             if (vm.nativeErrorPending) return NULL;
         }
-        index = (index + 1) % (uint32_t)capacity;
+        index = (index + 1) & mask;
     }
 }
 
@@ -56,6 +61,14 @@ bool valueTableGet(ValueTable* table, Value key, Value* value) {
 }
 
 static void adjustValueCapacity(ValueTable* table, int capacity) {
+    // Sama seperti adjustCapacity(): findValueEntry() memakai mask, jadi
+    // kapasitas non-pangkat-dua akan menghasilkan indeks yang salah diam-diam.
+    if (capacity <= 0 || (capacity & (capacity - 1)) != 0) {
+        fprintf(stderr,
+                "Galat internal: kapasitas ValueTable %d bukan pangkat dua.\n",
+                capacity);
+        exit(70);
+    }
     ValueEntry* entries = ALLOCATE(ValueEntry, capacity);
     for (int i = 0; i < capacity; i++) {
         entries[i].state = 0;
@@ -144,8 +157,15 @@ void freeTable(Table* table) {
     initTable(table);
 }
 
+// Kapasitas tabel selalu pangkat dua (GROW_CAPACITY: 8, lalu kali dua), jadi
+// `hash & (capacity - 1)` setara `hash % capacity` tetapi tanpa pembagian
+// integer. Ini jalur terpanas VM: setiap akses variabel global, setiap
+// pencarian metode, dan setiap interning string melewatinya.
+// Penjaga di adjustCapacity() memastikan asumsi pangkat dua itu tidak pernah
+// diam-diam dilanggar oleh perubahan GROW_CAPACITY di kemudian hari.
 static Entry* findEntry(Entry* entries, int capacity, ObjString* key) {
-    uint32_t index = key->hash % capacity;
+    uint32_t mask = (uint32_t)capacity - 1;
+    uint32_t index = key->hash & mask;
     Entry* tombstone = NULL;
 
     for (;;) {
@@ -163,7 +183,7 @@ static Entry* findEntry(Entry* entries, int capacity, ObjString* key) {
             return entry;
         }
 
-        index = (index + 1) % capacity;
+        index = (index + 1) & mask;
     }
 }
 
@@ -178,6 +198,17 @@ bool tableGet(Table* table, ObjString* key, Value* value) {
 }
 
 static void adjustCapacity(Table* table, int capacity) {
+    // findEntry() dan tableFindString() memakai `hash & (capacity - 1)`
+    // sebagai ganti modulo. Itu hanya setara bila kapasitasnya pangkat dua.
+    // Kalau GROW_CAPACITY suatu saat diubah (mis. jadi bilangan prima),
+    // indeksnya akan salah diam-diam dan entri "hilang" tanpa crash --
+    // jadi langgarnya dihentikan di sini, bukan dibiarkan jadi bug data.
+    if (capacity <= 0 || (capacity & (capacity - 1)) != 0) {
+        fprintf(stderr,
+                "Galat internal: kapasitas tabel %d bukan pangkat dua.\n",
+                capacity);
+        exit(70);
+    }
     Entry* entries = ALLOCATE(Entry, capacity);
     for (int i = 0; i < capacity; i++) {
         entries[i].key = NULL;
@@ -240,7 +271,8 @@ void tableAddAll(Table* from, Table* to) {
 ObjString* tableFindString(Table* table, const char* chars, int length, uint32_t hash) {
     if (table->count == 0) return NULL;
 
-    uint32_t index = hash % table->capacity;
+    uint32_t mask = (uint32_t)table->capacity - 1;
+    uint32_t index = hash & mask;
     for (;;) {
         Entry* entry = &table->entries[index];
         if (entry->key == NULL) {
@@ -253,7 +285,7 @@ ObjString* tableFindString(Table* table, const char* chars, int length, uint32_t
             return entry->key;
         }
 
-        index = (index + 1) % table->capacity;
+        index = (index + 1) & mask;
     }
 }
 

@@ -23,6 +23,18 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diubah
 
+- **Tabel hash memakai mask, bukan modulo.** `findEntry`, `findValueEntry`
+  dan `tableFindString` dulu memakai `hash % capacity` untuk mencari slot dan
+  untuk probing. Kapasitas tabel selalu pangkat dua, jadi
+  `hash & (capacity - 1)` setara tetapi tanpa pembagian integer. `perf`
+  menunjuk `findValueEntry` di **10,18%** waktu eksekusi. Hasilnya beban
+  `kamus_himpunan` dan `olah_teks` turun **−43,8%** (114,6 → 64,4 ms); dua
+  beban lain tidak terpengaruh karena tidak didominasi operasi tabel. Jumlah
+  instruksi dan keluaran tetap identik — ini murni biaya per instruksi.
+  `adjustCapacity`/`adjustValueCapacity` kini menolak kapasitas
+  non-pangkat-dua dengan exit 70, supaya asumsi itu tidak bisa dilanggar
+  diam-diam oleh perubahan `GROW_CAPACITY` di kemudian hari.
+
 - **Benchmark mengukur beban nyata.** `tests/benchmark.sh` dulu mengukur
   `examples/performance_stress.idk`, `loop_nested.idk` dan
   `mutual_recursion.idk` — ketiganya placeholder "v0.2" berisi 4 baris

@@ -424,6 +424,7 @@ jobs:
                    tests/test_format.sh \
                    tests/test_impor_lokasi.sh \
                    tests/test_awakutu.sh \
+                   tests/test_tabel_mask.sh \
                    tests/test_benchmark.sh \
                    tests/test_lint.sh \
                    tests/test_profil.sh \
