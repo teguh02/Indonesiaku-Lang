@@ -14,6 +14,10 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 lulus=0; gagal=0
 
+# Windows: indk.exe menulis CRLF. Tanpa membuang \r, penggabungan baris
+# menghasilkan "800\r,0\r," dan setiap perbandingan gagal walau nilainya benar.
+bersihkan() { tr -d '\r'; }
+
 periksa() {
     if [ "$2" = "$3" ]; then
         lulus=$((lulus+1))
@@ -47,7 +51,7 @@ cetak(panjang(d))
 cetak(jumlah)
 cetak(hilang)
 EOF
-hasil=$("$BIN" "$TMP/tumbuh.idk" 2>&1 | tr '\n' ',')
+hasil=$("$BIN" "$TMP/tumbuh.idk" 2>&1 | bersihkan | tr '\n' ',')
 periksa "1000 kunci bertahan melewati resize" "$hasil" "1000,999000,0,"
 
 # 2. Tombstone: hapus separuh kunci, lalu pastikan yang tersisa masih ketemu
@@ -82,7 +86,7 @@ cetak(ada)
 cetak(tak_ada)
 cetak(panjang(d))
 EOF
-hasil=$("$BIN" "$TMP/hapus.idk" 2>&1 | tr '\n' ',')
+hasil=$("$BIN" "$TMP/hapus.idk" 2>&1 | bersihkan | tr '\n' ',')
 periksa "tombstone tidak menyembunyikan kunci sah" "$hasil" "250,250,250,"
 
 # 3. Hapus lalu masukkan lagi kunci yang sama: slot tombstone harus dipakai
@@ -109,7 +113,7 @@ cetak(panjang(d))
 cetak(d["x0"])
 cetak(d["x199"])
 EOF
-hasil=$("$BIN" "$TMP/ulang.idk" 2>&1 | tr '\n' ',')
+hasil=$("$BIN" "$TMP/ulang.idk" 2>&1 | bersihkan | tr '\n' ',')
 periksa "hapus lalu isi ulang memakai slot kembali" "$hasil" "0,200,1000,1199,"
 
 # 4. Himpunan lewat jalur yang sama (ValueTable), termasuk nilai non-teks.
@@ -126,7 +130,7 @@ cetak(300 dalam h)
 cetak("s300" dalam h)
 cetak(9999 dalam h)
 EOF
-hasil=$("$BIN" "$TMP/himpunan.idk" 2>&1 | tr '\n' ',')
+hasil=$("$BIN" "$TMP/himpunan.idk" 2>&1 | bersihkan | tr '\n' ',')
 periksa "himpunan campur angka dan teks" "$hasil" "1200,benar,benar,salah,"
 
 # 5. Tabrakan hash disengaja: kunci dengan nilai berbeda yang sengaja dibuat
@@ -151,7 +155,7 @@ selagi i < 800 {
 cetak(panjang(d))
 cetak(keliru)
 EOF
-hasil=$("$BIN" "$TMP/tabrakan.idk" 2>&1 | tr '\n' ',')
+hasil=$("$BIN" "$TMP/tabrakan.idk" 2>&1 | bersihkan | tr '\n' ',')
 periksa "800 kunci mirip, probing panjang" "$hasil" "800,0,"
 
 echo "TABEL-MASK: $lulus lulus, $gagal gagal"
