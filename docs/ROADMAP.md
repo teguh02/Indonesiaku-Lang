@@ -675,7 +675,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 **Rekomendasi rilis fase: `v1.7.0` (minor), kandidat `v1.7.0-rc.1`; patch `v1.7.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Template engine dengan escaping aman, loop/percabangan, include/layout dan integrasi SSR memiliki tes golden, XSS dan regresi.\n\n
 **Langkah pengembangan:**
 
-1. [x] Rancang docs/RENCANA_FITUR/ssr_template_engine.md. Definisikan modul terpisah (mis. pustaka/templat.idk atau engine native C jika hasil profil membutuhkannya), template root, render(nama,data), render_teks(sumber,data), error dan scope (**SSR-01**).
+1. [x] Rancang docs/RENCANA_FITUR/selesai/ssr_template_engine.md. Definisikan modul terpisah (mis. pustaka/templat.idk atau engine native C jika hasil profil membutuhkannya), template root, render(nama,data), render_teks(sumber,data), error dan scope (**SSR-01**).
 2. [x] Bangun loader dan parser yang memisahkan literal HTML, interpolasi {{ nama }} dan tag {% ... %}, dengan penanda path/baris/kolom, batas ukuran dan kedalaman (**SSR-02**).
 3. [x] Implementasikan interpolasi variabel, akses kamus dan atribut yang dibolehkan, serta error untuk nilai yang tidak tersedia; **jangan evaluasi string menjadi kode .idk arbitrer** (**SSR-03**).
 4. [x] Tambahkan kondisi dan loop bertingkat dengan sintaks yang konsisten, misalnya {% jika ... %} / {% selain %} / {% akhirjika %}, {% untuk ... %} / {% akhiruntuk %}, dan uji scoping (**SSR-04**).
@@ -686,7 +686,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 9. [ ] Buat tes diagnosis path/baris/kolom, input XSS, Unicode, nesting, template tidak ada, include cyclic, traversal, beban input besar dan sanitizer/GC (**SSR-09**).
 10. [ ] Tulis contoh website dinamis menggunakan SQLite (listing dan detail mahasiswa), dokumentasi template di website/panduan/, serta panduan deployment dan troubleshooting (**SSR-10**).
 
-**Contoh target (usulan):** kembalikan templat.render("mahasiswa.html", {"nama":"Budi"}); isi template: <h1>{{ nama }}</h1>. Sintaks ini belum implementasi.
+**Contoh target:** `kembalikan templat.render("mahasiswa.html", {"nama":"Budi"})`; isi template: `<h1>{{ nama }}</h1>`. Sintaks ini sudah tersedia lewat `pustaka/templat.idk`.
 
 **Selesai jika:** halaman server-side menampilkan data dinamis dari database, auto-escaping aktif, include/layout bekerja, diagnostics jelas dan seluruh tes aman lulus.
 
