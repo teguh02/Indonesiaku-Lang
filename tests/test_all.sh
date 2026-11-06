@@ -282,6 +282,20 @@ if [ -f tests/templat_cache.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Mode --sandbox (Fase 8): batas keamanan yang dipakai playground web.
+# Portabel (bash + indk), tidak butuh jaringan keluar.
+if [ -f tests/sandbox.sh ]; then
+    if bash tests/sandbox.sh > /tmp/idk_sandbox.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} sandbox"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} sandbox"
+        sed 's/^/      /' /tmp/idk_sandbox.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES sandbox"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Diagnosis templat (SSR-09): pesan galat menyebut berkas, batas tetap
 # berlaku, dan parsing linear terhadap jumlah tag. Portabel (bash + indk).
 if [ -f tests/templat_diagnosis.sh ]; then

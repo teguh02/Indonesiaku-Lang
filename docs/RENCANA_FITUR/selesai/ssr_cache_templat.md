@@ -1,6 +1,6 @@
 # Rencana Fitur: cache parsing templat (SSR-08)
 
-- **Status:** dikerjakan
+- **Status:** selesai
 - **Target versi:** 1.7.0
 - **Pemilik:** teguh02
 

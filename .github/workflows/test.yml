@@ -447,7 +447,8 @@ jobs:
                    tests/test_uji.sh \
                    tests/test_panduan.sh \
                    tests/templat_cache.sh \
-                   tests/templat_diagnosis.sh; do
+                   tests/templat_diagnosis.sh \
+                   tests/sandbox.sh; do
             echo "=== $t ==="
             if bash "$t"; then echo "  ok"; else echo "  GAGAL: $t"; gagal=1; fi
           done

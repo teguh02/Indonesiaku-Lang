@@ -9,6 +9,26 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **Tes mode `--sandbox`** (`tests/sandbox.sh`, 16 asersi). Mode ini dipakai
+  playground web untuk setiap program pengguna, tetapi sebelumnya **tidak
+  punya tes sama sekali**. Yang ditemukan saat menulisnya: `soket_dengar()`
+  lolos sepenuhnya — program sandbox bisa memasang listener dan memakai port
+  host, padahal `soket_sambung()` sudah ditolak sejak awal.
+
+- **Contoh website dinamis SQLite** (`examples/web_mahasiswa.idk`, SSR-10) —
+  menyambung templat, SQLite, dan router: halaman daftar dan detail,
+  parameter SQL diikat (`?`, bukan dirangkai), id tak dikenal membalas 404,
+  dan nama berisi `<script>` ter-escape otomatis. Bagian 8.8 baru di
+  `website/panduan/08_DEPLOYMENT.md`: direktori templat wajib ikut `COPY`,
+  volume SQLite adalah direktori (bukan berkas, karena `-wal`/`-shm`), dan
+  tabel troubleshooting gejala → sebab.
+
+- **Cache hasil parsing templat** (SSR-08) — `templat.mesin(akar)` mengurai
+  tiap berkas sekali, lalu memeriksa ukuran dan waktu-ubah pada tiap render
+  dan mengurai ulang hanya bila berubah. Parsing adalah **73,7%** kerja tiap
+  render; sesudahnya **−73,4%** instruksi dengan keluaran byte-identik.
+  Matikan dengan `templat.mesin(akar, salah)`.
+
 - **`{% sertakan %}` dan pewarisan templat (`{% perluas %}` / `{% blok %}`)**
   di `pustaka/templat.idk` (SSR-05). Komponen bisa dipakai ulang dan kerangka
   halaman tidak perlu disalin ke tiap templat; blok yang tidak ditimpa anak
@@ -57,6 +77,37 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   (bukan sampling waktu), jadi hasilnya deterministik dan tidak terganggu
   unwinding galat maupun generator. Laporan ke stderr; stdout program tetap
   bersih untuk dipipa. Overhead saat tidak dipakai tidak terukur.
+
+### Diperbaiki
+
+- **`HEAD` pada rute ber-`GET` dibalas `405`** (SSR-07). RFC 9110 §9.3.2
+  mewajibkan server yang mendukung `GET` juga mendukung `HEAD`; jalur berkas
+  statis sudah benar, jalur rute tidak — sehingga `curl -I`, pemeriksa
+  tautan, cache, dan monitor uptime gagal di setiap halaman. Header kini
+  identik dengan `GET` (termasuk `Content-Length`) dengan badan dibuang, dan
+  `Allow` ikut menyebut `HEAD`.
+
+- **Galat templat kini menyebut nama berkas** (SSR-09). Sebelumnya hanya
+  `baris 7:` — tidak bisa ditindaklanjuti dalam rantai
+  `{% perluas %}`/`{% sertakan %}`, karena berkas satu baris pun bisa
+  melaporkan "baris 2" milik komponen yang disertakannya. Format sekarang
+  `berkas:baris N:` mengikuti kebiasaan kompiler, dan selalu menunjuk berkas
+  **tempat** kesalahan, bukan halaman terluar.
+
+- **Parsing templat tidak lagi kuadratik** (SSR-09). Batas 10.000 tag ada,
+  tetapi mencapainya butuh **94 detik** — batas yang menolak selambat itu
+  bukan pelindung, justru jalan DoS-nya. Penyebabnya penghitung nomor baris
+  yang memindai ulang dari awal berkas tiap tag, dan dua panggilan pencarian
+  per iterasi yang masing-masing menyapu sisa berkas. Kini linear: 8× input =
+  8,00× instruksi, dan 10.000 tag selesai di bawah satu detik.
+
+- **`soket_dengar()` tidak ditolak dalam mode `--sandbox`.** Lihat di atas.
+
+- **Contoh multikondisi di panduan sintaks** ([#63](https://github.com/teguh02/Indonesiaku-Lang/issues/63))
+  menumpuk tiga pernyataan `jika` terpisah alih-alih rantai `jika_lain`,
+  sehingga `nilai = 85` mencetak "Grade B" **dan** "Grade C". Bahasanya
+  sendiri tidak bermasalah — `jika_lain` sudah ada dan benar. Contohnya
+  diperbaiki dan ditambah pembanding yang menjelaskan perbedaannya.
 
 ### Diubah
 

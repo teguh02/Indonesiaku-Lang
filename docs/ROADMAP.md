@@ -464,6 +464,40 @@ AOT/bundel executable, ~~anotasi tipe opsional~~ ✅ ([rencana](RENCANA_FITUR/se
 sekolah.
 Ref: 04 §11–13, 05.
 
+**Status:** 🔶 sebagian. Yang **sudah ada dan terbukti jalan**: MySQL/PostgreSQL,
+TLS/HTTPS, anotasi tipe, distribusi paket native, `--periksa-pembaruan`, dan
+mode sandbox. Yang **belum**: API embedding C, GUI, dan AOT/bundel executable —
+ketiganya belum punya rencana fitur sehingga tidak dijadwalkan di sini. Dua
+butir lain sudah **dipindah**, bukan tertinggal: manajer paket + registri ke
+Fase 14, dan FFI dibatalkan beralasan di
+[K18](ANALISIS/03_KEPUTUSAN_DESAIN.md) (SQLite di-*vendor* sebagai
+amalgamation, jadi FFI tidak lagi menghalangi apa pun).
+
+- [x] **MySQL dan PostgreSQL** — `pustaka/pg.idk` (440 baris) dan
+      `pustaka/my.idk` (531 baris) bicara wire protocol langsung lewat soket,
+      tanpa libpq/libmysqlclient, sehingga biner tetap hanya menaut libc dan
+      libm ([rencana](RENCANA_FITUR/database_multi_driver.md)). Diuji
+      `tests/pg_driver.sh`, `tests/my_driver.sh`,
+      `tests/api_siswa_pg_server.sh`.
+
+- [x] **TLS/HTTPS** — mbedTLS di-*vendor*, native `tls_mulai`, keputusan di
+      [ANALISIS/08_KEPUTUSAN_TLS.md](ANALISIS/08_KEPUTUSAN_TLS.md),
+      [rencana](RENCANA_FITUR/selesai/https_tls.md). Diuji
+      `tests/https_klien.sh`.
+
+- [x] **Mode sandbox** (`indk --sandbox`) — menolak `lingkungan`,
+      `ambil_lingkungan`, `isi_direktori`, `soket_sambung`, `soket_dengar`,
+      dan `proses.jalankan` dengan `GalatIzin` (turunan `GalatOS`).
+      Playground web menjalankan setiap program pengguna dengan mode ini.
+      Flag hanya dikenali sebelum path skrip, sehingga skrip tetap menerima
+      argumennya sendiri yang bernama `--sandbox`.
+      **Batas yang disadari:** ini bukan jail filesystem — baca/tulis berkas
+      tetap diizinkan, dan batas itu ditegakkan container. `--sandbox` saja
+      tidak cukup sebagai pengaman kode tidak tepercaya.
+      Diuji `tests/sandbox.sh` (16 asersi; sebelumnya mode ini **tidak punya
+      tes sama sekali**, dan `soket_dengar` ternyata lolos sepenuhnya
+      sehingga program sandbox bisa memasang listener di port host).
+
 - [x] **Distribusi paket native per sistem operasi** (v1.4.0,
       [rencana](RENCANA_FITUR/selesai/paket_native_dan_pembaruan.md)) —
       rilis menyertakan `indonesiaku_<versi>_amd64.deb` dan

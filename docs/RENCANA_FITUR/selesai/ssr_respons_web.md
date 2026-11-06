@@ -1,6 +1,6 @@
 # Rencana Fitur: integrasi render templat ke respons web (SSR-07)
 
-- **Status:** dikerjakan
+- **Status:** selesai
 - **Target versi:** 1.7.0
 - **Pemilik:** teguh02
 

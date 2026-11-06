@@ -1839,6 +1839,15 @@ Value nativeFnSoketDengar(int argCount, Value* args) {
         nativeRaise("soket_dengar() memerlukan 1-2 argumen (port [, alamat])");
         return KOSONG_VAL;
     }
+    // Membuka port dengar adalah akses ke luar program, sama seperti
+    // soket_sambung(): program sandbox bisa memasang layanan yang dihubungi
+    // dari luar, dan di playground itu berarti satu program memakai port
+    // host. soket_sambung() sudah ditolak sejak awal; ini lubang yang
+    // tertinggal pada sisi server.
+    if (sistemSandbox()) {
+        nativeRaiseKelas(vm.galatIzin, "soket_dengar() tidak diizinkan dalam mode --sandbox");
+        return KOSONG_VAL;
+    }
     if (!IS_NUMBER(args[0])) {
         nativeRaise("soket_dengar() hanya menerima angka (port)");
         return KOSONG_VAL;
