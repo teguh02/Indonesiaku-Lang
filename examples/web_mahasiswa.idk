@@ -1,0 +1,147 @@
+# Website dinamis: SQLite + templat + router (SSR-10).
+#
+# Menyambung tiga pustaka yang selama ini hanya dicontohkan terpisah:
+# db_sqlite.idk (DB tanpa web), templat_dasar.idk (templat tanpa DB), dan
+# web_router.idk (web tanpa keduanya). Sambungan itulah yang dipakai orang,
+# dan di situ pula kesalahan nyata muncul: SQL injection, escaping yang
+# mati, 404 yang berubah jadi 500, dan N+1 query.
+#
+# Dijalankan lewat app.tangani() -- fungsi murni, tidak membuka port -- supaya
+# golden deterministik di CI. Jalur HTTP sungguhan sudah dijaga
+# tests/web_templat_server.sh. Lihat 08_DEPLOYMENT.md untuk menjalankannya
+# beneran dengan app.jalankan().
+
+impor web
+impor templat
+impor jalur
+impor "pustaka/teks.idk"     # teks_pisah/teks_cari dipakai pembantu di bawah
+
+# --- Basis data -------------------------------------------------------------
+# ":memory:" supaya contoh ini tidak meninggalkan berkas dan hasilnya sama di
+# setiap mesin. Untuk berkas sungguhan lihat examples/db_sqlite.idk.
+variabel db = db_buka(":memory:")
+db_eksekusi(db, "CREATE TABLE mahasiswa (id INTEGER PRIMARY KEY, nama TEXT, jurusan TEXT, ipk REAL)")
+
+variabel benih = [
+    ["Budi Santoso", "Teknik Informatika", 3.45],
+    ["Ani Lestari", "Sistem Informasi", 3.82],
+    # Nama ini sengaja memuat HTML: kalau escaping mati, tag-nya akan bocor
+    # mentah ke halaman dan golden langsung berubah.
+    ["<script>alert(1)</script>", "Teknik Elektro", 3.1]
+]
+untuk m dalam benih {
+    # Parameter diikat dengan '?'. JANGAN pernah merangkai SQL dengan '+' --
+    # satu nama berisi tanda kutip sudah cukup untuk merusak kuerinya.
+    db_eksekusi(db, "INSERT INTO mahasiswa (nama, jurusan, ipk) VALUES (?, ?, ?)", m)
+}
+
+# --- Templat ----------------------------------------------------------------
+# Contoh ini menulis templatnya sendiri supaya benar-benar bisa dijalankan apa
+# adanya. Pada aplikasi sungguhan, berkas-berkas ini ada di repo.
+variabel akar = jalur.gabung("tests", "data", "mhs_tampilan")
+# Idempoten: contoh ini harus bisa dijalankan berkali-kali, dan golden-nya
+# diregenerasi berulang.
+jika tidak jalur.ada(akar) { buat_direktori(akar) }
+
+tulis_semua(jalur.gabung(akar, "dasar.html"),
+    "<!doctype html>\n"
+    + "<html lang=\"id\"><head><title>{{ judul }}</title></head>\n"
+    + "<body>\n"
+    + "{% blok isi %}{% akhirblok %}\n"
+    + "</body></html>\n")
+
+tulis_semua(jalur.gabung(akar, "daftar.html"),
+    "{% perluas \"dasar.html\" %}\n"
+    + "{% blok isi %}\n"
+    + "<h1>Daftar Mahasiswa</h1>\n"
+    + "<ul>\n"
+    + "{% untuk m dalam mahasiswa %}"
+    + "<li><a href=\"/mahasiswa/{{ m.id }}\">{{ m.nama }}</a> &mdash; {{ m.jurusan }}</li>\n"
+    + "{% akhiruntuk %}"
+    + "</ul>\n"
+    + "{% akhirblok %}\n")
+
+tulis_semua(jalur.gabung(akar, "detail.html"),
+    "{% perluas \"dasar.html\" %}\n"
+    + "{% blok isi %}\n"
+    + "<h1>{{ mhs.nama }}</h1>\n"
+    + "<p>Jurusan: {{ mhs.jurusan }}</p>\n"
+    + "<p>IPK: {{ mhs.ipk }}</p>\n"
+    + "{% akhirblok %}\n")
+
+# cache=benar adalah bawaan: templat diurai sekali, lalu dipakai ulang selama
+# ukuran dan waktu-ubah berkasnya tidak berubah (SSR-08).
+variabel tampilan = templat.mesin(akar)
+
+# --- Rute -------------------------------------------------------------------
+variabel app = web.Aplikasi()
+
+app.rute("GET", "/mahasiswa", fungsi(req) {
+    # SATU kueri untuk seluruh daftar. Jangan ambil id dulu lalu query per
+    # baris di dalam gelung -- itu N+1, dan baru terasa saat datanya banyak.
+    variabel baris = db_ambil_semua(db,
+        "SELECT id, nama, jurusan FROM mahasiswa ORDER BY nama")
+    kembalikan web.html(200, tampilan.render("daftar.html", {
+        "judul": "Daftar Mahasiswa",
+        "mahasiswa": baris
+    }))
+})
+
+app.rute("GET", "/mahasiswa/:id", fungsi(req) {
+    variabel id = req["params"]["id"]
+
+    # Parameter rute datang dari URL, jadi isinya apa saja -- "abc", "1 OR 1=1",
+    # atau kosong. Diikat sebagai parameter, SQLite memperlakukannya sebagai
+    # nilai, bukan SQL.
+    variabel mhs = db_ambil_satu(db,
+        "SELECT id, nama, jurusan, ipk FROM mahasiswa WHERE id = ?", [id])
+
+    # Id tak dikenal = 404, bukan 500 dan bukan halaman kosong ber-status 200.
+    jika mhs adalah kosong {
+        kembalikan web.html(404, "<h1>404</h1><p>Mahasiswa tidak ditemukan.</p>")
+    }
+
+    kembalikan web.html(200, tampilan.render("detail.html", {
+        "judul": mhs["nama"],
+        "mhs": mhs
+    }))
+})
+
+# --- Permintaan contoh ------------------------------------------------------
+# app.tangani() bekerja pada TEKS request mentah dan mengembalikan TEKS
+# respons, jadi dua pembantu ini memisahkan baris status dari badannya.
+fungsi baris_status(resp) {
+    kembalikan teks_pisah(resp, "\r\n")[0]
+}
+
+fungsi badan(resp) {
+    variabel i = teks_cari(resp, "\r\n\r\n")
+    kembalikan potong(resp, i + 4, panjang(resp) - i - 4)
+}
+
+fungsi tunjukkan(label, metode, jalan) {
+    variabel resp = app.tangani(
+        metode + " " + jalan + " HTTP/1.1\r\nHost: kampus.id\r\n\r\n")
+    cetak("===", label, "->", baris_status(resp), "===")
+    cetak(badan(resp))
+}
+
+tunjukkan("listing", "GET", "/mahasiswa")
+tunjukkan("detail ada", "GET", "/mahasiswa/1")
+tunjukkan("detail tidak ada", "GET", "/mahasiswa/999")
+# Id non-numerik tidak boleh meledak: SQLite hanya tidak menemukan barisnya.
+tunjukkan("id bukan angka", "GET", "/mahasiswa/abc")
+# Upaya injeksi lewat parameter rute. %20 adalah spasi ter-URL-encode, supaya
+# payload-nya sampai utuh sebagai SATU parameter: "1 OR 1=1". Karena diikat
+# dengan '?', SQLite mencarinya sebagai nilai id -- tidak ada baris yang
+# cocok, jadi 404. Kalau SQL dirangkai dengan '+', ini akan membalas 200.
+tunjukkan("upaya injeksi", "GET", "/mahasiswa/1%20OR%201=1")
+
+db_tutup(db)
+
+# Bersihkan artefak supaya menjalankan contoh ini tidak meninggalkan apa pun
+# di pohon kerja. hapus_direktori() tidak rekursif, jadi isinya dulu.
+untuk berkas dalam ["dasar.html", "daftar.html", "detail.html"] {
+    hapus_berkas(jalur.gabung(akar, berkas))
+}
+hapus_direktori(akar)

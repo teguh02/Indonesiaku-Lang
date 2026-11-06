@@ -310,7 +310,78 @@ jadwalkan `certbot renew` — sertifikat Let's Encrypt berlaku 90 hari.
 
 ---
 
-## 8.8 Daftar periksa sebelum publik
+## 8.8 Aplikasi dengan templat (SSR)
+
+Aplikasi yang merender HTML dari `pustaka/templat.idk` punya dua hal yang
+tidak dipunyai API JSON: direktori templat yang harus ikut ke container, dan
+cache parsing.
+
+### Direktori templat harus ikut
+
+`templat.mesin(akar)` membaca berkas saat render, bukan saat build. Kalau
+direktorinya tidak ikut disalin, aplikasi tetap start dan baru gagal pada
+permintaan pertama.
+
+```dockerfile
+COPY pustaka/ ./pustaka/
+COPY tampilan/ ./tampilan/
+COPY app.idk .
+```
+
+Akar templat sebaiknya mutlak atau relatif terhadap direktori kerja yang
+Anda tetapkan sendiri — jangan bergantung pada direktori kerja pemanggil:
+
+```indonesiaku-takjalan
+variabel tampilan = templat.mesin("/app/tampilan")
+```
+
+Dengan `read_only: true` di Compose, direktori templat tetap terbaca karena
+hanya perlu akses baca. Yang butuh tulis hanya berkas basis data.
+
+### Cache parsing
+
+Cache aktif secara bawaan dan **aman untuk produksi**: setiap render
+memeriksa ukuran dan waktu-ubah berkas, lalu mengurai ulang hanya bila
+berubah. Tidak ada mode yang perlu dinyalakan saat deploy, dan tidak ada
+yang perlu dimatikan saat mengembangkan.
+
+Mematikannya (`templat.mesin(akar, salah)`) hanya masuk akal pada kasus
+aneh seperti direktori templat di atas filesystem jaringan yang metadatanya
+tidak tepercaya. Biayanya besar: parsing adalah sekitar tiga perempat kerja
+tiap render.
+
+### Basis data
+
+Untuk SQLite, yang perlu ditulis adalah berkas DB beserta berkas `-wal` dan
+`-shm` di sisinya — jadi yang dipasang sebagai volume adalah
+**direktori**-nya, bukan satu berkas:
+
+```yaml
+    read_only: true
+    volumes:
+      - ./data:/app/data
+```
+
+> **Satu permintaan pada satu waktu.** Gelung server bawaan melayani
+> berurutan, jadi satu kueri lambat menahan semua permintaan lain. Beri
+> indeks pada kolom yang dipakai `WHERE`, dan hindari N+1 — satu kueri untuk
+> daftar, bukan satu kueri per baris.
+
+### Troubleshooting
+
+| Gejala | Sebab yang paling sering |
+|---|---|
+| `templat tidak ditemukan: ...` | Direktori templat tidak ikut `COPY`, atau akar relatif sedangkan direktori kerja container berbeda |
+| Tag HTML tampil mentah sebagai `&lt;b&gt;` | Memang benar — escaping otomatis. Data Anda sudah berisi HTML, bukan templat yang salah |
+| `<script>` pengguna ikut berjalan di browser | Markup itu tidak datang dari `{{ ... }}`. Periksa HTML yang Anda rakit sendiri lalu serahkan ke `web.html()` |
+| Perubahan templat tidak muncul | Berkasnya tertulis di luar container, atau yang tersalin saat build adalah salinan lain |
+| `berkas.html:baris 7: ...` | Nama berkas di depan menunjuk templat **tempat** kesalahan, bukan halaman yang Anda minta |
+| Galat 500 tanpa detail di respons | Memang disengaja; pesan lengkapnya ada di log stderr container |
+| `basis data terkunci` | Dua proses menulis ke berkas SQLite yang sama; jalankan satu instansi, atau naikkan `db_batas_tunggu()` |
+
+---
+
+## 8.9 Daftar periksa sebelum publik
 
 - [ ] Port diikat `127.0.0.1:...`, bukan `0.0.0.0` — ingat ufw ditembus Docker
 - [ ] TLS aktif, HTTP dialihkan ke HTTPS

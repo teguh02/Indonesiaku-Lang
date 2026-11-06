@@ -2048,7 +2048,21 @@ Blok yang tidak ditimpa anak memakai isi bawaan induk. Aturan yang berlaku:
 - `{% sertakan %}` hanya tersedia lewat `templat.mesin(akar)`. `render_teks()`
   menolaknya karena tanpa akar tidak ada yang membatasi berkas yang dibaca.
 
-Belum ada: filter (`{{ x | huruf_besar }}`) dan cache hasil parsing.
+Belum ada: filter (`{{ x | huruf_besar }}`).
+
+Hasil parsing di-cache secara bawaan oleh `templat.mesin(akar)`: tiap render
+memeriksa ukuran dan waktu-ubah berkas, dan mengurai ulang hanya bila berubah.
+Matikan dengan `templat.mesin(akar, salah)` bila metadata berkas tidak
+tepercaya — biayanya sekitar tiga perempat kerja tiap render.
+
+### Contoh lengkap: website dinamis dengan SQLite
+
+`examples/web_mahasiswa.idk` menyambung templat, SQLite, dan router web:
+halaman daftar dan halaman detail, parameter SQL yang diikat (bukan
+dirangkai), id tak dikenal yang membalas 404, dan nama berisi `<script>`
+yang ter-escape otomatis. Lihat juga
+[§8.8 Aplikasi dengan templat](08_DEPLOYMENT.md) untuk menjalankannya di
+container berikut tabel troubleshooting.
 
 ## 3. Aplikasi Contoh: Todo-list JSON DB
 
