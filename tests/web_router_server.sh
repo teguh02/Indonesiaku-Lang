@@ -53,9 +53,16 @@ periksa "404" "404" \
 periksa "405 metode salah" "405" \
     "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE --max-time 5 "http://127.0.0.1:$PORT/halo")"
 
-periksa "header Allow pada 405" "GET" \
+# Server yang mendukung GET wajib mendukung HEAD (RFC 9110 §9.3.2), jadi
+# Allow harus menyebut keduanya; "GET" saja membuat header ini berbohong.
+periksa "header Allow pada 405" "GET, HEAD" \
     "$(curl -s -D- -o /dev/null -X DELETE --max-time 5 "http://127.0.0.1:$PORT/halo" \
        | tr -d '\r' | awk -F': ' '/^[Aa]llow:/ {print $2}')"
+
+# `curl -I` adalah HEAD: inilah yang dipakai pemeriksa tautan dan monitor
+# uptime, dan yang dulu membalas 405 pada setiap halaman.
+periksa "curl -I (HEAD) membalas 200" "200" \
+    "$(curl -s -o /dev/null -w '%{http_code}' -I --max-time 5 "http://127.0.0.1:$PORT/halo")"
 
 periksa "POST dengan badan" "diterima 11 bita" \
     "$(curl -s --max-time 5 -X POST --data 'halo dunia!' "http://127.0.0.1:$PORT/kirim")"

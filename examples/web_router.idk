@@ -66,6 +66,15 @@ cetak(baris_status(minta("GET", "/tidak/ada")))
 cetak(baris_status(minta("DELETE", "/todos")))
 cetak(teks_pisah(minta("DELETE", "/todos"), "\r\n")[1])
 
+# --- HEAD dilayani oleh rute GET (RFC 9110 9.3.2) ---
+# Server yang mendukung GET wajib mendukung HEAD. Header identik dengan GET,
+# termasuk Content-Length, hanya badannya yang kosong.
+cetak(baris_status(minta("HEAD", "/todos")))
+cetak("badan HEAD kosong: " + ke_teks(badan(minta("HEAD", "/todos")) == ""))
+cetak("panjang sama GET/HEAD: " + ke_teks(
+    teks_pisah(minta("GET", "/todos"), "\r\n")[2]
+    == teks_pisah(minta("HEAD", "/todos"), "\r\n")[2]))
+
 # --- Query string ---
 cetak(badan(minta("GET", "/cari?q=buku")))
 cetak(badan(minta("GET", "/cari?q=dua%20kata")))

@@ -282,6 +282,21 @@ if [ -f tests/templat_cache.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Render templat lewat respons HTTP sungguhan (SSR-07): status, header, dan
+# halaman galat yang tidak membocorkan jalur berkas. Butuh soket TCP lokal,
+# jadi Linux/macOS saja — sub-suite Git Bash Windows tidak menjalankannya.
+if [ -f tests/web_templat_server.sh ]; then
+    if bash tests/web_templat_server.sh > /tmp/idk_web_templat.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} web_templat_server"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} web_templat_server"
+        sed 's/^/      /' /tmp/idk_web_templat.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES web_templat_server"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # REST API di atas PostgreSQL (Fase 11 langkah 7): CRUD lewat HTTP sungguhan.
 if [ -f tests/api_siswa_pg_server.sh ]; then
     if bash tests/api_siswa_pg_server.sh > /tmp/idk_apipg_uji.log 2>&1; then

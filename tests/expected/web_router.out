@@ -5,7 +5,10 @@ todo nomor 42
 HTTP/1.1 404 Not Found
 HTTP/1.1 404 Not Found
 HTTP/1.1 405 Method Not Allowed
-Allow: GET, POST
+Allow: GET, HEAD, POST
+HTTP/1.1 200 OK
+badan HEAD kosong: benar
+panjang sama GET/HEAD: benar
 mencari: buku
 mencari: dua kata
 mencari: a b

@@ -1,0 +1,48 @@
+# Server SSR untuk tests/web_templat_server.sh.
+#
+# Merender templat sungguhan lewat pustaka templat dan menyajikannya sebagai
+# respons HTTP. Berhenti sendiri setelah IDK_SISA permintaan supaya tidak ada
+# proses menggantung di CI.
+
+impor web
+impor templat
+
+variabel PORT = ke_bulat(ambil_lingkungan("IDK_PORT"))
+variabel SISA = ke_bulat(ambil_lingkungan("IDK_SISA"))
+variabel AKAR = ambil_lingkungan("IDK_TPL")
+
+variabel m = templat.mesin(AKAR)
+variabel app = web.Aplikasi()
+
+app.rute("GET", "/", fungsi(req) {
+    variabel d = kamus()
+    # Nilai ber-Unicode DAN ber-HTML sekaligus: Content-Length harus dihitung
+    # byte, dan escaping harus tetap berlaku lewat jalur HTTP.
+    d["judul"] = "Kopi ☕ <b>tebal</b>"
+    variabel l = daftar()
+    untuk n dalam ["Ani", "Budi & Co", "Cici"] {
+        variabel x = kamus()
+        x["nama"] = n
+        l.tambah(x)
+    }
+    d["mahasiswa"] = l
+    kembalikan web.html(200, m.render("daftar.html", d))
+})
+
+# Templat ada tapi merujuk data yang tidak diberikan: galat saat render,
+# BUKAN saat parsing. Namanya tidak boleh bocor ke klien.
+app.rute("GET", "/rusak", fungsi(req) {
+    kembalikan web.html(200, m.render("rusak.html", kamus()))
+})
+
+# Templat tidak ada sama sekali: pesan galat memuat jalur sistem berkas
+# lengkap, yang paling berbahaya kalau bocor.
+app.rute("GET", "/hilang", fungsi(req) {
+    kembalikan web.html(200, m.render("tidak_ada_sama_sekali.html", kamus()))
+})
+
+app.rute("POST", "/kirim", fungsi(req) {
+    kembalikan web.teks(200, "ok")
+})
+
+app.jalankan(PORT, 10, SISA, salah)

@@ -367,6 +367,19 @@ fungsi _web_jalur_aman(akar, sisa) {
     kembalikan jalur
 }
 
+# _web_buang_badan(res) -> respons tanpa badan, header dipertahankan.
+#
+# Untuk HEAD: RFC 9110 §9.3.2 meminta header yang IDENTIK dengan GET,
+# termasuk Content-Length, hanya badannya yang dibuang. Jadi yang dipotong
+# tepat setelah "\r\n\r\n" pertama, bukan menghitung ulang apa pun.
+fungsi _web_buang_badan(res) {
+    variabel i = teks_cari(res, "\r\n\r\n")
+    jika i < 0 {
+        kembalikan res
+    }
+    kembalikan potong(res, 0, i + 4)
+}
+
 # json(kode, teks_json) -> teks respons HTTP.
 fungsi json(kode, badan) {
     kembalikan http_response_json(kode, badan)
@@ -587,9 +600,46 @@ kelas Aplikasi {
         jika res bukan adalah kosong {
             kembalikan res
         }
+        # HEAD pada rute yang punya GET: RFC 9110 §9.3.2 mewajibkan server
+        # yang mendukung GET juga mendukung HEAD. Jalur berkas statis sudah
+        # benar, jalur rute belum -- padahal semua halaman hasil render
+        # templat lewat sini, jadi `curl -I`, pemeriksa tautan, dan monitor
+        # uptime melihat 405 pada tiap halaman.
+        #
+        # Penangan GET tetap dijalankan dan badannya dibuang. Tidak hemat,
+        # tapi Content-Length WAJIB sama dengan GET dan satu-satunya cara
+        # mengetahuinya adalah dengan merender.
+        jika metode == "HEAD" {
+            untuk r dalam diri.rute_daftar {
+                jika r[0] == "GET" {
+                    variabel p = _web_cocok(r[1], path)
+                    jika p bukan adalah kosong {
+                        req["params"] = p
+                        kembalikan _web_buang_badan(r[2](req))
+                    }
+                }
+            }
+        }
         # Path cocok tapi metode tidak: 405, bukan 404. Membedakan
         # "tidak ada" dari "metode salah" sangat membantu saat debug.
         jika panjang(metode_lain) > 0 {
+            # GET menyiratkan HEAD (lihat di atas), jadi Allow harus
+            # menyebutnya; menyebut GET saja membuat header ini berbohong.
+            # Disisipkan tepat setelah GET, bukan ditempel di akhir: urutan
+            # Allow memang bebas, tapi "GET, HEAD, POST" lebih mudah dibaca
+            # manusia yang sedang men-debug daripada "GET, POST, HEAD".
+            jika "GET" dalam metode_lain {
+                jika tidak "HEAD" dalam metode_lain {
+                    variabel urut = []
+                    untuk mm dalam metode_lain {
+                        tambah(urut, mm)
+                        jika mm == "GET" {
+                            tambah(urut, "HEAD")
+                        }
+                    }
+                    metode_lain = urut
+                }
+            }
             variabel izin = teks_gabung(metode_lain, ", ")
             variabel badan = "Metode tidak boleh"
             variabel kepala = "HTTP/1.1 405 Method Not Allowed\r\nAllow: " + izin
