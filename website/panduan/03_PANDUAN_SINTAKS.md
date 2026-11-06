@@ -533,6 +533,32 @@ jika x > 0 {
 
 ### If-Elif-Else (Multiple Conditions)
 
+Gunakan `jika_lain` untuk kondisi berantai. Cabang diperiksa berurutan dan
+**berhenti pada yang pertama terpenuhi** — sama seperti `elif` di Python.
+
+```indonesiaku
+nilai = 85
+
+jika nilai >= 90 {
+    cetak("Grade A")
+} jika_lain nilai >= 80 {
+    cetak("Grade B")
+} jika_lain nilai >= 70 {
+    cetak("Grade C")
+} selain {
+    cetak("Grade F")
+}
+```
+
+Keluaran: `Grade B` saja.
+
+> **Perhatikan:** `jika_lain` harus ditulis pada baris yang sama dengan `}`
+> penutup cabang sebelumnya, seperti contoh di atas.
+
+Menumpuk beberapa `jika` terpisah **bukan** padanan `elif` — tiap `jika`
+berdiri sendiri dan semuanya diperiksa, jadi lebih dari satu cabang bisa
+ikut berjalan:
+
 ```indonesiaku
 nilai = 85
 
@@ -540,15 +566,17 @@ jika nilai >= 90 {
     cetak("Grade A")
 }
 jika nilai >= 80 {
-    cetak("Grade B")
+    cetak("Grade B")      # tercetak
 }
 jika nilai >= 70 {
-    cetak("Grade C")
-}
-selain {
+    cetak("Grade C")      # IKUT tercetak -- 85 juga >= 70
+} selain {
     cetak("Grade F")
 }
 ```
+
+Keluaran: `Grade B` **dan** `Grade C`. Di sini `selain` hanya menempel pada
+`jika` terakhir, bukan pada seluruh rangkaian.
 
 ### Nested If
 
