@@ -1,0 +1,31 @@
+=== listing -> HTTP/1.1 200 OK ===
+<!doctype html>
+<html lang="id"><head><title>Daftar Mahasiswa</title></head>
+<body>
+
+<h1>Daftar Mahasiswa</h1>
+<ul>
+<li><a href="/mahasiswa/3">&lt;script&gt;alert(1)&lt;/script&gt;</a> &mdash; Teknik Elektro</li>
+<li><a href="/mahasiswa/2">Ani Lestari</a> &mdash; Sistem Informasi</li>
+<li><a href="/mahasiswa/1">Budi Santoso</a> &mdash; Teknik Informatika</li>
+</ul>
+
+</body></html>
+
+=== detail ada -> HTTP/1.1 200 OK ===
+<!doctype html>
+<html lang="id"><head><title>Budi Santoso</title></head>
+<body>
+
+<h1>Budi Santoso</h1>
+<p>Jurusan: Teknik Informatika</p>
+<p>IPK: 3.45</p>
+
+</body></html>
+
+=== detail tidak ada -> HTTP/1.1 404 Not Found ===
+<h1>404</h1><p>Mahasiswa tidak ditemukan.</p>
+=== id bukan angka -> HTTP/1.1 404 Not Found ===
+<h1>404</h1><p>Mahasiswa tidak ditemukan.</p>
+=== upaya injeksi -> HTTP/1.1 404 Not Found ===
+<h1>404</h1><p>Mahasiswa tidak ditemukan.</p>
