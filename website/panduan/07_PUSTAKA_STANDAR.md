@@ -785,9 +785,18 @@ Python, blok `akhirnya` dan `dengan` yang sedang berjalan tidak dijalankan
 lagi.
 
 **Mode `--sandbox`.** `indk --sandbox program.idk` menolak `lingkungan`,
-`ambil_lingkungan`, `isi_direktori`, dan menjalankan program lain (modul
+`ambil_lingkungan`, `isi_direktori`, membuka koneksi atau port
+(`soket_sambung`, `soket_dengar`), dan menjalankan program lain (modul
 `proses`) dengan `GalatIzin`, turunan `GalatOS`. Playground web menjalankan
 setiap program dengan mode ini.
+
+Flag hanya dikenali **sebelum** path skrip, sehingga skrip tetap bisa
+menerima argumennya sendiri yang kebetulan bernama `--sandbox`.
+
+> **Batas yang disadari.** Mode ini **bukan** jail filesystem: membaca dan
+> menulis berkas tetap diizinkan. Batas itu ditegakkan container, bukan flag
+> ini — jangan jadikan `--sandbox` satu-satunya pengaman saat menjalankan
+> kode tidak tepercaya. Dijaga `tests/sandbox.sh`.
 
 ### 1.12 Hash Kriptografis
 

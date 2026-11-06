@@ -1,6 +1,6 @@
 # Rencana Fitur: diagnosis dan ketahanan templat (SSR-09)
 
-- **Status:** dikerjakan
+- **Status:** selesai
 - **Target versi:** 1.7.0
 - **Pemilik:** teguh02
 
