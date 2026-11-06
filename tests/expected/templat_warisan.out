@@ -22,10 +22,10 @@ isi bawaan
 == yang harus ditolak ==
 siklus langsung -> siklus templat: siklus_diri.html -> siklus_diri.html
 siklus tidak langsung -> siklus templat: siklus_a.html -> siklus_b.html -> siklus_a.html
-perluas bukan tag pertama -> baris 2: '{% perluas %}' harus menjadi tag pertama di 'perluas_telat.html'
+perluas bukan tag pertama -> perluas_telat.html:baris 2: '{% perluas %}' harus menjadi tag pertama
 teks di luar blok -> berkas 'teks_luar_blok.html' memakai '{% perluas %}', jadi isinya harus seluruhnya di dalam '{% blok %}'
-blok ganda -> baris 2: blok 'isi' didefinisikan dua kali di 'blok_ganda.html'
-nama templat non-literal -> baris 1: nama templat harus di dalam tanda kutip, dapat 'nama'
+blok ganda -> blok_ganda.html:baris 2: blok 'isi' didefinisikan dua kali
+nama templat non-literal -> sertakan_var.html:baris 1: nama templat harus di dalam tanda kutip, dapat 'nama'
 path traversal -> nama templat tidak boleh mengandung '..': '../rahasia.txt'
 templat tidak ada -> templat tidak ditemukan: 'tests/data/templat/tidak_ada.html'
 render_teks tanpa mesin -> baris 1: '{% sertakan %}' hanya bisa dipakai lewat templat.mesin(akar), bukan render_teks()

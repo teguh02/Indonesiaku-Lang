@@ -282,6 +282,20 @@ if [ -f tests/templat_cache.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Diagnosis templat (SSR-09): pesan galat menyebut berkas, batas tetap
+# berlaku, dan parsing linear terhadap jumlah tag. Portabel (bash + indk).
+if [ -f tests/templat_diagnosis.sh ]; then
+    if bash tests/templat_diagnosis.sh > /tmp/idk_templat_diag.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} templat_diagnosis"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} templat_diagnosis"
+        sed 's/^/      /' /tmp/idk_templat_diag.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES templat_diagnosis"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Render templat lewat respons HTTP sungguhan (SSR-07): status, header, dan
 # halaman galat yang tidak membocorkan jalur berkas. Butuh soket TCP lokal,
 # jadi Linux/macOS saja — sub-suite Git Bash Windows tidak menjalankannya.

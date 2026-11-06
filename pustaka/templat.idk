@@ -82,6 +82,11 @@ fungsi _t_rapikan_akhir(t, a, b) {
     kembalikan ""
 }
 
+# _t_baris_pada(sumber, pos) -> nomor baris 1-basis pada offset `pos`.
+#
+# ponytail: memindai dari awal setiap kali, O(n) per panggilan. Dipakai saat
+# MENAIKKAN galat (sekali, lalu berhenti) jadi tidak masalah di sana. Jalur
+# panas parser memakai _t_baris_maju() di bawah.
 fungsi _t_baris_pada(sumber, pos) {
     variabel n = 1
     variabel i = 0
@@ -90,6 +95,24 @@ fungsi _t_baris_pada(sumber, pos) {
         i = i + 1
     }
     kembalikan n
+}
+
+# _t_baris_maju(sumber, dari, sampai, baris) -> nomor baris di `sampai`,
+# dihitung maju dari posisi `dari` yang nomor barisnya sudah diketahui.
+#
+# Parser memanggil ini sekali per tag. Versi lama memakai _t_baris_pada()
+# yang memindai ULANG dari awal berkas setiap tag, jadi biayanya kuadratik:
+# terukur 2.000 tag = 4 detik tapi 4.000 tag = 12 detik, dan mencapai batas
+# 10.000 tag butuh 94 detik. Batas yang baru menolak setelah satu setengah
+# menit bukan pelindung -- itu justru jalan DoS-nya.
+fungsi _t_baris_maju(sumber, awal, sampai, baris) {
+    variabel b = baris
+    variabel i = awal
+    selagi i < sampai {
+        jika sumber[i] == "\n" { b = b + 1 }
+        i = i + 1
+    }
+    kembalikan b
 }
 
 # Mengurai "a.b[0].c" menjadi ["a", "b", 0, "c"].
@@ -205,6 +228,30 @@ fungsi _t_cari(sumber, pola, mulai) {
     kembalikan 0 - 1
 }
 
+# _t_cari_tag(sumber, mulai, n) -> [posisi, jenis] tag berikutnya.
+#
+# Versi lama memanggil _t_cari() DUA kali per iterasi, satu untuk "{{" dan
+# satu untuk "{%". Pencarian yang tidak pernah ketemu memindai seluruh sisa
+# berkas -- setiap tag. Pada templat dengan 10.000 `{{ ... }}` dan tanpa satu
+# pun `{%`, pencarian "{%" itu memindai sisa berkas 10.000 kali: terukur
+# 10.000 tag = 56 detik.
+#
+# Satu lintasan mencari "{" lalu memeriksa karakter berikutnya. Karena `mulai`
+# selalu maju melewati tag yang sudah diproses, seluruh parsing melewati tiap
+# karakter paling banyak sekali.
+fungsi _t_cari_tag(sumber, mulai, n) {
+    variabel i = mulai
+    selagi i + 1 < n {
+        jika sumber[i] == "{" {
+            variabel c = sumber[i + 1]
+            jika c == "{" { kembalikan [i, "nilai"] }
+            jika c == "%" { kembalikan [i, "tag"] }
+        }
+        i = i + 1
+    }
+    kembalikan [0 - 1, ""]
+}
+
 # Mengurai sampai salah satu penanda di `henti` ditemukan.
 # Mengembalikan [node, posisi_setelah_tag_henti, nama_tag_henti].
 fungsi _t_urai_blok(sumber, pos, henti, kedalaman, hitung) {
@@ -217,21 +264,9 @@ fungsi _t_urai_blok(sumber, pos, henti, kedalaman, hitung) {
     variabel n = panjang(sumber)
 
     selagi i < n {
-        variabel a = _t_cari(sumber, "{{", i)
-        variabel b = _t_cari(sumber, "{%", i)
-
-        variabel titik = 0 - 1
-        variabel jenis = ""
-        jika a == 0 - 1 {
-            jika b != 0 - 1 { titik = b jenis = "tag" }
-        } selain {
-            jika b == 0 - 1 {
-                titik = a
-                jenis = "nilai"
-            } selain {
-                jika a < b { titik = a jenis = "nilai" } selain { titik = b jenis = "tag" }
-            }
-        }
+        variabel tmp = _t_cari_tag(sumber, i, n)
+        variabel titik = tmp[0]
+        variabel jenis = tmp[1]
 
         jika titik == 0 - 1 {
             jika panjang(henti) > 0 {
@@ -251,7 +286,13 @@ fungsi _t_urai_blok(sumber, pos, henti, kedalaman, hitung) {
             naikkan GalatTemplat(
                 "terlalu banyak tag (maksimum " + ke_teks(_T_MAKS_TAG) + ")")
         }
-        variabel baris = _t_baris_pada(sumber, titik)
+        # hitung[1] = offset terakhir yang nomor barisnya sudah dihitung,
+        # hitung[2] = nomor barisnya. Keduanya hanya maju, dan rekursi berbagi
+        # daftar yang sama, jadi tiap karakter sumber dilewati paling banyak
+        # sekali selama seluruh parsing -- bukan sekali per tag.
+        variabel baris = _t_baris_maju(sumber, hitung[1], titik, hitung[2])
+        hitung[1] = titik
+        hitung[2] = baris
 
         jika jenis == "nilai" {
             variabel tutup = _t_cari(sumber, "}}", titik)
@@ -435,7 +476,7 @@ fungsi urai(sumber) {
         naikkan GalatTemplat(
             "sumber templat melebihi " + ke_teks(_T_MAKS_SUMBER) + " bita")
     }
-    variabel hitung = [0]
+    variabel hitung = [0, 0, 1]
     variabel hasil = _t_urai_blok(sumber, 0, daftar(), 0, hitung)
     kembalikan hasil[0]
 }
@@ -718,26 +759,60 @@ kelas Mesin {
                 + ke_teks(_T_MAKS_SERTAKAN) + ")")
         }
 
-        variabel node = diri._node(nama)
-        tumpukan.tambah(nama)
-
-        variabel induk = diri._induk(node, nama)
-        jika induk == kosong {
-            _t_render_node(node, data, keluar, ktx)
-        } selain {
-            # Blok anak dikumpulkan lalu INDUK yang dirender: kerangka halaman
-            # milik induk, anak hanya mengisi lubangnya.
-            variabel timpa = ktx["blok"]
-            untuk n dalam node {
-                jika n["jenis"] == "blok" {
-                    # Blok terluar menang: induk terdekat sudah menimpa, dan
-                    # kakeknya tidak boleh menimpa balik.
-                    jika !(n["nama"] dalam timpa) {
-                        timpa[n["nama"]] = n["badan"]
+        # Satu-satunya tempat nama berkas diketahui saat galat lewat. Parser
+        # dan perender hanya tahu nomor baris -- mereka tidak tahu berkas mana
+        # yang sedang dibaca, dan menambah parameter nama ke 40 lokasi
+        # `naikkan` berarti 40 tempat yang bisa lupa diperbarui.
+        #
+        # Diisi sekali: galat dari {% sertakan %} yang dalam harus menyebut
+        # berkas TERDALAM (tempat kesalahan sebenarnya), bukan berkas terluar
+        # yang kebetulan paling akhir menangkapnya.
+        #
+        # _node() ikut DI DALAM coba: galat sintaks terjadi saat parsing, dan
+        # itu justru galat yang paling sering dilihat saat menulis templat.
+        variabel node = kosong
+        coba {
+            node = diri._node(nama)
+            tumpukan.tambah(nama)
+            variabel induk = diri._induk(node, nama)
+            jika induk == kosong {
+                _t_render_node(node, data, keluar, ktx)
+            } selain {
+                # Blok anak dikumpulkan lalu INDUK yang dirender: kerangka
+                # halaman milik induk, anak hanya mengisi lubangnya.
+                variabel timpa = ktx["blok"]
+                untuk n dalam node {
+                    jika n["jenis"] == "blok" {
+                        # Blok terluar menang: induk terdekat sudah menimpa,
+                        # dan kakeknya tidak boleh menimpa balik.
+                        jika !(n["nama"] dalam timpa) {
+                            timpa[n["nama"]] = n["badan"]
+                        }
                     }
                 }
+                diri._render_berkas(induk, data, keluar, ktx)
             }
-            diri._render_berkas(induk, data, keluar, ktx)
+        } kecuali GalatTemplat sebagai e {
+            # Hanya galat ber-"baris N" yang butuh nama berkas: nomor baris
+            # tanpa berkas tidak bisa ditindaklanjuti. Galat lain (siklus,
+            # traversal, templat tidak ditemukan, terlalu dalam) sudah
+            # menyebut berkas atau rantainya sendiri -- menempelkan prefiks
+            # di situ hanya menghasilkan "a.html:siklus templat: a.html -> ...".
+            #
+            # Pemeriksaan ini sekaligus membuat operasinya idempoten: setelah
+            # berkas terdalam menempelkan prefiks, pesannya tidak lagi diawali
+            # "baris " sehingga berkas-berkas di atasnya tidak menimpa. Jadi
+            # yang disebut selalu berkas TEMPAT kesalahan, bukan berkas
+            # terluar yang kebetulan paling akhir menangkapnya.
+            jika panjang(e.pesan) >= 6 {
+                jika potong(e.pesan, 0, 6) == "baris " {
+                    # Format "berkas:baris N:" mengikuti kebiasaan kompiler
+                    # (gcc, clang) supaya editor dan mata manusia
+                    # menemukannya di tempat yang sama.
+                    e.pesan = nama + ":" + e.pesan
+                }
+            }
+            naikkan e
         }
 
         tumpukan.hapus_pada(panjang(tumpukan) - 1)
@@ -754,8 +829,8 @@ kelas Mesin {
             jika n["jenis"] == "perluas" {
                 jika idx != 0 {
                     naikkan GalatTemplat(
-                        "baris " + ke_teks(n["baris"]) + ": '{% perluas %}' "
-                        + "harus menjadi tag pertama di '" + nama + "'")
+                        "baris " + ke_teks(n["baris"])
+                        + ": '{% perluas %}' harus menjadi tag pertama")
                 }
                 induk = n["nama"]
             }
@@ -788,7 +863,7 @@ kelas Mesin {
                 jika t == n["nama"] {
                     naikkan GalatTemplat(
                         "baris " + ke_teks(n["baris"]) + ": blok '" + n["nama"]
-                        + "' didefinisikan dua kali di '" + nama + "'")
+                        + "' didefinisikan dua kali")
                 }
             }
             terlihat.tambah(n["nama"])
