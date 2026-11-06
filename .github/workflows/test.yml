@@ -424,6 +424,11 @@ jobs:
       # dan ia memanggil `python3` yang di Git Bash Windows biasanya bernama
       # `python`. Perilaku templat sendiri diuji di Windows lewat golden
       # examples/templat_dasar.idk yang dipindai tests/test_all.ps1.
+      # templat_cache.sh ikut: hanya butuh bash + indk. Uji "suntingan
+      # berukuran sama" memakai jeda 1,1 detik atas waktu() supaya mtime
+      # bergeser walau sistem berkas hanya beresolusi detik (NTFS sendiri
+      # beresolusi 100ns, jadi jeda ini kelebihan di Windows — tapi murah
+      # dan membuat tesnya sama persis di ketiga OS).
       - name: Run shell-based sub-suites (Git Bash)
         shell: bash
         run: |
@@ -440,7 +445,8 @@ jobs:
                    tests/test_lint.sh \
                    tests/test_profil.sh \
                    tests/test_uji.sh \
-                   tests/test_panduan.sh; do
+                   tests/test_panduan.sh \
+                   tests/templat_cache.sh; do
             echo "=== $t ==="
             if bash "$t"; then echo "  ok"; else echo "  GAGAL: $t"; gagal=1; fi
           done
