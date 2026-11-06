@@ -29,6 +29,15 @@ LULUS=0; GAGAL=0
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
+# Path yang DITANAM sebagai string di dalam sumber .idk harus bergaya Windows
+# di Git Bash: indk.exe adalah biner Windows asli, dan Git Bash hanya
+# menerjemahkan path yang menjadi ARGUMEN perintah, bukan yang ada di dalam
+# berkas. Tanpa ini `/tmp/tmp.XXXX/...` tidak bisa dibuka.
+TMP_IDK="$TMP"
+if command -v cygpath >/dev/null 2>&1; then
+    TMP_IDK="$(cygpath -m "$TMP")"
+fi
+
 periksa() {
     local nama="$1" harap="$2" dapat="$3"
     if [ "$harap" = "$dapat" ]; then
@@ -130,11 +139,11 @@ periksa "GalatIzin tertangkap sebagai GalatOS" "tertangkap GalatOS" \
 # filesystem playground ditegakkan container, bukan flag ini. Diuji supaya
 # perubahan diam-diam pada janji itu terlihat.
 
-kode_tulis="$(bungkus "tulis_semua(\"$TMP/bocor.txt\", \"x\")")"
+kode_tulis="$(bungkus "tulis_semua(\"$TMP_IDK/bocor.txt\", \"x\")")"
 periksa "tulis berkas TETAP boleh (dijaga container, bukan flag)" "JALAN" \
     "$(jalankan sandbox "$kode_tulis")"
 
-kode_baca="$(bungkus "baca_semua(\"$TMP/bocor.txt\")")"
+kode_baca="$(bungkus "baca_semua(\"$TMP_IDK/bocor.txt\")")"
 periksa "baca berkas TETAP boleh (dijaga container, bukan flag)" "JALAN" \
     "$(jalankan sandbox "$kode_baca")"
 
