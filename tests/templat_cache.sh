@@ -11,6 +11,13 @@ AKAR="$(cd "$(dirname "$0")/.." && pwd)"
 INDK="$AKAR/indk"
 [ -x "$INDK" ] || INDK="$AKAR/indk.exe"
 KERJA="$(mktemp -d)"
+# Git Bash mengonversi path POSIX saat dipakai sebagai ARGUMEN perintah, tapi
+# jalur di sini ditanam sebagai string DI DALAM sumber .idk — konversi itu
+# tidak berlaku, dan indk.exe (binari Windows asli) tidak mengenal "/tmp/...".
+# cygpath hanya ada di Git Bash/MSYS, jadi di Linux/macOS blok ini dilewati.
+if command -v cygpath >/dev/null 2>&1; then
+    KERJA="$(cygpath -m "$KERJA")"
+fi
 TPL="$KERJA/tpl"
 mkdir -p "$TPL"
 trap 'rm -rf "$KERJA"' EXIT
