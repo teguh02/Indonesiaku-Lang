@@ -27,6 +27,9 @@ _T_MAKS_DALAM = 64
 # Batas sendiri, terpisah dari kedalaman tag: rantai sertakan/perluas yang
 # panjang menghabiskan stack walau tiap berkasnya dangkal.
 _T_MAKS_SERTAKAN = 32
+
+# Batas entri cache node terurai per mesin.
+_T_MAKS_CACHE = 64
 _T_ANGKA = "0123456789"
 
 
@@ -594,9 +597,70 @@ fungsi render_teks(sumber, data = kosong) {
 # --- mesin berbasis berkas --------------------------------------------------
 
 kelas Mesin {
-    init(akar) {
+    init(akar, cache = benar) {
         diri.akar = akar
         diri.cache = kamus()
+        diri.pakai_cache = cache
+    }
+
+    # kosongkan_cache() -> diri. Buang semua node terurai yang tersimpan.
+    kosongkan_cache() {
+        diri.cache = kamus()
+        kembalikan diri
+    }
+
+    # _cap(jalur) -> teks penanda versi berkas, atau kosong bila tidak ada.
+    # Ukuran DAN waktu ubah dipakai bersama: waktu ubah saja punya resolusi
+    # detik di sebagian sistem berkas, jadi dua suntingan dalam detik yang
+    # sama bisa lolos sebagai "tidak berubah".
+    _cap(jalur) {
+        variabel info = _info_jalur(jalur)
+        jika info == kosong { kembalikan kosong }
+        kembalikan ke_teks(info[1]) + ":" + ke_teks(info[2])
+    }
+
+    # _node(nama) -> daftar node terurai, lewat cache bila boleh.
+    #
+    # Parsing adalah 73,7% biaya tiap render (diukur dengan `indk profil`),
+    # dan server mengurai berkas yang sama untuk setiap permintaan. Cap berkas
+    # diperiksa SETIAP kali: satu `stat` jauh lebih murah daripada ~29.000
+    # instruksi parsing, jadi tidak perlu ada "mode development" yang bisa
+    # lupa dinyalakan saat menyunting atau lupa dimatikan di produksi.
+    _node(nama) {
+        jika !diri.pakai_cache {
+            kembalikan urai(diri._baca(nama, 0))
+        }
+
+        variabel jalur = diri._jalur(nama)
+        variabel cap = diri._cap(jalur)
+
+        jika nama dalam diri.cache {
+            variabel entri = diri.cache[nama]
+            # Cap kosong berarti berkas hilang; _baca() yang melaporkannya
+            # supaya pesan galatnya sama persis dengan jalur tanpa cache.
+            jika cap bukan adalah kosong {
+                jika entri[0] == cap {
+                    kembalikan entri[1]
+                }
+            }
+        }
+
+        variabel node = urai(diri._baca(nama, 0))
+
+        # Batas memori: sebuah situs bisa punya ribuan templat, dan cache yang
+        # tumbuh tanpa batas adalah kebocoran yang baru terasa setelah berhari
+        # -hari berjalan. Dikosongkan seluruhnya, bukan LRU: tanpa data pemakaian
+        # nyata, LRU hanya menambah kerumitan tanpa bukti manfaat.
+        jika panjang(diri.cache) >= _T_MAKS_CACHE {
+            diri.cache = kamus()
+        }
+        jika cap bukan adalah kosong {
+            variabel baru = daftar()
+            baru.tambah(cap)
+            baru.tambah(node)
+            diri.cache[nama] = baru
+        }
+        kembalikan node
     }
 
     # Menolak path yang keluar dari akar: templat dipilih lewat nama yang bisa
@@ -654,7 +718,7 @@ kelas Mesin {
                 + ke_teks(_T_MAKS_SERTAKAN) + ")")
         }
 
-        variabel node = urai(diri._baca(nama, 0))
+        variabel node = diri._node(nama)
         tumpukan.tambah(nama)
 
         variabel induk = diri._induk(node, nama)
@@ -733,6 +797,6 @@ kelas Mesin {
     }
 }
 
-fungsi mesin(akar) {
-    kembalikan Mesin(akar)
+fungsi mesin(akar, cache = benar) {
+    kembalikan Mesin(akar, cache)
 }

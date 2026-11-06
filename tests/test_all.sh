@@ -265,6 +265,23 @@ if [ -f tests/templat_sabotase.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Cache parsing templat (SSR-08): hasil wajib identik dengan jalur tanpa cache,
+# dan berkas yang disunting wajib langsung terlihat. Tanpa uji ini, cache yang
+# membeku baru ketahuan saat seseorang menyunting templat di produksi.
+# Portabel (bash + indk saja), tapi lihat catatan di .github/workflows/test.yml
+# soal resolusi mtime di Windows.
+if [ -f tests/templat_cache.sh ]; then
+    if bash tests/templat_cache.sh > /tmp/idk_templat_cache.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} templat_cache"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} templat_cache"
+        sed 's/^/      /' /tmp/idk_templat_cache.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES templat_cache"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # REST API di atas PostgreSQL (Fase 11 langkah 7): CRUD lewat HTTP sungguhan.
 if [ -f tests/api_siswa_pg_server.sh ]; then
     if bash tests/api_siswa_pg_server.sh > /tmp/idk_apipg_uji.log 2>&1; then
