@@ -48,6 +48,32 @@ untuk n dalam [0 - 2, 0, 5] {
     }
 }
 
+# Rantai jika_lain berhenti pada cabang PERTAMA yang terpenuhi, walau cabang
+# berikutnya juga benar (85 >= 80 dan 85 >= 70 sama-sama benar).
+# Issue #63: menumpuk `jika` terpisah bukan padanan elif -- semuanya jalan.
+variabel nilai = 85
+jika nilai >= 90 {
+    cetak("rantai:", "Grade A")
+} jika_lain nilai >= 80 {
+    cetak("rantai:", "Grade B")
+} jika_lain nilai >= 70 {
+    cetak("rantai:", "Grade C")
+} selain {
+    cetak("rantai:", "Grade F")
+}
+
+jika nilai >= 90 {
+    cetak("terpisah:", "Grade A")
+}
+jika nilai >= 80 {
+    cetak("terpisah:", "Grade B")
+}
+jika nilai >= 70 {
+    cetak("terpisah:", "Grade C")
+} selain {
+    cetak("terpisah:", "Grade F")
+}
+
 cetak("=== perulangan selagi ===")
 i = 1
 jumlah = 0
