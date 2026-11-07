@@ -7,6 +7,23 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Diperbaiki
+
+- **BLOB/bytea tersimpan sebagai teks di driver PostgreSQL dan MySQL** —
+  menyimpan daftar byte seperti `[255, 254, 65, 0, 128]` ke kolom `bytea`/`blob`
+  menghasilkan **22 byte teks** `"[255, 254, 65, 0, 128]"`, bukan 5 byte biner.
+  Kegagalannya diam: tidak ada galat, data hanya rusak. SQLite pada mesin yang
+  sama benar, sehingga program identik memberi hasil berbeda tergantung basis
+  data. Akar masalahnya satu pola di dua tempat — parameter dipaksa lewat
+  `ke_teks()` sebelum dikirim (`pg.idk` `_jalankan()`, `my.idk` `_nilai_bita()`).
+  Keduanya kini mendeteksi daftar byte lewat `_adalah_bita()`; PostgreSQL
+  mengirimnya dengan format Bind **biner** (format teks membuat server menolak
+  `0xff` sebagai UTF-8 tak sah). Jalur baca tidak diubah: `bytea` tetap kembali
+  sebagai teks `\x...` dari server.
+  Diuji di `tests/pg_driver.sh` dan `tests/my_driver.sh` dengan muatan yang
+  sengaja bukan UTF-8 sah dan memuat NUL di tengah; tiga sabotase masing-masing
+  wajib membuatnya merah.
+
 ### Ditambahkan
 
 - **API embedding C** (`src/indk.h`, `src/indk_api.c`) — Indonesiaku kini bisa

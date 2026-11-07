@@ -245,7 +245,30 @@ fungsi _nol(n) {
 # Tipe biner yang dikirim. Semua nilai non-NULL dikirim sebagai string
 # (MYSQL_TYPE_VAR_STRING = 253) dan dikonversi server sesuai kolom; ini
 # menghindari menebak lebar integer di sisi klien.
+# Benar bila nilai adalah daftar byte mentah: daftar TAK KOSONG yang seluruh
+# anggotanya bilangan bulat 0-255. Daftar kosong sengaja TIDAK dihitung sebagai
+# bita, karena "[]" dan BLOB kosong tak bisa dibedakan dari sini; pemakai yang
+# ingin menyimpan BLOB kosong memakai teks kosong.
+fungsi _adalah_bita(nilai) {
+    jika jenis(nilai) != "daftar" { kembalikan salah }
+    jika panjang(nilai) == 0 { kembalikan salah }
+    untuk x dalam nilai {
+        jika jenis(x) != "angka" { kembalikan salah }
+        # jenis() mengembalikan "angka" untuk bulat maupun pecahan, jadi
+        # kebulatan diperiksa terpisah: 5 == bulat(5), 5.5 != bulat(5.5).
+        jika x != bulat(x) { kembalikan salah }
+        jika x < 0 atau x > 255 { kembalikan salah }
+    }
+    kembalikan benar
+}
+
 fungsi _nilai_bita(nilai) {
+    # Daftar bilangan bulat 0-255 adalah byte mentah dan dikirim apa adanya;
+    # melewatkannya ke ke_teks() akan menyimpan teks "[255, 254]" alih-alih
+    # dua byte, dan kegagalannya diam-diam.
+    jika _adalah_bita(nilai) {
+        kembalikan _gabung([_lenenc(panjang(nilai)), nilai])
+    }
     variabel t = _teks_bita(ke_teks(nilai))
     kembalikan _gabung([_lenenc(panjang(t)), t])
 }

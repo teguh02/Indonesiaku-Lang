@@ -134,6 +134,18 @@ variabel b = k.ambil_semua("SELECT * FROM besar ORDER BY id", kosong)
 cetak("besar=" + ke_teks(panjang(b)))
 cetak("akhir=" + ke_teks(b[299]["id"]))
 
+# BLOB: byte mentah harus tersimpan sebagai byte, bukan sebagai teks
+# representasinya. Muatan sengaja BUKAN UTF-8 sah (0xFF 0xFE ... 0x00 0x80)
+# supaya jalur teks tidak bisa lolos kebetulan, dan memuat NUL di tengah
+# supaya pemotongan gaya C ikut ketahuan.
+k.eksekusi("DROP TABLE IF EXISTS berkas")
+k.eksekusi("CREATE TABLE berkas (id int, isi blob)")
+variabel muatan = [255, 254, 65, 0, 128]
+k.eksekusi("INSERT INTO berkas (id, isi) VALUES (?, ?)", [1, muatan])
+variabel b = k.ambil_satu("SELECT LENGTH(isi) AS n, HEX(isi) AS h FROM berkas WHERE id = ?", [1])
+cetak("blob_panjang=" + ke_teks(b["n"]))
+cetak("blob_hex=" + b["h"])
+
 k.tutup()
 k.tutup()
 cetak("idempoten=ok")
@@ -161,6 +173,8 @@ else
     periksa "parameter lebih"      "ok" "$(ambil lebih)"
     periksa "300 baris utuh"       "300" "$(ambil besar)"
     periksa "baris terakhir benar" "299" "$(ambil akhir)"
+    periksa "blob: 5 byte, bukan 22" "5" "$(ambil blob_panjang)"
+    periksa "blob: byte utuh"       "FFFE410080" "$(ambil blob_hex)"
     periksa "tutup idempoten"      "ok" "$(ambil idempoten)"
 fi
 
