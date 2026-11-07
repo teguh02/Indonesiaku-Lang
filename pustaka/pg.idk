@@ -44,6 +44,23 @@ fungsi _teks_nul(t) {
     kembalikan b
 }
 
+# Benar bila nilai adalah daftar byte mentah: daftar TAK KOSONG yang seluruh
+# anggotanya bilangan bulat 0-255. Daftar kosong sengaja TIDAK dihitung sebagai
+# bita, karena "[]" dan BLOB kosong tak bisa dibedakan dari sini; pemakai yang
+# ingin menyimpan BLOB kosong memakai teks kosong.
+fungsi _adalah_bita(nilai) {
+    jika jenis(nilai) != "daftar" { kembalikan salah }
+    jika panjang(nilai) == 0 { kembalikan salah }
+    untuk x dalam nilai {
+        jika jenis(x) != "angka" { kembalikan salah }
+        # jenis() mengembalikan "angka" untuk bulat maupun pecahan, jadi
+        # kebulatan diperiksa terpisah: 5 == bulat(5), 5.5 != bulat(5.5).
+        jika x != bulat(x) { kembalikan salah }
+        jika x < 0 atau x > 255 { kembalikan salah }
+    }
+    kembalikan benar
+}
+
 fungsi _gabung_bita(bagian) {
     variabel keluar = daftar()
     untuk p dalam bagian {
@@ -270,12 +287,25 @@ kelas Koneksi {
     # PROTOKOL: tidak pernah dirangkai ke teks SQL, jadi tidak ada yang perlu
     # di-escape dan tidak ada jalan untuk injeksi.
     _jalankan(sql, parameter) {
+        # Daftar bilangan bulat 0-255 adalah byte mentah (lihat bita.idk,
+        # soket_baca_bita, driver SQLite). Nilai seperti itu harus dikirim apa
+        # adanya: melewatkannya ke ke_teks() akan menyimpan teks "[255, 254]"
+        # alih-alih dua byte, dan kegagalannya diam-diam.
         variabel bagian_param = daftar()
+        variabel format_kode = daftar()
         tambah(bagian_param, _i16(panjang(parameter)))
         untuk p dalam parameter {
             jika p == kosong {
+                tambah(format_kode, _i16(0))
                 tambah(bagian_param, _i32(4294967295))   # -1 = NULL
+            } jika_lain _adalah_bita(p) {
+                # Format biner (kode 1): server menerima byte apa adanya,
+                # tanpa menafsirkannya sebagai literal teks bytea.
+                tambah(format_kode, _i16(1))
+                tambah(bagian_param, _i32(panjang(p)))
+                tambah(bagian_param, p)
             } selain {
+                tambah(format_kode, _i16(0))
                 variabel b = bita.ke_bita(ke_teks(p))
                 tambah(bagian_param, _i32(panjang(b)))
                 tambah(bagian_param, b)
@@ -285,8 +315,11 @@ kelas Koneksi {
         diri._kirim(_gabung_bita([
             # Parse: statement tanpa nama, 0 tipe parameter (server yang menebak)
             _pesan("P", _gabung_bita([[0], _teks_nul(sql), _i16(0)])),
-            # Bind: portal & statement tanpa nama, format teks untuk semuanya
-            _pesan("B", _gabung_bita([[0], [0], _i16(0),
+            # Bind: portal & statement tanpa nama, lalu satu format kode per
+            # parameter (0 = teks, 1 = biner untuk byte mentah).
+            _pesan("B", _gabung_bita([[0], [0],
+                                      _i16(panjang(parameter)),
+                                      _gabung_bita(format_kode),
                                       _gabung_bita(bagian_param), _i16(0)])),
             _pesan("D", _gabung_bita([bita.ke_bita("P"), [0]])),
             _pesan("E", _gabung_bita([[0], _i32(0)])),

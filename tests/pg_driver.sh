@@ -152,6 +152,18 @@ coba {
 }
 cetak("hidup=" + k.ambil_satu("SELECT 42 AS x")["x"])
 
+# BLOB/bytea: byte mentah harus tersimpan sebagai byte, bukan sebagai teks
+# representasinya. Muatan sengaja BUKAN UTF-8 sah (0xFF 0xFE ... 0x00 0x80)
+# supaya jalur teks tidak bisa lolos secara kebetulan, dan memuat NUL di
+# tengah supaya pemotongan gaya C ikut ketahuan.
+k.eksekusi("DROP TABLE IF EXISTS berkas")
+k.eksekusi("CREATE TABLE berkas (id int, isi bytea)")
+variabel muatan = [255, 254, 65, 0, 128]
+k.eksekusi("INSERT INTO berkas (id, isi) VALUES ($1, $2)", [1, muatan])
+variabel b = k.ambil_satu("SELECT length(isi) AS n, encode(isi,'hex') AS h FROM berkas WHERE id = $1", [1])
+cetak("blob_panjang=" + ke_teks(b["n"]))
+cetak("blob_hex=" + b["h"])
+
 k.tutup()
 k.tutup()
 cetak("idempoten=ok")
@@ -175,6 +187,8 @@ else
     periksa "komit tersimpan"       "1"  "$(ambil komit)"
     periksa "galat tertangkap"      "tertangkap" "$(ambil galat)"
     periksa "koneksi hidup setelah galat" "42" "$(ambil hidup)"
+    periksa "bytea: 5 byte, bukan 22" "5" "$(ambil blob_panjang)"
+    periksa "bytea: byte utuh"       "fffe410080" "$(ambil blob_hex)"
     periksa "tutup idempoten"       "ok" "$(ambil idempoten)"
 fi
 
