@@ -14,7 +14,7 @@
 #
 # Naikkan tag dasar bersamaan dengan INDK_VERSION saat rilis baru.
 # ===============================
-FROM teguh02/indonesiaku:1.4.0
+FROM teguh02/indonesiaku:1.5.0
 
 # Image rilis tidak membawa nginx/python3 (sengaja ramping).
 RUN apk add --no-cache nginx python3 \

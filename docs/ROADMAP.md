@@ -541,27 +541,29 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 ### Strategi penomoran dan kapan menerbitkan rilis
 
-**Baseline:** tag publik terakhir ialah `v1.4.0`. Nomor berikut bersifat **rekomendasi** yang dapat digeser jika pekerjaan sebenarnya berubah. Jangan membuat tag hanya karena nomor fase berganti. Versi mengikuti SemVer (`MAJOR.MINOR.PATCH`): perubahan kompatibel dan fitur baru = minor, perbaikan tanpa penambahan fitur = patch, dan perubahan yang memutus API/sintaks atau format eksternal = major (mis. `v2.0.0`). Sejak v1.0.0, kebijakan proyek menghindari breaking change sampai v2.0.0; bila tidak dapat dihindari, pisahkan ke rencana v2.0, jangan memasukkannya diam-diam ke seri v1.x.
+**Baseline:** tag publik terakhir ialah `v1.5.0`. Nomor berikut bersifat **rekomendasi** yang dapat digeser jika pekerjaan sebenarnya berubah. Jangan membuat tag hanya karena nomor fase berganti. Versi mengikuti SemVer (`MAJOR.MINOR.PATCH`): perubahan kompatibel dan fitur baru = minor, perbaikan tanpa penambahan fitur = patch, dan perubahan yang memutus API/sintaks atau format eksternal = major (mis. `v2.0.0`). Sejak v1.0.0, kebijakan proyek menghindari breaking change sampai v2.0.0; bila tidak dapat dihindari, pisahkan ke rencana v2.0, jangan memasukkannya diam-diam ke seri v1.x.
+
+**Catatan faktual (bukan rencana):** Fase 10, 11 dan 12 selesai dalam satu rentang pengembangan dan terbit **bersama** sebagai `v1.5.0` pada 7 November 2026, bukan sebagai tiga minor terpisah. Kolom "Rilis stabil rekomendasi" di bawah sudah disesuaikan ke nomor yang akan benar-benar dipakai, sehingga tabel ini tidak lagi menjanjikan tag yang sudah terlewat. Pelajarannya ditulis di sini supaya tidak terulang: **nomor di tabel adalah rencana sampai `git tag` benar-benar dibuat**; menulis "Selesai 1.5.0" di dokumen fase ketika tag itu belum ada membuat roadmap dan kenyataan berbeda tanpa ada yang menyadarinya.
 
 | Fase | Kandidat pengujian | Rilis stabil rekomendasi | Dipublikasikan setelah |
 |---|---|---|---|
-| 9 — LSP | `v1.4.0-rc.1` | `v1.4.0` | CI editor/protokol dan uji lintas OS hijau |
-| 10 — Database | `v1.5.0-rc.1` | `v1.5.0` | Driver dan integration tests MySQL/MariaDB/PostgreSQL lulus |
-| 11 — HTTP/HTTPS | `v1.6.0-rc.1` | `v1.6.0` | Validasi TLS dan uji keamanan/protokol server lulus |
-| 12 — HTML SSR | `v1.7.0-rc.1` | `v1.7.0` | Templating aman dan contoh SSR lengkap |
-| 13 — Web security | `v1.8.0-rc.1` | `v1.8.0` | Audit dan tes auth/session/CSRF lulus |
-| 14 — Package manager | `v1.9.0-rc.1` | `v1.9.0` | Resolusi dependensi dan supply-chain checks lulus |
-| 15 — Debugger & FFI | `v1.10.0-rc.1` | `v1.10.0` | API native/GC dan debug tests lulus |
-| 16 — WASM & performa | `v1.11.0-rc.1` | `v1.11.0` | Uji browser/WASM dan benchmark yang relevan lulus |
-| 17 — Transfer file & SSH/SFTP/FTP | `v1.12.0-rc.1` | `v1.12.0` | Protokol aman, uji transfer, host key dan TLS lulus |
-| 18 — Kriptografi & keamanan runtime | `v1.13.0-rc.1` | `v1.13.0` | Crypto KAT, fuzz/sanitizer, sandbox dan audit keamanan lulus |
-| 19 — Paritas kemampuan & referensi API | `v1.14.0-rc.1` | `v1.14.0` | Katalog terverifikasi, XML/validasi aman, dokumentasi dan tes kategori lulus |
-| 20 — Async/concurrency | `v1.15.0-rc.1` | `v1.15.0` | Event loop/cancellation/GC dan regresi I/O lulus |
-| 21 — Realtime, cache dan jobs | `v1.16.0-rc.1` | `v1.16.0` | WebSocket, Redis, SMTP, queue dan scheduler diuji |
-| 22 — Observability dan kesiapan produksi | `v1.17.0-rc.1` | `v1.17.0` | Logging/metrics/profiler, keamanan dan release policy teruji |
-| 23 — Data biner/arsip | `v1.18.0-rc.1` | `v1.18.0` | Binary/streaming dan ekstraksi arsip aman teruji |
-| 24 — Unicode/i18n/konfigurasi | `v1.19.0-rc.1` | `v1.19.0` | Unicode/locale/serialisasi dan parser aman lulus |
-| 25 — CLI, API testing, broker | `v1.20.0-rc.1` | `v1.20.0` | CLI/test client dan protokol broker opsional teruji |
+| 9 — LSP | `v1.4.0-rc.1` | `v1.4.0` ✅ terbit | CI editor/protokol dan uji lintas OS hijau |
+| 10 — Database | — | `v1.5.0` ✅ terbit | Driver dan integration tests MySQL/MariaDB/PostgreSQL lulus |
+| 11 — HTTP/HTTPS | — | `v1.5.0` ✅ terbit | Validasi TLS dan uji keamanan/protokol server lulus |
+| 12 — HTML SSR | — | `v1.5.0` ✅ terbit | Templating aman dan contoh SSR lengkap |
+| 13 — Web security | `v1.6.0-rc.1` | `v1.6.0` | Audit dan tes auth/session/CSRF lulus |
+| 14 — Package manager | `v1.7.0-rc.1` | `v1.7.0` | Resolusi dependensi dan supply-chain checks lulus |
+| 15 — Debugger & FFI | `v1.8.0-rc.1` | `v1.8.0` | API native/GC dan debug tests lulus |
+| 16 — WASM & performa | `v1.9.0-rc.1` | `v1.9.0` | Uji browser/WASM dan benchmark yang relevan lulus |
+| 17 — Transfer file & SSH/SFTP/FTP | `v1.10.0-rc.1` | `v1.10.0` | Protokol aman, uji transfer, host key dan TLS lulus |
+| 18 — Kriptografi & keamanan runtime | `v1.11.0-rc.1` | `v1.11.0` | Crypto KAT, fuzz/sanitizer, sandbox dan audit keamanan lulus |
+| 19 — Paritas kemampuan & referensi API | `v1.12.0-rc.1` | `v1.12.0` | Katalog terverifikasi, XML/validasi aman, dokumentasi dan tes kategori lulus |
+| 20 — Async/concurrency | `v1.13.0-rc.1` | `v1.13.0` | Event loop/cancellation/GC dan regresi I/O lulus |
+| 21 — Realtime, cache dan jobs | `v1.14.0-rc.1` | `v1.14.0` | WebSocket, Redis, SMTP, queue dan scheduler diuji |
+| 22 — Observability dan kesiapan produksi | `v1.15.0-rc.1` | `v1.15.0` | Logging/metrics/profiler, keamanan dan release policy teruji |
+| 23 — Data biner/arsip | `v1.16.0-rc.1` | `v1.16.0` | Binary/streaming dan ekstraksi arsip aman teruji |
+| 24 — Unicode/i18n/konfigurasi | `v1.17.0-rc.1` | `v1.17.0` | Unicode/locale/serialisasi dan parser aman lulus |
+| 25 — CLI, API testing, broker | `v1.18.0-rc.1` | `v1.18.0` | CLI/test client dan protokol broker opsional teruji |
 
 **Tahapan rilis di dalam tiap fase:**
 
@@ -599,7 +601,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 **Tujuan:** SQLite dipertahankan, lalu MySQL/MariaDB dan PostgreSQL dapat dipakai dengan query aman. **Status:** ⬜ belum. **Pemetaan:** WDB-01–05, P6.
 
-**Rekomendasi rilis fase: `v1.5.0` (minor), kandidat `v1.5.0-rc.1`; patch `v1.5.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Driver SQLite, MySQL/MariaDB, PostgreSQL lulus CRUD, binding parameter, transaksi, galat dan tes integrasi lintas layanan. Fitur TLS untuk koneksi database wajib aman sebelum dipublikasikan.\n\n
+**Rilis fase: sudah terbit di `v1.5.0`** (bersama Fase 10, 11 dan 12 — lihat catatan faktual di "Strategi penomoran"). ** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Driver SQLite, MySQL/MariaDB, PostgreSQL lulus CRUD, binding parameter, transaksi, galat dan tes integrasi lintas layanan. Fitur TLS untuk koneksi database wajib aman sebelum dipublikasikan.\n\n
 **Langkah pengembangan:**
 
 1. [x] Buat docs/RENCANA_FITUR/database_multi_driver.md; tetapkan API, semantik transaksi, tipe nilai/NULL/BLOB, error, koneksi dan lifecycle GC. Jangan mengubah builtin db_* tanpa kebijakan kompatibilitas.
@@ -676,9 +678,9 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 ### Fase 11 — HTTP, HTTPS/TLS dan server backend modular
 
-**Tujuan:** aplikasi Indonesiaku dapat melayani REST API secara terstruktur; contoh todo_server.idk yang single-thread/blocking bukan lagi satu-satunya pola. **Status:** ⬜ belum. **Pemetaan:** P2, WEB-01, WEB-02, WEB-03, WEB-07.
+**Tujuan:** aplikasi Indonesiaku dapat melayani REST API secara terstruktur; contoh todo_server.idk yang single-thread/blocking bukan lagi satu-satunya pola. **Status:** 🟡 terbit di `v1.5.0` dengan satu batasan tertulis — butir 1–6 dan 8 selesai, butir 7 selesai kecuali uji **race**, yang sengaja tidak diklaim karena eksekusi masih satu permintaan pada satu waktu (belum ada worker/thread, lihat Fase 20). **Pemetaan:** P2, WEB-01, WEB-02, WEB-03, WEB-07.
 
-**Rekomendasi rilis fase: `v1.6.0` (minor), kandidat `v1.6.0-rc.1`; patch `v1.6.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Klien HTTPS lolos verifikasi sertifikat/hostname; router, middleware, parsing input dan static assets serta pengujian HTTP sudah stabil.\n\n
+**Rilis fase: sudah terbit di `v1.5.0`** (bersama Fase 10, 11 dan 12 — lihat catatan faktual di "Strategi penomoran"). ** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Klien HTTPS lolos verifikasi sertifikat/hostname; router, middleware, parsing input dan static assets serta pengujian HTTP sudah stabil.\n\n
 **Langkah pengembangan:**
 
 1. [x] Buat docs/RENCANA_FITUR/http_web_server.md dan https_tls.md. Tentukan kontrak Request/Response, router, middleware, batas request, model konkurensi dan pemakaian reverse proxy.
@@ -754,7 +756,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 **Tujuan:** file .idk menjalankan logika backend, file .html berisi tampilan standar; server merender HTML dinamis tanpa SPA/React. Template engine dibuat independen dari server agar dapat diuji sendiri. **Status:** ✅ selesai — mesin templat (SSR-01…06), integrasi respons web (SSR-07), cache parsing (SSR-08), diagnosis & ketahanan (SSR-09), dan contoh + dokumentasi (SSR-10) semuanya ada di `pustaka/templat.idk`, `pustaka/web.idk`, `examples/web_mahasiswa.idk`, dan `website/panduan/`. **Pemetaan:** SSR-01–10.
 
-**Rekomendasi rilis fase: `v1.7.0` (minor), kandidat `v1.7.0-rc.1`; patch `v1.7.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Template engine dengan escaping aman, loop/percabangan, include/layout dan integrasi SSR memiliki tes golden, XSS dan regresi.\n\n
+**Rilis fase: sudah terbit di `v1.5.0`** (bersama Fase 10, 11 dan 12 — lihat catatan faktual di "Strategi penomoran"). ** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Template engine dengan escaping aman, loop/percabangan, include/layout dan integrasi SSR memiliki tes golden, XSS dan regresi.\n\n
 **Langkah pengembangan:**
 
 1. [x] Rancang docs/RENCANA_FITUR/selesai/ssr_template_engine.md. Definisikan modul terpisah (mis. pustaka/templat.idk atau engine native C jika hasil profil membutuhkannya), template root, render(nama,data), render_teks(sumber,data), error dan scope (**SSR-01**).
@@ -782,7 +784,7 @@ sesi dapat ditebak dari header `Date` — membangun session store di atasnya aka
 menghasilkan fitur yang tampak benar dan sepenuhnya tidak aman. Rencananya di
 `docs/RENCANA_FITUR/selesai/acak_aman.md`, dijaga `tests/acak_aman.sh`.
 
-**Rekomendasi rilis fase: `v1.8.0` (minor), kandidat `v1.8.0-rc.1`; patch `v1.8.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Session, cookie, CSRF, autentikasi dan otorisasi mencapai acceptance tests serta audit keamanan dasar, tanpa klaim aman produksi absolut.\n\n
+**Rekomendasi rilis fase: `v1.6.0` (minor), kandidat `v1.6.0-rc.1`; patch `v1.6.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Session, cookie, CSRF, autentikasi dan otorisasi mencapai acceptance tests serta audit keamanan dasar, tanpa klaim aman produksi absolut.\n\n
 **Langkah pengembangan:**
 
 1. [ ] Buat rencana docs/RENCANA_FITUR/web_security_auth.md, threat model (browser, cookie, CSRF, upload, input, session, proxy) dan matriks fitur minimum.
@@ -798,7 +800,7 @@ menghasilkan fitur yang tampak benar dan sepenuhnya tidak aman. Rencananya di
 
 **Tujuan:** developer dapat memulai dan membagikan proyek backend tanpa menyalin modul secara manual. **Status:** ⬜ belum. **Pemetaan:** P3, DX-01, DX-02.
 
-**Rekomendasi rilis fase: `v1.9.0` (minor), kandidat `v1.9.0-rc.1`; patch `v1.9.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Manajer paket dengan lockfile/integritas, scaffolding dan instalasi reproducible lulus uji, termasuk kegagalan jaringan dan arsip berbahaya.\n\n
+**Rekomendasi rilis fase: `v1.7.0` (minor), kandidat `v1.7.0-rc.1`; patch `v1.7.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Manajer paket dengan lockfile/integritas, scaffolding dan instalasi reproducible lulus uji, termasuk kegagalan jaringan dan arsip berbahaya.\n\n
 **Langkah pengembangan:**
 
 1. [ ] Buat rencana docs/RENCANA_FITUR/manajer_paket.md: manifest, nama paket/namespace, versi semantik, lockfile, cache, URL registri, checksum/signature dan lokasi instalasi non-root.
@@ -856,7 +858,7 @@ kalkulator-indonesiaku/
 
 **Tujuan:** memperluas ekosistem tooling dan integrasi native secara aman. **Status:** ⬜ belum. **Pemetaan:** P4, P5.
 
-**Rekomendasi rilis fase: `v1.10.0` (minor), kandidat `v1.10.0-rc.1`; patch `v1.10.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Debugger dan embedding API/FFI memenuhi tes debug, lifetime GC dan integrasi native; stabilitas ABI ditetapkan dan didokumentasikan.\n\n
+**Rekomendasi rilis fase: `v1.8.0` (minor), kandidat `v1.8.0-rc.1`; patch `v1.8.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Debugger dan embedding API/FFI memenuhi tes debug, lifetime GC dan integrasi native; stabilitas ABI ditetapkan dan didokumentasikan.\n\n
 **Langkah pengembangan:**
 
 1. [ ] Rancang debugger dalam docs/RENCANA_FITUR/debugger.md: metadata baris/kolom, breakpoint, pause/step, inspeksi frame/variabel, protokol komunikasi editor dan overhead saat debug nonaktif.
@@ -871,7 +873,7 @@ kalkulator-indonesiaku/
 
 **Tujuan:** memperkuat jangkauan platform dan kinerja **berdasarkan pengukuran**, bukan menambah kompleksitas sebelum perlu. **Status:** ⬜ belum. **Pemetaan:** P7 serta sisa Fase 7–8.
 
-**Rekomendasi rilis fase: `v1.11.0` (minor), kandidat `v1.11.0-rc.1`; patch `v1.11.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** WASM playground lolos uji kesetaraan dan pembatasan resource; optimasi hanya disertakan bila hasil benchmark membenarkan.\n\n
+**Rekomendasi rilis fase: `v1.9.0` (minor), kandidat `v1.9.0-rc.1`; patch `v1.9.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** WASM playground lolos uji kesetaraan dan pembatasan resource; optimasi hanya disertakan bila hasil benchmark membenarkan.\n\n
 **Langkah pengembangan:**
 
 1. [ ] Buat rencana docs/RENCANA_FITUR/playground_wasm.md; siapkan Emscripten, bangun interpreter ke WebAssembly dan tentukan pembatasan fitur OS, file, network dan resource.

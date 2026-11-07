@@ -7,6 +7,18 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-07
+
+Rilis ini membawa pekerjaan **Fase 10 (database), Fase 11 (HTTP/HTTPS/TLS)
+dan Fase 12 (SSR/templat)** yang selesai dan teruji sejak `v1.4.0` tetapi
+belum pernah sampai ke pengguna. Dokumen internal sempat menyebut nomor
+rencana "1.5.0" dan "1.6.0" untuk masing-masing fase; nomor itu **target
+perencanaan, bukan tag**. Secara faktual ketiganya terbit bersama di sini
+sebagai `v1.5.0`, sesuai `docs/ROADMAP.md` yang mengizinkan fase dan versi
+minor tidak berbanding satu-satu asalkan pemetaannya ditulis terang-terangan.
+
+Tidak ada perubahan yang memutus kompatibilitas.
+
 ### Ditambahkan
 
 - **`acak_bita(n)` — sumber acak kriptografis** (prasyarat Fase 13). Satu-satunya
