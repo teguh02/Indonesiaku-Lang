@@ -59,14 +59,30 @@ coba { http_ambil("https://example.com", "GET", kosong, "", 0) } kecuali GalatOS
     : # -e mungkin tidak ada; dicoba lewat berkas di bawah
 fi
 
+# Host sungguhan untuk membuktikan jalur bahagia. SENGAJA beberapa host:
+# isi bundel CA tiap OS berbeda. Runner macOS tidak memuat akar "SSL.com TLS
+# ECC Root CA 2022" yang dipakai example.com, sedangkan Linux memuatnya --
+# menggantungkan tes pada SATU host berarti menguji isi bundel OS, bukan klien
+# kita. Lulus bila ADA host yang membalas 200; kalau SEMUA gagal tetap merah,
+# jadi ini bukan tes yang melemahkan diri sendiri.
 cat > "$tmp/sambung.idk" <<'EOF'
 impor "pustaka/http.idk"
-coba {
-    variabel r = http_ambil("https://example.com", "GET", kosong, "", 0)
-    cetak("KODE", r.status)
-} kecuali GalatOS sebagai e {
-    cetak("GALAT", e.pesan)
+variabel host = ["https://www.google.com", "https://example.com", "https://www.cloudflare.com"]
+variabel sukses = salah
+variabel pesan = ""
+untuk h dalam host {
+    coba {
+        variabel r = http_ambil(h, "GET", kosong, "", 0)
+        jika r.status == 200 {
+            cetak("KODE 200", h)
+            sukses = benar
+            berhenti
+        }
+    } kecuali GalatOS sebagai e {
+        pesan = pesan + h + ": " + e.pesan + "; "
+    }
 }
+jika !sukses { cetak("GALAT", pesan) }
 EOF
 keluaran="$("$indk" "$tmp/sambung.idk" 2>&1)"
 if printf '%s' "$keluaran" | grep -q "tidak ditemukan\|tidak dapat tersambung"; then
@@ -76,7 +92,7 @@ fi
 
 echo "Menguji klien HTTPS terhadap host sungguhan"
 
-periksa "example.com membalas 200" "KODE 200" "$keluaran"
+periksa "ada host HTTPS yang membalas 200" "KODE 200" "$keluaran"
 
 # --- tes negatif: semua ini WAJIB ditolak -----------------------------------
 tolak() { # nama, host, potongan pesan

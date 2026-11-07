@@ -245,6 +245,50 @@ case "$KELUARAN" in
     *) echo "  OK    sandi tidak bocor" ;;
 esac
 
+# --- Batas waktu ------------------------------------------------------------
+# Server bisu: menerima koneksi lalu diam. Durasi ikut diperiksa, karena batas
+# waktu 30 detik yang tidak terkonfigurasi tetap akan "lulus" bila yang
+# diperiksa hanya munculnya galat.
+#
+# TLS tidak diuji di sini: driver MySQL memang belum punya jalur TLS (jabat
+# tangan SSLRequest-nya berbeda dari PostgreSQL). Itu fitur tersendiri, bukan
+# cakupan uji yang hilang.
+if command -v python3 >/dev/null 2>&1; then
+    python3 tests/bantu/server_bisu.py 55496 30 > "$TMP/bisu.log" 2>&1 &
+    PID_BISU=$!
+    for _ in $(seq 1 30); do
+        grep -q siap "$TMP/bisu.log" 2>/dev/null && break
+        sleep 0.2
+    done
+    cat > "$TMP/timeout.idk" <<'EOF'
+impor "pustaka/my.idk"
+variabel mulai = waktu()
+coba {
+    sambung({"host":"127.0.0.1", "port":55496, "pengguna":"p", "sandi":"x",
+             "basisdata":"u", "batas_waktu": 2})
+    cetak("batas=TERSAMBUNG")
+} kecuali e {
+    cetak("batas=galat")
+}
+cetak("detik=" + ke_teks(bulat(waktu() - mulai)))
+EOF
+    HASIL_BATAS=$("$INDK" "$TMP/timeout.idk" 2>&1)
+    kill "$PID_BISU" 2>/dev/null || true
+    wait "$PID_BISU" 2>/dev/null || true
+    DETIK=$(echo "$HASIL_BATAS" | grep '^detik=' | cut -d= -f2)
+    case "$HASIL_BATAS" in
+        *batas=galat*) echo "  OK    server bisu memicu batas waktu" ;;
+        *) echo "  GAGAL server bisu tidak memicu batas waktu: $HASIL_BATAS"; GAGAL=$((GAGAL+1)) ;;
+    esac
+    if [ -n "$DETIK" ] && [ "$DETIK" -lt 10 ] 2>/dev/null; then
+        echo "  OK    batas waktu dipatuhi (${DETIK}s, bukan 30s)"
+    else
+        echo "  GAGAL batas waktu diabaikan: ${DETIK}s"; GAGAL=$((GAGAL+1))
+    fi
+else
+    echo "  LEWAT batas waktu: python3 tidak ada"
+fi
+
 if [ "$GAGAL" -gt 0 ]; then
     echo "GAGAL: $GAGAL pemeriksaan"
     exit 1

@@ -914,6 +914,20 @@ k.tutup()
 `jenis` diteruskan apa adanya ke driver, jadi opsi khusus seperti `tls` pada
 PostgreSQL tetap bisa dipakai.
 
+**Batas waktu dan TLS.** Kedua driver jaringan menerima `batas_waktu` (detik,
+bawaan `30`, `0` berarti tanpa batas) — 30 detik terlalu lama untuk aplikasi
+yang ingin gagal cepat dan terlalu pendek untuk kueri analitik:
+
+```indonesiaku-takjalan
+variabel k = db.sambung({"jenis":"postgres", "host":"127.0.0.1", "pengguna":"postgres",
+                         "sandi": ambil_lingkungan("PGSANDI"), "basisdata":"sekolah",
+                         "tls": benar, "batas_waktu": 5})
+```
+
+`"tls": benar` pada PostgreSQL **tidak pernah turun diam-diam ke teks polos**:
+bila server menolak `SSLRequest`, koneksi dibatalkan dengan galat. Driver
+MySQL belum punya jalur TLS.
+
 **SQL tetap ditulis sesuai dialek backend.** `db.idk` tidak menerjemahkan
 penanda parameter: PostgreSQL memakai `$1`, SQLite dan MySQL memakai `?`.
 Menerjemahkannya berarti memindai teks SQL, dan pemindai yang tidak memahami

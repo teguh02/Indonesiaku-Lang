@@ -43,16 +43,27 @@ static const char* JALUR_CA[] = {
 // PENTING: gagal memuat CA harus menggagalkan koneksi, bukan melanjutkan tanpa
 // verifikasi -- itulah bedanya "aman" dan "kelihatan aman".
 static bool muatCa(mbedtls_x509_crt* ca, char* galat, size_t galatUkuran) {
+    // mbedtls_x509_crt_parse_file() mengembalikan 0 bila SEMUA sertifikat
+    // terurai, nilai POSITIF berisi jumlah yang gagal bila sebagian terurai,
+    // dan negatif bila berkasnya sendiri tak terbaca. Menuntut == 0 berarti
+    // satu sertifikat usang di dalam bundel membuang seluruh bundel: itu yang
+    // terjadi di macOS, dan akibatnya setiap host sah ditolak dengan
+    // "penerbit tidak tepercaya" -- pesan yang menuduh server padahal
+    // masalahnya ada di sisi kita.
     const char* dariEnv = getenv("INDK_CA_BUNDLE");
     if (dariEnv != NULL && dariEnv[0] != '\0') {
-        if (mbedtls_x509_crt_parse_file(ca, dariEnv) == 0) return true;
+        if (mbedtls_x509_crt_parse_file(ca, dariEnv) >= 0 && ca->version != 0) return true;
         snprintf(galat, galatUkuran,
                  "INDK_CA_BUNDLE menunjuk '%s' tetapi berkas itu tidak bisa dibaca "
                  "sebagai bundel CA (PEM)", dariEnv);
         return false;
     }
     for (int i = 0; JALUR_CA[i] != NULL; i++) {
-        if (mbedtls_x509_crt_parse_file(ca, JALUR_CA[i]) == 0) return true;
+        // ca->version != 0 memastikan setidaknya SATU sertifikat benar-benar
+        // masuk; tanpa itu bundel kosong akan lolos sebagai "berhasil".
+        if (mbedtls_x509_crt_parse_file(ca, JALUR_CA[i]) >= 0 && ca->version != 0) {
+            return true;
+        }
     }
     snprintf(galat, galatUkuran,
              "tidak menemukan bundel CA sistem; setel INDK_CA_BUNDLE ke berkas PEM");

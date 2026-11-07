@@ -437,8 +437,14 @@ fungsi sambung(konfigurasi) {
     variabel sandi = ""
     jika "sandi" dalam konfigurasi { sandi = konfigurasi["sandi"] }
 
+    # Batas waktu baca/tulis soket. Bisa disetel lewat konfigurasi karena 30
+    # detik terlalu lama untuk tes dan terlalu pendek untuk kueri analitik.
+    # 0 berarti tanpa batas, sesuai semantik soket_batas_waktu().
+    variabel batas_waktu = 30
+    jika "batas_waktu" dalam konfigurasi { batas_waktu = konfigurasi["batas_waktu"] }
+
     variabel s = soket_sambung(host, port)
-    soket_batas_waktu(s, 30)
+    soket_batas_waktu(s, batas_waktu)
     variabel k = Koneksi(s)
 
     jika "tls" dalam konfigurasi dan konfigurasi["tls"] {
