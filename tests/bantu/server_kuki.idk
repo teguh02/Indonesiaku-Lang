@@ -1,0 +1,58 @@
+# Server untuk tests/web_kuki_sesi.sh — membuktikan kuki dan sesi bekerja
+# terhadap koneksi HTTP sungguhan, bukan hanya terhadap teks respons.
+#
+# Golden (examples/web_kuki_sesi.idk) hanya memeriksa bentuk string. Yang
+# TIDAK dibuktikannya: bahwa header benar-benar sampai lewat soket, bahwa
+# Content-Length tetap benar setelah header bertambah, dan bahwa peramban
+# mengirim balik kukinya.
+
+impor web
+
+variabel PORT = ke_bulat(ambil_lingkungan("IDK_PORT"))
+variabel SISA = ke_bulat(ambil_lingkungan("IDK_SISA"))
+
+variabel app = web.Aplikasi()
+variabel toko = web.TokoSesi()
+
+# Login: buat sesi, kirim ID lewat kuki dengan flag keamanan lengkap.
+app.rute("GET", "/masuk", fungsi(req) {
+    variabel sid = toko.buat({"pengguna": "ani"})
+    kembalikan web.set_kuki(web.teks(200, "masuk"), "sesi", sid, {
+        "httponly": benar,
+        "secure": benar,
+        "samesite": "Lax",
+        "max-age": 3600
+    })
+})
+
+# Dua kuki sekaligus: membuktikan header berganda tidak saling menimpa.
+app.rute("GET", "/dua", fungsi(req) {
+    variabel r = web.set_kuki(web.teks(200, "dua"), "a", "1")
+    kembalikan web.set_kuki(r, "b", "2")
+})
+
+# Baca kuki yang dikirim klien.
+app.rute("GET", "/siapa", fungsi(req) {
+    variabel kuki = web.baca_kuki(req)
+    jika "sesi" tidak dalam kuki {
+        kembalikan web.teks(401, "tanpa kuki")
+    }
+    variabel isi = toko.ambil(kuki["sesi"])
+    jika isi == kosong {
+        kembalikan web.teks(401, "sesi mati")
+    }
+    kembalikan web.teks(200, isi["pengguna"])
+})
+
+# Nilai yang memuat ';' harus ter-encode, bukan memecah atribut.
+app.rute("GET", "/jahat", fungsi(req) {
+    kembalikan web.set_kuki(web.teks(200, "x"), "s", "a; Domain=jahat.com")
+})
+
+# Badan non-ASCII: Content-Length dihitung byte, dan harus tetap benar
+# sesudah baris Set-Cookie disisipkan.
+app.rute("GET", "/utf8", fungsi(req) {
+    kembalikan web.set_kuki(web.teks(200, "kopi ☕"), "k", "v")
+})
+
+app.jalankan(PORT, 10, SISA, salah)

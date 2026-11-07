@@ -7,6 +7,26 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Ditambahkan
+
+- **Kuki dan sesi untuk aplikasi web (WEB-04).** `web.set_kuki()` menambahkan
+  `Set-Cookie` dengan `HttpOnly`, `Secure`, `SameSite`, `Max-Age`, `Path` dan
+  `Domain`; `web.baca_kuki()` mengurai header `Cookie` dari permintaan;
+  `web.TokoSesi` menyimpan sesi di memori dengan `buat`/`ambil`/`hapus`/
+  `putar`/`bersihkan`.
+- `http_response()` menerima parameter keempat opsional `header` berupa daftar
+  pasangan `[nama, nilai]`. Sebelumnya respons hanya bisa membawa empat header
+  tetap, sehingga `Set-Cookie` mustahil dikirim. Daftar pasangan dipilih alih-
+  alih kamus karena `Set-Cookie` boleh muncul berkali-kali dalam satu respons.
+
+### Keamanan
+
+- ID sesi diambil dari `acak_bita()` (CSPRNG), bukan `acak()` yang disemai
+  waktu dan dapat ditebak dari header `Date`.
+- `putar()` menghapus ID lama saat rotasi, menutup *session fixation*.
+- Nilai kuki di-encode persen pada karakter yang dilarang RFC 6265 sehingga
+  nilai berisi `;` tidak dapat menyuntikkan atribut seperti `Domain`.
+
 ## [1.5.0] - 2026-11-07
 
 Rilis ini membawa pekerjaan **Fase 10 (database), Fase 11 (HTTP/HTTPS/TLS)

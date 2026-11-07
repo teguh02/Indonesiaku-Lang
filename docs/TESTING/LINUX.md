@@ -1226,6 +1226,7 @@ menguji biner rilis jalankan bagian golden-nya dengan biner yang disalin
 | OTO-07 | `web_router_server.sh` | `ok   pustaka/web.idk melayani HTTP sungguhan` |
 | OTO-08 | `web_badan_server.sh` | Semua baris `ok` |
 | OTO-09 | `http_pengalihan_server.sh` | Tanpa `GAGAL` |
+| OTO-10 | `web_kuki_sesi.sh` | Semua baris `ok`, termasuk `nilai berbahaya ter-encode` dan `Content-Length byte` |
 
 ## 6. Uji khusus Linux
 

@@ -932,3 +932,180 @@ fungsi _web_status_dari(respons) {
     }
 }
 
+
+# --- kuki dan sesi (WEB-04) --------------------------------------------------
+
+# _web_heks2(n) -> dua digit heks untuk 0..255.
+#
+# heksa() bawaan memberi "0xff"/"0x5": ada awalan dan TIDAK ber-padding, jadi
+# tidak bisa dipakai menyusun ID dengan panjang tetap.
+fungsi _web_heks2(n) {
+    variabel digit = "0123456789abcdef"
+    variabel hi = n / 16
+    variabel lo = n % 16
+    kembalikan potong(digit, hi, 1) + potong(digit, lo, 1)
+}
+
+# _web_bita_ke_heks(bita) -> teks heks dari daftar bita 0..255.
+fungsi _web_bita_ke_heks(bita) {
+    variabel bagian = []
+    untuk b dalam bita {
+        bagian.tambah(_web_heks2(b))
+    }
+    kembalikan teks_gabung(bagian, "")
+}
+
+# _web_kuki_encode(nilai) -> nilai aman untuk Set-Cookie.
+#
+# RFC 6265 melarang ';' ',' spasi kutip dan backslash di dalam cookie-value.
+# Tanpa encoding, nilai yang memuat ';' MENYUNTIKKAN atribut: nilai
+# "x; HttpOnly=palsu" akan terbaca peramban sebagai atribut tambahan.
+fungsi _web_kuki_encode(nilai) {
+    variabel bagian = []
+    variabel n = panjang(nilai)
+    variabel i = 0
+    selagi i < n {
+        variabel c = potong(nilai, i, 1)
+        variabel k = ord(c)
+        jika k < 33 atau k > 126 atau c == ";" atau c == "," atau c == "\"" atau c == "\\" atau c == "%" {
+            bagian.tambah("%" + huruf_besar(_web_heks2(k)))
+        } selain {
+            bagian.tambah(c)
+        }
+        i = i + 1
+    }
+    kembalikan teks_gabung(bagian, "")
+}
+
+# set_kuki(res, nama, nilai, opsi) -> respons dengan satu baris Set-Cookie.
+#
+# Respons yang masuk sudah berbentuk teks HTTP lengkap, jadi barisnya
+# disisipkan tepat sebelum baris kosong penutup header. Content-Length tidak
+# berubah: yang bertambah hanya header.
+#
+# opsi: kamus berisi path, domain, max-age, httponly, secure, samesite.
+fungsi set_kuki(res, nama, nilai, opsi = kosong) {
+    variabel o = opsi
+    jika o == kosong {
+        o = {}
+    }
+    variabel baris = nama + "=" + _web_kuki_encode(nilai)
+
+    jika "path" dalam o {
+        baris = baris + "; Path=" + o["path"]
+    } selain {
+        baris = baris + "; Path=/"
+    }
+    jika "domain" dalam o {
+        baris = baris + "; Domain=" + o["domain"]
+    }
+    jika "max-age" dalam o {
+        baris = baris + "; Max-Age=" + ke_teks(o["max-age"])
+    }
+    jika "samesite" dalam o {
+        baris = baris + "; SameSite=" + o["samesite"]
+    }
+    jika "httponly" dalam o {
+        jika o["httponly"] {
+            baris = baris + "; HttpOnly"
+        }
+    }
+    jika "secure" dalam o {
+        jika o["secure"] {
+            baris = baris + "; Secure"
+        }
+    }
+
+    variabel akhir = teks_cari(res, "\r\n\r\n")
+    jika akhir < 0 {
+        kembalikan res
+    }
+    variabel kepala = potong(res, 0, akhir)
+    variabel ekor = potong(res, akhir, panjang(res) - akhir)
+    kembalikan kepala + "\r\nSet-Cookie: " + baris + ekor
+}
+
+# baca_kuki(req) -> kamus nama->nilai dari header Cookie.
+#
+# Nama ganda: yang PERTAMA menang, sama seperti perilaku peramban.
+fungsi baca_kuki(req) {
+    variabel hasil = {}
+    jika "cookie" tidak dalam req["header"] {
+        kembalikan hasil
+    }
+    untuk potongan dalam teks_pisah(req["header"]["cookie"], ";") {
+        variabel p = teks_pangkas(potongan)
+        variabel sama = teks_cari(p, "=")
+        jika sama > 0 {
+            variabel nama = teks_pangkas(potong(p, 0, sama))
+            variabel nilai = potong(p, sama + 1, panjang(p) - sama - 1)
+            jika nama tidak dalam hasil {
+                hasil[nama] = _web_dekode_persen(nilai)
+            }
+        }
+    }
+    kembalikan hasil
+}
+
+# TokoSesi: penyimpanan sesi dalam memori proses.
+#
+# Cukup untuk server ini yang melayani satu permintaan pada satu waktu.
+# Penyimpanan bersama (database/berkas) baru berguna setelah ada pekerja
+# paralel, dan itu Fase 20.
+kelas TokoSesi {
+    init(umur = 3600) {
+        diri.data = {}        # sid -> [kedaluwarsa, isi]
+        diri.umur = umur
+    }
+
+    # ID 32 bita acak dari CSPRNG -> 64 karakter heks.
+    # acak()/acak_bulat() TIDAK boleh dipakai di sini: keduanya rand() yang
+    # disemai time(), jadi ID sesi dapat ditebak dari header Date.
+    _id_baru() {
+        kembalikan _web_bita_ke_heks(acak_bita(32))
+    }
+
+    buat(isi) {
+        variabel sid = diri._id_baru()
+        diri.data[sid] = [waktu() + diri.umur, isi]
+        kembalikan sid
+    }
+
+    ambil(sid) {
+        jika sid tidak dalam diri.data {
+            kembalikan kosong
+        }
+        variabel baris = diri.data[sid]
+        jika waktu() > baris[0] {
+            diri.data.hapus_kunci(sid)
+            kembalikan kosong
+        }
+        kembalikan baris[1]
+    }
+
+    hapus(sid) {
+        jika sid dalam diri.data {
+            diri.data.hapus_kunci(sid)
+        }
+    }
+
+    # Rotasi ID saat login: ID lama DIHAPUS supaya sesi yang ditanam penyerang
+    # sebelum korban masuk tidak ikut hidup (session fixation).
+    putar(sid) {
+        variabel isi = diri.ambil(sid)
+        jika isi == kosong {
+            kembalikan kosong
+        }
+        diri.hapus(sid)
+        kembalikan diri.buat(isi)
+    }
+
+    bersihkan() {
+        variabel sekarang = waktu()
+        untuk sid dalam kunci(diri.data) {
+            jika sekarang > diri.data[sid][0] {
+                diri.data.hapus_kunci(sid)
+            }
+        }
+    }
+}
