@@ -1,6 +1,6 @@
 # Rencana Fitur — Dukungan BLOB/bytea di driver PostgreSQL & MySQL
 
-**Status:** draf
+**Status:** selesai
 **Fase:** 10 (Portabilitas & pengerasan)
 **Target rilis:** `v1.7.0`
 **Penulis:** Teguh Rijanandi

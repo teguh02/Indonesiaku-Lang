@@ -620,6 +620,23 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
    - **Query builder sengaja ditunda**, bukan terlupakan: merakit SQL otomatis menuntut keputusan dialek, padahal `db.idk` justru memutuskan untuk TIDAK menyembunyikan dialek dan penanda parameter. Itu keputusan desain tersendiri.
    - Dijaga `tests/migrasi_sabotase.sh`: tujuh jaminan (pencatatan versi, pemeriksaan versi terpasang, penghapusan catatan saat rollback, arah rollback, pengurutan versi, penolakan `turun` kosong, penolakan versi ganda) masing-masing dilucuti dan wajib membuat tes merah — 7/7.
 7. [ ] Siapkan database uji MySQL, MariaDB, PostgreSQL dalam container CI yang terisolasi; jalankan suite bersama untuk koneksi, CRUD, transaksi, rollback, NULL, Unicode, BLOB, kegagalan TLS, kredensial salah, timeout, SQL injection dan cleanup.
+   - **BLOB: terpenuhi 1.7.0, dan menutup cacat korupsi data.** Audit cakupan
+     menemukan kata "BLOB" tidak muncul sama sekali di suite driver; diuji
+     langsung, `bytea`/`blob` ternyata **rusak**, bukan sekadar tak teruji —
+     `[255, 254, 65, 0, 128]` tersimpan sebagai **22 byte teks**
+     `"[255, 254, 65, 0, 128]"`, bukan 5 byte biner, tanpa galat apa pun.
+     SQLite pada mesin yang sama benar, jadi program identik memberi hasil
+     berbeda tergantung basis data. Akar masalah: parameter dipaksa lewat
+     `ke_teks()` di `pg.idk` `_jalankan()` dan `my.idk` `_nilai_bita()`.
+     Ditutup dengan `_adalah_bita()` di kedua driver, plus format Bind
+     **biner** untuk PostgreSQL (format teks membuat server menolak `0xff`
+     sebagai UTF-8 tak sah). Diuji di `tests/pg_driver.sh` dan
+     `tests/my_driver.sh` dengan muatan yang sengaja **bukan UTF-8 sah** dan
+     memuat NUL di tengah; tiga sabotase masing-masing wajib merah.
+     Lihat [rencana](RENCANA_FITUR/selesai/blob_pg_my.md).
+   - **Sisa butir ini:** kegagalan TLS dan timeout belum punya pemeriksaan
+     sendiri di suite driver. Koneksi, CRUD, transaksi, rollback, NULL,
+     Unicode, kredensial salah, SQL injection, dan cleanup sudah tercakup.
 8. [ ] Perbarui docs/SPESIFIKASI.md bila kontrak bahasa berubah, website/panduan/07_PUSTAKA_STANDAR.md, examples/, CHANGELOG.md dan instalasi dependensi per OS.
 
 **Contoh API target (belum tersedia):** koneksi = basisdata.buka({"driver":"postgresql","host":"localhost","nama":"sekolah"}); koneksi.ambil_semua("SELECT * FROM siswa WHERE id = ?", [1]). Placeholder disesuaikan internal oleh driver, bukan dirangkai ke SQL secara manual.

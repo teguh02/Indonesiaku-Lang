@@ -921,6 +921,24 @@ literal string akan merusak query yang sah — pada
 `SELECT * FROM t WHERE nama = 'siapa?' AND id = ?` tanda tanya pertama ada di
 dalam literal, bukan parameter.
 
+**Data biner (BLOB/bytea)** memakai konvensi yang sama dengan SQLite dan modul
+`bita`: **daftar bulat 0..255** dikirim sebagai byte mentah, bukan sebagai teks
+representasinya.
+
+```indonesiaku-takjalan
+k.eksekusi("INSERT INTO berkas (isi) VALUES ($1)", [[137, 80, 78, 71]])
+```
+
+Dua beda yang perlu diketahui dibanding SQLite:
+
+- **Daftar kosong `[]` tidak dianggap biner** di MySQL/PostgreSQL. Dari daftar
+  kosong tidak mungkin dibedakan "BLOB nol byte" dari "daftar kosong biasa",
+  jadi ia melewati jalur nilai biasa. Untuk BLOB kosong, kirim teks kosong
+  `""`. Di SQLite `[]` tetap menjadi BLOB nol byte seperti sebelumnya.
+- **Jalur baca tidak otomatis**: `bytea` kembali dari PostgreSQL sebagai teks
+  heksadesimal `\x...`, dan `blob` MySQL sebagai teks. Pakai
+  `encode(isi,'hex')` / `HEX(isi)` di SQL bila ingin bentuk yang pasti.
+
 **API lama tetap berjalan**: `db_*` untuk SQLite serta `my.sambung`/`pg.sambung`
 langsung. `db.idk` adalah lapisan tipis di atasnya, bukan penggantinya.
 
