@@ -11,7 +11,7 @@ services:
     build:
       context: ../..
       dockerfile: docker/playground/Dockerfile
-    image: indonesiaku-website:1.4.0
+    image: indonesiaku-website:1.5.0
     container_name: indk-web
     restart: unless-stopped
     ports:
@@ -40,7 +40,7 @@ services:
     cpus: 0.50
 
   runner:
-    image: indonesiaku-website:1.4.0
+    image: indonesiaku-website:1.5.0
     container_name: indk-runner
     restart: unless-stopped
     command: ["python3", "/opt/playground/server.py", "--port", "8099"]

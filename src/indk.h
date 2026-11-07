@@ -47,7 +47,7 @@ void indk_mulai(void);
 // Merobohkan runtime dan membebaskan seluruh memorinya.
 void indk_selesai(void);
 
-// Versi pustaka (INDK_VERSION), mis. "1.4.0".
+// Versi pustaka (INDK_VERSION), mis. "1.5.0".
 const char* indk_versi(void);
 
 // Menjalankan kode sumber Indonesiaku.

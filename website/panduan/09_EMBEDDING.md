@@ -135,7 +135,7 @@ Semuanya ada di `src/indk.h`:
 |---|---|
 | `indk_mulai()` | menyiapkan runtime |
 | `indk_selesai()` | merobohkan runtime |
-| `indk_versi()` | versi pustaka, mis. `"1.4.0"` |
+| `indk_versi()` | versi pustaka, mis. `"1.5.0"` |
 | `indk_jalankan(sumber)` | menjalankan kode dari teks |
 | `indk_jalankan_berkas(jalur)` | menjalankan berkas `.idk` |
 | `indk_daftar_fungsi(nama, fungsi)` | mendaftarkan fungsi C sebagai builtin |
