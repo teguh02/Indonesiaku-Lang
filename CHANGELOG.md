@@ -7,6 +7,24 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Ditambahkan
+
+- **`batas_waktu` pada driver PostgreSQL dan MySQL** — batas waktu baca/tulis
+  soket yang sebelumnya terpaku 30 detik kini bisa disetel lewat konfigurasi
+  (`{"batas_waktu": 5}`); bawaannya tetap 30 detik dan `0` berarti tanpa batas.
+  30 detik terlalu lama untuk aplikasi yang ingin gagal cepat dan terlalu
+  pendek untuk kueri analitik.
+
+- **Uji kegagalan TLS dan timeout di suite driver** (sisa terakhir Fase 10
+  butir 7). TLS: `"tls": benar` ke server tanpa TLS harus **dibatalkan**, bukan
+  turun diam-diam ke teks polos. Asersinya memeriksa pesan galatnya, bukan
+  sekadar "ada galat" — mencabut cek anti-downgrade tetap menghasilkan galat
+  dari `tls_mulai()`, sehingga versi longgar tes ini lulus karena alasan yang
+  salah. Timeout: `tests/bantu/server_bisu.py` menerima koneksi lalu diam, dan
+  **durasinya ikut diperiksa** karena batas waktu 30 detik yang tidak
+  terkonfigurasi tetap lulus bila yang diperiksa hanya munculnya galat.
+  Tiga sabotase masing-masing wajib membuatnya merah.
+
 ### Diperbaiki
 
 - **BLOB/bytea tersimpan sebagai teks di driver PostgreSQL dan MySQL** —

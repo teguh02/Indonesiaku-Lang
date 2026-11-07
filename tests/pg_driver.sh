@@ -192,6 +192,74 @@ else
     periksa "tutup idempoten"       "ok" "$(ambil idempoten)"
 fi
 
+# --- Kegagalan TLS: anti-downgrade -----------------------------------------
+# Container uji berjalan dengan ssl=off. Meminta tls harus DIBATALKAN, bukan
+# diam-diam turun ke teks polos -- itu jaminan keamanannya. Tanpa tes ini,
+# menambahkan fallback akan terlihat "memperbaiki" koneksi dan tidak ada yang
+# merah.
+cat > "$TMP/tls.idk" <<'EOF'
+impor "pustaka/pg.idk"
+coba {
+    variabel k = sambung({"host":"127.0.0.1", "port": ke_bulat(ambil_lingkungan("PGPORT")),
+                          "pengguna":"postgres", "sandi": ambil_lingkungan("PGSANDI"),
+                          "basisdata":"ujian", "tls": benar})
+    cetak("tls=DITERIMA")
+    k.tutup()
+} kecuali e {
+    cetak("tls=" + e.pesan)
+}
+EOF
+HASIL_TLS=$(PGPORT="$PORT" PGSANDI="$SANDI" "$INDK" "$TMP/tls.idk" 2>&1)
+# Pesannya ikut diperiksa, bukan cuma "ada galat". Mencabut cek anti-downgrade
+# tetap menghasilkan galat -- tls_mulai() gagal terhadap server yang bicara
+# teks polos -- jadi tes yang hanya menuntut "galat" lulus karena alasan yang
+# salah. Itu terbukti saat sabotase pertama tidak membuatnya merah.
+case "$HASIL_TLS" in
+    *tls=DITERIMA*)  echo "  GAGAL downgrade TLS diam-diam: koneksi diterima"; GAGAL=$((GAGAL+1)) ;;
+    *"menolak TLS"*) echo "  OK    server tanpa TLS ditolak, bukan downgrade" ;;
+    *) echo "  GAGAL TLS gagal karena sebab lain: $HASIL_TLS"; GAGAL=$((GAGAL+1)) ;;
+esac
+
+# --- Batas waktu ------------------------------------------------------------
+# Server bisu: menerima koneksi lalu diam. Durasi ikut diperiksa, karena
+# batas waktu 30 detik yang tidak terkonfigurasi tetap akan "lulus" bila yang
+# diperiksa hanya munculnya galat.
+if command -v python3 >/dev/null 2>&1; then
+    python3 tests/bantu/server_bisu.py 55497 30 > "$TMP/bisu.log" 2>&1 &
+    PID_BISU=$!
+    for _ in $(seq 1 30); do
+        grep -q siap "$TMP/bisu.log" 2>/dev/null && break
+        sleep 0.2
+    done
+    cat > "$TMP/timeout.idk" <<'EOF'
+impor "pustaka/pg.idk"
+variabel mulai = waktu()
+coba {
+    sambung({"host":"127.0.0.1", "port":55497, "pengguna":"p", "sandi":"x",
+             "basisdata":"u", "batas_waktu": 2})
+    cetak("batas=TERSAMBUNG")
+} kecuali e {
+    cetak("batas=galat")
+}
+cetak("detik=" + ke_teks(bulat(waktu() - mulai)))
+EOF
+    HASIL_BATAS=$("$INDK" "$TMP/timeout.idk" 2>&1)
+    kill "$PID_BISU" 2>/dev/null || true
+    wait "$PID_BISU" 2>/dev/null || true
+    DETIK=$(echo "$HASIL_BATAS" | grep '^detik=' | cut -d= -f2)
+    case "$HASIL_BATAS" in
+        *batas=galat*) echo "  OK    server bisu memicu batas waktu" ;;
+        *) echo "  GAGAL server bisu tidak memicu batas waktu: $HASIL_BATAS"; GAGAL=$((GAGAL+1)) ;;
+    esac
+    if [ -n "$DETIK" ] && [ "$DETIK" -lt 10 ] 2>/dev/null; then
+        echo "  OK    batas waktu dipatuhi (${DETIK}s, bukan 30s)"
+    else
+        echo "  GAGAL batas waktu diabaikan: ${DETIK}s"; GAGAL=$((GAGAL+1))
+    fi
+else
+    echo "  LEWAT batas waktu: python3 tidak ada"
+fi
+
 # Sandi salah ditolak, dan sandi TIDAK muncul di pesan galat.
 cat > "$TMP/sandi.idk" <<'EOF'
 impor "pustaka/pg.idk"

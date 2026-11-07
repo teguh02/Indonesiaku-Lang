@@ -535,7 +535,7 @@ amalgamation, jadi FFI tidak lagi menghalangi apa pun).
 
 ## Roadmap implementasi per fase — setelah v1.4.0
 
-Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR-01–10, serta kebutuhan transfer berkas dan keamanan runtime yang sebelumnya tersebar dalam beberapa tabel. **Fase 0–6 sudah selesai; Fase 7 perkakasnya selesai sedangkan sisi kinerjanya dikerjakan hanya bila pengukuran membenarkan (mask tabel hash dikerjakan, computed goto / `OP_TRY_BEGIN` / cache `.idkc` / WASM ditolak beralasan); dan Fase 8 baru sebagian (anotasi tipe, distribusi paket native, pemberitahuan pembaruan, sandbox, API embedding C; tersisa GUI dan AOT). Fase 9 selesai di v1.4.0; Fase 10 dan 11 baru sebagian.** Fase 12 dan seterusnya adalah urutan kerja yang **diusulkan**, bukan penanda implementasi saat ini. Nomor ID lama tetap dipakai sebagai jejak rencana.
+Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR-01–10, serta kebutuhan transfer berkas dan keamanan runtime yang sebelumnya tersebar dalam beberapa tabel. **Fase 0–6 sudah selesai; Fase 7 perkakasnya selesai sedangkan sisi kinerjanya dikerjakan hanya bila pengukuran membenarkan (mask tabel hash dikerjakan, computed goto / `OP_TRY_BEGIN` / cache `.idkc` / WASM ditolak beralasan); dan Fase 8 baru sebagian (anotasi tipe, distribusi paket native, pemberitahuan pembaruan, sandbox, API embedding C; tersisa GUI dan AOT). Fase 9 selesai di v1.4.0; **Fase 10 selesai di v1.7.0** (7 dari 7 butir); Fase 11 baru sebagian.** Fase 12 dan seterusnya adalah urutan kerja yang **diusulkan**, bukan penanda implementasi saat ini. Nomor ID lama tetap dipakai sebagai jejak rencana.
 
 **Cara membaca:** setiap fase memiliki tujuan, kebutuhan awal, langkah implementasi berurutan, contoh API target, pengujian wajib, serta definisi selesai. Tanda [ ] berarti belum. Implementasi dapat dibuat dalam pull request kecil; jangan memaksa seluruh fase dalam satu PR. Semua perubahan tetap tunduk pada "Definisi selesai" dan "Feature workflow" di AGENTS.md, termasuk rencana detail sebelum kode, golden test, negative test, dokumentasi dan editor.
 
@@ -595,6 +595,8 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 ### Fase 10 — Driver dan fondasi database
 
+**Status: selesai (v1.7.0).** Ketujuh butir tuntas. Batas yang diketahui dan dicatat sadar: driver MySQL belum punya jalur TLS, dan `bytea`/`blob` dibaca kembali sebagai teks (lihat butir 7).
+
 **Tujuan:** SQLite dipertahankan, lalu MySQL/MariaDB dan PostgreSQL dapat dipakai dengan query aman. **Status:** ⬜ belum. **Pemetaan:** WDB-01–05, P6.
 
 **Rekomendasi rilis fase: `v1.5.0` (minor), kandidat `v1.5.0-rc.1`; patch `v1.5.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Driver SQLite, MySQL/MariaDB, PostgreSQL lulus CRUD, binding parameter, transaksi, galat dan tes integrasi lintas layanan. Fitur TLS untuk koneksi database wajib aman sebelum dipublikasikan.\n\n
@@ -635,7 +637,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
    - **Rollback transaksional hanya aman penuh di SQLite dan PostgreSQL.** MySQL/MariaDB melakukan implicit commit pada DDL, jadi langkah yang gagal di tengah bisa meninggalkan skema separuh jadi. Dicatat di panduan, tidak disembunyikan.
    - **Query builder sengaja ditunda**, bukan terlupakan: merakit SQL otomatis menuntut keputusan dialek, padahal `db.idk` justru memutuskan untuk TIDAK menyembunyikan dialek dan penanda parameter. Itu keputusan desain tersendiri.
    - Dijaga `tests/migrasi_sabotase.sh`: tujuh jaminan (pencatatan versi, pemeriksaan versi terpasang, penghapusan catatan saat rollback, arah rollback, pengurutan versi, penolakan `turun` kosong, penolakan versi ganda) masing-masing dilucuti dan wajib membuat tes merah — 7/7.
-7. [ ] Siapkan database uji MySQL, MariaDB, PostgreSQL dalam container CI yang terisolasi; jalankan suite bersama untuk koneksi, CRUD, transaksi, rollback, NULL, Unicode, BLOB, kegagalan TLS, kredensial salah, timeout, SQL injection dan cleanup.
+7. [x] Siapkan database uji MySQL, MariaDB, PostgreSQL dalam container CI yang terisolasi; jalankan suite bersama untuk koneksi, CRUD, transaksi, rollback, NULL, Unicode, BLOB, kegagalan TLS, kredensial salah, timeout, SQL injection dan cleanup.
    - **BLOB: terpenuhi 1.7.0, dan menutup cacat korupsi data.** Audit cakupan
      menemukan kata "BLOB" tidak muncul sama sekali di suite driver; diuji
      langsung, `bytea`/`blob` ternyata **rusak**, bukan sekadar tak teruji —
@@ -650,9 +652,22 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
      `tests/my_driver.sh` dengan muatan yang sengaja **bukan UTF-8 sah** dan
      memuat NUL di tengah; tiga sabotase masing-masing wajib merah.
      Lihat [rencana](RENCANA_FITUR/selesai/blob_pg_my.md).
-   - **Sisa butir ini:** kegagalan TLS dan timeout belum punya pemeriksaan
-     sendiri di suite driver. Koneksi, CRUD, transaksi, rollback, NULL,
-     Unicode, kredensial salah, SQL injection, dan cleanup sudah tercakup.
+   - **Kegagalan TLS dan timeout: terpenuhi 1.7.0, butir ini selesai.**
+     `"tls": benar` ke server tanpa TLS harus **dibatalkan**, bukan turun
+     diam-diam ke teks polos; diuji terhadap container suite yang memang
+     berjalan `ssl=off`. Asersinya memeriksa **pesan galatnya**, bukan sekadar
+     "ada galat": mencabut cek anti-downgrade tetap menghasilkan galat (dari
+     `tls_mulai()`), sehingga versi longgar tes ini lulus karena alasan yang
+     salah — terbukti saat sabotase pertama tidak membuatnya merah.
+     Timeout diuji dengan `tests/bantu/server_bisu.py` (menerima koneksi lalu
+     diam) dan **durasinya ikut diperiksa**, karena batas waktu 30 detik yang
+     tidak terkonfigurasi tetap lulus bila yang diperiksa hanya munculnya
+     galat. Kedua driver kini menerima `batas_waktu` (bawaan 30 detik, `0`
+     tanpa batas). Tiga sabotase masing-masing wajib merah.
+     Lihat [rencana](RENCANA_FITUR/selesai/tls_timeout_driver.md).
+   - **Batas yang diketahui:** driver MySQL belum punya jalur TLS sama sekali
+     (jabat tangan `SSLRequest`-nya berbeda dari PostgreSQL); itu fitur
+     tersendiri, bukan cakupan uji yang hilang.
 8. [ ] Perbarui docs/SPESIFIKASI.md bila kontrak bahasa berubah, website/panduan/07_PUSTAKA_STANDAR.md, examples/, CHANGELOG.md dan instalasi dependensi per OS.
 
 **Contoh API target (belum tersedia):** koneksi = basisdata.buka({"driver":"postgresql","host":"localhost","nama":"sekolah"}); koneksi.ambil_semua("SELECT * FROM siswa WHERE id = ?", [1]). Placeholder disesuaikan internal oleh driver, bukan dirangkai ke SQL secara manual.
