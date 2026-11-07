@@ -9,6 +9,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **Proteksi CSRF (WEB-05, sebagian).** `web.token_csrf()` membuat token
+  per-sesi dan menyimpannya di dalam data sesi; `web.periksa_csrf()`
+  memvalidasi permintaan yang mengubah keadaan (`GET`/`HEAD`/`OPTIONS` lolos
+  otomatis), menerima token dari `_csrf` di formulir atau header
+  `X-CSRF-Token`; `web.wajib_csrf()` mengembalikan penjaga siap pakai yang
+  menjawab 403.
 - **Kuki dan sesi untuk aplikasi web (WEB-04).** `web.set_kuki()` menambahkan
   `Set-Cookie` dengan `HttpOnly`, `Secure`, `SameSite`, `Max-Age`, `Path` dan
   `Domain`; `web.baca_kuki()` mengurai header `Cookie` dari permintaan;
@@ -21,6 +27,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Keamanan
 
+- Token CSRF dibandingkan dengan **waktu-tetap**, bukan `==`: `==` berhenti di
+  karakter pertama yang berbeda sehingga lama perbandingan membocorkan berapa
+  banyak awalan yang sudah benar, dan token dapat ditebak karakter demi
+  karakter.
+- Token CSRF terikat pada sesinya: token milik sesi lain ditolak, dan rotasi
+  `putar()` maupun logout otomatis membatalkannya.
 - ID sesi diambil dari `acak_bita()` (CSPRNG), bukan `acak()` yang disemai
   waktu dan dapat ditebak dari header `Date`.
 - `putar()` menghapus ID lama saat rotasi, menutup *session fixation*.

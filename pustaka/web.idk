@@ -1109,3 +1109,92 @@ kelas TokoSesi {
         }
     }
 }
+
+# --- proteksi CSRF (WEB-05) --------------------------------------------------
+
+# _web_banding_tetap(a, b) -> benar bila sama, dengan waktu yang tidak
+# bergantung pada isi.
+#
+# '==' pada teks berhenti di karakter pertama yang berbeda, sehingga LAMA
+# perbandingan membocorkan berapa banyak awalan yang sudah benar. Dengan cukup
+# percobaan, token dapat ditebak karakter demi karakter. Di sini seluruh
+# panjang selalu ditelusuri dan hasilnya diakumulasi.
+fungsi _web_banding_tetap(a, b) {
+    jika panjang(a) != panjang(b) {
+        kembalikan salah
+    }
+    variabel beda = 0
+    variabel i = 0
+    selagi i < panjang(a) {
+        jika potong(a, i, 1) != potong(b, i, 1) {
+            beda = beda + 1
+        }
+        i = i + 1
+    }
+    kembalikan beda == 0
+}
+
+# token_csrf(toko, sid) -> token milik sesi itu, dibuat sekali lalu disimpan
+# DI DALAM data sesi.
+#
+# Karena ikut tersimpan di sesi: putar() memindahkannya, dan logout
+# membatalkannya tanpa kode tambahan.
+fungsi token_csrf(toko, sid) {
+    variabel isi = toko.ambil(sid)
+    jika isi == kosong {
+        kembalikan ""
+    }
+    jika "_csrf" tidak dalam isi {
+        isi["_csrf"] = _web_bita_ke_heks(acak_bita(32))
+    }
+    kembalikan isi["_csrf"]
+}
+
+# periksa_csrf(toko, req) -> benar bila permintaan boleh dilanjutkan.
+#
+# GET/HEAD/OPTIONS lolos tanpa pemeriksaan: menurut definisi metode itu tidak
+# mengubah keadaan, dan memaksakan token di sana akan memutus tautan biasa.
+fungsi periksa_csrf(toko, req) {
+    variabel metode = req["metode"]
+    jika metode == "GET" atau metode == "HEAD" atau metode == "OPTIONS" {
+        kembalikan benar
+    }
+
+    variabel kuki = baca_kuki(req)
+    jika "sesi" tidak dalam kuki {
+        kembalikan salah
+    }
+    variabel harap = token_csrf(toko, kuki["sesi"])
+    jika harap == "" {
+        kembalikan salah
+    }
+
+    # Formulir HTML dulu, lalu header untuk jalur AJAX/JSON.
+    variabel dapat = ""
+    jika "form" dalam req {
+        jika "_csrf" dalam req["form"] {
+            dapat = req["form"]["_csrf"]
+        }
+    }
+    jika dapat == "" {
+        jika "x-csrf-token" dalam req["header"] {
+            dapat = teks_pangkas(req["header"]["x-csrf-token"])
+        }
+    }
+    jika dapat == "" {
+        kembalikan salah
+    }
+
+    kembalikan _web_banding_tetap(harap, dapat)
+}
+
+# wajib_csrf(toko) -> penjaga siap pakai, supaya penangan tidak menulis
+# cabang 403 yang sama berulang-ulang.
+fungsi wajib_csrf(toko) {
+    kembalikan fungsi(req) {
+        jika periksa_csrf(toko, req) {
+            kembalikan kosong
+        }
+        kembalikan teks(403, "token CSRF tidak sah")
+    }
+}

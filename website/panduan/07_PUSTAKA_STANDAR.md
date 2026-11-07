@@ -1399,6 +1399,67 @@ header `Date` respons.
 Toko ini berumur sama dengan proses: sesi hilang saat server dimulai ulang,
 dan dua proses tidak berbagi sesi.
 
+#### Proteksi CSRF
+
+Sesi yang bekerja justru membuka lubang ini. Peramban melampirkan kuki sesi
+**otomatis pada setiap permintaan ke domain itu**, tak peduli dari halaman
+mana permintaan berasal. Jadi halaman jahat cukup memuat:
+
+```html
+<form action="https://aplikasi-anda/hapus" method="POST">
+<body onload="document.forms[0].submit()">
+```
+
+Korban yang sedang masuk membukanya, peramban mengirimkan kukinya, dan server
+memproses permintaan itu sebagai tindakan sah korban — tidak terbedakan dari
+klik tombol asli. Satu hal yang **tidak** dimiliki penyerang: isi sesi korban.
+Di situlah token bekerja.
+
+```indonesiaku-takjalan
+variabel token = web.token_csrf(toko, sid)
+# sisipkan ke formulir:
+#   <input type=hidden name=_csrf value=...>
+
+jika web.periksa_csrf(toko, req) {
+    # aman diproses
+}
+```
+
+`web.token_csrf(toko, sid)` membuat token sekali lalu menyimpannya di dalam
+data sesi, jadi nilainya tetap selama sesi hidup — dua tab tidak saling
+membatalkan. Karena ikut tersimpan di sesi, `putar()` memindahkannya dan
+logout otomatis membatalkannya.
+
+`web.periksa_csrf(toko, req)` mengembalikan `benar`/`salah`. `GET`, `HEAD`,
+dan `OPTIONS` selalu lolos — menurut definisi tidak mengubah keadaan. Token
+diambil dari `req["form"]["_csrf"]`, atau header `X-CSRF-Token` untuk jalur
+AJAX.
+
+`web.wajib_csrf(toko)` mengembalikan penjaga siap pakai: `kosong` bila boleh
+lanjut, atau respons 403 yang tinggal dikembalikan.
+
+```indonesiaku-takjalan
+variabel penjaga = web.wajib_csrf(toko)
+
+app.rute("POST", "/hapus", fungsi(req) {
+    variabel tolak = penjaga(req)
+    jika tolak != kosong {
+        kembalikan tolak
+    }
+    kembalikan web.teks(200, "terhapus")
+})
+```
+
+Perbandingan token memakai **waktu-tetap**, bukan `==`. `==` berhenti di
+karakter pertama yang berbeda, sehingga lama perbandingan membocorkan berapa
+banyak awalan yang sudah benar — dengan cukup percobaan, token dapat ditebak
+karakter demi karakter.
+
+**`SameSite=Lax` bukan pengganti token.** Ia menahan sebagian besar POST
+lintas situs, tetapi nilainya bisa dilonggarkan jadi `SameSite=None` untuk
+kebutuhan embed, tidak melindungi dari subdomain yang dikuasai penyerang, dan
+perilakunya berbeda di peramban lama. Pakai keduanya.
+
 
 Digunakan oleh `examples/todo_server.idk` — REST API Todo-list berbasis HTTP
 di atas soket TCP.
