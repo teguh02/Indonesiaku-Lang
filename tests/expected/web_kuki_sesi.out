@@ -1,0 +1,26 @@
+== Set-Cookie ==
+Set-Cookie: sesi=abc123; Path=/; Max-Age=3600; SameSite=Lax; HttpOnly; Secure
+
+== bawaan tanpa opsi ==
+Set-Cookie: a=1; Path=/
+
+== nilai berbahaya di-encode ==
+Set-Cookie: s=a%3B%20Domain=jahat.com; Path=/
+
+== dua kuki dalam satu respons ==
+jumlah Set-Cookie: 2
+
+== baca_kuki ==
+sesi = abc123
+tema = gelap
+x    = pertama
+kosong: 0
+
+== TokoSesi ==
+panjang ID: 64
+isi sesi  : ani
+ID berubah     : benar
+ID lama mati   : benar
+isi ikut pindah: ani
+sesudah hapus  : benar
+kedaluwarsa    : benar

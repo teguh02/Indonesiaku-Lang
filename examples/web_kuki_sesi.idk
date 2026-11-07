@@ -1,0 +1,90 @@
+# Kuki dan sesi untuk aplikasi web (WEB-04).
+#
+# ID sesi TIDAK pernah dicetak: nilainya acak, keluarannya harus tetap sama
+# setiap kali dijalankan. Yang diperiksa adalah panjang dan perilakunya.
+impor web
+impor "pustaka/teks.idk"
+
+cetak("== Set-Cookie ==")
+
+variabel res = web.teks(200, "halo")
+variabel dengan_kuki = web.set_kuki(res, "sesi", "abc123", {
+    "httponly": benar,
+    "secure": benar,
+    "samesite": "Lax",
+    "max-age": 3600
+})
+
+untuk baris dalam teks_pisah(dengan_kuki, "\r\n") {
+    jika teks_mulai_dengan(baris, "Set-Cookie:") {
+        cetak(baris)
+    }
+}
+
+cetak("")
+cetak("== bawaan tanpa opsi ==")
+variabel polos = web.set_kuki(web.teks(200, "x"), "a", "1")
+untuk baris dalam teks_pisah(polos, "\r\n") {
+    jika teks_mulai_dengan(baris, "Set-Cookie:") {
+        cetak(baris)
+    }
+}
+
+cetak("")
+cetak("== nilai berbahaya di-encode ==")
+# Tanpa encoding, ';' akan membuat peramban membaca sisanya sebagai ATRIBUT.
+variabel jahat = web.set_kuki(web.teks(200, "x"), "s", "a; Domain=jahat.com")
+untuk baris dalam teks_pisah(jahat, "\r\n") {
+    jika teks_mulai_dengan(baris, "Set-Cookie:") {
+        cetak(baris)
+    }
+}
+
+cetak("")
+cetak("== dua kuki dalam satu respons ==")
+# Inilah alasan header disimpan sebagai daftar pasangan, bukan kamus.
+variabel dua = web.set_kuki(web.set_kuki(web.teks(200, "x"), "a", "1"), "b", "2")
+variabel jumlah = 0
+untuk baris dalam teks_pisah(dua, "\r\n") {
+    jika teks_mulai_dengan(baris, "Set-Cookie:") {
+        jumlah = jumlah + 1
+    }
+}
+cetak("jumlah Set-Cookie: " + ke_teks(jumlah))
+
+cetak("")
+cetak("== baca_kuki ==")
+variabel req = {"header": {"cookie": "sesi=abc123; tema=gelap"}}
+variabel kuki = web.baca_kuki(req)
+cetak("sesi = " + kuki["sesi"])
+cetak("tema = " + kuki["tema"])
+
+# Nama ganda: yang pertama menang, sama seperti peramban.
+variabel req2 = {"header": {"cookie": "x=pertama; x=kedua"}}
+cetak("x    = " + web.baca_kuki(req2)["x"])
+
+# Tanpa header Cookie sama sekali.
+cetak("kosong: " + ke_teks(panjang(kunci(web.baca_kuki({"header": {}})))))
+
+cetak("")
+cetak("== TokoSesi ==")
+variabel toko = web.TokoSesi()
+variabel sid = toko.buat({"pengguna": "ani"})
+
+cetak("panjang ID: " + ke_teks(panjang(sid)))
+cetak("isi sesi  : " + toko.ambil(sid)["pengguna"])
+
+# Rotasi saat login: ID berubah, isi ikut pindah, ID lama mati.
+variabel sid_baru = toko.putar(sid)
+cetak("ID berubah     : " + ke_teks(sid_baru != sid))
+cetak("ID lama mati   : " + ke_teks(toko.ambil(sid) == kosong))
+cetak("isi ikut pindah: " + toko.ambil(sid_baru)["pengguna"])
+
+# Logout.
+toko.hapus(sid_baru)
+cetak("sesudah hapus  : " + ke_teks(toko.ambil(sid_baru) == kosong))
+
+# Sesi kedaluwarsa (umur 0 detik = langsung lewat).
+variabel sebentar = web.TokoSesi(0 - 1)
+variabel mati = sebentar.buat({"a": 1})
+cetak("kedaluwarsa    : " + ke_teks(sebentar.ambil(mati) == kosong))

@@ -89,13 +89,22 @@ fungsi _http_frasa(kode) {
 }
 
 # Bangun response HTTP lengkap sebagai string.
-fungsi http_response(kode, tipe_konten, badan) {
+#
+# header (opsional) adalah DAFTAR pasangan [nama, nilai], bukan kamus:
+# Set-Cookie boleh muncul berkali-kali dalam satu respons (RFC 6265 §3), dan
+# kamus akan membuang semua kecuali yang terakhir.
+fungsi http_response(kode, tipe_konten, badan, header = kosong) {
     variabel r = "HTTP/1.1 " + ke_teks(kode) + " " + _http_frasa(kode) + "\r\n"
     r = r + "Content-Type: " + tipe_konten + "\r\n"
     # Content-Length menghitung BYTE: panjang() menghitung karakter, jadi
     # badan non-ASCII dulu terpotong di peramban dan curl.
     r = r + "Content-Length: " + ke_teks(_http_panjang_byte(badan)) + "\r\n"
     r = r + "Connection: close\r\n"
+    jika header != kosong {
+        untuk h dalam header {
+            r = r + h[0] + ": " + h[1] + "\r\n"
+        }
+    }
     r = r + "\r\n"
     r = r + badan
     kembalikan r

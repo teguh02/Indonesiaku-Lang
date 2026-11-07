@@ -1344,6 +1344,61 @@ soket_tulis(klien, app.tangani(mentah))
 **411**, JSON rusak dan `Content-Length` tidak sah dijawab **400** (salah
 klien, bukan 500). Berkas unggahan ditahan di memori, bukan ditulis ke disk.
 
+#### Kuki dan sesi
+
+`web.set_kuki(res, nama, nilai, opsi)` menambahkan `Set-Cookie` ke respons
+yang sudah jadi dan mengembalikan respons baru:
+
+```indonesiaku-takjalan
+variabel res = web.teks(200, "selamat datang")
+kembalikan web.set_kuki(res, "sesi", sid, {
+    "httponly": benar,
+    "secure": benar,
+    "samesite": "Lax",
+    "max-age": 3600
+})
+```
+
+Opsi yang dikenal: `path` (bawaan `/`), `domain`, `max-age`, `samesite`,
+`httponly`, `secure`. Memanggilnya dua kali menghasilkan **dua** baris
+`Set-Cookie` — keduanya terkirim, tidak saling menimpa.
+
+Nilai kuki di-encode persen pada karakter yang dilarang RFC 6265. Tanpa itu,
+nilai yang memuat `;` akan **menyuntikkan atribut**: `"a; Domain=jahat.com"`
+terbaca peramban sebagai domain kuki, bukan sebagai nilai.
+
+`web.baca_kuki(req)` mengurai header `Cookie` menjadi kamus. Bila satu nama
+muncul dua kali, yang **pertama** menang — sama seperti perilaku peramban.
+
+```indonesiaku-takjalan
+variabel kuki = web.baca_kuki(req)
+jika "sesi" dalam kuki {
+    variabel isi = toko.ambil(kuki["sesi"])
+}
+```
+
+`web.TokoSesi(umur)` menyimpan sesi di memori proses (umur bawaan 3600 detik):
+
+| Metode | Guna |
+|---|---|
+| `buat(isi)` | sesi baru, kembalikan ID 64 karakter heks |
+| `ambil(sid)` | isi sesi, atau `kosong` bila tidak ada/kedaluwarsa |
+| `hapus(sid)` | invalidasi — inilah logout |
+| `putar(sid)` | ID baru, isi pindah, ID lama dihapus |
+| `bersihkan()` | buang semua yang kedaluwarsa |
+
+**Panggil `putar()` tepat setelah login berhasil.** Tanpa rotasi, ID sesi yang
+ditanam penyerang ke peramban korban sebelum ia masuk akan **tetap berlaku
+sesudahnya** — penyerang memegang ID yang sama dan ikut masuk. Itu *session
+fixation*.
+
+ID sesi diambil dari `acak_bita()` (CSPRNG sistem), **bukan** `acak()`.
+`acak()` adalah `rand()` yang disemai waktu, jadi ID-nya dapat ditebak dari
+header `Date` respons.
+
+Toko ini berumur sama dengan proses: sesi hilang saat server dimulai ulang,
+dan dua proses tidak berbagi sesi.
+
 
 Digunakan oleh `examples/todo_server.idk` — REST API Todo-list berbasis HTTP
 di atas soket TCP.

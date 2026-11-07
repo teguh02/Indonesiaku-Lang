@@ -407,6 +407,17 @@ if [ -f tests/web_badan_server.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Kuki dan sesi (WEB-04): flag keamanan, Set-Cookie berganda, rotasi ID.
+if [ -f tests/web_kuki_sesi.sh ]; then
+    echo ""
+    if bash tests/web_kuki_sesi.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES web-kuki-sesi"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Tag versi (image playground, LABEL rilis, cache-buster website) harus
 # mengikuti INDK_VERSION; yang tertinggal tidak pernah gagal sendiri.
 if [ -f tests/versi_konsisten.sh ]; then
