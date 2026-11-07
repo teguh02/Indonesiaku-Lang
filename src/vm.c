@@ -710,6 +710,7 @@ void initVM() {
     defineNative("lantai", nativeFnLantai);
     defineNative("atap", nativeFnAtap);
     defineNative("acak", nativeFnAcak);
+    defineNative("acak_bita", nativeFnAcakBita);
 
     defineNative("bulatkan", nativeFnBulatkan);
     defineNative("bagi_sisa", nativeFnBagiSisa);

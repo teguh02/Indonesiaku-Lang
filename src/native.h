@@ -51,6 +51,7 @@ Value nativeFnAtap(int argCount, Value* args);
 
 // acak() - Bilangan acak 0-1
 Value nativeFnAcak(int argCount, Value* args);
+Value nativeFnAcakBita(int argCount, Value* args);
 
 // ============================================================================
 // ANGKA & TIPE

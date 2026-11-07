@@ -435,6 +435,7 @@ jobs:
           set -u
           gagal=0
           for t in tests/builtin_konsisten.sh \
+                   tests/acak_aman.sh \
                    tests/test_anotasi_bytecode.sh \
                    tests/test_baris_panjang.sh \
                    tests/test_format.sh \

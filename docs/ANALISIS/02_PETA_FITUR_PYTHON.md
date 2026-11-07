@@ -245,6 +245,7 @@ Prioritas berdasarkan "apa yang dibutuhkan pemula dan aplikasi umum".
 |---|---|---|---|
 | `math` | `matematika` | 🟡 builtin (termasuk trigonometri) + `pustaka/matematika.idk` | 3 |
 | `random` | `acak` | 🟡 `acak`, `acak_bulat` | 3 |
+| `secrets` | — | 🟡 `acak_bita()` (bita acak kriptografis); `token_hex`/`compare_digest` belum | 13 |
 | `string` | `teks` | 🟡 | 3 |
 | `json` | `json` | ✅ | — |
 | `time` / `datetime` | `waktu` / `tanggal_waktu` | 🟡 | 3 |

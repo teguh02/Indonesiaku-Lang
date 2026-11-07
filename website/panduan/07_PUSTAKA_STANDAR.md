@@ -33,8 +33,40 @@ luar jangkauan.
 | `asin(x)`, `acos(x)`, `atan(x)` | Kebalikan trigonometri → radian. `asin`/`acos` hanya menerima `[-1, 1]` (selain itu `GalatNilai`) |
 | `atan2(y, x)` | Sudut titik `(x, y)` dalam radian, `-π..π` — kuadrannya benar, tidak seperti `atan(y / x)` |
 | `radian(derajat)`, `derajat(radian)` | Konversi satuan sudut |
-| `acak()` | Angka acak `[0, 1)` |
-| `acak_bulat(min, maks)` | Bilangan bulat acak `[min, maks]` |
+| `acak()` | Angka acak `[0, 1)` — **tidak untuk keamanan**, lihat catatan di bawah |
+| `acak_bulat(min, maks)` | Bilangan bulat acak `[min, maks]` — **tidak untuk keamanan** |
+| `acak_bita(n)` | Daftar `n` bita `0..255` dari sumber acak kriptografis sistem (`1 ≤ n ≤ 1048576`) |
+
+#### `acak()` bukan untuk token, sesi, atau sandi
+
+`acak()` dan `acak_bulat()` memakai generator cepat yang disemai dari **jam
+sistem saat proses dimulai**. Barisannya bisa direproduksi: tiga proses `indk`
+yang dijalankan pada detik yang sama mengembalikan angka yang sama persis.
+
+```indonesiaku
+cetak(acak_bulat(0, 999999999))   # proses 1 -> 440825032
+cetak(acak_bulat(0, 999999999))   # proses 2 -> 440825032  (sama!)
+```
+
+Untuk aplikasi web itu berbahaya: penyerang tahu kira-kira kapan server
+dinyalakan dari header `Date` di setiap respons, jadi ID sesi yang dibangun
+dari `acak_bulat()` dapat ditebak dalam beberapa percobaan.
+
+Pakai `acak_bita()` untuk apa pun yang tidak boleh tertebak — ID sesi, token
+reset sandi, garam, nonce, kunci API:
+
+```indonesiaku
+variabel bita = acak_bita(16)      # 128 bit dari sumber acak sistem
+variabel token = ""
+untuk b dalam bita {
+    token = token + heksa(b).ganti("0x", "")
+}
+```
+
+Pembagian ini sengaja dibuat sama seperti `random` dan `secrets` di Python:
+`acak()` tetap cepat dan dapat direproduksi untuk simulasi, `acak_bita()`
+untuk keamanan. `acak_bita()` **tidak pernah diam-diam turun mutu** — bila
+sumber acak sistem gagal dibaca, ia menaikkan galat.
 
 `bulat`, `lantai`, `atap`, dan `bulatkan` tanpa `digit` selalu menghasilkan
 `bulat`. Karena itu `nan` menaikkan `GalatNilai`, sedangkan `takhingga` atau

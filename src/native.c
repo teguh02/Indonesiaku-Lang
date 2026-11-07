@@ -39,6 +39,8 @@
 #include "tls.h"
 #include "mbedtls/md.h"
 #include "mbedtls/pkcs5.h"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/entropy.h"
 #include "sistem.h"
 #include "vm.h"
 #include "object.h"
@@ -244,7 +246,89 @@ Value nativeFnAcak(int argCount, Value* args) {
         return NUMBER_VAL(0);
     }
     // Return random number between 0 and 1
+    //
+    // CATATAN KEAMANAN: rand() TIDAK kriptografis dan di-seed srand(time(NULL)),
+    // jadi seluruh barisannya bisa direproduksi oleh siapa pun yang menebak
+    // detik start proses. Untuk token, ID sesi, garam sandi, atau apa pun yang
+    // harus tak tertebak, pakai acak_bita(). Pemisahan ini disengaja, meniru
+    // random vs secrets di Python: acak() tetap cepat dan bisa direproduksi
+    // untuk simulasi.
     return NUMBER_VAL((double)rand() / RAND_MAX);
+}
+
+// acak_bita(n) -> daftar n bulat 0..255 dari sumber acak kriptografis OS.
+//
+// Memakai mbedTLS yang sudah di-vendor untuk TLS, bukan getrandom()/
+// BCryptGenRandom tulisan tangan per OS: satu jalur kode untuk Linux, macOS,
+// Windows dan musl, tanpa berkas .c baru (yang akan memaksa menyunting
+// Makefile plus empat daftar sumber mentah di .github/workflows/test.yml).
+//
+// ponytail: DRBG statis dipakai ulang lintas panggilan karena seeding ulang
+// mahal; aman selama VM satu utas. Begitu ada thread, konteks ini butuh kunci.
+static mbedtls_ctr_drbg_context acakDrbg;
+static mbedtls_entropy_context acakEntropy;
+static bool acakSiap = false;
+
+Value nativeFnAcakBita(int argCount, Value* args) {
+    if (argCount != 1) {
+        nativeRaise("acak_bita() memerlukan 1 argumen (jumlah bita)");
+        return KOSONG_VAL;
+    }
+    if (!IS_NUMBER(args[0])) {
+        nativeRaise("acak_bita() hanya menerima angka");
+        return KOSONG_VAL;
+    }
+    double mentah = AS_NUMBER(args[0]);
+    if (mentah != (double)(long long)mentah) {
+        nativeRaise("acak_bita() memerlukan bilangan bulat");
+        return KOSONG_VAL;
+    }
+    long long n = (long long)mentah;
+    if (n < 1 || n > 1048576) {
+        nativeRaise("acak_bita(): jumlah bita harus antara 1 dan 1048576");
+        return KOSONG_VAL;
+    }
+
+    if (!acakSiap) {
+        mbedtls_entropy_init(&acakEntropy);
+        mbedtls_ctr_drbg_init(&acakDrbg);
+        const char* benih = "indonesiaku-acak-bita";
+        if (mbedtls_ctr_drbg_seed(&acakDrbg, mbedtls_entropy_func, &acakEntropy,
+                                  (const unsigned char*)benih, strlen(benih)) != 0) {
+            mbedtls_ctr_drbg_free(&acakDrbg);
+            mbedtls_entropy_free(&acakEntropy);
+            // Jangan pernah jatuh ke rand() di sini: fallback senyap persis
+            // kelemahan yang builtin ini ada untuk menutupnya.
+            nativeRaise("acak_bita() gagal menyiapkan sumber acak sistem");
+            return KOSONG_VAL;
+        }
+        acakSiap = true;
+    }
+
+    unsigned char* buf = ALLOCATE(unsigned char, (int)n);
+    // mbedTLS membatasi satu permintaan; ambil bertahap untuk n besar.
+    long long sisa = n;
+    unsigned char* p = buf;
+    while (sisa > 0) {
+        size_t potong = (size_t)(sisa > MBEDTLS_CTR_DRBG_MAX_REQUEST
+                                 ? MBEDTLS_CTR_DRBG_MAX_REQUEST : sisa);
+        if (mbedtls_ctr_drbg_random(&acakDrbg, p, potong) != 0) {
+            FREE_ARRAY(unsigned char, buf, (int)n);
+            nativeRaise("acak_bita() gagal membaca sumber acak sistem");
+            return KOSONG_VAL;
+        }
+        p += potong;
+        sisa -= (long long)potong;
+    }
+
+    ObjList* hasil = newList();
+    push(OBJ_VAL(hasil));  // lindungi dari GC selagi daftar diisi
+    for (long long i = 0; i < n; i++) {
+        writeValueArray(&hasil->items, INT_VAL(buf[i]));
+    }
+    pop();
+    FREE_ARRAY(unsigned char, buf, (int)n);
+    return OBJ_VAL(hasil);
 }
 
 // ============================================================================

@@ -367,6 +367,21 @@ if [ -f tests/builtin_konsisten.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Sumber acak kriptografis: acak_bita() harus berbeda lintas proses, sesuatu
+# yang GAGAL pada acak_bulat() (rand() + srand(time(NULL))) dan membuat ID
+# sesi dapat ditebak dari header Date.
+if [ -f tests/acak_aman.sh ]; then
+    if bash tests/acak_aman.sh > /tmp/idk_acak_aman.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} acak_aman"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} acak_aman"
+        sed 's/^/      /' /tmp/idk_acak_aman.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES acak_aman"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Performa pustaka: json_teks/bita.ke_teks/base64.enkode harus linear.
 # Sama seperti di atas, yang diperiksa bentuk pertumbuhan, bukan ambang detik.
 if [ -f tests/pustaka_performa.sh ]; then

@@ -9,7 +9,7 @@ const KEYWORDS = [
 ];
 
 const BUILTINS = [
-  "abs", "acak", "acak_bulat", "acos",
+  "abs", "acak", "acak_bita", "acak_bulat", "acos",
   "ada_berkas", "ada_yang", "adalah_instansi", "akar",
   "ambil_atribut", "ambil_lingkungan", "asin", "atan",
   "atan2", "atap", "atur_atribut", "baca",
