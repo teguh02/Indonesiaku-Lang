@@ -79,6 +79,7 @@ $(TARGET): $(OBJECTS)
 LIB_OBJECTS = $(filter-out src/main.o,$(OBJECTS))
 
 libindk.a: $(LIB_OBJECTS)
+	@echo "libindk.a: $(words $(LIB_OBJECTS)) objek, indk_api=$(words $(filter %indk_api.o,$(LIB_OBJECTS)))"
 	@# Objek disebut lewat $(LIB_OBJECTS), BUKAN $^. Untuk target yang
 	@# berakhiran .a, GNU Make 3.81 (bawaan macOS) memakai semantik "archive
 	@# member" dan $^ ikut kosong, sehingga 'ar rcs' membuat arsip kosong 96

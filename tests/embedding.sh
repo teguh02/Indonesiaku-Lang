@@ -78,10 +78,11 @@ else
     "${NM:-nm}" libindk.a 2>&1 | grep indk_jalankan | head -3 | sed 's/^/      nm: /'
     # Perintah ar yang BENAR-BENAR dirakit make: membuktikan apakah
     # src/indk_api.o ikut di daftar objek atau tidak.
-    make -Bn libindk.a 2>&1 | tr ' ' '\n' | grep -cE '\.o$' \
-        | sed 's/^/      objek di perintah ar: /'
-    make -Bn libindk.a 2>&1 | tr ' ' '\n' | grep -c 'indk_api.o' \
-        | sed 's/^/      indk_api.o di perintah ar: /'
+    # Baris 'ar' SAJA. Versi sebelumnya menghitung seluruh keluaran make -Bn,
+    # termasuk 123 perintah compile, sehingga angkanya tidak membuktikan apa
+    # pun tentang perintah ar.
+    rm -f libindk.a
+    make libindk.a 2>&1 | grep -E '^libindk.a:|ar ' | head -3 | sed 's/^/      make: /'
     make --version 2>&1 | head -1 | sed 's/^/      /'
 fi
 
