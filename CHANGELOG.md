@@ -9,6 +9,22 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **API embedding C** (`src/indk.h`, `src/indk_api.c`) — Indonesiaku kini bisa
+  dijalankan dari dalam program C lain. `make libindk.a` menghasilkan pustaka
+  statis (tanpa `src/main.o`, supaya `main()` tetap milik program pemakai),
+  dengan permukaan: `indk_mulai()`, `indk_selesai()`, `indk_jalankan()`,
+  `indk_jalankan_berkas()`, `indk_versi()`, `indk_daftar_fungsi()` untuk
+  memasang fungsi C sebagai builtin, dan `indk_ambil_global_teks()` untuk
+  membaca variabel global skrip kembali ke C. Galat dikembalikan sebagai nilai
+  (`INDK_GALAT_KOMPILASI` / `INDK_GALAT_RUNTIME`), tidak mematikan proses
+  induk. Panduan: `website/panduan/09_EMBEDDING.md`; contoh yang benar-benar
+  dikompilasi CI: `examples/embed/halo.c`.
+  **Batas yang disadari (K22):** satu runtime per proses — VM adalah variabel
+  global tunggal, jadi tidak ada handle seperti `lua_State*` — dan tidak aman
+  untuk banyak utas.
+  Diuji `tests/embedding.sh` (13 asersi, mengompilasi dan menjalankan program
+  C sungguhan); empat sabotase masing-masing wajib membuatnya merah.
+
 - **Tes mode `--sandbox`** (`tests/sandbox.sh`, 16 asersi). Mode ini dipakai
   playground web untuk setiap program pengguna, tetapi sebelumnya **tidak
   punya tes sama sekali**. Yang ditemukan saat menulisnya: `soket_dengar()`

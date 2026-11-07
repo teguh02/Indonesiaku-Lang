@@ -296,6 +296,21 @@ if [ -f tests/sandbox.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# API embedding C (Fase 8): libindk.a benar-benar dikompilasi dan dijalankan
+# dari program C. Butuh kompiler C, yang selalu ada di mesin yang baru saja
+# membangun indk; tes melewati diri sendiri bila $CC tidak ditemukan.
+if [ -f tests/embedding.sh ]; then
+    if bash tests/embedding.sh > /tmp/idk_embed.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} embedding"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} embedding"
+        sed 's/^/      /' /tmp/idk_embed.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES embedding"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Diagnosis templat (SSR-09): pesan galat menyebut berkas, batas tetap
 # berlaku, dan parsing linear terhadap jumlah tag. Portabel (bash + indk).
 if [ -f tests/templat_diagnosis.sh ]; then

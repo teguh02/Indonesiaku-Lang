@@ -188,7 +188,7 @@ jobs:
             -fsanitize=address,undefined -fno-omit-frame-pointer \
             -DDEBUG_STRESS_GC \
             -o indk_asan \
-            src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
+            src/main.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
             src/native.c src/object.c src/scanner.c src/table.c src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/vendor/mbedtls/library/*.c -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm
 
       - name: Run every example under sanitizers
@@ -228,7 +228,7 @@ jobs:
       - name: Build (debug)
         run: |
           gcc -std=c11 -g -O0 -Isrc -o indk_dbg \
-            src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
+            src/main.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
             src/native.c src/object.c src/scanner.c src/table.c src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/vendor/mbedtls/library/*.c -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm
 
       - name: Valgrind on representative examples
@@ -264,7 +264,7 @@ jobs:
           gcc -std=c11 -O0 -g -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -c src/vendor/mbedtls/library/*.c
           mkdir -p mbedtls-obj && mv *.o mbedtls-obj/
           gcc -std=c11 -O0 -g --coverage -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk \
-            src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
+            src/main.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
             src/native.c src/object.c src/scanner.c src/table.c src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c mbedtls-obj/*.o -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm
 
       - name: Exercise every example
@@ -305,7 +305,7 @@ jobs:
       - name: Build libFuzzer target
         run: |
           clang -g -O1 -fsanitize=fuzzer,address,undefined -Isrc \
-            tests/fuzz_compile.c src/chunk.c src/compiler.c src/debug.c src/format.c \
+            tests/fuzz_compile.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c \
             src/memory.c src/native.c src/object.c src/scanner.c src/table.c \
             src/value.c src/vm.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/vendor/mbedtls/library/*.c -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 -lm -o fuzz_compile
 
@@ -448,7 +448,8 @@ jobs:
                    tests/test_panduan.sh \
                    tests/templat_cache.sh \
                    tests/templat_diagnosis.sh \
-                   tests/sandbox.sh; do
+                   tests/sandbox.sh \
+                   tests/embedding.sh; do
             echo "=== $t ==="
             if bash "$t"; then echo "  ok"; else echo "  GAGAL: $t"; gagal=1; fi
           done

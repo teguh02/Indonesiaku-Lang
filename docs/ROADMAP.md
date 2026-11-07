@@ -465,13 +465,29 @@ sekolah.
 Ref: 04 §11–13, 05.
 
 **Status:** 🔶 sebagian. Yang **sudah ada dan terbukti jalan**: MySQL/PostgreSQL,
-TLS/HTTPS, anotasi tipe, distribusi paket native, `--periksa-pembaruan`, dan
-mode sandbox. Yang **belum**: API embedding C, GUI, dan AOT/bundel executable —
-ketiganya belum punya rencana fitur sehingga tidak dijadwalkan di sini. Dua
-butir lain sudah **dipindah**, bukan tertinggal: manajer paket + registri ke
-Fase 14, dan FFI dibatalkan beralasan di
+TLS/HTTPS, anotasi tipe, distribusi paket native, `--periksa-pembaruan`,
+mode sandbox, dan **API embedding C**. Yang **belum**: GUI dan AOT/bundel
+executable — keduanya belum punya rencana fitur sehingga tidak dijadwalkan di
+sini. Dua butir lain sudah **dipindah**, bukan tertinggal: manajer paket +
+registri ke Fase 14, dan FFI dibatalkan beralasan di
 [K18](ANALISIS/03_KEPUTUSAN_DESAIN.md) (SQLite di-*vendor* sebagai
 amalgamation, jadi FFI tidak lagi menghalangi apa pun).
+
+- [x] **API embedding C** (`src/indk.h`, `src/indk_api.c`,
+      [rencana](RENCANA_FITUR/selesai/embedding_c.md)) — `make libindk.a`
+      menghasilkan pustaka statis tanpa `src/main.o`, sehingga program C lain
+      bisa menjalankan Indonesiaku di dalam prosesnya: `indk_jalankan()`,
+      `indk_jalankan_berkas()`, `indk_daftar_fungsi()` untuk memasang fungsi C
+      sebagai builtin, dan `indk_ambil_global_teks()` untuk membaca hasil.
+      Galat dikembalikan sebagai nilai (`INDK_GALAT_KOMPILASI`/`_RUNTIME`),
+      tidak mematikan proses induk.
+      **Batas yang disadari ([K22](ANALISIS/03_KEPUTUSAN_DESAIN.md)):** satu
+      runtime per proses (VM adalah variabel global tunggal) dan bukan untuk
+      banyak utas.
+      Diuji `tests/embedding.sh` (13 asersi) yang benar-benar mengompilasi dan
+      menjalankan `examples/embed/halo.c`; empat sabotase (nilai balik selalu
+      OK, pendaftaran fungsi no-op, pembacaan global selalu gagal, pemotongan
+      buffer dicabut) masing-masing wajib membuatnya merah.
 
 - [x] **MySQL dan PostgreSQL** — `pustaka/pg.idk` (440 baris) dan
       `pustaka/my.idk` (531 baris) bicara wire protocol langsung lewat soket,
@@ -519,7 +535,7 @@ amalgamation, jadi FFI tidak lagi menghalangi apa pun).
 
 ## Roadmap implementasi per fase — setelah v1.4.0
 
-Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR-01–10, serta kebutuhan transfer berkas dan keamanan runtime yang sebelumnya tersebar dalam beberapa tabel. **Fase 0–6 sudah selesai; Fase 7 perkakasnya selesai sedangkan sisi kinerjanya dikerjakan hanya bila pengukuran membenarkan (mask tabel hash dikerjakan, computed goto / `OP_TRY_BEGIN` / cache `.idkc` / WASM ditolak beralasan); dan Fase 8 baru sebagian (anotasi tipe, distribusi paket native, pemberitahuan pembaruan). Fase 9 selesai di v1.4.0; Fase 10 dan 11 baru sebagian.** Fase 12 dan seterusnya adalah urutan kerja yang **diusulkan**, bukan penanda implementasi saat ini. Nomor ID lama tetap dipakai sebagai jejak rencana.
+Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR-01–10, serta kebutuhan transfer berkas dan keamanan runtime yang sebelumnya tersebar dalam beberapa tabel. **Fase 0–6 sudah selesai; Fase 7 perkakasnya selesai sedangkan sisi kinerjanya dikerjakan hanya bila pengukuran membenarkan (mask tabel hash dikerjakan, computed goto / `OP_TRY_BEGIN` / cache `.idkc` / WASM ditolak beralasan); dan Fase 8 baru sebagian (anotasi tipe, distribusi paket native, pemberitahuan pembaruan, sandbox, API embedding C; tersisa GUI dan AOT). Fase 9 selesai di v1.4.0; Fase 10 dan 11 baru sebagian.** Fase 12 dan seterusnya adalah urutan kerja yang **diusulkan**, bukan penanda implementasi saat ini. Nomor ID lama tetap dipakai sebagai jejak rencana.
 
 **Cara membaca:** setiap fase memiliki tujuan, kebutuhan awal, langkah implementasi berurutan, contoh API target, pengujian wajib, serta definisi selesai. Tanda [ ] berarti belum. Implementasi dapat dibuat dalam pull request kecil; jangan memaksa seluruh fase dalam satu PR. Semua perubahan tetap tunduk pada "Definisi selesai" dan "Feature workflow" di AGENTS.md, termasuk rencana detail sebelum kode, golden test, negative test, dokumentasi dan editor.
 

@@ -438,3 +438,43 @@ pada perilaku lama. Dicatat ⚠️ di `CHANGELOG.md`.
 `addLocal`, dan `prescanFunctionBody` mendeklarasikan nama setelah `untuk` di
 awal pernyataan sebagai lokal fungsi. `untuk` milik comprehension didahului
 ekspresi, jadi tidak ikut terhitung.
+
+## K22 — API embedding C memakai runtime global tunggal (Fase 8)
+
+**Konteks:** Fase 8 menjanjikan "API embedding C". Seluruh mesin yang
+dibutuhkan sudah ada dan teruji (`initVM`, `interpret`, `defineNative`,
+`callFromNative`); yang belum ada hanya permukaan publik yang stabil.
+
+**Masalah:** `src/vm.c` menyimpan VM sebagai **variabel global tunggal**
+(`VM vm;`) dan seluruh berkas mengaksesnya langsung. API embedding yang
+umum (Lua, Python) memakai handle per-runtime — `lua_State*`, `PyInterpreterState*` —
+sehingga satu proses bisa memegang beberapa runtime terpisah.
+
+**Pilihan yang dipertimbangkan:**
+
+1. **Membongkar `VM vm` global menjadi `IndkState*`.** Menuntut mengalirkan
+   pointer state ke hampir setiap fungsi di `vm.c`, `compiler.c`, `native.c`,
+   `object.c`, dan `memory.c` — ribuan baris tersentuh, dengan risiko regresi
+   GC yang tinggi, demi kapabilitas yang belum diminta pemakai mana pun.
+2. **Menerima satu runtime per proses** dan menuliskannya sebagai batas.
+
+**Keputusan: pilihan 2.** `src/indk.h` menyediakan fungsi bebas
+(`indk_mulai`, `indk_jalankan`, `indk_selesai`) tanpa handle. Dua batas
+dinyatakan terbuka di header, di panduan, dan di sini:
+
+- **satu runtime per proses** — `indk_mulai()`/`indk_selesai()` boleh dipakai
+  berulang secara **berurutan**, tetapi tidak dua runtime hidup bersamaan;
+- **tidak aman untuk banyak utas** — VM ini satu utas dan tanpa kunci.
+
+**Konsekuensi yang diterima:** program yang butuh dua interpreter terisolasi
+harus memakai dua proses. Bila kebutuhan itu muncul nyata, pilihan 1 tetap
+terbuka dan tidak terhalang oleh API ini — fungsi-fungsi di `indk.h` bisa
+dipetakan ke versi ber-handle tanpa mengubah namanya.
+
+**Keputusan turunan:** `indk_ambil_global_teks()` membaca
+`vm.mainModule->globals` (tempat global skrip hidup sejak Fase 3), **bukan**
+`vm.globals` yang hanya berisi builtin dan kelas galat. Pembacaannya memanggil
+`formatValue(..., callMagic = false)` supaya membaca sebuah variabel tidak
+pernah diam-diam menjalankan `_teks_` milik pengguna, yang bisa menaikkan
+galat atau memanggil balik ke C di tengah pembacaan.
+

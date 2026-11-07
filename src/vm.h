@@ -168,6 +168,10 @@ void mulaiAwakutu(void);
 void cetakProfil(double detik);
 InterpretResult interpret(const char* source);
 
+// Mendaftarkan builtin dari C. Dipakai initVM() sendiri dan API embedding
+// (src/indk_api.c); lihat src/indk.h.
+void defineNative(const char* name, NativeFn function);
+
 // indk uji: run top-level uji_* functions. Returns failures, or -1 if none found.
 int runUnitTests(void);
 void push(Value value);

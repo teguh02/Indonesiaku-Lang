@@ -74,6 +74,14 @@ Menaruh server Indonesiaku di internet tanpa membuat lubang.
 - TLS dan pembaruan sertifikat
 - Daftar periksa sebelum publik
 
+### 9. [Embedding: Menjalankan Indonesiaku dari Program C](09_EMBEDDING.md)
+Memakai Indonesiaku sebagai bahasa skrip di dalam aplikasi C Anda.
+- Membangun `libindk.a` dan menaut program sendiri terhadapnya
+- Mendaftarkan fungsi C agar bisa dipanggil dari kode Indonesiaku
+- Membaca variabel global skrip kembali ke C
+- Galat dilaporkan sebagai nilai balik, tidak mematikan proses induk
+- Batas sadar: satu runtime per proses, bukan untuk banyak utas
+
 ---
 
 ## 🚀 Memulai Cepat
@@ -124,6 +132,7 @@ cetak("Hasil penjumlahan:", jumlah)
 
 - **[07_PUSTAKA_STANDAR.md](07_PUSTAKA_STANDAR.md)** - Referensi fungsi bawaan & pustaka
 - **[08_DEPLOYMENT.md](08_DEPLOYMENT.md)** - Docker, reverse proxy, TLS, isolasi
+- **[09_EMBEDDING.md](09_EMBEDDING.md)** - API embedding C (`libindk.a`), fungsi C sebagai builtin
 - **[CHANGELOG.md](../CHANGELOG.md)** - Riwayat perubahan tiap versi
 - **[QUICKSTART.md](../QUICKSTART.md)** - Panduan cepat memulai
 - **[examples/](../examples/)** - 50+ contoh program siap jalan
