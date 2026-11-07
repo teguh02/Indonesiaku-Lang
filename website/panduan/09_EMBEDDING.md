@@ -23,6 +23,14 @@ Kompilasi program Anda terhadapnya:
 cc program.c libindk.a -Isrc -Isrc/vendor/mbedtls/include -lm -o program
 ```
 
+Di **Windows (MinGW)** tambahkan pustaka soket dan kripto sistem, sama seperti
+`LDFLAGS` di `Makefile` — tanpa keduanya penautan gagal dengan
+`undefined reference to __imp_WSAStartup`:
+
+```bash
+cc program.c libindk.a -Isrc -Isrc/vendor/mbedtls/include -lm -lws2_32 -lbcrypt -o program
+```
+
 ## 9.2 Contoh terkecil
 
 ```c

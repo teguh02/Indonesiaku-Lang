@@ -31,6 +31,14 @@ fi
 
 INC="-Isrc -Isrc/vendor/mbedtls/include"
 
+# Windows menaut soket dan kripto dari pustaka sistem terpisah; tanpa ini
+# penautan gagal dengan undefined reference ke __imp_WSAStartup dkk.
+# Nilai ini sengaja sama dengan LDFLAGS di Makefile.
+TAUT="-lm"
+case "$(uname -s 2>/dev/null)" in
+    MINGW*|MSYS*|CYGWIN*) TAUT="-lm -lws2_32 -lbcrypt" ;;
+esac
+
 # --- 1. libindk.a terbentuk -------------------------------------------------
 if make -s libindk.a >/dev/null 2>&1 && [ -f libindk.a ]; then
     ok "libindk.a terbentuk"
@@ -48,7 +56,7 @@ else
 fi
 
 # --- 2. contoh resmi terkompilasi dan jalan --------------------------------
-if "$CC" examples/embed/halo.c libindk.a $INC -lm -o "$TMP/halo" 2>"$TMP/cc.log"; then
+if "$CC" examples/embed/halo.c libindk.a $INC $TAUT -o "$TMP/halo" 2>"$TMP/cc.log"; then
     ok "examples/embed/halo.c terkompilasi"
 else
     gagal "examples/embed/halo.c gagal kompilasi"
@@ -119,7 +127,7 @@ int main(void) {
 }
 EOF
 
-if "$CC" "$TMP/uji.c" libindk.a $INC -lm -o "$TMP/uji" 2>"$TMP/cc2.log"; then
+if "$CC" "$TMP/uji.c" libindk.a $INC $TAUT -o "$TMP/uji" 2>"$TMP/cc2.log"; then
     ok "program uji terkompilasi"
     HASIL="$("$TMP/uji" 2>/dev/null | tr -d '\r')"
     periksa() {
