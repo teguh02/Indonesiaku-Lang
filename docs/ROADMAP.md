@@ -817,7 +817,7 @@ menghasilkan fitur yang tampak benar dan sepenuhnya tidak aman. Rencananya di
 
 1. [ ] Buat rencana docs/RENCANA_FITUR/web_security_auth.md, threat model (browser, cookie, CSRF, upload, input, session, proxy) dan matriks fitur minimum.
 2. [x] Implementasikan cookie HttpOnly, Secure, SameSite, expiry dan session storage yang dapat dikonfigurasi; rotasi ID saat login dan invalidasi logout (**WEB-04**). *(v1.6.0: `web.set_kuki`, `web.baca_kuki`, `web.TokoSesi` dengan `putar()` anti session fixation. Toko dalam memori — penyimpanan bersama antarproses menunggu Fase 20.)*
-3. [ ] Sediakan validasi input, output escaping sesuai konteks, proteksi CSRF pada endpoint state-changing dengan session-cookie, CORS yang dibatasi dan trusted-proxy yang eksplisit (**WEB-05**).
+3. [~] Sediakan validasi input, output escaping sesuai konteks, proteksi CSRF pada endpoint state-changing dengan session-cookie, CORS yang dibatasi dan trusted-proxy yang eksplisit (**WEB-05**). *(v1.6.0: CSRF selesai — `web.token_csrf`, `web.periksa_csrf`, `web.wajib_csrf` dengan perbandingan waktu-tetap. Output escaping sudah ada sejak Fase 12 (`templat.aman`). **Sisa: CORS dan trusted-proxy.**)*
 4. [ ] Implementasikan autentikasi, password hashing adaptif yang teruji (utamakan Argon2id jika dependensi tersedia), login/logout, role/permission, dan perlindungan brute force/rate limit (**WEB-06**).
 5. [ ] Siapkan contoh aplikasi CRUD dengan login dan role (admin/pengguna), memanfaatkan database Fase 10, HTTP Fase 11, SSR Fase 12.
 6. [ ] Tambahkan tes terhadap session fixation, CSRF, cookie flags, file upload berbahaya, validasi izin lintas pengguna, timing/lockout, secret leakage serta regresi keamanan.

@@ -1,0 +1,117 @@
+# Proteksi CSRF (WEB-05).
+#
+# Token tidak pernah dicetak nilainya: ia acak, keluaran golden harus tetap
+# sama setiap kali dijalankan. Yang diperiksa panjang dan perilakunya.
+#
+# Isi dipecah ke beberapa fungsi, bukan ditulis rata di tingkat atas: satu
+# chunk bytecode hanya memuat 256 konstanta, dan versi datar contoh ini
+# melampauinya ("Terlalu banyak konstanta dalam satu chunk"). Tiap fungsi
+# punya chunk sendiri.
+impor web
+impor "pustaka/teks.idk"
+
+variabel toko = web.TokoSesi()
+variabel sid = toko.buat({"pengguna": "ani"})
+variabel token = web.token_csrf(toko, sid)
+
+fungsi permintaan(sid_kuki, nilai_token) {
+    kembalikan {
+        "metode": "POST",
+        "header": {"cookie": "sesi=" + sid_kuki},
+        "form": {"_csrf": nilai_token}
+    }
+}
+
+fungsi lapor(label, nilai) {
+    cetak(label + ": " + ke_teks(nilai))
+}
+
+fungsi bagian_token() {
+    cetak("== token ==")
+    lapor("panjang       ", panjang(token))
+    # Token sama selama sesi hidup: formulir di dua tab tidak saling
+    # membatalkan.
+    lapor("stabil        ", web.token_csrf(toko, sid) == token)
+
+    cetak("")
+    cetak("== metode aman lolos ==")
+    # GET/HEAD/OPTIONS tidak mengubah keadaan; memaksakan token di sana akan
+    # memutus tautan biasa.
+    lapor("GET           ", web.periksa_csrf(toko, {"metode": "GET", "header": {}}))
+    lapor("HEAD          ", web.periksa_csrf(toko, {"metode": "HEAD", "header": {}}))
+}
+
+fungsi bagian_post() {
+    cetak("")
+    cetak("== POST ==")
+    lapor("token benar   ", web.periksa_csrf(toko, permintaan(sid, token)))
+    lapor("token salah   ", web.periksa_csrf(toko, permintaan(sid, "a")))
+
+    # Token yang BENAR di awal tapi salah di akhir. Tanpa kasus ini,
+    # perbandingan yang hanya memeriksa beberapa karakter pertama akan lolos
+    # semua tes lain — sabotase membuktikan itu.
+    variabel ekor = potong(token, 0, panjang(token) - 4) + "0000"
+    jika ekor == token {
+        ekor = potong(token, 0, panjang(token) - 4) + "1111"
+    }
+    lapor("ekor salah    ", web.periksa_csrf(toko, permintaan(sid, ekor)))
+
+    # Panjang berbeda juga harus ditolak.
+    lapor("terlalu pendek", web.periksa_csrf(toko, permintaan(sid, potong(token, 0, 60))))
+
+    # Inilah bentuk persis serangan CSRF: peramban melampirkan kuki sesi
+    # secara otomatis, tapi penyerang tidak bisa MEMBACA token di dalamnya.
+    variabel tanpa = {"metode": "POST", "header": {"cookie": "sesi=" + sid}, "form": {}}
+    lapor("tanpa token   ", web.periksa_csrf(toko, tanpa))
+    lapor("tanpa sesi    ", web.periksa_csrf(toko, {"metode": "POST", "header": {}, "form": {}}))
+}
+
+fungsi bagian_ikatan() {
+    cetak("")
+    cetak("== token terikat pada sesinya ==")
+    variabel sid_lain = toko.buat({"pengguna": "budi"})
+    variabel token_lain = web.token_csrf(toko, sid_lain)
+    lapor("beda antar sesi", token_lain != token)
+    # Token milik sesi lain tidak boleh berlaku di sesi ini.
+    lapor("lintas sesi    ", web.periksa_csrf(toko, permintaan(sid, token_lain)))
+
+    cetak("")
+    cetak("== header X-CSRF-Token (jalur AJAX) ==")
+    variabel ajax = {
+        "metode": "POST",
+        "header": {"cookie": "sesi=" + sid, "x-csrf-token": token},
+        "form": {}
+    }
+    lapor("header benar   ", web.periksa_csrf(toko, ajax))
+    ajax["header"]["x-csrf-token"] = "palsu"
+    lapor("header salah   ", web.periksa_csrf(toko, ajax))
+}
+
+fungsi bagian_rotasi() {
+    cetak("")
+    cetak("== rotasi dan logout membatalkan token ==")
+    variabel baru = toko.putar(sid)
+    # Token ikut pindah bersama isi sesi, jadi formulir yang sudah terbuka
+    # tetap sah setelah login — tapi ID sesi lama mati.
+    lapor("token ikut pindah", web.token_csrf(toko, baru) == token)
+    lapor("sesi lama mati   ", web.periksa_csrf(toko, permintaan(sid, token)))
+
+    toko.hapus(baru)
+    lapor("sesudah logout   ", web.periksa_csrf(toko, permintaan(baru, token)))
+}
+
+fungsi bagian_penjaga() {
+    cetak("")
+    cetak("== wajib_csrf ==")
+    variabel penjaga = web.wajib_csrf(toko)
+    variabel sid2 = toko.buat({"pengguna": "cici"})
+    variabel token2 = web.token_csrf(toko, sid2)
+    lapor("lolos -> kosong", penjaga(permintaan(sid2, token2)) == kosong)
+    lapor("ditolak -> 403 ", teks_berisi(penjaga(permintaan(sid2, "x")), "403"))
+}
+
+bagian_token()
+bagian_post()
+bagian_ikatan()
+bagian_rotasi()
+bagian_penjaga()

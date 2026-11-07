@@ -1,0 +1,32 @@
+== token ==
+panjang       : 64
+stabil        : benar
+
+== metode aman lolos ==
+GET           : benar
+HEAD          : benar
+
+== POST ==
+token benar   : benar
+token salah   : salah
+ekor salah    : salah
+terlalu pendek: salah
+tanpa token   : salah
+tanpa sesi    : salah
+
+== token terikat pada sesinya ==
+beda antar sesi: benar
+lintas sesi    : salah
+
+== header X-CSRF-Token (jalur AJAX) ==
+header benar   : benar
+header salah   : salah
+
+== rotasi dan logout membatalkan token ==
+token ikut pindah: benar
+sesi lama mati   : salah
+sesudah logout   : salah
+
+== wajib_csrf ==
+lolos -> kosong: benar
+ditolak -> 403 : benar

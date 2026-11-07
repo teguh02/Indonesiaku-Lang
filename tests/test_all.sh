@@ -418,6 +418,17 @@ if [ -f tests/web_kuki_sesi.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Proteksi CSRF (WEB-05): serangan lintas situs nyata harus dijawab 403.
+if [ -f tests/web_csrf.sh ]; then
+    echo ""
+    if bash tests/web_csrf.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES web-csrf"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Tag versi (image playground, LABEL rilis, cache-buster website) harus
 # mengikuti INDK_VERSION; yang tertinggal tidak pernah gagal sendiri.
 if [ -f tests/versi_konsisten.sh ]; then

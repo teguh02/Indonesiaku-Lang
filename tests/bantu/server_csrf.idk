@@ -1,0 +1,50 @@
+# Server untuk tests/web_csrf.sh — membuktikan proteksi CSRF menahan
+# serangan lintas situs yang sesungguhnya, lewat koneksi HTTP nyata.
+#
+# Golden examples/web_csrf.idk memeriksa logikanya terhadap kamus buatan.
+# Yang TIDAK dibuktikannya: bahwa POST sungguhan yang membawa kuki sesi tapi
+# tanpa token benar-benar dijawab 403 — itulah bentuk persis serangan CSRF.
+
+impor web
+
+variabel PORT = ke_bulat(ambil_lingkungan("IDK_PORT"))
+variabel SISA = ke_bulat(ambil_lingkungan("IDK_SISA"))
+
+variabel app = web.Aplikasi()
+variabel toko = web.TokoSesi()
+variabel penjaga = web.wajib_csrf(toko)
+
+# Login: buat sesi, kirim ID lewat kuki, tampilkan tokennya di badan supaya
+# skrip tes dapat memakainya seperti peramban membaca formulir.
+app.rute("GET", "/masuk", fungsi(req) {
+    variabel sid = toko.buat({"pengguna": "ani"})
+    variabel token = web.token_csrf(toko, sid)
+    variabel res = web.teks(200, token)
+    kembalikan web.set_kuki(res, "sesi", sid, {"httponly": benar, "samesite": "Lax"})
+})
+
+# Endpoint yang mengubah keadaan — wajib bertoken.
+app.rute("POST", "/hapus", fungsi(req) {
+    variabel tolak = penjaga(req)
+    jika tolak != kosong {
+        kembalikan tolak
+    }
+    kembalikan web.teks(200, "terhapus")
+})
+
+# Metode aman pada path yang sama tidak boleh ikut terhalang.
+app.rute("GET", "/hapus", fungsi(req) {
+    kembalikan web.teks(200, "formulir")
+})
+
+# Rotasi ID sesi: token lama harus ikut mati bersama ID lamanya.
+app.rute("POST", "/putar", fungsi(req) {
+    variabel tolak = penjaga(req)
+    jika tolak != kosong {
+        kembalikan tolak
+    }
+    variabel sid_baru = toko.putar(web.baca_kuki(req)["sesi"])
+    kembalikan web.teks(200, sid_baru)
+})
+
+app.jalankan(PORT, 10, SISA, salah)
