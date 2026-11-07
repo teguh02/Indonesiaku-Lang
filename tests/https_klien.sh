@@ -78,6 +78,30 @@ echo "Menguji klien HTTPS terhadap host sungguhan"
 
 periksa "example.com membalas 200" "KODE 200" "$keluaran"
 
+# Diagnostik CA: hanya tercetak bila asersi di atas gagal. Kegagalan macOS
+# menuduh "penerbit tidak tepercaya", yang MENUNJUK SERVER padahal sebabnya
+# bisa ada di sisi kita (bundel CA tak terbaca). Tanpa data ini setiap siklus
+# CI hanya menghasilkan hipotesis baru.
+if ! printf '%s' "$keluaran" | grep -q "KODE 200"; then
+    echo "      --- diagnostik bundel CA ---"
+    for j in /etc/ssl/cert.pem /etc/ssl/certs/ca-certificates.crt \
+             /usr/local/etc/openssl@3/cert.pem /opt/homebrew/etc/ca-certificates/cert.pem; do
+        if [ -r "$j" ]; then
+            echo "      ADA    $j ($(wc -c < "$j" | tr -d ' ') bita, $(grep -c 'BEGIN CERTIFICATE' "$j") sertifikat)"
+        else
+            echo "      -      $j"
+        fi
+    done
+    echo "      INDK_CA_BUNDLE=${INDK_CA_BUNDLE:-<kosong>}"
+    # Apakah host lain juga ditolak, atau khusus example.com?
+    cat > "$tmp/lain.idk" <<'EOF'
+impor "pustaka/http.idk"
+coba { cetak("badge", http_ambil("https://www.google.com", "GET", kosong, "", 0).status) }
+kecuali GalatOS sebagai e { cetak("badge GALAT", e.pesan) }
+EOF
+    "$indk" "$tmp/lain.idk" 2>&1 | head -2 | sed 's/^/      /'
+fi
+
 # --- tes negatif: semua ini WAJIB ditolak -----------------------------------
 tolak() { # nama, host, potongan pesan
     cat > "$tmp/t.idk" <<EOF
