@@ -464,14 +464,22 @@ AOT/bundel executable, ~~anotasi tipe opsional~~ ✅ ([rencana](RENCANA_FITUR/se
 sekolah.
 Ref: 04 §11–13, 05.
 
-**Status:** 🔶 sebagian. Yang **sudah ada dan terbukti jalan**: MySQL/PostgreSQL,
-TLS/HTTPS, anotasi tipe, distribusi paket native, `--periksa-pembaruan`,
-mode sandbox, dan **API embedding C**. Yang **belum**: GUI dan AOT/bundel
-executable — keduanya belum punya rencana fitur sehingga tidak dijadwalkan di
-sini. Dua butir lain sudah **dipindah**, bukan tertinggal: manajer paket +
-registri ke Fase 14, dan FFI dibatalkan beralasan di
-[K18](ANALISIS/03_KEPUTUSAN_DESAIN.md) (SQLite di-*vendor* sebagai
-amalgamation, jadi FFI tidak lagi menghalangi apa pun).
+**Status:** 🔶 sebagian — **dan ini disengaja, bukan fase yang ditinggalkan**. Dari sepuluh butir: enam selesai, dua dipindah dengan alasan tertulis, dua sisanya sengaja tidak dijadwalkan.
+
+| Butir | Status |
+|---|---|
+| MySQL/PostgreSQL | ✅ selesai (`v1.5.0`) |
+| TLS/HTTPS | ✅ selesai (`v1.5.0`) |
+| Anotasi tipe opsional | ✅ selesai |
+| Distribusi paket native | ✅ selesai (`v1.4.0`) |
+| Mode sandbox | ✅ selesai |
+| API embedding C | ✅ selesai |
+| Manajer paket + registri | ➡️ dipindah ke **Fase 14** |
+| FFI | ❌ dibatalkan beralasan — [K18](ANALISIS/03_KEPUTUSAN_DESAIN.md) |
+| GUI | ⬜ belum dijadwalkan |
+| AOT / bundel executable | ⬜ belum dijadwalkan |
+
+**Mengapa Fase 9 ke atas dikerjakan lebih dulu padahal Fase 8 belum penuh.** Dua butir tersisa tidak memblokir apa pun: GUI adalah subsistem besar yang tidak punya ketergantungan dengan jalur web/database, sedangkan AOT hanya relevan setelah pustaka standar stabil. Menahan Fase 9–13 demi keduanya berarti menunda fondasi yang justru dipakai sekarang. Keduanya belum punya `docs/RENCANA_FITUR/`, dan sesuai AGENTS.md tidak boleh diimplementasikan sebelum rencana ditulis — sehingga keduanya tetap terbuka di sini, bukan dihapus diam-diam. Urutan nomor fase adalah urutan penulisan dokumen, **bukan janji bahwa fase diselesaikan berurutan**.
 
 - [x] **API embedding C** (`src/indk.h`, `src/indk_api.c`,
       [rencana](RENCANA_FITUR/selesai/embedding_c.md)) — `make libindk.a`
@@ -535,7 +543,7 @@ amalgamation, jadi FFI tidak lagi menghalangi apa pun).
 
 ## Roadmap implementasi per fase — setelah v1.4.0
 
-Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR-01–10, serta kebutuhan transfer berkas dan keamanan runtime yang sebelumnya tersebar dalam beberapa tabel. **Fase 0–6 sudah selesai; Fase 7 perkakasnya selesai sedangkan sisi kinerjanya dikerjakan hanya bila pengukuran membenarkan (mask tabel hash dikerjakan, computed goto / `OP_TRY_BEGIN` / cache `.idkc` / WASM ditolak beralasan); dan Fase 8 baru sebagian (anotasi tipe, distribusi paket native, pemberitahuan pembaruan, sandbox, API embedding C; tersisa GUI dan AOT). Fase 9 selesai di v1.4.0; **Fase 10 selesai di v1.7.0** (7 dari 7 butir); Fase 11 baru sebagian.** Fase 12 dan seterusnya adalah urutan kerja yang **diusulkan**, bukan penanda implementasi saat ini. Nomor ID lama tetap dipakai sebagai jejak rencana.
+Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR-01–10, serta kebutuhan transfer berkas dan keamanan runtime yang sebelumnya tersebar dalam beberapa tabel. **Fase 0–6 sudah selesai; Fase 7 perkakasnya selesai sedangkan sisi kinerjanya dikerjakan hanya bila pengukuran membenarkan (mask tabel hash dikerjakan, computed goto / `OP_TRY_BEGIN` / cache `.idkc` / WASM ditolak beralasan); Fase 8 sebagian secara sengaja (tersisa GUI dan AOT, lihat tabel butirnya). Fase 9 selesai di `v1.4.0`; Fase 10, 11 dan 12 terbit bersama di `v1.5.0` — Fase 11 masih menyisakan satu butir.** Fase 13 dan seterusnya adalah urutan kerja yang **diusulkan**, bukan penanda implementasi saat ini. Nomor ID lama tetap dipakai sebagai jejak rencana.
 
 **Cara membaca:** setiap fase memiliki tujuan, kebutuhan awal, langkah implementasi berurutan, contoh API target, pengujian wajib, serta definisi selesai. Tanda [ ] berarti belum. Implementasi dapat dibuat dalam pull request kecil; jangan memaksa seluruh fase dalam satu PR. Semua perubahan tetap tunduk pada "Definisi selesai" dan "Feature workflow" di AGENTS.md, termasuk rencana detail sebelum kode, golden test, negative test, dokumentasi dan editor.
 
@@ -580,7 +588,11 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 **Tujuan:** file .idk mendapatkan diagnostics, autocomplete, hover, dan go-to-definition di VS Code tanpa menjalankan program pengguna. **Status:** ✅ selesai. **Pemetaan:** P1 (bagian Fase 7).
 
-**Rekomendasi rilis fase: `v1.4.0` (minor), kandidat `v1.4.0-rc.1`; patch `v1.4.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** LSP diagnostics dan editor minimum sudah bekerja serta diuji terhadap dokumen tidak lengkap; completion/hover/definition memenuhi checklist fase.\n\n
+**Rekomendasi rilis fase: `v1.4.0` (minor), kandidat `v1.4.0-rc.1`; patch `v1.4.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.
+
+**Gerbang rilis:** LSP diagnostics dan editor minimum sudah bekerja serta diuji terhadap dokumen tidak lengkap; completion/hover/definition memenuhi checklist fase.
+
+
 **Langkah pengembangan:**
 
 1. [x] Rencana desain: `docs/RENCANA_FITUR/selesai/lsp.md`; LSP compile-only memakai `indk --dis`, tanpa mengeksekusi source.
@@ -597,11 +609,15 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 ### Fase 10 — Driver dan fondasi database
 
-**Status: selesai (v1.7.0).** Ketujuh butir tuntas. Batas yang diketahui dan dicatat sadar: driver MySQL belum punya jalur TLS, dan `bytea`/`blob` dibaca kembali sebagai teks (lihat butir 7).
+**Status: ✅ selesai, terbit di `v1.5.0`.** Ketujuh butir tuntas. Batas yang diketahui dan dicatat sadar: driver MySQL belum punya jalur TLS, dan `bytea`/`blob` dibaca kembali sebagai teks (lihat butir 7).
 
-**Tujuan:** SQLite dipertahankan, lalu MySQL/MariaDB dan PostgreSQL dapat dipakai dengan query aman. **Status:** ⬜ belum. **Pemetaan:** WDB-01–05, P6.
+**Tujuan:** SQLite dipertahankan, lalu MySQL/MariaDB dan PostgreSQL dapat dipakai dengan query aman. **Pemetaan:** WDB-01–05, P6.
 
-**Rilis fase: sudah terbit di `v1.5.0`** (bersama Fase 10, 11 dan 12 — lihat catatan faktual di "Strategi penomoran"). ** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Driver SQLite, MySQL/MariaDB, PostgreSQL lulus CRUD, binding parameter, transaksi, galat dan tes integrasi lintas layanan. Fitur TLS untuk koneksi database wajib aman sebelum dipublikasikan.\n\n
+**Rilis fase: sudah terbit di `v1.5.0`** (bersama Fase 10, 11 dan 12 — lihat catatan faktual di "Strategi penomoran").
+
+**Gerbang rilis:** Driver SQLite, MySQL/MariaDB, PostgreSQL lulus CRUD, binding parameter, transaksi, galat dan tes integrasi lintas layanan. Fitur TLS untuk koneksi database wajib aman sebelum dipublikasikan.
+
+
 **Langkah pengembangan:**
 
 1. [x] Buat docs/RENCANA_FITUR/database_multi_driver.md; tetapkan API, semantik transaksi, tipe nilai/NULL/BLOB, error, koneksi dan lifecycle GC. Jangan mengubah builtin db_* tanpa kebijakan kompatibilitas.
@@ -610,7 +626,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 3. [x] Buat driver MySQL/MariaDB (**WDB-02**) menggunakan client library teruji dan prepared statements; dukung host/port, opsi TLS dengan verifikasi, timeout, penanganan koneksi terputus, query satu/banyak baris, perubahan baris dan ID terakhir sesuai dialek.
    - Selesai 1.6.0: `pustaka/my.idk` bicara protokol MySQL langsung tanpa libmysqlclient, sejalan dengan `pustaka/pg.idk`.
    - Autentikasi `mysql_native_password` (bawaan MariaDB). `caching_sha2_password` (bawaan MySQL 8) **ditolak dengan pesan jelas**, bukan didukung setengah jalan.
-   - **Versi pertama memakai COM_QUERY + escaping manual dan itu dibuang setelah terbukti MERUSAK DATA**: dengan `sql_mode = NO_BACKSLASH_ESCAPES`, backslash bukan karakter escape, sehingga `x\` tersimpan menjadi `x\\` — korupsi diam-diam, bukan galat. Escaping yang benar mustahil tanpa melacak sql_mode server, dan mode itu bisa berubah kapan saja lewat `SET SESSION`. Diganti **prepared statement** (COM_STMT_PREPARE/EXECUTE), yang memindahkan pemisahan kode/data ke protokol.
+   - **Versi pertama memakai COM_QUERY + escaping manual dan itu dibuang setelah terbukti MERUSAK DATA**: dengan `sql_mode = NO_BACKSLASH_ESCAPES`, backslash bukan karakter escape, sehingga `x` tersimpan menjadi `x\\` — korupsi diam-diam, bukan galat. Escaping yang benar mustahil tanpa melacak sql_mode server, dan mode itu bisa berubah kapan saja lewat `SET SESSION`. Diganti **prepared statement** (COM_STMT_PREPARE/EXECUTE), yang memindahkan pemisahan kode/data ke protokol.
    - Diuji terhadap **MariaDB 11 sungguhan** (`tests/my_driver.sh`, 22 pemeriksaan): CRUD, INT kembali sebagai angka (format baris biner), NULL, Unicode 4-byte, transaksi, hitungan parameter dua arah, 300 baris (paket terpecah di soket), `NO_BACKSLASH_ESCAPES`, payload injeksi tersimpan utuh sebagai data, sandi salah ditolak dan tidak bocor.
    - **MySQL 8 belum pernah dijalankan** di mesin ini: image `mysql:8` menolak start pada CPU tanpa `x86-64-v2` (*Fatal glibc error*). Jadi dukungan MySQL 8 **tidak diklaim** — bawaannya `caching_sha2_password` yang memang ditolak driver ini.
    - Belum: TLS ke database, timeout per-query, `COM_STMT_RESET`/reuse statement (statement ditutup setelah dipakai).
@@ -680,7 +696,11 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 **Tujuan:** aplikasi Indonesiaku dapat melayani REST API secara terstruktur; contoh todo_server.idk yang single-thread/blocking bukan lagi satu-satunya pola. **Status:** 🟡 terbit di `v1.5.0` dengan satu batasan tertulis — butir 1–6 dan 8 selesai, butir 7 selesai kecuali uji **race**, yang sengaja tidak diklaim karena eksekusi masih satu permintaan pada satu waktu (belum ada worker/thread, lihat Fase 20). **Pemetaan:** P2, WEB-01, WEB-02, WEB-03, WEB-07.
 
-**Rilis fase: sudah terbit di `v1.5.0`** (bersama Fase 10, 11 dan 12 — lihat catatan faktual di "Strategi penomoran"). ** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Klien HTTPS lolos verifikasi sertifikat/hostname; router, middleware, parsing input dan static assets serta pengujian HTTP sudah stabil.\n\n
+**Rilis fase: sudah terbit di `v1.5.0`** (bersama Fase 10, 11 dan 12 — lihat catatan faktual di "Strategi penomoran").
+
+**Gerbang rilis:** Klien HTTPS lolos verifikasi sertifikat/hostname; router, middleware, parsing input dan static assets serta pengujian HTTP sudah stabil.
+
+
 **Langkah pengembangan:**
 
 1. [x] Buat docs/RENCANA_FITUR/http_web_server.md dan https_tls.md. Tentukan kontrak Request/Response, router, middleware, batas request, model konkurensi dan pemakaian reverse proxy.
@@ -756,7 +776,11 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 **Tujuan:** file .idk menjalankan logika backend, file .html berisi tampilan standar; server merender HTML dinamis tanpa SPA/React. Template engine dibuat independen dari server agar dapat diuji sendiri. **Status:** ✅ selesai — mesin templat (SSR-01…06), integrasi respons web (SSR-07), cache parsing (SSR-08), diagnosis & ketahanan (SSR-09), dan contoh + dokumentasi (SSR-10) semuanya ada di `pustaka/templat.idk`, `pustaka/web.idk`, `examples/web_mahasiswa.idk`, dan `website/panduan/`. **Pemetaan:** SSR-01–10.
 
-**Rilis fase: sudah terbit di `v1.5.0`** (bersama Fase 10, 11 dan 12 — lihat catatan faktual di "Strategi penomoran"). ** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Template engine dengan escaping aman, loop/percabangan, include/layout dan integrasi SSR memiliki tes golden, XSS dan regresi.\n\n
+**Rilis fase: sudah terbit di `v1.5.0`** (bersama Fase 10, 11 dan 12 — lihat catatan faktual di "Strategi penomoran").
+
+**Gerbang rilis:** Template engine dengan escaping aman, loop/percabangan, include/layout dan integrasi SSR memiliki tes golden, XSS dan regresi.
+
+
 **Langkah pengembangan:**
 
 1. [x] Rancang docs/RENCANA_FITUR/selesai/ssr_template_engine.md. Definisikan modul terpisah (mis. pustaka/templat.idk atau engine native C jika hasil profil membutuhkannya), template root, render(nama,data), render_teks(sumber,data), error dan scope (**SSR-01**).
@@ -784,7 +808,11 @@ sesi dapat ditebak dari header `Date` — membangun session store di atasnya aka
 menghasilkan fitur yang tampak benar dan sepenuhnya tidak aman. Rencananya di
 `docs/RENCANA_FITUR/selesai/acak_aman.md`, dijaga `tests/acak_aman.sh`.
 
-**Rekomendasi rilis fase: `v1.6.0` (minor), kandidat `v1.6.0-rc.1`; patch `v1.6.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Session, cookie, CSRF, autentikasi dan otorisasi mencapai acceptance tests serta audit keamanan dasar, tanpa klaim aman produksi absolut.\n\n
+**Rekomendasi rilis fase: `v1.6.0` (minor), kandidat `v1.6.0-rc.1`; patch `v1.6.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.
+
+**Gerbang rilis:** Session, cookie, CSRF, autentikasi dan otorisasi mencapai acceptance tests serta audit keamanan dasar, tanpa klaim aman produksi absolut.
+
+
 **Langkah pengembangan:**
 
 1. [ ] Buat rencana docs/RENCANA_FITUR/web_security_auth.md, threat model (browser, cookie, CSRF, upload, input, session, proxy) dan matriks fitur minimum.
@@ -800,7 +828,11 @@ menghasilkan fitur yang tampak benar dan sepenuhnya tidak aman. Rencananya di
 
 **Tujuan:** developer dapat memulai dan membagikan proyek backend tanpa menyalin modul secara manual. **Status:** ⬜ belum. **Pemetaan:** P3, DX-01, DX-02.
 
-**Rekomendasi rilis fase: `v1.7.0` (minor), kandidat `v1.7.0-rc.1`; patch `v1.7.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Manajer paket dengan lockfile/integritas, scaffolding dan instalasi reproducible lulus uji, termasuk kegagalan jaringan dan arsip berbahaya.\n\n
+**Rekomendasi rilis fase: `v1.7.0` (minor), kandidat `v1.7.0-rc.1`; patch `v1.7.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.
+
+**Gerbang rilis:** Manajer paket dengan lockfile/integritas, scaffolding dan instalasi reproducible lulus uji, termasuk kegagalan jaringan dan arsip berbahaya.
+
+
 **Langkah pengembangan:**
 
 1. [ ] Buat rencana docs/RENCANA_FITUR/manajer_paket.md: manifest, nama paket/namespace, versi semantik, lockfile, cache, URL registri, checksum/signature dan lokasi instalasi non-root.
@@ -811,24 +843,24 @@ menghasilkan fitur yang tampak benar dan sepenuhnya tidak aman. Rencananya di
 
 #### Boilerplate library dan plugin untuk komunitas (bagian Fase 14)
 
-**Prinsip:** developer pada umumnya menulis library/plugin langsung dalam bahasa Indonesiaku (\`.idk\`), seperti modul yang sudah ada di \`pustaka/\`. Implementasi C **tidak wajib**; C digunakan untuk ekstensi native atau integrasi rendah yang tidak disediakan API publik saat itu. Istilah "plugin" di sini berarti paket/modul tambahan yang diimpor pengguna; **jangan mengklaim dynamic native plugin loader/ABI C sudah tersedia**, sebab API embedding dan FFI baru direncanakan dalam Fase 15.
+**Prinsip:** developer pada umumnya menulis library/plugin langsung dalam bahasa Indonesiaku (`.idk`), seperti modul yang sudah ada di `pustaka/`. Implementasi C **tidak wajib**; C digunakan untuk ekstensi native atau integrasi rendah yang tidak disediakan API publik saat itu. Istilah "plugin" di sini berarti paket/modul tambahan yang diimpor pengguna; **jangan mengklaim dynamic native plugin loader/ABI C sudah tersedia**, sebab API embedding dan FFI baru direncanakan dalam Fase 15.
 
 **Langkah implementasi (semuanya belum dikerjakan):**
 
-1. [ ] Buat rencana \`docs/RENCANA_FITUR/boilerplate_library_plugin.md\` beserta spesifikasi manifest, nama paket, namespace, entry point, dependensi, lisensi, serta kompatibilitas versi interpreter. Audit dahulu aturan \`impor\` dan mekanisme paket yang **sudah** ada agar template menghasilkan kode valid.
-2. [ ] Siapkan **template library murni Indonesiaku** dengan struktur minimal \`pustaka/<nama>.idk\`, \`tests/\`, \`examples/\`, \`README.md\`, \`LICENSE\`, \`.gitignore\`, manifest paket yang nanti disepakati, dan workflow GitHub Actions sederhana.
-3. [ ] Tambahkan **generator CLI interaktif maupun non-interaktif**, misalnya \`indk buat pustaka nama-paket\` dan \`indk buat plugin nama-plugin\` (nama final ditetapkan lewat spesifikasi). Validasi nama dan path, dukung opsi nama penulis/lisensi, serta aman terhadap overwrite dan path traversal.
-4. [ ] Sediakan **template plugin integrasi aplikasi** yang menjelaskan kontrak fungsi publik, konfigurasi, hook/callback hanya bila didukung framework host, serta contoh penggunaan dengan \`impor\`; bedakan plugin pengguna dari plugin native.
+1. [ ] Buat rencana `docs/RENCANA_FITUR/boilerplate_library_plugin.md` beserta spesifikasi manifest, nama paket, namespace, entry point, dependensi, lisensi, serta kompatibilitas versi interpreter. Audit dahulu aturan `impor` dan mekanisme paket yang **sudah** ada agar template menghasilkan kode valid.
+2. [ ] Siapkan **template library murni Indonesiaku** dengan struktur minimal `pustaka/<nama>.idk`, `tests/`, `examples/`, `README.md`, `LICENSE`, `.gitignore`, manifest paket yang nanti disepakati, dan workflow GitHub Actions sederhana.
+3. [ ] Tambahkan **generator CLI interaktif maupun non-interaktif**, misalnya `indk buat pustaka nama-paket` dan `indk buat plugin nama-plugin` (nama final ditetapkan lewat spesifikasi). Validasi nama dan path, dukung opsi nama penulis/lisensi, serta aman terhadap overwrite dan path traversal.
+4. [ ] Sediakan **template plugin integrasi aplikasi** yang menjelaskan kontrak fungsi publik, konfigurasi, hook/callback hanya bila didukung framework host, serta contoh penggunaan dengan `impor`; bedakan plugin pengguna dari plugin native.
 5. [ ] Sediakan **template ekstensi native C (opsional)** setelah API embedding dan FFI Fase 15 benar-benar stabil; dokumentasikan build lintas OS, ABI, ownership objek/GC, error handling dan audit dependency. Bila Fase 15 belum selesai, tandai template native sebagai *planned* dan jangan memunculkannya sebagai opsi siap pakai.
-6. [ ] Kembangkan template test runner \`indk uji\` dengan contoh \`uji_*\`, assertion, tes negatif, golden output dan CI Linux/Windows/macOS yang sesuai; contoh harus dapat berjalan pada versi interpreter minimum yang disebutkan.
+6. [ ] Kembangkan template test runner `indk uji` dengan contoh `uji_*`, assertion, tes negatif, golden output dan CI Linux/Windows/macOS yang sesuai; contoh harus dapat berjalan pada versi interpreter minimum yang disebutkan.
 7. [ ] Tambahkan generator dokumentasi awal: README dengan instalasi/pemakaian, referensi API, contoh import, changelog, panduan kontribusi dan metadata paket; tautkan ke portal referensi API pada Fase 19.
 8. [ ] Integrasikan dengan **Package Manager Fase 14**: validasi manifest, build/paket, pemeriksaan dependensi, lockfile, pemasangan lokal, publikasi registri (hanya ketika infrastruktur dan keamanan siap), checksum/signature dan pencegahan paket berbahaya.
-9. [ ] Dokumentasikan **panduan end-to-end**: membuat paket dari template → menulis fungsi dalam \`.idk\` → menjalankan tes → memanggilnya dari proyek lain → memublikasikan kode ke GitHub → mendistribusikan paket setelah registri tersedia.
+9. [ ] Dokumentasikan **panduan end-to-end**: membuat paket dari template → menulis fungsi dalam `.idk` → menjalankan tes → memanggilnya dari proyek lain → memublikasikan kode ke GitHub → mendistribusikan paket setelah registri tersedia.
 10. [ ] Uji generator pada direktori kosong dan lintas OS: nama tidak valid, path traversal, file sudah ada, lisensi kosong, boilerplate yang bisa langsung dijalankan, linting, import lintas direktori, packaging reproducible, dan keamanan dependency; ukur waktu onboarding developer.
 
 **Contoh struktur target library (rancangan, bukan struktur wajib yang sudah diimplementasikan):**
 
-\`\`\`text
+```text
 kalkulator-indonesiaku/
 ├── indonesiaku.toml        # nama/format manifest masih perlu disepakati
 ├── README.md
@@ -843,9 +875,9 @@ kalkulator-indonesiaku/
 └── .github/
     └── workflows/
         └── test.yml
-\`\`\`
+```
 
-**Target pengalaman pengguna:** perintah generator menyiapkan proyek library yang sudah memuat contoh \`fungsi tambah(a,b)\` dan dapat diuji dengan \`indk uji\` tanpa menulis C. Ekstensi C adalah jalur lanjut **opsional** setelah tooling Fase 15 tersedia.
+**Target pengalaman pengguna:** perintah generator menyiapkan proyek library yang sudah memuat contoh `fungsi tambah(a,b)` dan dapat diuji dengan `indk uji` tanpa menulis C. Ekstensi C adalah jalur lanjut **opsional** setelah tooling Fase 15 tersedia.
 
 **Kriteria selesai:** template dari nol bisa dihasilkan dan dijalankan di Windows/Linux/macOS, import berfungsi, tes bawaan hijau, dokumentasi akurat, publish/install lokal reproducible, serta fungsi yang masih direncanakan tidak ditampilkan sebagai tersedia.
 
@@ -858,7 +890,11 @@ kalkulator-indonesiaku/
 
 **Tujuan:** memperluas ekosistem tooling dan integrasi native secara aman. **Status:** ⬜ belum. **Pemetaan:** P4, P5.
 
-**Rekomendasi rilis fase: `v1.8.0` (minor), kandidat `v1.8.0-rc.1`; patch `v1.8.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Debugger dan embedding API/FFI memenuhi tes debug, lifetime GC dan integrasi native; stabilitas ABI ditetapkan dan didokumentasikan.\n\n
+**Rekomendasi rilis fase: `v1.8.0` (minor), kandidat `v1.8.0-rc.1`; patch `v1.8.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.
+
+**Gerbang rilis:** Debugger dan embedding API/FFI memenuhi tes debug, lifetime GC dan integrasi native; stabilitas ABI ditetapkan dan didokumentasikan.
+
+
 **Langkah pengembangan:**
 
 1. [ ] Rancang debugger dalam docs/RENCANA_FITUR/debugger.md: metadata baris/kolom, breakpoint, pause/step, inspeksi frame/variabel, protokol komunikasi editor dan overhead saat debug nonaktif.
@@ -873,7 +909,11 @@ kalkulator-indonesiaku/
 
 **Tujuan:** memperkuat jangkauan platform dan kinerja **berdasarkan pengukuran**, bukan menambah kompleksitas sebelum perlu. **Status:** ⬜ belum. **Pemetaan:** P7 serta sisa Fase 7–8.
 
-**Rekomendasi rilis fase: `v1.9.0` (minor), kandidat `v1.9.0-rc.1`; patch `v1.9.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** WASM playground lolos uji kesetaraan dan pembatasan resource; optimasi hanya disertakan bila hasil benchmark membenarkan.\n\n
+**Rekomendasi rilis fase: `v1.9.0` (minor), kandidat `v1.9.0-rc.1`; patch `v1.9.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.
+
+**Gerbang rilis:** WASM playground lolos uji kesetaraan dan pembatasan resource; optimasi hanya disertakan bila hasil benchmark membenarkan.
+
+
 **Langkah pengembangan:**
 
 1. [ ] Buat rencana docs/RENCANA_FITUR/playground_wasm.md; siapkan Emscripten, bangun interpreter ke WebAssembly dan tentukan pembatasan fitur OS, file, network dan resource.
@@ -886,52 +926,52 @@ kalkulator-indonesiaku/
 
 ### Fase 17 — Pustaka transfer berkas, SSH/SFTP, FTP dan unduhan
 
-**Target kandidat:** \`v1.12.0-rc.1\`. **Rilis stabil rekomendasi:** \`v1.12.0\`, hanya bila seluruh acceptance tests fase ini lulus. **Status:** ⬜ belum.
+**Target kandidat:** `v1.12.0-rc.1`. **Rilis stabil rekomendasi:** `v1.12.0`, hanya bila seluruh acceptance tests fase ini lulus. **Status:** ⬜ belum.
 
-**Tujuan:** menjadikan Indonesiaku berguna untuk otomasi server, manajemen file dan integrasi jaringan. Berikan API yang mudah dipakai layaknya \`shutil\`, \`pathlib\`, \`urllib\`, \`ftplib\` dan \`paramiko\` di ekosistem Python, tetapi tetap punya perilaku keamanan yang tegas. **Jangan menyatakan protokol tersedia hanya karena socket TCP sudah ada.**
+**Tujuan:** menjadikan Indonesiaku berguna untuk otomasi server, manajemen file dan integrasi jaringan. Berikan API yang mudah dipakai layaknya `shutil`, `pathlib`, `urllib`, `ftplib` dan `paramiko` di ekosistem Python, tetapi tetap punya perilaku keamanan yang tegas. **Jangan menyatakan protokol tersedia hanya karena socket TCP sudah ada.**
 
 **Langkah pengembangan:**
 
-1. [ ] Tulis rencana \`docs/RENCANA_FITUR/file_transfer_remote.md\` dan inventarisasi fungsi \`src/sistem.c\`, \`pustaka/jalur.idk\`, \`pustaka/http.idk\`, serta builtin file I/O. Pilih konvensi error, path dan pengembalian nilai yang konsisten; hindari duplikasi fungsi yang sudah ada.
-2. [ ] Tambahkan operasi file lokal: \`salin_berkas\` (cp), \`salin_direktori\` (cp -r), \`pindahkan\`, \`ganti_nama\`, \`hapus_berkas\`, \`hapus_direktori_bertingkat\`, \`jelajahi_direktori\`, \`berkas_sementara\`, dan pemeriksaan metadata/izin sesuai OS. Sediakan pilihan overwrite eksplisit, perlindungan symlink, dan error jelas.
-3. [ ] Sediakan **download berkas HTTP/HTTPS**: fungsi target \`unduh(url, tujuan, opsi)\` dengan streaming (tanpa menampung semua data ke RAM), timeout, batas ukuran, progress callback jika aman, cancel, resume \`Range\` jika didukung server, redirect terkontrol, verifikasi TLS, checksum SHA-256 opsional, serta file sementara + atomic rename untuk mencegah file parsial. Bergantung pada HTTPS aman Fase 11.
+1. [ ] Tulis rencana `docs/RENCANA_FITUR/file_transfer_remote.md` dan inventarisasi fungsi `src/sistem.c`, `pustaka/jalur.idk`, `pustaka/http.idk`, serta builtin file I/O. Pilih konvensi error, path dan pengembalian nilai yang konsisten; hindari duplikasi fungsi yang sudah ada.
+2. [ ] Tambahkan operasi file lokal: `salin_berkas` (cp), `salin_direktori` (cp -r), `pindahkan`, `ganti_nama`, `hapus_berkas`, `hapus_direktori_bertingkat`, `jelajahi_direktori`, `berkas_sementara`, dan pemeriksaan metadata/izin sesuai OS. Sediakan pilihan overwrite eksplisit, perlindungan symlink, dan error jelas.
+3. [ ] Sediakan **download berkas HTTP/HTTPS**: fungsi target `unduh(url, tujuan, opsi)` dengan streaming (tanpa menampung semua data ke RAM), timeout, batas ukuran, progress callback jika aman, cancel, resume `Range` jika didukung server, redirect terkontrol, verifikasi TLS, checksum SHA-256 opsional, serta file sementara + atomic rename untuk mencegah file parsial. Bergantung pada HTTPS aman Fase 11.
 4. [ ] Implementasikan **FTP/FTPS client** dengan daftar direktori, upload/download, rename/hapus, passive mode dan timeout. FTP plaintext hanya untuk kompatibilitas dan harus diberi peringatan nyata; **FTPS dengan sertifikat terverifikasi** menjadi pilihan aman. FTP/FTPS **bukan** SFTP.
 5. [ ] Implementasikan **SSH client** memakai pustaka SSH terawat (mis. libssh2/libssh dengan review lisensi): koneksi, eksekusi perintah jarak jauh, exit status/stdout/stderr terpisah, autentikasi kunci dan password secara aman, timeout serta batas output; **validasi host key wajib secara default** (known_hosts/pinning), bukan auto-accept host tak dikenal.
 6. [ ] Tambahkan **SFTP** di atas SSH untuk list/upload/download/rename/hapus, streaming file besar, operasi path aman, transfer atomik jika server mendukung; sediakan utilitas **SCP hanya bila dibutuhkan** dan jangan menyamakannya dengan perintah cp lokal.
 7. [ ] Batasi fitur jaringan/file pada mode sandbox dan dokumentasikan kemampuan/profil izin secara eksplisit. Jangan eksekusi perintah shell otomatis untuk mengimplementasikan protokol; gunakan library native yang teruji.
 8. [ ] Uji server dummy lokal dan container terisolasi untuk FTP, FTPS, SSH dan SFTP: auth salah, host key berubah, sertifikat kedaluwarsa, file besar, putus di tengah transfer, path traversal, symlink, kuota, timeout, penggunaan memori dan clean-up lintas platform. Pastikan tidak ada secret di log/error.
-9. [ ] Tambahkan contoh \`.idk\` untuk salin direktori, unduh file dengan checksum, remote command dan backup lewat SFTP; perbarui panduan API, CHANGELOG, Docker/installer serta matriks dependensi Windows/Linux/macOS.
+9. [ ] Tambahkan contoh `.idk` untuk salin direktori, unduh file dengan checksum, remote command dan backup lewat SFTP; perbarui panduan API, CHANGELOG, Docker/installer serta matriks dependensi Windows/Linux/macOS.
 
-**API target ilustratif (belum tersedia):** \`berkas.salin("a.txt", "cadangan/a.txt")\`; \`jaringan.unduh("https://contoh.invalid/arsip.zip", "arsip.zip")\`; \`ssh.sambung(host, pengguna, kunci_privat)\`; \`sftp.unggah("lokal.txt", "/aman/lokal.txt")\`. Nama dan desain final diputuskan pada dokumen rencana.
+**API target ilustratif (belum tersedia):** `berkas.salin("a.txt", "cadangan/a.txt")`; `jaringan.unduh("https://contoh.invalid/arsip.zip", "arsip.zip")`; `ssh.sambung(host, pengguna, kunci_privat)`; `sftp.unggah("lokal.txt", "/aman/lokal.txt")`. Nama dan desain final diputuskan pada dokumen rencana.
 
 **Selesai jika:** cp/file lokal, unduhan HTTPS, FTP/FTPS, SSH dan SFTP bekerja, sertifikat/host key diverifikasi, error ditangani, tanpa bocor secret, dan suite tes negatif + keamanan + lintas OS lulus.
 
 ### Fase 18 — Kriptografi modern dan penguatan keamanan runtime
 
-**Target kandidat:** \`v1.13.0-rc.1\`. **Rilis stabil rekomendasi:** \`v1.13.0\` setelah audit dan semua security gates lulus. **Status:** ⬜ belum.
+**Target kandidat:** `v1.13.0-rc.1`. **Rilis stabil rekomendasi:** `v1.13.0` setelah audit dan semua security gates lulus. **Status:** ⬜ belum.
 
-**Tujuan:** menyediakan primitif keamanan yang benar untuk pengembang *dan* mencegah program tidak tepercaya menyalahgunakan interpreter. Ini **berbeda** dengan fitur login/CSRF di Fase 13 dan fitur TLS/SSH di Fase 11/17; fase ini memperkuat fondasi bersama. Hash \`md5\`, \`sha1\`, \`sha256\` dan \`sha512\` yang sudah ada **bukan** berarti enkripsi modern telah tersedia.
+**Tujuan:** menyediakan primitif keamanan yang benar untuk pengembang *dan* mencegah program tidak tepercaya menyalahgunakan interpreter. Ini **berbeda** dengan fitur login/CSRF di Fase 13 dan fitur TLS/SSH di Fase 11/17; fase ini memperkuat fondasi bersama. Hash `md5`, `sha1`, `sha256` dan `sha512` yang sudah ada **bukan** berarti enkripsi modern telah tersedia.
 
 **Langkah pengembangan:**
 
-1. [ ] Buat \`docs/RENCANA_FITUR/kriptografi_keamanan_runtime.md\` dan threat model terpisah untuk (a) kode aplikasi tepercaya, (b) kode \`.idk\` dari pengguna tak tepercaya, (c) paket pihak ketiga, (d) input jaringan/berkas. Audit batas C↔VM, GC, parser, soket, sandbox, dan modul proses/sistem berkas.
+1. [ ] Buat `docs/RENCANA_FITUR/kriptografi_keamanan_runtime.md` dan threat model terpisah untuk (a) kode aplikasi tepercaya, (b) kode `.idk` dari pengguna tak tepercaya, (c) paket pihak ketiga, (d) input jaringan/berkas. Audit batas C↔VM, GC, parser, soket, sandbox, dan modul proses/sistem berkas.
 2. [ ] Pilih library kriptografi yang terawat dan teraudit beserta strategi build/lisensi lintas platform. **Jangan membangun algoritme kriptografi produksi sendiri**. Buat modul dengan nama dan tipe yang jelas antara hashing, password hashing, key derivation, MAC, signing dan encryption.
-3. [ ] Tambahkan **CSPRNG** untuk token/salt/key (mis. \`acak_aman(n)\`), dibedakan tegas dari PRNG \`acak()\` biasa. Test entropi/failure behavior sesuai penyedia OS dan hindari fallback ke rand().
+3. [ ] Tambahkan **CSPRNG** untuk token/salt/key (mis. `acak_aman(n)`), dibedakan tegas dari PRNG `acak()` biasa. Test entropi/failure behavior sesuai penyedia OS dan hindari fallback ke rand().
 4. [ ] Tambahkan **enkripsi terautentikasi (AEAD)** dengan primitive teruji seperti AES-256-GCM atau ChaCha20-Poly1305, API encrypt/decrypt yang menyertakan nonce, associated data, auth tag, dan **menolak reuse nonce** dalam contoh/panduan. Kunci jangan dicetak/di-log; kesalahan verifikasi wajib gagal tertutup.
 5. [ ] Sediakan **HMAC-SHA-256, HKDF** dan password hashing adaptif (**Argon2id** atau alternatif yang dipilih berdasarkan dukungan library); jika dibutuhkan, tanda tangan Ed25519 dan verifikasi publik. Jelaskan bahwa MD5/SHA-1 tidak cocok untuk password atau tanda tangan keamanan baru.
 6. [ ] Audit serta perkuat **memory safety** compiler/VM/native bindings: validasi panjang buffer, overflow bilangan, lifetime/GC roots, use-after-free, double free, unbounded recursion/allocations dan perlakuan input Unicode/binary. Fuzz scanner, parser, bytecode loader/disassembler dan parser protokol; uji ASan/UBSan/Valgrind.
-7. [ ] Perjelas **sandbox/capability model**: tolak akses file/network/process/FFI bila tidak diizinkan; gunakan allowlist eksplisit untuk profil eksekusi tidak tepercaya. \`--sandbox\` sendiri **bukan batas keamanan setara container/OS sandbox**; gunakan isolasi proses, user tanpa privilege, limit CPU/memori/waktu, seccomp/AppArmor/OS primitives bila tersedia.
+7. [ ] Perjelas **sandbox/capability model**: tolak akses file/network/process/FFI bila tidak diizinkan; gunakan allowlist eksplisit untuk profil eksekusi tidak tepercaya. `--sandbox` sendiri **bukan batas keamanan setara container/OS sandbox**; gunakan isolasi proses, user tanpa privilege, limit CPU/memori/waktu, seccomp/AppArmor/OS primitives bila tersedia.
 8. [ ] Terapkan **resource limits** dan cancellation: batas instruksi/runtime, memori, ukuran stack/rekursi, ukuran string/array/input dan jumlah koneksi; error harus dapat didiagnosis tanpa crash host. Tambahkan proteksi DoS pada fitur yang memproses input eksternal.
 9. [ ] Perkuat **supply-chain security**: dependency pinning, scanning library C dan paket, pengujian instalasi biner, checksums/penandatanganan artefak sesuai kebijakan, disclosure kerentanan, review rilis dan panduan pembaruan dependency. Periksa interaksi dengan Fase 14.
 10. [ ] Buat tes KAT (known-answer tests) kriptografi, tamper detection, wrong key/nonce, failure RNG, tes fuzz/sanitizer, serangan traversal, sandbox breakout, resource exhaustion dan regresi pada tiga OS. Dokumentasikan konfigurasi aman dan batas jaminan keamanan.
 
-**API target ilustratif (belum tersedia):** \`kripto.acak_aman(32)\`; \`kripto.hmac_sha256(kunci, pesan)\`; \`kripto.enkripsi_aead(kunci, pesan, nonce, aad)\`; \`kripto.verifikasi_kata_sandi(kata_sandi, hash_simpan)\`. Spesifikasi final wajib mendefinisikan tipe byte, format output, penanganan secret, dan kompatibilitas.
+**API target ilustratif (belum tersedia):** `kripto.acak_aman(32)`; `kripto.hmac_sha256(kunci, pesan)`; `kripto.enkripsi_aead(kunci, pesan, nonce, aad)`; `kripto.verifikasi_kata_sandi(kata_sandi, hash_simpan)`. Spesifikasi final wajib mendefinisikan tipe byte, format output, penanganan secret, dan kompatibilitas.
 
 **Selesai jika:** tes kripto/keamanan terpenuhi, semua API baru aman secara default, jalur eksekusi tak tepercaya memiliki batas isolasi yang terdokumentasi dan diaudit, serta tidak ada temuan kritis terbuka yang diketahui. **Jangan menjanjikan keamanan absolut.**
 
 ### Fase 19 — Kelengkapan pustaka dan dokumentasi berdasarkan kategori pengembangan web
 
-**Inspirasi taksonomi:** kelompok materi pada W3Schools PHP Tutorial (https://www.w3schools.com/php/default.asp), khususnya PHP Forms, PHP Advanced, PHP OOP, MySQL Database, PHP XML, PHP AJAX dan PHP Reference. **Tujuannya paritas KEMAMPUAN yang berguna, bukan meniru PHP atau menyalin sintaks/fungsi PHP satu per satu.** Indonesiaku tetap berbahasa Indonesia dan mempertahankan sifat Python-like. **Status:** ⬜ belum. **Kandidat:** \`v1.14.0-rc.1\`. **Rilis stabil rekomendasi:** \`v1.14.0\`, hanya setelah syarat penerimaan terpenuhi.
+**Inspirasi taksonomi:** kelompok materi pada W3Schools PHP Tutorial (https://www.w3schools.com/php/default.asp), khususnya PHP Forms, PHP Advanced, PHP OOP, MySQL Database, PHP XML, PHP AJAX dan PHP Reference. **Tujuannya paritas KEMAMPUAN yang berguna, bukan meniru PHP atau menyalin sintaks/fungsi PHP satu per satu.** Indonesiaku tetap berbahasa Indonesia dan mempertahankan sifat Python-like. **Status:** ⬜ belum. **Kandidat:** `v1.14.0-rc.1`. **Rilis stabil rekomendasi:** `v1.14.0`, hanya setelah syarat penerimaan terpenuhi.
 
 **Ketergantungan:** Fase 10 (driver basis data), 11 (HTTP), 12 (SSR), 13 (form/session/keamanan), 17 (berkas/FTP/SSH), dan 18 (kriptografi) memberikan kemampuan inti. Fase 19 melengkapi kesenjangan modul dan dokumentasi, bukan mengulang implementasi fitur fase sebelumnya.
 
@@ -955,16 +995,16 @@ kalkulator-indonesiaku/
 
 #### Langkah pengembangan Fase 19
 
-1. [ ] **Audit katalog API aktual**: dari \`src/native.c\`, \`src/sistem.c\`, \`src/db.c\`, \`pustaka/*.idk\`, \`docs/SPESIFIKASI.md\` dan \`tests/\`. Buat \`docs/ANALISIS/KATALOG_API_DAN_GAP_WEB.md\` yang memetakan **ada / sebagian / belum / sengaja tidak diadopsi**, dengan tautan source dan tes. Jangan berasumsi satu halaman W3Schools = satu fitur baru.
-2. [ ] **Daftarkan modul bernamespace** yang konsisten (misalnya \`formulir\`, \`validasi\`, \`tanggal_waktu\`, \`xml\`, \`koleksi\`, \`berkas\`, \`jaringan\`, \`keamanan\`); finalisasi nama setelah pemeriksaan konflik simbol dan keselarasan dokumentasi.
+1. [ ] **Audit katalog API aktual**: dari `src/native.c`, `src/sistem.c`, `src/db.c`, `pustaka/*.idk`, `docs/SPESIFIKASI.md` dan `tests/`. Buat `docs/ANALISIS/KATALOG_API_DAN_GAP_WEB.md` yang memetakan **ada / sebagian / belum / sengaja tidak diadopsi**, dengan tautan source dan tes. Jangan berasumsi satu halaman W3Schools = satu fitur baru.
+2. [ ] **Daftarkan modul bernamespace** yang konsisten (misalnya `formulir`, `validasi`, `tanggal_waktu`, `xml`, `koleksi`, `berkas`, `jaringan`, `keamanan`); finalisasi nama setelah pemeriksaan konflik simbol dan keselarasan dokumentasi.
 3. [ ] **Lengkapi validasi input umum**: email, URL, angka/rentang, panjang teks, field wajib, skema data sederhana dan pengumpulan error per-field; validasi bukan substitusi encoding output, parameter SQL, atau autentikasi.
 4. [ ] **Lengkapi utilitas tanggal/waktu dan zona waktu**: parsing/format ISO 8601, UTC/lokal, timezone-aware datetime dan penanganan DST/offset berbasis data zona waktu yang terawat. Wajib lintas OS atau dokumentasikan batasnya.
 5. [ ] **Implementasikan XML aman**: parse dokumen, atribut dan elemen, XML namespace, serialisasi, opsi streaming; batasi ukuran/kedalaman, tolak DTD/external entity secara default, uji XXE dan entity expansion.
 6. [ ] **Audit & lengkapi utilitas standar**: koleksi (filter/map/reduce, grouping/sorting), teks Unicode, format dan konversi, jalur/glob, konfigurasi, environment dan error handling hanya jika belum ada; jangan membuat sinonim fungsi berlebihan.
 7. [ ] **Contoh aplikasi kategori**: formulir pendaftaran ber-validasi, upload file, login/session, REST API + pencarian AJAX, aplikasi SQLite/MySQL/PostgreSQL, XML import/export, otomasi berkas dan SFTP. Setiap contoh harus menggunakan fitur yang benar-benar telah selesai di fase dependensinya.
 8. [ ] **Bangun referensi API yang bisa dicari** di website/panduan: sidebar **Dasar Bahasa**, **Formulir Web**, **Fitur Lanjutan**, **Pemrograman Berorientasi Objek**, **Database**, **HTTP/REST API**, **Template SSR**, **XML/JSON**, **Transfer Berkas**, **Kriptografi & Keamanan**, **Referensi Fungsi**. Tiap halaman memuat ringkasan, kode .idk yang dapat dijalankan, versi pertama tersedia dan tautan tes. Fitur belum jadi wajib ditandai "direncanakan", bukan disajikan sebagai panduan aktif.
-9. [ ] Uji per kategori pada \`tests/\`: valid/invalid input, Unicode, data besar, XML entity attacks, error file/jaringan, konsistensi hasil dan contoh yang di-copy dari panduan. Gunakan CI tiga OS, sanitizer dan fuzz target sesuai modul.
-10. [ ] Perbarui \`docs/ROADMAP.md\`, \`CHANGELOG.md\`, spesifikasi bila semantik berubah, contoh, ekstensi VS Code bila ada API baru, dan matriks kompatibilitas. Jalankan semua release gates sebelum candidate/stable.
+9. [ ] Uji per kategori pada `tests/`: valid/invalid input, Unicode, data besar, XML entity attacks, error file/jaringan, konsistensi hasil dan contoh yang di-copy dari panduan. Gunakan CI tiga OS, sanitizer dan fuzz target sesuai modul.
+10. [ ] Perbarui `docs/ROADMAP.md`, `CHANGELOG.md`, spesifikasi bila semantik berubah, contoh, ekstensi VS Code bila ada API baru, dan matriks kompatibilitas. Jalankan semua release gates sebelum candidate/stable.
 
 **Kriteria rilis v1.14.0:** matriks gap telah diaudit, semua API yang diklaim selesai memiliki pengujian dan contoh yang dapat berjalan, XML/input handling lolos security tests, referensi web mencerminkan kemampuan sebenarnya, dan tidak ada breaking change diam-diam. Dokumentasi boleh diterbitkan lebih cepat sebagai pembaruan situs **tanpa** menaikkan versi compiler jika hanya menambah konten.
 
@@ -976,30 +1016,30 @@ kalkulator-indonesiaku/
 
 **Tahapan untuk AI coding agent:**
 
-1. [ ] **Audit website dan API:** periksa struktur \`website/\`, sistem navigasi/panduan saat ini, \`src/native.c\`, \`pustaka/\`, \`docs/SPESIFIKASI.md\` serta contoh dan tes. Buat katalog sumber kebenaran yang memetakan nama API ke kode sumber, signature, kategori, versi pertama didukung, contoh dan tes. Jangan menebak signature.
+1. [ ] **Audit website dan API:** periksa struktur `website/`, sistem navigasi/panduan saat ini, `src/native.c`, `pustaka/`, `docs/SPESIFIKASI.md` serta contoh dan tes. Buat katalog sumber kebenaran yang memetakan nama API ke kode sumber, signature, kategori, versi pertama didukung, contoh dan tes. Jangan menebak signature.
 2. [ ] **Susun navigasi dua bagian:** (a) **Tutorial Indonesiaku** berdasarkan topik/proyek, dan (b) **Referensi Bahasa & Pustaka** untuk lookup API per kategori. Sidebar harus responsif di desktop/mobile, dapat dibuka/tutup, dan memperlihatkan lokasi halaman aktif.
 3. [ ] **Kategori awal sidebar:** Dasar Bahasa; Fungsi Bawaan (Teks, Bilangan/Matematika, Koleksi, Tanggal/Waktu); OOP; File & Direktori; HTTP/HTTPS; REST API Server; SSR & Template HTML; Formulir Web; Database (SQLite, MySQL/MariaDB, PostgreSQL); XML/JSON; FTP/FTPS, SSH/SFTP & Unduhan; Kriptografi & Keamanan; Modul & Package Manager; CLI/Developer Tools; serta Indeks A–Z fungsi/kelas/modul. Tampilkan hanya halaman yang isinya benar-benar tersedia; kategori perencanaan harus diberi status yang jelas.
-4. [ ] **Satu halaman referensi per fungsi/kelas/metode/modul yang relevan**, mengikuti template tetap: nama dan ringkasan, status (\`tersedia\`/\`eksperimental\`/\`direncanakan\`/\`deprecated\`), versi minimum, import yang diperlukan, signature sintaks aktual, parameter (nama/tipe/default/wajib), return type/nilai, exceptions, side effects, keamanan, kompatibilitas OS, contoh \`.idk\`, output yang diharapkan, related APIs, serta link ke source dan tes.
-5. [ ] **Penulisan contoh berkualitas:** minimal satu contoh sederhana dan satu contoh penggunaan realistis untuk API penting (file, database, web, keamanan, network). Hindari contoh placeholder yang tidak dapat dijalankan; jangan menampilkan API konsep seperti \`web.render\` atau \`ssh.sambung\` sebagai API aktif sebelum benar-benar diimplementasikan.
+4. [ ] **Satu halaman referensi per fungsi/kelas/metode/modul yang relevan**, mengikuti template tetap: nama dan ringkasan, status (`tersedia`/`eksperimental`/`direncanakan`/`deprecated`), versi minimum, import yang diperlukan, signature sintaks aktual, parameter (nama/tipe/default/wajib), return type/nilai, exceptions, side effects, keamanan, kompatibilitas OS, contoh `.idk`, output yang diharapkan, related APIs, serta link ke source dan tes.
+5. [ ] **Penulisan contoh berkualitas:** minimal satu contoh sederhana dan satu contoh penggunaan realistis untuk API penting (file, database, web, keamanan, network). Hindari contoh placeholder yang tidak dapat dijalankan; jangan menampilkan API konsep seperti `web.render` atau `ssh.sambung` sebagai API aktif sebelum benar-benar diimplementasikan.
 6. [ ] **Pencarian dan indeks:** pencarian client-side berdasarkan nama fungsi, sinonim/topik, kategori dan deskripsi; indeks A–Z; tautan permanen/anchor; cross-link dari tutorial ke halaman API; breadcrumbs; daftar isi lokal untuk halaman panjang.
-7. [ ] **Pemeliharaan dokumentasi secara otomatis:** metadata terstruktur (misalnya JSON/YAML/Markdown frontmatter) boleh dipakai sebagai sumber laman; sediakan skrip validasi yang menolak duplikasi slug, tautan rusak, halaman tanpa status/versi, API tersedia tanpa source/test, dan kode contoh yang tidak lolos interpreter. Reuse \`tests/test_panduan.sh\` atau perluas jalur CI sejenis.
-8. [ ] **Kualitas UX dan aksesibilitas:** desain responsif, keyboard navigation, heading semantik, kontras warna, code highlighting \`.idk\`, tombol salin kode, dan "coba contoh" hanya jika playground mendukung fitur tersebut dan aman untuk dijalankan.
-9. [ ] **Versioning dokumentasi:** tandai \`Sejak vX.Y.Z\` untuk fungsi yang benar-benar tersedia; berikan catatan perubahan, deprecations dan perbedaan versi. Tidak perlu mengklaim versi yang belum dirilis sebagai tersedia. Pertahankan halaman rujukan historis bila masih dibutuhkan.
+7. [ ] **Pemeliharaan dokumentasi secara otomatis:** metadata terstruktur (misalnya JSON/YAML/Markdown frontmatter) boleh dipakai sebagai sumber laman; sediakan skrip validasi yang menolak duplikasi slug, tautan rusak, halaman tanpa status/versi, API tersedia tanpa source/test, dan kode contoh yang tidak lolos interpreter. Reuse `tests/test_panduan.sh` atau perluas jalur CI sejenis.
+8. [ ] **Kualitas UX dan aksesibilitas:** desain responsif, keyboard navigation, heading semantik, kontras warna, code highlighting `.idk`, tombol salin kode, dan "coba contoh" hanya jika playground mendukung fitur tersebut dan aman untuk dijalankan.
+9. [ ] **Versioning dokumentasi:** tandai `Sejak vX.Y.Z` untuk fungsi yang benar-benar tersedia; berikan catatan perubahan, deprecations dan perbedaan versi. Tidak perlu mengklaim versi yang belum dirilis sebagai tersedia. Pertahankan halaman rujukan historis bila masih dibutuhkan.
 10. [ ] **Publikasi dan audit:** verifikasi semua link, menu, layout pada mobile/desktop, search, rendering kode, SEO dasar dan kecepatan halaman; perbarui README/panduan situs/CHANGELOG sesuai relevansi. **Dokumentasi murni boleh dipublikasikan tanpa menaikkan versi interpreter**.
 
 **Kriteria penerimaan:** setiap builtin publik dan modul standar yang terinventarisasi memiliki entri referensi atau justifikasi pengecualian; contoh yang diklaim runnable diuji otomatis; navigasi/pencarian berfungsi; semua status/versi sesuai implementasi; tidak ada dokumentasi yang menyarankan praktik tidak aman sebagai default.
 
-**Contoh format satu entri referensi:** \`panjang(nilai)\` → kategori Fungsi Bawaan, deskripsi, argumen \`nilai\`, hasil bilangan, satu atau lebih contoh .idk, output aktual dari tes, versi mulai tersedia yang telah diverifikasi, dan link ke implementasi. Gunakan data repository untuk menulis fakta; jangan menebak.
+**Contoh format satu entri referensi:** `panjang(nilai)` → kategori Fungsi Bawaan, deskripsi, argumen `nilai`, hasil bilangan, satu atau lebih contoh .idk, output aktual dari tes, versi mulai tersedia yang telah diverifikasi, dan link ke implementasi. Gunakan data repository untuk menulis fakta; jangan menebak.
 
 ### Fase 20 — Asynchronous I/O dan concurrency yang terukur
 
-**Status:** ⬜ belum. **Target RC rekomendasi:** \`v1.15.0-rc.1\`. **Target stabil rekomendasi:** \`v1.15.0\`. **Ketergantungan:** VM/GC (fase awal), networking Fase 11, keamanan runtime Fase 18.
+**Status:** ⬜ belum. **Target RC rekomendasi:** `v1.15.0-rc.1`. **Target stabil rekomendasi:** `v1.15.0`. **Ketergantungan:** VM/GC (fase awal), networking Fase 11, keamanan runtime Fase 18.
 
 **Tujuan:** mendukung tugas I/O yang berjalan bersamaan tanpa memblokir seluruh layanan, terutama REST API, koneksi jaringan dan operasi file. Jangan menganggap kemampuan async yang baru otomatis aman untuk beban produksi atau setara multithreading.
 
-1. [ ] Buat \`docs/RENCANA_FITUR/async_concurrency.md\`. Audit \`src/vm.c\`, frame stack, closure/upvalue, GC roots, \`src/sistem.c\`, socket serta generator \`hasilkan\`; uraikan state suspension/resumption dan semantik error.
+1. [ ] Buat `docs/RENCANA_FITUR/async_concurrency.md`. Audit `src/vm.c`, frame stack, closure/upvalue, GC roots, `src/sistem.c`, socket serta generator `hasilkan`; uraikan state suspension/resumption dan semantik error.
 2. [ ] Bandingkan event loop + coroutine, cooperative task scheduler dan worker process/thread. Pilih model paling sederhana yang kompatibel lintas platform; tentukan interaksi fungsi blocking yang sudah ada.
-3. [ ] Spesifikasikan API \`tugas\`, \`tunggu\` atau padanan Indonesiaku, timeouts, cancellation, task groups, propagation exception dan cleanup resource. **Nama sintaks hanya usulan**: jangan menambah keyword sebelum kajian kompatibilitas.
+3. [ ] Spesifikasikan API `tugas`, `tunggu` atau padanan Indonesiaku, timeouts, cancellation, task groups, propagation exception dan cleanup resource. **Nama sintaks hanya usulan**: jangan menambah keyword sebelum kajian kompatibilitas.
 4. [ ] Implementasikan nonblocking TCP/HTTP I/O atau adapter event-loop, timer serta penjadwalan adil (fairness). Tetapkan apakah file I/O, DNS dan database memerlukan worker atau adapter tersendiri.
 5. [ ] Tetapkan batas concurrency, backpressure, error propagation, orderly shutdown, penutupan koneksi, dan disiplin kepemilikan/GC root pada tugas tertunda.
 6. [ ] Tambahkan tes interleaving, timeout, cancel berulang, starvation, resource leak, stress GC, ASan/UBSan, Windows/Linux/macOS dan benchmark latency/throughput sebelum-sesudah untuk kasus I/O.
@@ -1009,11 +1049,11 @@ kalkulator-indonesiaku/
 
 ### Fase 21 — Real-time, cache, komunikasi dan background processing
 
-**Status:** ⬜ belum. **Target RC rekomendasi:** \`v1.16.0-rc.1\`. **Target stabil rekomendasi:** \`v1.16.0\`. **Ketergantungan:** Fase 10–11, 13, 18 dan 20.
+**Status:** ⬜ belum. **Target RC rekomendasi:** `v1.16.0-rc.1`. **Target stabil rekomendasi:** `v1.16.0`. **Ketergantungan:** Fase 10–11, 13, 18 dan 20.
 
-**Tujuan:** aplikasi nyata memiliki WebSocket, Redis/cache, email, antrean tugas dan scheduler. Utamakan library \`.idk\` di atas primitive native yang sudah teruji; **tidak semua fitur harus dibuat di C atau menjadi keyword compiler**.
+**Tujuan:** aplikasi nyata memiliki WebSocket, Redis/cache, email, antrean tugas dan scheduler. Utamakan library `.idk` di atas primitive native yang sudah teruji; **tidak semua fitur harus dibuat di C atau menjadi keyword compiler**.
 
-1. [ ] Buat rencana terpisah: \`docs/RENCANA_FITUR/websocket.md\`, \`redis_cache.md\`, \`email_smtp.md\`, \`background_jobs_scheduler.md\` dan matriks dependensi native vs \`.idk\`.
+1. [ ] Buat rencana terpisah: `docs/RENCANA_FITUR/websocket.md`, `redis_cache.md`, `email_smtp.md`, `background_jobs_scheduler.md` dan matriks dependensi native vs `.idk`.
 2. [ ] Implementasikan **WebSocket** untuk server dan klien: handshake, frame text/binary, ping/pong, close, batas ukuran pesan, autentikasi/origin yang aman, backpressure dan integrasi async. Uji malformed frame serta klien terputus.
 3. [ ] Implementasikan **Redis** client beserta pooling yang terukur, timeout/TLS/auth, TTL, namespace key, cache-aside dan opsi session store. Hindari cache secrets sembarangan; uji gagal koneksi dan invalidasi.
 4. [ ] Implementasikan **email SMTP** dengan STARTTLS/SMTP TLS, validasi sertifikat, auth aman, MIME/multipart, lampiran, batas ukuran, dan pencegahan header injection. Sediakan contoh notifikasi dan reset password tanpa menyimpan rahasia di kode.
@@ -1026,17 +1066,17 @@ kalkulator-indonesiaku/
 
 ### Fase 22 — Observability, profiling, kompatibilitas dan kesiapan produksi
 
-**Status:** ⬜ belum. **Target RC rekomendasi:** \`v1.17.0-rc.1\`. **Target stabil rekomendasi:** \`v1.17.0\`. **Ketergantungan:** semua fase runtime, jaringan, database, web dan package manager yang relevan.
+**Status:** ⬜ belum. **Target RC rekomendasi:** `v1.17.0-rc.1`. **Target stabil rekomendasi:** `v1.17.0`. **Ketergantungan:** semua fase runtime, jaringan, database, web dan package manager yang relevan.
 
 **Tujuan:** aplikasi Indonesiaku mudah didiagnosis, diperbarui, diaudit dan dipelihara. Kualitas, keamanan dan kompatibilitas adalah kegiatan **lintas fase sejak sekarang**, bukan alasan untuk menunggu Fase 22.
 
-1. [ ] Buat \`docs/RENCANA_FITUR/observability_production.md\` serta kebijakan tertulis support matrix, compatibility policy, deprecation, security disclosure dan release lifecycle.
+1. [ ] Buat `docs/RENCANA_FITUR/observability_production.md` serta kebijakan tertulis support matrix, compatibility policy, deprecation, security disclosure dan release lifecycle.
 2. [ ] Sediakan **structured logging**: timestamp, level, module, request/task correlation ID, format dapat dibaca mesin, masking rahasia secara default, rotasi atau integrasi collector.
 3. [ ] Sediakan **metrics dan tracing** dasar: latensi request, error rate, durasi query, queue depth, memori/GC, task/connections; tentukan pilihan interoperabilitas misalnya OpenTelemetry/Prometheus tanpa mengunci satu vendor.
 4. [ ] Implementasikan **profiler** CPU/wall time, alokasi memori, GC pause, hot functions dan diagnostik kebocoran; jaga overhead profiling opt-in dan dokumentasikan akurasi pengukuran.
 5. [ ] Susun pedoman deployment **production readiness**: konfigurasi environment/secrets, health/readiness endpoint, graceful shutdown, reverse proxy, TLS, batas resource, backup/restore, observability, container isolation dan prosedur recovery.
 6. [ ] Tetapkan kompatibilitas API dan versioning: SemVer, stabil/eksperimental, minimum supported runtime, deprecation warning, jendela dukungan patch/LTS bila sumber daya tersedia, kebijakan minor vs major dan perubahan format paket.
-7. [ ] Tegakkan proses keamanan: \`SECURITY.md\`, pelaporan kerentanan privat, threat-model update, CI security scan/dependency audit, SBOM bila relevan, release provenance/checksums, penanganan CVE dan komunikasi advisory.
+7. [ ] Tegakkan proses keamanan: `SECURITY.md`, pelaporan kerentanan privat, threat-model update, CI security scan/dependency audit, SBOM bila relevan, release provenance/checksums, penanganan CVE dan komunikasi advisory.
 8. [ ] Lakukan pengujian beban/stress, chaos/network failure, CPU/memory profiling, regresi lintas OS/arsitektur, canary RC, dan verifikasi installer/Docker/artefak sebelum rilis; publikasikan metodologi dan hasil.
 9. [ ] Tambahkan dokumentasi operasional dan referensi API untuk log/profiler/metrics; contoh dashboard/monitoring hanya jika sumber data yang mendasarinya telah diimplementasi.
 10. [ ] Audit *production readiness* secara jujur: tandai fitur yang masih eksperimen, tidak didukung, atau membutuhkan reverse proxy/isolasi; jangan menyebut runtime aman produksi tanpa bukti.
@@ -1046,25 +1086,25 @@ kalkulator-indonesiaku/
 ### Penekanan keputusan rilis Fase 20–22 dan sesudahnya
 
 - **v1.15.0, v1.16.0, v1.17.0 hanyalah contoh milestone minor** bila scope masing-masing fase matang. Tidak ada target tanggal; kualitas dan keamanan lebih penting daripada mengejar nomor versi.
-- **Minor (\`1.x.0\`):** fitur baru yang kompatibel dengan program lama, dengan dokumentasi, tes, paket rilis dan changelog. Pecah fase besar menjadi beberapa minor tambahan bila diperlukan, lalu **perbarui tabel target** agar tidak memberikan gambaran palsu.
-- **Patch (\`1.x.y\`, y≥1):** perbaikan bug/keamanan/kompatibilitas tanpa breaking change; rilis secepat layak berdasarkan risiko, tidak harus menunggu selesainya fase atau fitur baru.
-- **Prerelease:** \`-alpha.1\` untuk eksperimen komunitas, \`-beta.1\` untuk API yang mendekati final, dan \`-rc.1\` untuk kandidat stabil; semua prerelease harus jelas diberi label dan tidak mengganti channel \`latest\` stabil.
-- **Major (\`v2.0.0\`):** hanya ketika benar-benar memerlukan perubahan yang memutus API publik, sintaks, model objek, ABI native, format bytecode yang dipublikasikan, atau kontrak paket. Sebelum major: sediakan migration guide, deprecation path jika memungkinkan dan compatibility tests. **Tidak wajib** naik major hanya karena jumlah fase besar.
+- **Minor (`1.x.0`):** fitur baru yang kompatibel dengan program lama, dengan dokumentasi, tes, paket rilis dan changelog. Pecah fase besar menjadi beberapa minor tambahan bila diperlukan, lalu **perbarui tabel target** agar tidak memberikan gambaran palsu.
+- **Patch (`1.x.y`, y≥1):** perbaikan bug/keamanan/kompatibilitas tanpa breaking change; rilis secepat layak berdasarkan risiko, tidak harus menunggu selesainya fase atau fitur baru.
+- **Prerelease:** `-alpha.1` untuk eksperimen komunitas, `-beta.1` untuk API yang mendekati final, dan `-rc.1` untuk kandidat stabil; semua prerelease harus jelas diberi label dan tidak mengganti channel `latest` stabil.
+- **Major (`v2.0.0`):** hanya ketika benar-benar memerlukan perubahan yang memutus API publik, sintaks, model objek, ABI native, format bytecode yang dipublikasikan, atau kontrak paket. Sebelum major: sediakan migration guide, deprecation path jika memungkinkan dan compatibility tests. **Tidak wajib** naik major hanya karena jumlah fase besar.
 - **Bila fase bergantung pada fitur yang belum selesai:** jangan terbitkan versi stabil dengan klaim paritas penuh. Rilis komponen independen boleh jika scope rilis transparan, dependency/security gates terpenuhi, dan status fase tetap sebagian.
 - **Checklist release blocker:** CI gagal, tes sanitizer/fuzz kritis gagal, regresi terhadap contoh lama, kehilangan data, sertifikat tidak diverifikasi, kredensial bocor, tidak ada tes untuk API baru atau installer gagal pada mesin bersih → tunda rilis.
-- **Rilis pendamping:** pembaruan website/dokumentasi saja tidak memerlukan versi interpreter baru; modul/paket independen sebaiknya memiliki versi sendiri yang kompatibel dengan \`indk\` minimum, bukan memaksa setiap plugin menaikkan versi interpreter.
-- **Keputusan final tag:** maintainer mengevaluasi cakupan aktual dan \`CHANGELOG.md\`, membandingkan artefak CI dengan Git tag, menyamakan \`src/common.h\`, Docker image/tag, installer, checksum, situs serta release notes. Update minor/patch/major berdasarkan **perubahan nyata**, bukan sekadar milestone roadmap.
+- **Rilis pendamping:** pembaruan website/dokumentasi saja tidak memerlukan versi interpreter baru; modul/paket independen sebaiknya memiliki versi sendiri yang kompatibel dengan `indk` minimum, bukan memaksa setiap plugin menaikkan versi interpreter.
+- **Keputusan final tag:** maintainer mengevaluasi cakupan aktual dan `CHANGELOG.md`, membandingkan artefak CI dengan Git tag, menyamakan `src/common.h`, Docker image/tag, installer, checksum, situs serta release notes. Update minor/patch/major berdasarkan **perubahan nyata**, bukan sekadar milestone roadmap.
 
 ### Fase 23 — Data biner, streaming, kompresi dan arsip
 
-**Status:** ⬜ belum. **Kandidat rilis rekomendasi:** \`v1.18.0-rc.1\`. **Rilis stabil rekomendasi:** \`v1.18.0\`. **Ketergantungan:** model nilai/GC, sistem berkas, HTTP Fase 11, SSH/SFTP Fase 17, dan kriptografi Fase 18.
+**Status:** ⬜ belum. **Kandidat rilis rekomendasi:** `v1.18.0-rc.1`. **Rilis stabil rekomendasi:** `v1.18.0`. **Ketergantungan:** model nilai/GC, sistem berkas, HTTP Fase 11, SSH/SFTP Fase 17, dan kriptografi Fase 18.
 
-**Tujuan:** memiliki abstraksi \`byte\`, buffer dan stream yang benar (bukan memaksakan teks UTF-8 untuk semua data), supaya pustaka jaringan, database BLOB, file besar, enkripsi, serta arsip dapat digunakan secara andal.
+**Tujuan:** memiliki abstraksi `byte`, buffer dan stream yang benar (bukan memaksakan teks UTF-8 untuk semua data), supaya pustaka jaringan, database BLOB, file besar, enkripsi, serta arsip dapat digunakan secara andal.
 
 **Langkah pengembangan:**
 
-1. [ ] Buat \`docs/RENCANA_FITUR/data_biner_stream_arsip.md\`. Audit tipe \`Value\`, \`ObjString\`, operasi file/soket, SQLite BLOB dan dukungan binary existing; tetapkan semantik bytes immutable/mutable buffer, slicing, equality, serta interoperabilitas native tanpa merusak kompatibilitas \`teks\`.
-2. [ ] Implementasikan representasi data biner dengan batas panjang, pengecekan overflow, lifecycle/GC roots, dan konversi eksplisit \`teks ↔ UTF-8 bytes\` yang menolak data tidak valid bila perlu.
+1. [ ] Buat `docs/RENCANA_FITUR/data_biner_stream_arsip.md`. Audit tipe `Value`, `ObjString`, operasi file/soket, SQLite BLOB dan dukungan binary existing; tetapkan semantik bytes immutable/mutable buffer, slicing, equality, serta interoperabilitas native tanpa merusak kompatibilitas `teks`.
+2. [ ] Implementasikan representasi data biner dengan batas panjang, pengecekan overflow, lifecycle/GC roots, dan konversi eksplisit `teks ↔ UTF-8 bytes` yang menolak data tidak valid bila perlu.
 3. [ ] Tambahkan API stream untuk baca/tulis bertahap, seek/tell bila didukung, flush, close idempoten, context manager, cancellation/timeouts yang relevan, serta bounded buffering/backpressure.
 4. [ ] Implementasikan operasi buffer dan encode/decode: biner ↔ hex, Base64, endian integer packing/unpacking, serta checksum/hash streaming menggunakan fungsi/library yang telah diverifikasi; hindari duplikasi API yang sudah tersedia.
 5. [ ] Tambahkan kompresi gzip/zlib serta arsip ZIP/TAR melalui pustaka terawat, mode streaming saat memungkinkan, inspeksi entri sebelum ekstraksi, batas ukuran/rasio/jumlah berkas, perlindungan path traversal, symlink dan decompression bomb.
@@ -1072,49 +1112,49 @@ kalkulator-indonesiaku/
 7. [ ] Tambahkan tes roundtrip byte acak, NUL embedded, Unicode/invalid UTF-8, data besar, korupsi arsip, zip slip, symlink, rasio kompresi ekstrem, resource limits, stress GC, ASan/UBSan dan tiga OS.
 8. [ ] Perbarui pustaka, dokumentasi API, contoh, changelog, editor (bila sintaks baru), dan matriks platform/dependensi distribusi.
 
-**Contoh API ilustratif (belum tersedia):** \`bita.dari_teks("halo", "utf-8")\`, \`berkas.buka_biner("data.bin")\`, \`arsip.ekstrak_aman("backup.zip", "hasil/", batas)\`.
+**Contoh API ilustratif (belum tersedia):** `bita.dari_teks("halo", "utf-8")`, `berkas.buka_biner("data.bin")`, `arsip.ekstrak_aman("backup.zip", "hasil/", batas)`.
 
 **Gerbang rilis:** uji roundtrip dan resource safety lulus, ekstraksi aman secara default, benchmark memori streaming terbukti, serta kompatibilitas string dan aplikasi lama tidak berubah.
 
 ### Fase 24 — Unicode, i18n, konfigurasi dan format pertukaran data
 
-**Status:** ⬜ belum. **Kandidat rilis rekomendasi:** \`v1.19.0-rc.1\`. **Rilis stabil rekomendasi:** \`v1.19.0\`. **Ketergantungan:** Fase 23 untuk encoding/binary, Fase 10–12 untuk aplikasi nyata, dan pustaka standar yang sudah ada.
+**Status:** ⬜ belum. **Kandidat rilis rekomendasi:** `v1.19.0-rc.1`. **Rilis stabil rekomendasi:** `v1.19.0`. **Ketergantungan:** Fase 23 untuk encoding/binary, Fase 10–12 untuk aplikasi nyata, dan pustaka standar yang sudah ada.
 
 **Tujuan:** memudahkan pengembangan aplikasi lintas bahasa/locale serta konfigurasi dan pertukaran data dengan format yang umum, tanpa mengubah sintaks inti Indonesiaku.
 
 **Langkah pengembangan:**
 
-1. [ ] Buat \`docs/RENCANA_FITUR/unicode_i18n_konfigurasi.md\`; audit fungsi \`teks\`, \`tanggal_waktu\`, \`jalur\`, JSON, CSV, XML (Fase 19), serta \`lingkungan\` yang sudah ada; identifikasi kesenjangan dengan tes, bukan asumsi.
-2. [ ] Definisikan operasi Unicode yang eksplisit: normalisasi NFC/NFD/NFKC/NFKD, case folding, kategori Unicode, whitespace, code point vs grapheme cluster; pertahankan semantik \`panjang()\` historis tanpa breaking change.
+1. [ ] Buat `docs/RENCANA_FITUR/unicode_i18n_konfigurasi.md`; audit fungsi `teks`, `tanggal_waktu`, `jalur`, JSON, CSV, XML (Fase 19), serta `lingkungan` yang sudah ada; identifikasi kesenjangan dengan tes, bukan asumsi.
+2. [ ] Definisikan operasi Unicode yang eksplisit: normalisasi NFC/NFD/NFKC/NFKD, case folding, kategori Unicode, whitespace, code point vs grapheme cluster; pertahankan semantik `panjang()` historis tanpa breaking change.
 3. [ ] Sediakan fasilitas locale/i18n yang teruji: format angka/mata uang/tanggal, pluralisasi, timezone data yang diperbarui, message catalog dan fallback; dokumentasikan dukungan locale OS yang berbeda.
 4. [ ] Tambahkan parser/serializer YAML dan TOML dengan batas ukuran/kedalaman, error lokasi, tipe yang terdefinisi dan keamanan; gunakan parser YAML **safe mode** secara default, tanpa konstruksi objek arbitrer.
-5. [ ] Tambahkan loader konfigurasi terstruktur: environment variables, \`.env\` (opsional sesuai kebutuhan), berkas TOML/YAML/INI serta prioritas sumber dan validasi skema; jangan menulis secrets ke log atau memaksa konfigurasi global yang mengejutkan.
+5. [ ] Tambahkan loader konfigurasi terstruktur: environment variables, `.env` (opsional sesuai kebutuhan), berkas TOML/YAML/INI serta prioritas sumber dan validasi skema; jangan menulis secrets ke log atau memaksa konfigurasi global yang mengejutkan.
 6. [ ] Evaluasi MessagePack dan serialisasi biner lain sebagai paket opsional; tetapkan kebijakan kompatibilitas format, tipe/precision, dan keamanan deserialisasi tanpa eksekusi kode.
 7. [ ] Uji input multilingual, emoji, combining marks, kasus Turkish locale, DST, file konfigurasi rusak, YAML bombs/tags, serialisasi roundtrip, resource limits serta lintas platform.
 8. [ ] Buat contoh aplikasi multibahasa dan konfigurasi lingkungan dev/test/production; lengkapi dokumentasi referensi dan migrasi.
 
-**Contoh API ilustratif (belum tersedia):** \`unicode.normalisasi("NFC", teks)\`, \`lokalisasi.format_tanggal(waktu, "id-ID")\`, \`konfigurasi.muat("aplikasi.toml")\`.
+**Contoh API ilustratif (belum tersedia):** `unicode.normalisasi("NFC", teks)`, `lokalisasi.format_tanggal(waktu, "id-ID")`, `konfigurasi.muat("aplikasi.toml")`.
 
 **Gerbang rilis:** Unicode dan timezone teruji, parser aman untuk input tak tepercaya, tidak ada perubahan diam-diam pada perilaku teks lama, dan dokumentasi jelas membedakan fitur wajib vs opsional.
 
 ### Fase 25 — CLI framework, pengujian HTTP dan integrasi message broker/IoT
 
-**Status:** ⬜ belum. **Kandidat rilis rekomendasi:** \`v1.20.0-rc.1\`. **Rilis stabil rekomendasi:** \`v1.20.0\`. **Ketergantungan:** Fase 11 (REST/HTTP), 14 (package manager), 17 (jaringan), 20–21 (async dan background jobs), serta Fase 23 untuk payload biner.
+**Status:** ⬜ belum. **Kandidat rilis rekomendasi:** `v1.20.0-rc.1`. **Rilis stabil rekomendasi:** `v1.20.0`. **Ketergantungan:** Fase 11 (REST/HTTP), 14 (package manager), 17 (jaringan), 20–21 (async dan background jobs), serta Fase 23 untuk payload biner.
 
 **Tujuan:** developer dapat membuat aplikasi CLI dan menguji API tanpa menulis boilerplate berlebihan, sambil menyediakan konektor komunikasi terdistribusi sebagai paket independen bila diperlukan.
 
 **Langkah pengembangan:**
 
-1. [ ] Buat \`docs/RENCANA_FITUR/cli_http_test_broker.md\`; audit \`pustaka/opsi.idk\`, \`indk uji\`, HTTP client/server, dan \`pustaka/\` lain agar tidak menduplikasi argparse/testing yang sudah ada.
-2. [ ] Bangun CLI framework di atas \`opsi\`: subcommand, bantuan otomatis, validasi opsi, default, exit codes, autocomplete shell (jika feasible), konfigurasi dan contoh \`indk buat ...\`; pertahankan akses ke CLI standar tanpa framework.
+1. [ ] Buat `docs/RENCANA_FITUR/cli_http_test_broker.md`; audit `pustaka/opsi.idk`, `indk uji`, HTTP client/server, dan `pustaka/` lain agar tidak menduplikasi argparse/testing yang sudah ada.
+2. [ ] Bangun CLI framework di atas `opsi`: subcommand, bantuan otomatis, validasi opsi, default, exit codes, autocomplete shell (jika feasible), konfigurasi dan contoh `indk buat ...`; pertahankan akses ke CLI standar tanpa framework.
 3. [ ] Sediakan test client HTTP untuk pengujian aplikasi REST tanpa membuka port publik bila arsitektur memungkinkan; assertions status, headers, JSON, cookies, auth, upload, snapshot/golden output dan mock dependency.
-4. [ ] Tambahkan fixtures dan mock/fake untuk database, SMTP, waktu, filesystem dan request; uji isolasi dan determinisme agar \`indk uji\` tetap dapat dipakai pada CI.
+4. [ ] Tambahkan fixtures dan mock/fake untuk database, SMTP, waktu, filesystem dan request; uji isolasi dan determinisme agar `indk uji` tetap dapat dipakai pada CI.
 5. [ ] Rancang konektor **MQTT** untuk IoT dan **AMQP/RabbitMQ** untuk antrean sebagai **library/plugin opsional**, bukan dependensi wajib runtime; definisikan TLS/auth, QoS, reconnect/backoff, delivery semantics dan batas resource.
 6. [ ] Tambahkan contoh CLI pengelola data, integration test REST CRUD dan demo publish/subscribe MQTT pada broker uji lokal. Jangan memerlukan broker publik untuk menjalankan tes otomatis.
 7. [ ] Uji protokol rusak, timeout, kredensial salah, reconnect, sertifikat tidak valid, duplicate delivery, penanganan payload biner dan cleanup.
 8. [ ] Terbitkan panduan CLI/API testing/integrasi broker, contoh plugin, matriks kompatibilitas versi minimal Indonesiaku serta review dependency native.
 
-**Contoh API ilustratif (belum tersedia):** \`cli.Perintah("siswa")\`, \`uji_http.klien(app)\`, \`mqtt.sambung("localhost", 1883)\`.
+**Contoh API ilustratif (belum tersedia):** `cli.Perintah("siswa")`, `uji_http.klien(app)`, `mqtt.sambung("localhost", 1883)`.
 
 **Gerbang rilis:** CLI/test client dapat digunakan dari aplikasi contoh, fungsi konektor yang diumumkan lulus tes lokal, TLS dan autentikasi aman, dan library tambahan memiliki versi serta dokumentasi yang tidak mengunci semua pengguna ke broker tertentu.
 
@@ -1125,18 +1165,18 @@ kalkulator-indonesiaku/
 1. [ ] **Sistem administrasi mahasiswa SSR:** login/logout, session dan CSRF, CRUD siswa, database SQL dengan query berparameter, validasi form, upload file, template auto-escaping, authorization serta tes browser/HTTP. Fokus dependensi Fase 10–13, 18, 23.
 2. [ ] **REST API server:** CRUD JSON, autentikasi, paging/filter, PostgreSQL/MySQL/SQLite sesuai skenario, logging terstruktur, validasi input, tes integrasi dan beban, graceful shutdown. Fokus dependensi Fase 10–11, 13, 20–22.
 3. [ ] **Otomasi server:** copy/backup arsip, download HTTPS dengan verifikasi hash, SSH/SFTP dengan host-key verification, scheduler, enkripsi data, retry/error recovery dan observability. Fokus Fase 17–18, 21–23.
-4. [ ] Tulis \`docs/RENCANA_FITUR/validasi_aplikasi_nyata.md\` dan matriks gap untuk setiap aplikasi: **tersedia**, **sebagian**, **belum**, **bug**, **tidak didukung**. Setiap gap harus mempunyai tes reproduksi dan owner/issue, bukan hanya uraian aspiratif.
+4. [ ] Tulis `docs/RENCANA_FITUR/validasi_aplikasi_nyata.md` dan matriks gap untuk setiap aplikasi: **tersedia**, **sebagian**, **belum**, **bug**, **tidak didukung**. Setiap gap harus mempunyai tes reproduksi dan owner/issue, bukan hanya uraian aspiratif.
 5. [ ] Tetapkan acceptance tests: semua alur penting selesai tanpa runtime Python/PHP/Node.js, kecuali browser asset/tooling opsional yang terdokumentasi; tidak ada bypass keamanan; deployment dilakukan pada lingkungan terisolasi dengan rollback dan backup; seluruh contoh dan CI lulus.
 6. [ ] Ukur resource CPU/RAM, latensi dan failure rate, error message, pengalaman onboarding developer, dokumentasi, packaging, observability dan kompatibilitas lintas platform. Publikasikan batas hasil serta faktor eksternal.
-7. [ ] Gunakan hasil validasi untuk **memperbaiki atau menunda fitur**; jangan menambah fase sekadar meniru semua API bahasa lain. Bila API/semantik perlu breaking change, rencanakan deprecation/migration guide dan pertimbangkan \`v2.0.0\` sesuai kebijakan SemVer.
+7. [ ] Gunakan hasil validasi untuk **memperbaiki atau menunda fitur**; jangan menambah fase sekadar meniru semua API bahasa lain. Bila API/semantik perlu breaking change, rencanakan deprecation/migration guide dan pertimbangkan `v2.0.0` sesuai kebijakan SemVer.
 
 **Gate kualitas:** milestone dianggap selesai hanya bila ketiga aplikasi dapat dibangun, diuji, dan didemonstrasikan dengan source, instruksi reproduksi serta hasil terukur. Milestone ini bukan jaminan keamanan absolut maupun sertifikasi keamanan.
 
 ### Pengendalian ruang lingkup setelah Fase 25
 
 - **Bekukan sementara penambahan fase baru** sampai ada bukti kebutuhan dari implementasi dan tiga aplikasi validasi. Prioritaskan menyelesaikan fase yang sudah ada, memperbaiki regresi, dokumentasi, keamanan dan kompatibilitas.
-- Fitur yang bisa dibuat sebagai library \`.idk\` tidak perlu diubah menjadi builtin/keyword, kecuali benar-benar memerlukan primitive VM/native. Dependensi eksternal seperti MQTT/RabbitMQ adalah **opsional**.
-- **Aturan rilis:** target \`v1.18.0\`, \`v1.19.0\`, \`v1.20.0\` hanyalah usulan minor per fase, bukan janji tanggal atau batas versi. Alpha/beta/RC dipakai sesuai kesiapan; patch keamanan boleh diterbitkan segera tanpa menunggu fase; major hanya untuk breaking change yang terencana.
+- Fitur yang bisa dibuat sebagai library `.idk` tidak perlu diubah menjadi builtin/keyword, kecuali benar-benar memerlukan primitive VM/native. Dependensi eksternal seperti MQTT/RabbitMQ adalah **opsional**.
+- **Aturan rilis:** target `v1.18.0`, `v1.19.0`, `v1.20.0` hanyalah usulan minor per fase, bukan janji tanggal atau batas versi. Alpha/beta/RC dipakai sesuai kesiapan; patch keamanan boleh diterbitkan segera tanpa menunggu fase; major hanya untuk breaking change yang terencana.
 - **Jangan mengklaim fase selesai** bila sebagian subfitur/tes/doc tertunda. Jika scope dibagi menjadi beberapa rilis minor atau ada fitur yang lebih dulu selesai, sinkronkan status, target versi dan CHANGELOG sesuai kenyataan.
 
 ### Checklist wajib untuk setiap fase (panduan untuk AI coding agent)
