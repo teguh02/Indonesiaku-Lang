@@ -1,0 +1,126 @@
+# Autentikasi, hashing sandi, dan otorisasi peran (WEB-06).
+#
+# Hash tidak pernah dicetak nilainya: garamnya acak, keluaran golden harus
+# tetap sama setiap kali dijalankan. Yang diperiksa bentuk dan perilakunya.
+#
+# Iterasi sengaja KECIL di contoh ini (1000, bukan 600000 bawaan) supaya tes
+# cepat. Jangan tiru angka itu di aplikasi sungguhan.
+impor web
+impor "pustaka/teks.idk"
+
+variabel UJI = 1000
+
+fungsi lapor(label, nilai) {
+    cetak(label + ": " + ke_teks(nilai))
+}
+
+fungsi bagian_hash() {
+    cetak("== bentuk hash ==")
+    variabel h = web.hash_sandi("rahasia123", UJI)
+    variabel bagian = teks_pisah(h, "$")
+    lapor("jumlah bagian ", panjang(bagian))
+    lapor("algoritme     ", bagian[0] == "pbkdf2_sha256")
+    lapor("iterasi       ", bagian[1] == ke_teks(UJI))
+    lapor("panjang garam ", panjang(bagian[2]))
+    lapor("panjang kunci ", panjang(bagian[3]))
+
+    cetak("")
+    cetak("== garam acak ==")
+    # Dua hash dari sandi yang SAMA harus berbeda. Tanpa garam acak, satu tabel
+    # pelangi memecahkan seluruh kolom sekaligus dan pengguna bersandi sama
+    # langsung terlihat.
+    lapor("hash berbeda  ", web.hash_sandi("sama", UJI) != web.hash_sandi("sama", UJI))
+}
+
+fungsi bagian_periksa() {
+    cetak("")
+    cetak("== verifikasi ==")
+    variabel h = web.hash_sandi("rahasia123", UJI)
+    lapor("sandi benar   ", web.periksa_sandi("rahasia123", h))
+    lapor("sandi salah   ", web.periksa_sandi("rahasia124", h))
+    lapor("sandi kosong  ", web.periksa_sandi("", h))
+
+    # Sandi yang benar HANYA di awal. Tanpa kasus ini, perbandingan yang cuma
+    # memeriksa beberapa karakter pertama akan lolos semua tes lain.
+    lapor("awalan saja   ", web.periksa_sandi("rahasia12", h))
+
+    cetak("")
+    cetak("== hash rusak ditolak tanpa galat ==")
+    # Isi basis data tidak boleh menjatuhkan server.
+    lapor("teks asing    ", web.periksa_sandi("x", "bukan hash"))
+    lapor("bagian kurang ", web.periksa_sandi("x", "pbkdf2_sha256$1000$abc"))
+    lapor("algoritme lain", web.periksa_sandi("x", "md5$1000$aa$bb"))
+    lapor("iterasi bukan angka", web.periksa_sandi("x", "pbkdf2_sha256$xx$aa$bb"))
+    lapor("iterasi nol   ", web.periksa_sandi("x", "pbkdf2_sha256$0$aa$bb"))
+    lapor("hash kosong   ", web.periksa_sandi("x", kosong))
+}
+
+fungsi bagian_naik() {
+    cetak("")
+    cetak("== menaikkan biaya bertahap ==")
+    variabel lama = web.hash_sandi("rahasia", UJI)
+    lapor("perlu naik    ", web.perlu_hash_ulang(lama, UJI * 2))
+    lapor("sudah cukup   ", web.perlu_hash_ulang(lama, UJI))
+    lapor("hash rusak    ", web.perlu_hash_ulang("rusak", UJI))
+
+    # Hash lama tetap bisa diverifikasi memakai parameter miliknya sendiri,
+    # walau standar sekarang lebih tinggi. Inilah gunanya menyimpan iterasi
+    # di dalam hash.
+    lapor("lama tetap sah", web.periksa_sandi("rahasia", lama))
+}
+
+fungsi bagian_peran() {
+    cetak("")
+    cetak("== otorisasi peran ==")
+    variabel toko = web.TokoSesi()
+    variabel penjaga = web.wajib_peran(toko, ["admin"])
+
+    variabel sid_admin = toko.buat({"pengguna": "ani", "peran": "admin"})
+    variabel sid_biasa = toko.buat({"pengguna": "budi", "peran": "pengguna"})
+
+    fungsi permintaan(sid) {
+        kembalikan {"metode": "GET", "header": {"cookie": "sesi=" + sid}}
+    }
+
+    lapor("admin lolos   ", penjaga(permintaan(sid_admin)) == kosong)
+
+    # 401 vs 403 dibedakan: 401 berarti belum masuk, 403 berarti sudah masuk
+    # tapi tidak berhak. Tindakan kliennya berbeda.
+    lapor("peran biasa   ", teks_berisi(penjaga(permintaan(sid_biasa)), "403"))
+    lapor("tanpa sesi    ", teks_berisi(penjaga({"metode": "GET", "header": {}}), "401"))
+    lapor("sesi mati     ", teks_berisi(penjaga(permintaan("tidakada")), "401"))
+
+    variabel tanpa_peran = toko.buat({"pengguna": "cici"})
+    lapor("sesi tanpa peran", teks_berisi(penjaga(permintaan(tanpa_peran)), "403"))
+}
+
+fungsi bagian_pembatas() {
+    cetak("")
+    cetak("== pembatas percobaan ==")
+    variabel batas = web.PembatasPercobaan(3, 300)
+
+    lapor("awal bebas    ", batas.terkunci("ani"))
+    batas.gagal("ani")
+    batas.gagal("ani")
+    lapor("2 gagal bebas ", batas.terkunci("ani"))
+    batas.gagal("ani")
+    lapor("3 gagal kunci ", batas.terkunci("ani"))
+
+    # Kunci lain tidak ikut terkunci.
+    lapor("pengguna lain ", batas.terkunci("budi"))
+
+    # Login berhasil mengosongkan hitungan.
+    batas.berhasil("ani")
+    lapor("sesudah sukses", batas.terkunci("ani"))
+
+    # Jeda 0 detik: kuncian langsung kedaluwarsa.
+    variabel cepat = web.PembatasPercobaan(1, 0 - 1)
+    cepat.gagal("x")
+    lapor("jeda lewat    ", cepat.terkunci("x"))
+}
+
+bagian_hash()
+bagian_periksa()
+bagian_naik()
+bagian_peran()
+bagian_pembatas()

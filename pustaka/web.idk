@@ -1198,3 +1198,149 @@ fungsi wajib_csrf(toko) {
         kembalikan teks(403, "token CSRF tidak sah")
     }
 }
+
+# --- autentikasi dan otorisasi (WEB-06) --------------------------------------
+
+# Rekomendasi OWASP untuk PBKDF2-HMAC-SHA256. Terukur di mesin pengembangan:
+# 100k = 0,14 s; 210k = 0,32 s; 600k = 0,79 s.
+#
+# Biaya itu DISENGAJA -- itulah pertahanannya terhadap pemecahan offline --
+# tetapi server ini melayani satu permintaan pada satu waktu, jadi setiap login
+# memblokir server ~0,8 detik. Turunkan lewat argumen `iterasi` bila beban
+# menuntut, dengan sadar bahwa itu memperlemah pertahanan; jawaban sebenarnya
+# adalah pekerja paralel (Fase 20).
+variabel ITERASI_SANDI = 600000
+
+# hash_sandi(sandi, iterasi) -> "pbkdf2_sha256$<iterasi>$<garam>$<turunan>"
+#
+# Seluruh parameter ikut disimpan DI DALAM hash, bukan di konfigurasi: ketika
+# iterasi dinaikkan tahun depan, hash lama tetap terverifikasi dengan
+# parameternya sendiri. Tanpa itu, menaikkan iterasi mengunci semua pengguna
+# lama di luar.
+fungsi hash_sandi(sandi, iterasi = kosong) {
+    variabel n = iterasi
+    jika n == kosong {
+        n = ITERASI_SANDI
+    }
+    # Garam acak per sandi: membuat tabel pelangi tak berguna, dan menyembunyikan
+    # dua pengguna yang kebetulan bersandi sama.
+    variabel garam = _web_bita_ke_heks(acak_bita(16))
+    variabel turunan = _web_bita_ke_heks(pbkdf2_sha256(sandi, garam, n, 32))
+    kembalikan "pbkdf2_sha256$" + ke_teks(n) + "$" + garam + "$" + turunan
+}
+
+# periksa_sandi(sandi, hash) -> benar bila cocok.
+#
+# Hash rusak atau berformat asing menghasilkan `salah`, bukan galat: isi basis
+# data tidak boleh menjatuhkan server.
+fungsi periksa_sandi(sandi, hash) {
+    jika hash == kosong {
+        kembalikan salah
+    }
+    variabel bagian = teks_pisah(hash, "$")
+    jika panjang(bagian) != 4 {
+        kembalikan salah
+    }
+    jika bagian[0] != "pbkdf2_sha256" {
+        kembalikan salah
+    }
+    variabel n = 0
+    coba {
+        n = ke_bulat(bagian[1])
+    } kecuali e {
+        kembalikan salah
+    }
+    jika n < 1 {
+        kembalikan salah
+    }
+    variabel turunan = _web_bita_ke_heks(pbkdf2_sha256(sandi, bagian[2], n, 32))
+    kembalikan _web_banding_tetap(turunan, bagian[3])
+}
+
+# perlu_hash_ulang(hash, iterasi) -> benar bila hash dibuat lebih murah dari
+# standar sekarang.
+#
+# Dipanggil SESUDAH login berhasil, selagi sandi mentah masih di tangan, untuk
+# menaikkan biaya bertahap tanpa reset massal.
+fungsi perlu_hash_ulang(hash, iterasi = kosong) {
+    variabel n = iterasi
+    jika n == kosong {
+        n = ITERASI_SANDI
+    }
+    variabel bagian = teks_pisah(hash, "$")
+    jika panjang(bagian) != 4 atau bagian[0] != "pbkdf2_sha256" {
+        kembalikan benar
+    }
+    coba {
+        kembalikan ke_bulat(bagian[1]) < n
+    } kecuali e {
+        kembalikan benar
+    }
+}
+
+# wajib_peran(toko, daftar) -> penjaga; kosong bila boleh lanjut.
+#
+# 401 dan 403 sengaja dibedakan: 401 berarti "belum masuk" (klien harus login),
+# 403 berarti "sudah masuk tapi tidak berhak" (mencoba lagi tidak menolong).
+fungsi wajib_peran(toko, daftar) {
+    kembalikan fungsi(req) {
+        variabel kuki = baca_kuki(req)
+        jika "sesi" tidak dalam kuki {
+            kembalikan teks(401, "perlu masuk")
+        }
+        variabel isi = toko.ambil(kuki["sesi"])
+        jika isi == kosong {
+            kembalikan teks(401, "perlu masuk")
+        }
+        jika "peran" tidak dalam isi {
+            kembalikan teks(403, "tidak berhak")
+        }
+        jika isi["peran"] dalam daftar {
+            kembalikan kosong
+        }
+        kembalikan teks(403, "tidak berhak")
+    }
+}
+
+# PembatasPercobaan: melambatkan tebakan sandi beruntun.
+#
+# Kunci diserahkan pemanggil (nama pengguna, IP, atau gabungan) karena hanya
+# aplikasi yang tahu mana yang bermakna di belakang proxy.
+kelas PembatasPercobaan {
+    init(maks = 5, jeda = 300) {
+        diri.maks = maks
+        diri.jeda = jeda
+        diri.catatan = {}      # kunci -> [jumlah, waktu gagal terakhir]
+    }
+
+    gagal(kunci) {
+        variabel jumlah = 1
+        jika kunci dalam diri.catatan {
+            jumlah = diri.catatan[kunci][0] + 1
+        }
+        diri.catatan[kunci] = [jumlah, waktu()]
+    }
+
+    berhasil(kunci) {
+        jika kunci dalam diri.catatan {
+            diri.catatan.hapus_kunci(kunci)
+        }
+    }
+
+    terkunci(kunci) {
+        jika kunci tidak dalam diri.catatan {
+            kembalikan salah
+        }
+        variabel baris = diri.catatan[kunci]
+        jika baris[0] < diri.maks {
+            kembalikan salah
+        }
+        # Jeda dihitung sejak kegagalan TERAKHIR, jadi penyerang yang terus
+        # mencoba tidak pernah lolos dari kuncian.
+        jika waktu() - baris[1] > diri.jeda {
+            diri.catatan.hapus_kunci(kunci)
+            kembalikan salah
+        }
+        kembalikan benar
+    }
+}

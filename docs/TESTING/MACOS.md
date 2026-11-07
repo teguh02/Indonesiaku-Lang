@@ -1229,6 +1229,7 @@ menguji biner rilis jalankan bagian golden-nya dengan biner yang disalin
 | OTO-09 | `http_pengalihan_server.sh` | Tanpa `GAGAL` |
 | OTO-10 | `web_kuki_sesi.sh` | Semua baris `ok`, termasuk `nilai berbahaya ter-encode` dan `Content-Length byte` |
 | OTO-11 | `web_csrf.sh` | Semua baris `ok`, terutama `serangan CSRF ditolak` (403) dan `token sesi lain ditolak` |
+| OTO-12 | `web_auth.sh` | Semua baris `ok`, termasuk `budi ditolak /admin` (403), `tanpa sesi -> 401` dan `terkunci -> 429` |
 
 ## 6. Uji khusus macOS
 

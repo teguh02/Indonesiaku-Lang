@@ -9,6 +9,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **Autentikasi, hashing sandi, dan peran (WEB-06).** `web.hash_sandi()` dan
+  `web.periksa_sandi()` memakai PBKDF2-HMAC-SHA256 dengan **600.000 iterasi**
+  (rekomendasi OWASP) dan garam 16 byte per sandi; format hash
+  `pbkdf2_sha256$<iterasi>$<garam>$<turunan>` menyimpan parameternya sendiri
+  sehingga iterasi dapat dinaikkan tanpa mengunci pengguna lama.
+  `web.perlu_hash_ulang()` menandai hash yang perlu diperkuat saat login
+  berikutnya. `web.wajib_peran()` membedakan **401** (belum masuk) dari
+  **403** (tidak berhak). `web.PembatasPercobaan` membatasi tebakan beruntun.
 - **Proteksi CSRF (WEB-05, sebagian).** `web.token_csrf()` membuat token
   per-sesi dan menyimpannya di dalam data sesi; `web.periksa_csrf()`
   memvalidasi permintaan yang mengubah keadaan (`GET`/`HEAD`/`OPTIONS` lolos
@@ -27,6 +35,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Keamanan
 
+- Sandi tidak pernah disimpan apa adanya maupun di-hash dengan fungsi cepat:
+  PBKDF2 ber-600k iterasi membuat pemecahan offline mahal, dan garam acak
+  per sandi membatalkan tabel pelangi sekaligus menyembunyikan dua pengguna
+  yang bersandi sama.
+- Hash sandi dibandingkan dengan waktu-tetap, sama seperti token CSRF.
+- `wajib_peran()` memisahkan 401 dari 403 agar klien tahu apakah perlu masuk
+  atau memang tidak berhak.
 - Token CSRF dibandingkan dengan **waktu-tetap**, bukan `==`: `==` berhenti di
   karakter pertama yang berbeda sehingga lama perbandingan membocorkan berapa
   banyak awalan yang sudah benar, dan token dapat ditebak karakter demi

@@ -1460,6 +1460,90 @@ lintas situs, tetapi nilainya bisa dilonggarkan jadi `SameSite=None` untuk
 kebutuhan embed, tidak melindungi dari subdomain yang dikuasai penyerang, dan
 perilakunya berbeda di peramban lama. Pakai keduanya.
 
+#### Sandi, login, dan peran
+
+**Jangan pernah menyimpan sandi apa adanya, dan jangan memakai `sha256()`
+untuk itu.** SHA-256 dirancang *cepat*: GPU modern menghitung miliaran per
+detik, jadi basis data yang bocor dapat dipecahkan dengan daftar kata. Tanpa
+garam, satu tabel pelangi memecahkan seluruh kolom sekaligus dan dua pengguna
+bersandi sama langsung terlihat karena hash-nya identik.
+
+```indonesiaku-takjalan
+variabel hash = web.hash_sandi("rahasia123")
+
+jika web.periksa_sandi(sandi_dari_formulir, hash) {
+    variabel sid = toko.buat({"pengguna": nama, "peran": "admin"})
+}
+```
+
+`web.hash_sandi(sandi, iterasi)` mengembalikan satu teks berisi **seluruh**
+parameter:
+
+```
+pbkdf2_sha256$600000$<garam heks>$<turunan heks>
+```
+
+Algoritme dan jumlah iterasi ikut tersimpan di dalam hash, bukan di
+konfigurasi. Itu disengaja: ketika iterasi dinaikkan nanti, hash lama tetap
+dapat diverifikasi dengan parameternya sendiri — tanpa itu, menaikkan iterasi
+akan mengunci semua pengguna lama di luar. Garam 16 byte diambil dari
+`acak_bita()` dan berbeda untuk setiap sandi.
+
+Bawaannya **600.000 iterasi**, mengikuti rekomendasi OWASP untuk
+PBKDF2-HMAC-SHA256. Terukur: 100k ≈ 0,14 s, 210k ≈ 0,32 s, 600k ≈ 0,79 s.
+
+> **Biaya itu disengaja — itulah pertahanannya.** Tapi server ini melayani
+> satu permintaan pada satu waktu, jadi **setiap login memblokir server
+> ~0,8 detik**. Turunkan lewat argumen `iterasi` bila beban menuntut, sadar
+> bahwa itu memperlemah pertahanan terhadap pemecahan offline.
+
+`web.perlu_hash_ulang(hash)` → `benar` bila hash dibuat dengan iterasi lebih
+rendah dari standar sekarang. Panggil **sesudah** login berhasil, selagi sandi
+mentah masih di tangan, lalu simpan hash baru — biaya naik bertahap tanpa
+reset massal.
+
+`web.wajib_peran(toko, ["admin"])` mengembalikan penjaga seperti
+`wajib_csrf`:
+
+| Keadaan | Jawaban |
+|---|---|
+| belum masuk / sesi mati | **401** `perlu masuk` |
+| sudah masuk, peran tidak termasuk | **403** `tidak berhak` |
+| berhak | `kosong` — lanjutkan |
+
+401 dan 403 sengaja dibedakan: 401 berarti "masuk dulu", 403 berarti
+"percuma mencoba lagi".
+
+`web.PembatasPercobaan(maks, jeda)` melambatkan tebakan beruntun:
+
+```indonesiaku-takjalan
+variabel batas = web.PembatasPercobaan(5, 300)
+
+jika batas.terkunci(nama) {
+    kembalikan web.teks(429, "terlalu banyak percobaan")
+}
+# ... verifikasi ...
+batas.gagal(nama)      # saat salah
+batas.berhasil(nama)   # saat benar, hitungan dikosongkan
+```
+
+**Periksa `terkunci()` sebelum memanggil `periksa_sandi()`**, bukan sesudah:
+kalau tidak, penyerang tetap memaksa server menghitung PBKDF2 pada setiap
+tebakan. Jeda dihitung sejak kegagalan terakhir, jadi yang terus mencoba tidak
+pernah lolos dari kuncian. Hitungan ada di memori dan hilang saat server
+dimulai ulang.
+
+Dua hal yang mudah terlewat saat menulis halaman login:
+
+- **Samakan pesan** untuk "nama tidak dikenal" dan "sandi salah". Pesan yang
+  berbeda memberi tahu penyerang nama mana yang benar-benar terdaftar.
+- **Panggil `toko.putar(sid)` sesudah login berhasil** untuk menutup *session
+  fixation*.
+
+Argon2id belum tersedia: ia menuntut pustaka C pihak ketiga, sedangkan proyek
+ini hanya bergantung pada libc dan mbedTLS. PBKDF2 dengan 600k iterasi adalah
+pilihan sadar, bukan kelalaian.
+
 
 Digunakan oleh `examples/todo_server.idk` — REST API Todo-list berbasis HTTP
 di atas soket TCP.

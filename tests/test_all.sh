@@ -429,6 +429,17 @@ if [ -f tests/web_csrf.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Autentikasi dan otorisasi (WEB-06): login, peran, pembatas percobaan.
+if [ -f tests/web_auth.sh ]; then
+    echo ""
+    if bash tests/web_auth.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES web-auth"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Tag versi (image playground, LABEL rilis, cache-buster website) harus
 # mengikuti INDK_VERSION; yang tertinggal tidak pernah gagal sendiri.
 if [ -f tests/versi_konsisten.sh ]; then

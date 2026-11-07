@@ -1214,7 +1214,7 @@ powershell -ExecutionPolicy Bypass -File $env:TEMP\uji-v140\tests\test_todo_serv
 Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 `cp indk.exe indk`: `test_lint.sh`, `test_uji.sh`, `test_format.sh`,
 `test_panduan.sh`, `test_klien_http.sh`, `web_router_server.sh`,
-`web_badan_server.sh`, `http_pengalihan_server.sh`, `web_kuki_sesi.sh`, `web_csrf.sh`.
+`web_badan_server.sh`, `http_pengalihan_server.sh`, `web_kuki_sesi.sh`, `web_csrf.sh`, `web_auth.sh`.
 
 | ID | Suite | Hasil yang diharapkan |
 |---|---|---|
@@ -1229,6 +1229,7 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | OTO-09 | `http_pengalihan_server.sh` | Tanpa `GAGAL` |
 | OTO-10 | `web_kuki_sesi.sh` | Semua baris `ok`, termasuk `nilai berbahaya ter-encode` dan `Content-Length byte` |
 | OTO-11 | `web_csrf.sh` | Semua baris `ok`, terutama `serangan CSRF ditolak` (403) dan `token sesi lain ditolak` |
+| OTO-12 | `web_auth.sh` | Semua baris `ok`, termasuk `budi ditolak /admin` (403), `tanpa sesi -> 401` dan `terkunci -> 429` |
 
 ## 6. Uji khusus Windows
 
