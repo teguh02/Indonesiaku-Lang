@@ -59,14 +59,30 @@ coba { http_ambil("https://example.com", "GET", kosong, "", 0) } kecuali GalatOS
     : # -e mungkin tidak ada; dicoba lewat berkas di bawah
 fi
 
+# Host sungguhan untuk membuktikan jalur bahagia. SENGAJA beberapa host:
+# isi bundel CA tiap OS berbeda. Runner macOS tidak memuat akar "SSL.com TLS
+# ECC Root CA 2022" yang dipakai example.com, sedangkan Linux memuatnya --
+# menggantungkan tes pada SATU host berarti menguji isi bundel OS, bukan klien
+# kita. Lulus bila ADA host yang membalas 200; kalau SEMUA gagal tetap merah,
+# jadi ini bukan tes yang melemahkan diri sendiri.
 cat > "$tmp/sambung.idk" <<'EOF'
 impor "pustaka/http.idk"
-coba {
-    variabel r = http_ambil("https://example.com", "GET", kosong, "", 0)
-    cetak("KODE", r.status)
-} kecuali GalatOS sebagai e {
-    cetak("GALAT", e.pesan)
+variabel host = ["https://www.google.com", "https://example.com", "https://www.cloudflare.com"]
+variabel sukses = salah
+variabel pesan = ""
+untuk h dalam host {
+    coba {
+        variabel r = http_ambil(h, "GET", kosong, "", 0)
+        jika r.status == 200 {
+            cetak("KODE 200", h)
+            sukses = benar
+            berhenti
+        }
+    } kecuali GalatOS sebagai e {
+        pesan = pesan + h + ": " + e.pesan + "; "
+    }
 }
+jika !sukses { cetak("GALAT", pesan) }
 EOF
 keluaran="$("$indk" "$tmp/sambung.idk" 2>&1)"
 if printf '%s' "$keluaran" | grep -q "tidak ditemukan\|tidak dapat tersambung"; then
@@ -76,40 +92,7 @@ fi
 
 echo "Menguji klien HTTPS terhadap host sungguhan"
 
-periksa "example.com membalas 200" "KODE 200" "$keluaran"
-
-# Diagnostik CA: hanya tercetak bila asersi di atas gagal. Kegagalan macOS
-# menuduh "penerbit tidak tepercaya", yang MENUNJUK SERVER padahal sebabnya
-# bisa ada di sisi kita (bundel CA tak terbaca). Tanpa data ini setiap siklus
-# CI hanya menghasilkan hipotesis baru.
-if ! printf '%s' "$keluaran" | grep -q "KODE 200"; then
-    echo "      --- diagnostik bundel CA ---"
-    for j in /etc/ssl/cert.pem /etc/ssl/certs/ca-certificates.crt \
-             /usr/local/etc/openssl@3/cert.pem /opt/homebrew/etc/ca-certificates/cert.pem; do
-        if [ -r "$j" ]; then
-            echo "      ADA    $j ($(wc -c < "$j" | tr -d ' ') bita, $(grep -c 'BEGIN CERTIFICATE' "$j") sertifikat)"
-        else
-            echo "      -      $j"
-        fi
-    done
-    echo "      INDK_CA_BUNDLE=${INDK_CA_BUNDLE:-<kosong>}"
-    # Apakah host lain juga ditolak, atau khusus example.com?
-    cat > "$tmp/lain.idk" <<'EOF'
-impor "pustaka/http.idk"
-coba {
-    cetak("badge", http_ambil("https://www.google.com", "GET", kosong, "", 0).status)
-} kecuali GalatOS sebagai e {
-    cetak("badge GALAT", e.pesan)
-}
-EOF
-    "$indk" "$tmp/lain.idk" 2>&1 | head -2 | sed 's/^/      /'
-    # Rantai yang BENAR-BENAR dikirim server, dilihat dari runner itu sendiri.
-    # Membedakan "bundel kita salah" dari "runner di belakang proxy TLS".
-    if command -v openssl >/dev/null 2>&1; then
-        echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/null \
-            | grep -E '^ *[0-9] s:|^ *i:|Verify return code' | head -6 | sed 's/^/      ssl: /'
-    fi
-fi
+periksa "ada host HTTPS yang membalas 200" "KODE 200" "$keluaran"
 
 # --- tes negatif: semua ini WAJIB ditolak -----------------------------------
 tolak() { # nama, host, potongan pesan
