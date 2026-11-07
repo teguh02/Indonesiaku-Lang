@@ -61,7 +61,12 @@ README ini sengaja dibuat ringkas.
 
 Ambil paket untuk sistem operasi Anda di
 **[halaman rilis](https://github.com/teguh02/Indonesiaku-Lang/releases/latest)**:
-`indk-windows.zip`, `indk-linux.tar.gz`, atau `indk-macos.tar.gz`.
+
+| Sistem | Berkas |
+|---|---|
+| Linux | `indonesiaku_<versi>_amd64.deb` atau `indk-linux.tar.gz` |
+| Windows | `Indonesiaku-Setup-<versi>.exe` atau `indk-windows.zip` |
+| macOS | `indk-macos.tar.gz` |
 
 Setiap paket sudah berisi `indk`, pustaka standar, dan contoh program — cukup
 diekstrak lalu dijalankan. Langkah rincinya ada di
@@ -94,7 +99,70 @@ indk -v             # versi
 
 ---
 
-## ✨ Fitur (v1.0.0)
+## ⬆️ Memperbarui ke Versi Baru
+
+Cek dulu apakah ada versi lebih baru:
+
+```bash
+indk --periksa-pembaruan
+```
+
+Perintah ini membandingkan versi terpasang dengan rilis terbaru di GitHub lalu
+mencetak perintah pemutakhiran yang sesuai. Ia **hanya berjalan bila diminta** —
+menjalankan skrip biasa tidak pernah menghubungi jaringan.
+
+### Linux (paket `.deb`)
+
+```bash
+sudo dpkg -i indonesiaku_<versi>_amd64.deb
+```
+
+**Tidak perlu** `dpkg -r` lebih dulu: paket baru menimpa yang lama beserta
+`pustaka/`-nya.
+
+### Linux/macOS (arsip `.tar.gz`)
+
+```bash
+tar xzf indk-linux.tar.gz
+sudo install -m755 indk-linux/indk /usr/local/bin/indk
+sudo mkdir -p /usr/local/share/indonesiaku
+sudo cp -r indk-linux/pustaka /usr/local/share/indonesiaku/
+```
+
+Perbarui **binari dan `pustaka/` sekaligus**. Pustaka standar ikut berubah
+antarversi, dan `indk` baru dengan `pustaka/` lama gagal pada `impor web`.
+Tata letak folder yang dikenali ada di
+[02_INSTALASI](website/panduan/02_INSTALASI.md); untuk lokasi lain, arahkan
+`INDK_PATH` ke folder `pustaka/`.
+
+### Windows
+
+Jalankan `Indonesiaku-Setup-<versi>.exe`; installer menimpa pemasangan lama.
+Untuk pengguna `.zip`, ganti seluruh isi foldernya.
+
+### Docker
+
+```bash
+docker pull teguh02/indonesiaku:latest
+```
+
+Gunakan tag versi (`teguh02/indonesiaku:1.5.0`) bila ingin menyematkan versi
+tertentu di CI.
+
+### Yang perlu diperhatikan
+
+- **Program lama tetap jalan.** Sejak v1.0.0 berlaku kebijakan tidak ada
+  perubahan yang memutus kompatibilitas sampai v2.0.0.
+- **Tidak ada pembaruan otomatis.** Mengganti biner yang sedang berjalan
+  memerlukan hak root dan verifikasi tanda tangan, jadi pemutakhiran selalu
+  dilakukan manual.
+- **Pengguna sebelum v1.4.0** belum memiliki `--periksa-pembaruan`; periksa
+  halaman rilis secara manual satu kali.
+- Perubahan tiap versi tercatat di [CHANGELOG.md](CHANGELOG.md).
+
+---
+
+## ✨ Fitur
 
 Mulai rilis 1.0 berlaku **kebijakan stabilitas**: tidak ada perubahan yang
 merusak kompatibilitas sampai 2.0.
@@ -144,11 +212,11 @@ Selebihnya ada di folder [`examples/`](examples/) — sekaligus dipakai sebagai
 
 ## 🗺️ Rencana Selanjutnya
 
-Rilis terbaru adalah v1.4.0. Fase 0–8 telah dikerjakan dan Fase 9 (LSP untuk
-ekstensi VS Code) selesai. Fase 10 dan 11 baru sebagian: SQLite lengkap serta
-modul server `web` sudah jalan, sedangkan driver MySQL/PostgreSQL dan
-HTTPS/TLS belum. Fase selanjutnya dan status detail tiap fitur tercatat di
-roadmap resmi.
+Rilis terbaru adalah **v1.5.0**. Fase 0–7 selesai, Fase 8 sebagian secara
+sengaja (tersisa GUI dan AOT), Fase 9 (LSP untuk ekstensi VS Code) selesai di
+v1.4.0, dan Fase 10–12 terbit bersama di v1.5.0: driver MySQL/PostgreSQL,
+HTTPS/TLS, server HTTP modular, serta templat HTML server-side sudah dapat
+dipakai. Fase 13 (keamanan aplikasi web: sesi, login, CSRF) sedang berjalan.
 
 Status per fitur ada di **[docs/ROADMAP.md](docs/ROADMAP.md)** — itulah
 satu-satunya sumber status yang resmi.
