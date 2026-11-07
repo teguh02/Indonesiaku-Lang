@@ -774,7 +774,13 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 ### Fase 13 — Keamanan dan fitur aplikasi web
 
-**Tujuan:** membangun fondasi aplikasi bisnis yang membutuhkan input pengguna, login, session dan otorisasi. **Status:** ⬜ belum. **Pemetaan:** WEB-04, WEB-05, WEB-06.
+**Tujuan:** membangun fondasi aplikasi bisnis yang membutuhkan input pengguna, login, session dan otorisasi. **Status:** ⬜ belum (prasyarat sumber acak sudah ditutup). **Pemetaan:** WEB-04, WEB-05, WEB-06.
+
+**Prasyarat yang sudah dikerjakan:** builtin `acak_bita()` (CSPRNG). Sebelum ini
+satu-satunya sumber acak adalah `rand()` + `srand(time(NULL))`, yang membuat ID
+sesi dapat ditebak dari header `Date` — membangun session store di atasnya akan
+menghasilkan fitur yang tampak benar dan sepenuhnya tidak aman. Rencananya di
+`docs/RENCANA_FITUR/selesai/acak_aman.md`, dijaga `tests/acak_aman.sh`.
 
 **Rekomendasi rilis fase: `v1.8.0` (minor), kandidat `v1.8.0-rc.1`; patch `v1.8.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.\n\n**Gerbang rilis:** Session, cookie, CSRF, autentikasi dan otorisasi mencapai acceptance tests serta audit keamanan dasar, tanpa klaim aman produksi absolut.\n\n
 **Langkah pengembangan:**

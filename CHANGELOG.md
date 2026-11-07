@@ -9,6 +9,24 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **`acak_bita(n)` — sumber acak kriptografis** (prasyarat Fase 13). Satu-satunya
+  sumber acak sebelumnya, `acak()`/`acak_bulat()`, memakai `rand()` yang disemai
+  `srand(time(NULL))`, sehingga **seluruh barisannya dapat direproduksi oleh
+  siapa pun yang menebak detik start proses**. Dibuktikan, bukan diduga: tiga
+  proses `indk` pada detik yang sama mengembalikan `440825032` yang sama persis,
+  dan sebuah program C yang hanya diberi `time()` mereproduksi keluaran `indk`
+  secara identik. ID sesi yang dibangun dari `acak_bulat()` dapat ditebak dari
+  header `Date` sebuah respons HTTP.
+
+  `acak_bita(n)` mengembalikan daftar `n` bita `0..255` dari CTR-DRBG mbedTLS
+  yang sudah di-vendor untuk TLS — tanpa berkas `.c` baru dan tanpa jalur
+  per-OS tulisan tangan. Bila sumber acak sistem gagal dibaca ia **menaikkan
+  galat, tidak pernah diam-diam jatuh ke `rand()`**.
+
+  `acak()` dan `acak_bulat()` sengaja **tidak diubah**: pemisahannya mengikuti
+  `random` vs `secrets` di Python, agar kode simulasi tetap cepat dan dapat
+  direproduksi. Yang ditambahkan adalah peringatan eksplisit di panduan.
+
 - **`batas_waktu` pada driver PostgreSQL dan MySQL** — batas waktu baca/tulis
   soket yang sebelumnya terpaku 30 detik kini bisa disetel lewat konfigurasi
   (`{"batas_waktu": 5}`); bawaannya tetap 30 detik dan `0` berarti tanpa batas.
