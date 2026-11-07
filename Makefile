@@ -4,6 +4,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include \
          -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"'
 LDFLAGS = -lm
+RANLIB ?= ranlib
 
 # Tambahan flag dari pemanggil, mis. EXTRA_CFLAGS=-march=x86-64 saat rilis.
 # Pakai ini, JANGAN 'make CFLAGS=...': variabel di baris perintah menimpa
@@ -79,6 +80,11 @@ LIB_OBJECTS = $(filter-out src/main.o,$(OBJECTS))
 
 libindk.a: $(LIB_OBJECTS)
 	$(AR) rcs $@ $^
+	@# macOS: tanpa indeks simbol, linker menolak arsip dengan "Undefined
+	@# symbols" meskipun objeknya ada di dalam. 'ar s' tidak selalu cukup di
+	@# BSD ar, jadi indeks dibuat ulang secara eksplisit. No-op yang sah di
+	@# binutils, sehingga aman dipakai di semua platform.
+	-@$(RANLIB) $@ 2>/dev/null || true
 	@echo "libindk.a siap. Kompilasi: cc prog.c libindk.a -Isrc -lm"
 
 SQLITE_FLAGS = -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0

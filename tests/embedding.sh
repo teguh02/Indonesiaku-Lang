@@ -55,6 +55,17 @@ else
     ok "libindk.a tidak memuat main()"
 fi
 
+# Simbol API harus benar-benar ADA di arsip. Asersi "tidak memuat main" di
+# atas adalah asersi NEGATIF: arsip rusak atau tanpa indeks simbol juga
+# lulus. Itu terjadi sungguhan di macOS -- dua asersi pertama hijau sementara
+# penautan gagal dengan "Undefined symbols: _indk_jalankan".
+if "${NM:-nm}" libindk.a 2>/dev/null | grep -qE '^[0-9a-f]+ T _?indk_jalankan$'; then
+    ok "libindk.a mengekspor simbol API"
+else
+    gagal "libindk.a tidak mengekspor indk_jalankan (arsip tanpa indeks simbol?)"
+    "${AR:-ar}" t libindk.a 2>/dev/null | grep -c indk_api | sed 's/^/      indk_api.o di arsip: /'
+fi
+
 # --- 2. contoh resmi terkompilasi dan jalan --------------------------------
 if "$CC" examples/embed/halo.c libindk.a $INC $TAUT -o "$TMP/halo" 2>"$TMP/cc.log"; then
     ok "examples/embed/halo.c terkompilasi"
