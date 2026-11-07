@@ -5,6 +5,7 @@ CFLAGS = -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include \
          -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"'
 LDFLAGS = -lm
 RANLIB ?= ranlib
+NM ?= nm
 
 # Tambahan flag dari pemanggil, mis. EXTRA_CFLAGS=-march=x86-64 saat rilis.
 # Pakai ini, JANGAN 'make CFLAGS=...': variabel di baris perintah menimpa
@@ -79,17 +80,24 @@ $(TARGET): $(OBJECTS)
 LIB_OBJECTS = $(filter-out src/main.o,$(OBJECTS))
 
 libindk.a: $(LIB_OBJECTS)
-	@echo "libindk.a: $(words $(LIB_OBJECTS)) objek, indk_api=$(words $(filter %indk_api.o,$(LIB_OBJECTS)))"
-	@# Objek disebut lewat $(LIB_OBJECTS), BUKAN $^. Untuk target yang
-	@# berakhiran .a, GNU Make 3.81 (bawaan macOS) memakai semantik "archive
-	@# member" dan $^ ikut kosong, sehingga 'ar rcs' membuat arsip kosong 96
-	@# bita tanpa galat -- penautan baru gagal jauh kemudian dengan
-	@# "Undefined symbols". Make 4.x tidak terpengaruh, jadi build Linux yang
-	@# hijau tidak membuktikan apa pun di sini.
-	$(AR) rcs $@ $(LIB_OBJECTS)
-	@# BSD ar tidak selalu menulis indeks simbol yang dipakai linker.
-	@# No-op yang sah di binutils.
+	@rm -f $@
+	@# Objek ditambahkan BERTAHAP lewat xargs, bukan satu baris 'ar rcs'.
+	@# Dua alasan nyata, keduanya hanya muncul di macOS:
+	@#  1. ada basename ganda (src/debug.o dan mbedtls/library/debug.o);
+	@#     BSD ar memakai nama anggota, bukan jalur, sehingga perilakunya
+	@#     berbeda dari GNU ar;
+	@#  2. 'ar rcs' satu baris di runner macOS menghasilkan arsip 96 bita
+	@#     berisi NOL objek tanpa pesan galat apa pun.
+	@# stderr ar sengaja TIDAK dibungkam supaya kegagalan terlihat.
+	printf '%s\n' $(LIB_OBJECTS) | xargs $(AR) rc $@
 	-@$(RANLIB) $@ 2>/dev/null || true
+	@# Penjaga: arsip yang terbentuk tapi kosong adalah kegagalan DIAM --
+	@# penautan baru meledak jauh kemudian di program pemakai. Lebih baik
+	@# build yang merah di sini.
+	@"$(NM)" $@ 2>/dev/null | grep -q indk_jalankan || { \
+		echo "GALAT: libindk.a terbentuk tanpa simbol API." >&2; \
+		echo "  anggota: $$("$(AR)" t $@ 2>/dev/null | wc -l)" >&2; \
+		exit 1; }
 	@echo "libindk.a siap. Kompilasi: cc prog.c libindk.a -Isrc -lm"
 
 SQLITE_FLAGS = -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0

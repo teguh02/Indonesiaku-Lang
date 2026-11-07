@@ -63,27 +63,12 @@ if "${NM:-nm}" libindk.a 2>/dev/null | grep -qE '^[0-9a-f]+ T _?indk_jalankan$';
     ok "libindk.a mengekspor simbol API"
 else
     gagal "libindk.a tidak mengekspor indk_jalankan"
-    # Diagnostik: memisahkan "objek tidak masuk arsip" dari "arsip tanpa
-    # indeks simbol" dari "nm berformat lain". Tanpa ini, satu siklus CI
-    # hanya menghasilkan tebakan baru.
-    echo "      --- diagnostik arsip ---"
+    # Arsip terbentuk tapi kosong adalah kegagalan DIAM: ia lulus kedua
+    # asersi di atas dan baru meledak saat penautan. Sudah terjadi sungguhan
+    # di macOS (arsip 96 bita, 0 objek), jadi anggotanya ikut dicetak.
     ls -l libindk.a 2>&1 | sed 's/^/      /'
-    [ -f src/indk_api.o ] && echo "      src/indk_api.o: ADA ($(wc -c < src/indk_api.o) bita)" \
-                          || echo "      src/indk_api.o: TIDAK ADA"
-    "${AR:-ar}" t libindk.a > "$TMP/anggota.txt" 2>&1
-    echo "      ar t exit=$? anggota=$(wc -l < "$TMP/anggota.txt")"
-    echo "      anggota memuat indk_api: $(grep -c indk_api "$TMP/anggota.txt")"
-    head -3 "$TMP/anggota.txt" | sed 's/^/      anggota: /'
-    echo "      simbol indk_ menurut nm: $("${NM:-nm}" libindk.a 2>&1 | grep -c indk_)"
-    "${NM:-nm}" libindk.a 2>&1 | grep indk_jalankan | head -3 | sed 's/^/      nm: /'
-    # Perintah ar yang BENAR-BENAR dirakit make: membuktikan apakah
-    # src/indk_api.o ikut di daftar objek atau tidak.
-    # Baris 'ar' SAJA. Versi sebelumnya menghitung seluruh keluaran make -Bn,
-    # termasuk 123 perintah compile, sehingga angkanya tidak membuktikan apa
-    # pun tentang perintah ar.
-    rm -f libindk.a
-    make libindk.a 2>&1 | grep -E '^libindk.a:|ar ' | head -3 | sed 's/^/      make: /'
-    make --version 2>&1 | head -1 | sed 's/^/      /'
+    echo "      anggota: $("${AR:-ar}" t libindk.a 2>/dev/null | wc -l)"
+    echo "      indk_api.o di arsip: $("${AR:-ar}" t libindk.a 2>/dev/null | grep -c indk_api)"
 fi
 
 # --- 2. contoh resmi terkompilasi dan jalan --------------------------------
