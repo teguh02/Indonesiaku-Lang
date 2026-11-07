@@ -79,11 +79,15 @@ $(TARGET): $(OBJECTS)
 LIB_OBJECTS = $(filter-out src/main.o,$(OBJECTS))
 
 libindk.a: $(LIB_OBJECTS)
-	$(AR) rcs $@ $^
-	@# macOS: tanpa indeks simbol, linker menolak arsip dengan "Undefined
-	@# symbols" meskipun objeknya ada di dalam. 'ar s' tidak selalu cukup di
-	@# BSD ar, jadi indeks dibuat ulang secara eksplisit. No-op yang sah di
-	@# binutils, sehingga aman dipakai di semua platform.
+	@# Objek disebut lewat $(LIB_OBJECTS), BUKAN $^. Untuk target yang
+	@# berakhiran .a, GNU Make 3.81 (bawaan macOS) memakai semantik "archive
+	@# member" dan $^ ikut kosong, sehingga 'ar rcs' membuat arsip kosong 96
+	@# bita tanpa galat -- penautan baru gagal jauh kemudian dengan
+	@# "Undefined symbols". Make 4.x tidak terpengaruh, jadi build Linux yang
+	@# hijau tidak membuktikan apa pun di sini.
+	$(AR) rcs $@ $(LIB_OBJECTS)
+	@# BSD ar tidak selalu menulis indeks simbol yang dipakai linker.
+	@# No-op yang sah di binutils.
 	-@$(RANLIB) $@ 2>/dev/null || true
 	@echo "libindk.a siap. Kompilasi: cc prog.c libindk.a -Isrc -lm"
 
