@@ -39,6 +39,7 @@ MBEDTLS_SOURCES = $(wildcard src/vendor/mbedtls/library/*.c)
 MBEDTLS_OBJECTS = $(MBEDTLS_SOURCES:.c=.o)
 
 SOURCES = src/main.c \
+          src/indk_api.c \
           src/chunk.c \
           src/compiler.c \
           src/debug.c \
@@ -70,6 +71,15 @@ all: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo Build berhasil! Jalankan dengan: ./$(TARGET) atau ./$(TARGET) file.idk
+
+# Pustaka statis untuk API embedding C (src/indk.h). Objek yang sama dengan
+# biner, dikurangi src/main.o -- main() milik program pemakai, bukan milik
+# pustaka; menyertakannya membuat penautan bentrok dengan main() mereka.
+LIB_OBJECTS = $(filter-out src/main.o,$(OBJECTS))
+
+libindk.a: $(LIB_OBJECTS)
+	$(AR) rcs $@ $^
+	@echo "libindk.a siap. Kompilasi: cc prog.c libindk.a -Isrc -lm"
 
 SQLITE_FLAGS = -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0
 

@@ -61,3 +61,6 @@ data_todo.json
 data_todo_server.json
 # Local Netlify folder
 .netlify
+
+# Pustaka statis API embedding C (dibangun lewat `make libindk.a`)
+libindk.a

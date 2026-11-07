@@ -10,7 +10,7 @@
 // Build with clang:
 //
 //   clang -g -O1 -fsanitize=fuzzer,address,undefined -Isrc \
-//     tests/fuzz_compile.c src/chunk.c src/compiler.c src/debug.c \
+//     tests/fuzz_compile.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c \
 //     src/format.c src/memory.c src/native.c src/object.c src/scanner.c \
 //     src/table.c src/value.c src/vm.c src/db.c src/pola.c src/sistem.c \
 //     src/sqlite3.c \

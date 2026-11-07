@@ -254,7 +254,7 @@ make
 ```powershell
 gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk.exe `
     -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 `
-    src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c `
+    src/main.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c `
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c `
     src/vendor/mbedtls/library/*.c `
     src/scanner.c src/table.c src/value.c src/vm.c -lm -lws2_32 -lbcrypt
@@ -665,7 +665,7 @@ make
 ```bash
 gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk \
     -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 \
-    src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
+    src/main.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c \
     src/vendor/mbedtls/library/*.c \
     src/scanner.c src/table.c src/value.c src/vm.c -lm
@@ -786,7 +786,7 @@ make
 ```bash
 gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk \
     -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 \
-    src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
+    src/main.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c \
     src/vendor/mbedtls/library/*.c \
     src/scanner.c src/table.c src/value.c src/vm.c -lm
@@ -975,7 +975,7 @@ sudo apt install build-essential
 # Atau gunakan GCC langsung (tanpa make)
 gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk \
     -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 \
-    src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
+    src/main.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c \
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c \
     src/vendor/mbedtls/library/*.c \
     src/scanner.c src/table.c src/value.c src/vm.c -lm
@@ -1012,7 +1012,7 @@ sudo apt install libm  # atau libc6
 
 # Atau rebuild dengan static linking
 gcc -static -Wall -Wextra -std=c11 -O2 -Isrc -o indk \
-    src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c \
+    src/main.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c \
     src/memory.c src/native.c src/db.c src/pola.c src/sistem.c \
     src/sqlite3.c -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 \
     src/object.c src/scanner.c src/table.c src/value.c src/vm.c -lm
@@ -1093,7 +1093,7 @@ make
 del /Q src\*.o indk.exe
 gcc -Wall -Wextra -std=c11 -O2 -Isrc -Isrc/vendor/mbedtls/include -DMBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"' -o indk.exe `
     -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 `
-    src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c `
+    src/main.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c src/memory.c `
     src/native.c src/db.c src/pola.c src/sistem.c src/tls.c src/sqlite3.c src/object.c `
     src/vendor/mbedtls/library/*.c `
     src/scanner.c src/table.c src/value.c src/vm.c -lm -lws2_32 -lbcrypt
@@ -1105,7 +1105,7 @@ Tanpa optimization untuk debugging:
 
 ```bash
 gcc -Wall -Wextra -std=c11 -g -Isrc -o indk \
-    src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c \
+    src/main.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c \
     src/memory.c src/native.c src/db.c src/pola.c src/sistem.c \
     src/sqlite3.c -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 \
     src/object.c src/scanner.c src/table.c src/value.c src/vm.c -lm
@@ -1116,7 +1116,7 @@ Dengan optimization untuk performance:
 
 ```bash
 gcc -Wall -Wextra -std=c11 -O3 -Isrc -o indk \
-    src/main.c src/chunk.c src/compiler.c src/debug.c src/format.c \
+    src/main.c src/indk_api.c src/chunk.c src/compiler.c src/debug.c src/format.c \
     src/memory.c src/native.c src/db.c src/pola.c src/sistem.c \
     src/sqlite3.c -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DQS=0 -DSQLITE_THREADSAFE=0 -DSQLITE_DEFAULT_MEMSTATUS=0 \
     src/object.c src/scanner.c src/table.c src/value.c src/vm.c -lm
