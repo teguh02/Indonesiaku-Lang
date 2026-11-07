@@ -1,0 +1,78 @@
+# Server untuk tests/web_auth.sh — daur masuk/keluar dan otorisasi peran
+# lewat koneksi HTTP nyata.
+#
+# Iterasi PBKDF2 sengaja kecil (1000, bukan 600000 bawaan) supaya tes cepat.
+# Aplikasi sungguhan memakai bawaannya.
+
+impor web
+
+variabel PORT = ke_bulat(ambil_lingkungan("IDK_PORT"))
+variabel SISA = ke_bulat(ambil_lingkungan("IDK_SISA"))
+
+variabel app = web.Aplikasi()
+variabel toko = web.TokoSesi()
+variabel batas = web.PembatasPercobaan(3, 300)
+
+# "Basis data" pengguna: hanya hash yang disimpan, tidak pernah sandinya.
+variabel pengguna = {
+    "ani": {"hash": web.hash_sandi("rahasia123", 1000), "peran": "admin"},
+    "budi": {"hash": web.hash_sandi("sandibudi", 1000), "peran": "pengguna"}
+}
+
+variabel hanya_admin = web.wajib_peran(toko, ["admin"])
+variabel siapa_saja = web.wajib_peran(toko, ["admin", "pengguna"])
+
+app.rute("POST", "/masuk", fungsi(req) {
+    variabel nama = ""
+    variabel sandi = ""
+    jika "nama" dalam req["form"] { nama = req["form"]["nama"] }
+    jika "sandi" dalam req["form"] { sandi = req["form"]["sandi"] }
+
+    # Pembatas diperiksa SEBELUM hashing: kalau tidak, penyerang tetap
+    # memaksa server menghitung PBKDF2 pada setiap tebakan.
+    jika batas.terkunci(nama) {
+        kembalikan web.teks(429, "terlalu banyak percobaan")
+    }
+
+    jika nama tidak dalam pengguna {
+        batas.gagal(nama)
+        # Pesan sama untuk nama tak dikenal dan sandi salah: membedakannya
+        # memberi tahu penyerang nama mana yang benar-benar ada.
+        kembalikan web.teks(401, "nama atau sandi salah")
+    }
+
+    variabel u = pengguna[nama]
+    jika web.periksa_sandi(sandi, u["hash"]) == salah {
+        batas.gagal(nama)
+        kembalikan web.teks(401, "nama atau sandi salah")
+    }
+
+    batas.berhasil(nama)
+    variabel sid = toko.buat({"pengguna": nama, "peran": u["peran"]})
+    kembalikan web.set_kuki(web.teks(200, "masuk sebagai " + nama), "sesi", sid, {
+        "httponly": benar,
+        "samesite": "Lax"
+    })
+})
+
+app.rute("GET", "/beranda", fungsi(req) {
+    variabel tolak = siapa_saja(req)
+    jika tolak != kosong { kembalikan tolak }
+    kembalikan web.teks(200, "beranda")
+})
+
+app.rute("GET", "/admin", fungsi(req) {
+    variabel tolak = hanya_admin(req)
+    jika tolak != kosong { kembalikan tolak }
+    kembalikan web.teks(200, "panel admin")
+})
+
+app.rute("POST", "/keluar", fungsi(req) {
+    variabel kuki = web.baca_kuki(req)
+    jika "sesi" dalam kuki {
+        toko.hapus(kuki["sesi"])
+    }
+    kembalikan web.teks(200, "keluar")
+})
+
+app.jalankan(PORT, 10, SISA, salah)

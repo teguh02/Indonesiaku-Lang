@@ -47,7 +47,7 @@ fungsi formulir(req) {
 }
 
 fungsi simpan(req) {
-    jika web.periksa_csrf(toko, req) tidak benar {
+    jika web.periksa_csrf(toko, req) == salah {
         kembalikan web.teks(403, "token CSRF tidak sah")
     }
     kembalikan web.teks(200, "tersimpan")

@@ -1,0 +1,44 @@
+== bentuk hash ==
+jumlah bagian : 4
+algoritme     : benar
+iterasi       : benar
+panjang garam : 32
+panjang kunci : 64
+
+== garam acak ==
+hash berbeda  : benar
+
+== verifikasi ==
+sandi benar   : benar
+sandi salah   : salah
+sandi kosong  : salah
+awalan saja   : salah
+
+== hash rusak ditolak tanpa galat ==
+teks asing    : salah
+bagian kurang : salah
+algoritme lain: salah
+iterasi bukan angka: salah
+iterasi nol   : salah
+hash kosong   : salah
+
+== menaikkan biaya bertahap ==
+perlu naik    : benar
+sudah cukup   : salah
+hash rusak    : benar
+lama tetap sah: benar
+
+== otorisasi peran ==
+admin lolos   : benar
+peran biasa   : benar
+tanpa sesi    : benar
+sesi mati     : benar
+sesi tanpa peran: benar
+
+== pembatas percobaan ==
+awal bebas    : salah
+2 gagal bebas : salah
+3 gagal kunci : benar
+pengguna lain : salah
+sesudah sukses: salah
+jeda lewat    : salah
