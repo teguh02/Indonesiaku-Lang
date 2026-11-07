@@ -440,6 +440,17 @@ if [ -f tests/web_auth.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# CORS dan trusted-proxy (WEB-05): header lintas asal dan alamat klien.
+if [ -f tests/web_cors.sh ]; then
+    echo ""
+    if bash tests/web_cors.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES web-cors"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Tag versi (image playground, LABEL rilis, cache-buster website) harus
 # mengikuti INDK_VERSION; yang tertinggal tidak pernah gagal sendiri.
 if [ -f tests/versi_konsisten.sh ]; then

@@ -36,7 +36,7 @@ const BUILTINS = [
   "saring", "semua", "sha1", "sha256",
   "sha512", "sin", "sisip", "soket_baca",
   "soket_baca_bita", "soket_batas_waktu", "soket_dengar", "soket_sambung",
-  "soket_terima", "soket_tulis", "soket_tutup", "tambah",
+  "soket_alamat_peer", "soket_terima", "soket_tulis", "soket_tutup", "tambah",
   "tambah_berkas", "tan", "tanggal", "teks_gabung",
   "terbalik", "terurut", "tls_mulai", "tulis",
   "tulis_galat", "tulis_semua", "tupel", "turunan_dari",

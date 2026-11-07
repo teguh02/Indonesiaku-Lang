@@ -453,7 +453,8 @@ jobs:
                    tests/embedding.sh \
                    tests/web_kuki_sesi.sh \
                    tests/web_csrf.sh \
-                   tests/web_auth.sh; do
+                   tests/web_auth.sh \
+                   tests/web_cors.sh; do
             echo "=== $t ==="
             if bash "$t"; then echo "  ok"; else echo "  GAGAL: $t"; gagal=1; fi
           done

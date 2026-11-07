@@ -2345,6 +2345,59 @@ Value nativeFnSoketTulis(int argCount, Value* args) {
     return NUMBER_VAL((double)total);
 }
 
+// soket_alamat_peer(soket) -> alamat IP ujung lain sebagai teks.
+//
+// accept() di soket_terima() membuang alamat peer (dipanggil dengan NULL),
+// jadi tanpa fungsi ini kode Indonesiaku tidak punya cara mengetahui siapa
+// yang menghubunginya. Itu memblokir trusted-proxy: header X-Forwarded-For
+// hanya boleh dipercaya bila koneksinya MEMANG datang dari proxy yang
+// dikenal, dan tanpa alamat peer hal itu tidak dapat diperiksa.
+Value nativeFnSoketAlamatPeer(int argCount, Value* args) {
+    if (argCount != 1) {
+        nativeRaise("soket_alamat_peer() memerlukan 1 argumen (soket)");
+        return KOSONG_VAL;
+    }
+    if (!IS_SOCKET(args[0])) {
+        nativeRaise("soket_alamat_peer() hanya menerima soket");
+        return KOSONG_VAL;
+    }
+    ObjSocket* sock = AS_SOCKET(args[0]);
+    if (!sock->isOpen) {
+        nativeRaise("soket_alamat_peer() pada soket yang sudah tertutup");
+        return KOSONG_VAL;
+    }
+
+    // storage, bukan sockaddr_in: IPv6 tidak muat di sockaddr_in dan akan
+    // terpotong diam-diam.
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof(addr);
+    if (getpeername((indk_socket_t)sock->fd, (struct sockaddr*)&addr, &len) != 0) {
+        nativeRaise("soket_alamat_peer() gagal membaca alamat");
+        return KOSONG_VAL;
+    }
+
+    char buf[INET6_ADDRSTRLEN];
+    buf[0] = '\0';
+    if (addr.ss_family == AF_INET) {
+        struct sockaddr_in* v4 = (struct sockaddr_in*)&addr;
+        if (inet_ntop(AF_INET, &v4->sin_addr, buf, sizeof(buf)) == NULL) {
+            nativeRaise("soket_alamat_peer() gagal mengurai alamat IPv4");
+            return KOSONG_VAL;
+        }
+    } else if (addr.ss_family == AF_INET6) {
+        struct sockaddr_in6* v6 = (struct sockaddr_in6*)&addr;
+        if (inet_ntop(AF_INET6, &v6->sin6_addr, buf, sizeof(buf)) == NULL) {
+            nativeRaise("soket_alamat_peer() gagal mengurai alamat IPv6");
+            return KOSONG_VAL;
+        }
+    } else {
+        nativeRaise("soket_alamat_peer() keluarga alamat tidak dikenal");
+        return KOSONG_VAL;
+    }
+
+    return OBJ_VAL(copyString(buf, (int)strlen(buf)));
+}
+
 // soket_tutup(soket) -> tutup soket (server atau klien).
 Value nativeFnSoketTutup(int argCount, Value* args) {
     if (argCount != 1) {

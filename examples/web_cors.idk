@@ -1,0 +1,162 @@
+# CORS dan trusted-proxy (WEB-05).
+#
+# Dipecah ke beberapa fungsi karena satu chunk Indonesiaku hanya memuat 256
+# konstanta; isi sebanyak ini melewati batas itu bila ditulis di tingkat atas.
+
+impor "pustaka/teks.idk"
+impor web
+
+# Mengambil nilai satu header dari teks respons, supaya keluaran contoh ini
+# tidak ikut berubah saat urutan header bergeser.
+fungsi header_dari(res, nama) {
+    variabel akhir = teks_cari(res, "\r\n\r\n")
+    variabel kepala = potong(res, 0, akhir)
+    untuk baris dalam teks_pisah(kepala, "\r\n") {
+        variabel titik = teks_cari(baris, ":")
+        jika titik > 0 {
+            jika huruf_kecil(potong(baris, 0, titik)) == huruf_kecil(nama) {
+                kembalikan teks_pangkas(potong(baris, titik + 1,
+                                              panjang(baris) - titik - 1))
+            }
+        }
+    }
+    kembalikan "(tidak ada)"
+}
+
+fungsi status_dari(res) {
+    kembalikan potong(res, 9, 3)
+}
+
+fungsi badan_dari(res) {
+    variabel i = teks_cari(res, "\r\n\r\n")
+    kembalikan potong(res, i + 4, panjang(res) - i - 4)
+}
+
+fungsi permintaan(metode, asal, xff) {
+    variabel r = metode + " /x HTTP/1.1\r\nHost: contoh.id\r\n"
+    jika asal != kosong {
+        r = r + "Origin: " + asal + "\r\n"
+    }
+    jika xff != kosong {
+        r = r + "X-Forwarded-For: " + xff + "\r\n"
+    }
+    kembalikan r + "\r\n"
+}
+
+fungsi app_cors() {
+    variabel app = web.Aplikasi()
+    app.cors(["https://situs-saya.id"], benar)
+    app.rute("GET", "/x", fungsi(req) { kembalikan web.teks(200, "halo") })
+    kembalikan app
+}
+
+# --- CORS -------------------------------------------------------------------
+
+fungsi bagian_cors() {
+    variabel app = app_cors()
+
+    cetak("== asal terdaftar ==")
+    variabel res = app.tangani(permintaan("GET", "https://situs-saya.id", kosong),
+                               "127.0.0.1")
+    cetak("Allow-Origin : " + header_dari(res, "Access-Control-Allow-Origin"))
+    cetak("Vary         : " + header_dari(res, "Vary"))
+    cetak("Credentials  : " + header_dari(res, "Access-Control-Allow-Credentials"))
+
+    # Asal asing tidak mendapat header sama sekali. Peramban lalu menolak
+    # memberikan respons ini kepada skrip pemanggil.
+    cetak("== asal asing ==")
+    variabel res2 = app.tangani(permintaan("GET", "https://jahat.id", kosong),
+                                "127.0.0.1")
+    cetak("Allow-Origin : " + header_dari(res2, "Access-Control-Allow-Origin"))
+    cetak("status       : " + status_dari(res2))
+
+    cetak("== tanpa header Origin (bukan lintas asal) ==")
+    variabel res3 = app.tangani(permintaan("GET", kosong, kosong), "127.0.0.1")
+    cetak("Allow-Origin : " + header_dari(res3, "Access-Control-Allow-Origin"))
+}
+
+fungsi bagian_preflight() {
+    variabel app = app_cors()
+
+    cetak("== preflight OPTIONS ==")
+    variabel res = app.tangani(permintaan("OPTIONS", "https://situs-saya.id", kosong),
+                               "127.0.0.1")
+    cetak("status       : " + status_dari(res))
+    cetak("Allow-Methods: " + header_dari(res, "Access-Control-Allow-Methods"))
+    cetak("Allow-Headers: " + header_dari(res, "Access-Control-Allow-Headers"))
+    cetak("Max-Age      : " + header_dari(res, "Access-Control-Max-Age"))
+
+    # Preflight dari asal asing tidak dijawab 204; ia jatuh ke perutean biasa
+    # dan tidak ada rute OPTIONS, jadi 404.
+    cetak("== preflight asal asing ==")
+    variabel res2 = app.tangani(permintaan("OPTIONS", "https://jahat.id", kosong),
+                                "127.0.0.1")
+    cetak("status       : " + status_dari(res2))
+}
+
+fungsi bagian_tolak_bintang() {
+    cetak("== cors('*') ditolak ==")
+    variabel app = web.Aplikasi()
+    coba {
+        app.cors(["*"])
+        cetak("TIDAK ditolak - salah")
+    } kecuali Galat sebagai e {
+        cetak("ditolak seperti seharusnya")
+    }
+}
+
+# --- trusted-proxy ----------------------------------------------------------
+
+fungsi app_proxy() {
+    variabel app = web.Aplikasi()
+    app.proxy_tepercaya(["127.0.0.1"])
+    app.rute("GET", "/x", fungsi(req) { kembalikan web.teks(200, req["alamat"]) })
+    kembalikan app
+}
+
+fungsi bagian_proxy() {
+    variabel app = app_proxy()
+
+    cetak("== alamat klien ==")
+    cetak("proxy + XFF        : "
+          + badan_dari(app.tangani(permintaan("GET", kosong, "1.2.3.4"), "127.0.0.1")))
+
+    # Paling KANAN, bukan paling kiri: entri kiri ditulis klien.
+    cetak("rantai XFF         : "
+          + badan_dari(app.tangani(permintaan("GET", kosong, "9.9.9.9, 1.2.3.4"),
+                                   "127.0.0.1")))
+
+    # Peer bukan proxy tepercaya -> header dibuang, apa pun isinya.
+    cetak("XFF dipalsukan     : "
+          + badan_dari(app.tangani(permintaan("GET", kosong, "1.2.3.4"), "8.8.8.8")))
+
+    cetak("tanpa XFF          : "
+          + badan_dari(app.tangani(permintaan("GET", kosong, kosong), "127.0.0.1")))
+}
+
+fungsi bagian_tanpa_proxy() {
+    # Tanpa proxy_tepercaya(), X-Forwarded-For SELALU diabaikan.
+    cetak("== aman secara bawaan ==")
+    variabel app = web.Aplikasi()
+    app.rute("GET", "/x", fungsi(req) { kembalikan web.teks(200, req["alamat"]) })
+    cetak("XFF tanpa izin     : "
+          + badan_dari(app.tangani(permintaan("GET", kosong, "1.2.3.4"), "8.8.8.8")))
+}
+
+fungsi bagian_soket() {
+    cetak("== soket_alamat_peer ==")
+    variabel server = soket_dengar(19734, "127.0.0.1")
+    variabel klien = soket_sambung("127.0.0.1", 19734)
+    variabel sisi = soket_terima(server)
+    cetak("alamat peer        : " + soket_alamat_peer(sisi))
+    soket_tutup(sisi)
+    soket_tutup(klien)
+    soket_tutup(server)
+}
+
+bagian_cors()
+bagian_preflight()
+bagian_tolak_bintang()
+bagian_proxy()
+bagian_tanpa_proxy()
+bagian_soket()
