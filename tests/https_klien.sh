@@ -96,10 +96,19 @@ if ! printf '%s' "$keluaran" | grep -q "KODE 200"; then
     # Apakah host lain juga ditolak, atau khusus example.com?
     cat > "$tmp/lain.idk" <<'EOF'
 impor "pustaka/http.idk"
-coba { cetak("badge", http_ambil("https://www.google.com", "GET", kosong, "", 0).status) }
-kecuali GalatOS sebagai e { cetak("badge GALAT", e.pesan) }
+coba {
+    cetak("badge", http_ambil("https://www.google.com", "GET", kosong, "", 0).status)
+} kecuali GalatOS sebagai e {
+    cetak("badge GALAT", e.pesan)
+}
 EOF
     "$indk" "$tmp/lain.idk" 2>&1 | head -2 | sed 's/^/      /'
+    # Rantai yang BENAR-BENAR dikirim server, dilihat dari runner itu sendiri.
+    # Membedakan "bundel kita salah" dari "runner di belakang proxy TLS".
+    if command -v openssl >/dev/null 2>&1; then
+        echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/null \
+            | grep -E '^ *[0-9] s:|^ *i:|Verify return code' | head -6 | sed 's/^/      ssl: /'
+    fi
 fi
 
 # --- tes negatif: semua ini WAJIB ditolak -----------------------------------
