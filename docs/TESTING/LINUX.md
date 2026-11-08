@@ -7,12 +7,12 @@ di `AGENTS.md`.
 
 | | |
 |---|---|
-| Versi terakhir diuji | ⬜ belum diuji |
-| Tanggal | — |
-| Paket | `indonesiaku_<versi>_amd64.deb` dan `indk-linux.tar.gz` |
-| SHA-256 `indk` | — |
-| Mesin | — (catat distro dan versinya, `uname -m`, versi glibc `ldd --version`) |
-| Ringkasan | ⬜ belum diuji |
+| Versi terakhir diuji | `1.6.0` |
+| Tanggal | 2026-11-08 |
+| Paket | `indonesiaku_1.6.0_amd64.deb` dan `indk-linux.tar.gz` (tag `v1.6.0`) |
+| SHA-256 `indk` | `6487d5827a31cae1…` (dari `indk-linux.tar.gz`) |
+| Mesin | Ubuntu x86-64, glibc 2.39 (`ldd (Ubuntu GLIBC 2.39-0ubuntu8.9)`), kernel 6.8 |
+| Ringkasan | ✅ CLI 14/14, katalog 31/31, suite 330/330, khusus Linux 13 ✅ / 2 ⬜ |
 
 ## 1. Persiapan
 
@@ -1279,32 +1279,69 @@ menguji biner rilis jalankan bagian golden-nya dengan biner yang disalin
 | LIN-14 | Proses anak | PUS-05 | `0 benar` |
 | LIN-15 | Shell bash, zsh, dan sh (dash) | CLI-04 di setiap shell | `3 ["satu", "dua tiga", "3"]` |
 
-## 7. Hasil uji terakhir
+## 7. Hasil uji terakhir — `1.6.0`, 2026-11-08
 
-⬜ **Belum diuji di Linux dengan biner rilis.** CI (`test-linux`,
-`sanitizers`, `valgrind`, `todo-*`) menguji hasil build dari kode sumber,
-bukan paket rilis, sehingga tidak menggantikan bagian ini. Isi setelah
-menguji di mesin Linux sungguhan: tabel ringkasan, rincian per ID, dan
-temuan dengan kode `T-L<n>`, mengikuti bentuk bagian 7 di `WINDOWS.md`.
+Diuji dengan **paket rilis** `v1.6.0`, bukan hasil build dari kode sumber, di
+Ubuntu x86-64 (glibc 2.39, kernel 6.8). Aset diunduh dari tag eksplisit
+`releases/tag/v1.6.0` dan diverifikasi `sha256sum -c SHA256SUMS.txt`: keduanya
+`OK` (`indk-linux.tar.gz`, `indonesiaku_1.6.0_amd64.deb`).
 
 | Bagian | Hasil |
 |---|---|
-| 3. CLI (CLI-01–CLI-14) | ⬜ |
-| 4. Katalog bahasa | ⬜ |
-| 5. Suite otomatis | ⬜ |
-| 6. Khusus Linux | ⬜ |
+| 3. CLI (CLI-01–CLI-14) | ✅ 14/14 |
+| 4. Katalog bahasa | ✅ 31/31 |
+| 5. Suite otomatis | ✅ `TOTAL: 330/330 PASSED` dari klon tag `v1.6.0` |
+| 6. Khusus Linux | ✅ 13 · ⬜ 2 (LIN-06 belum, lihat catatan) |
 
-**Uji ulang temuan Windows yang tidak khas Windows.** Uji ekstensif
-Windows 1.4.0 menemukan bug bahasa T-U2–T-U16 dan 120-an temuan lain yang
-kemungkinan juga terjadi di OS ini (lihat `WINDOWS.md` bagian 7 dan
-[`lampiran/WINDOWS-1.4.0-uji-ekstensif.md`](lampiran/WINDOWS-1.4.0-uji-ekstensif.md)).
-Jalankan reproduksi minimal di lampiran itu dengan biner OS ini, lalu catat
-mana yang terulang di tabel temuan (kode `T-L<n>`, sebutkan kode
-Windows-nya). Temuan khas Windows T-W8 (crash kompilator pada nesting
-dalam) juga perlu diuji ambangnya di sini.
+**Catatan cara uji.** Ke-31 kasus bagian 4 diekstrak otomatis dari dokumen ini
+ke folder kosong, dijalankan dengan `indk` hasil pemasangan `.deb`, lalu
+stdout, stderr, dan kode keluarnya dibandingkan per byte (CRLF dinormalkan ke
+LF). MOD-02 dan SSR-TPL-02 dijalankan manual karena berkas pendukungnya
+dinamai dengan bentuk yang tidak dikenali pengekstrak (`Berkas pendukung
+...`, dan lima berkas `tampilan/*.html` yang dinamai tanpa awalan `Berkas`);
+keduanya cocok persis.
+
+### Rincian bagian 6
+
+| ID | Hasil | Catatan |
+|---|---|---|
+| LIN-01 | ✅ | `dpkg -L` memuat `/usr/bin/indk` dan `/usr/share/indonesiaku/pustaka` berisi **27** modul |
+| LIN-02 | ✅ | Pasang 1.5.0 lalu `dpkg -i` 1.6.0 **tanpa** `dpkg -r`: `Unpacking indonesiaku (1.6.0) over (1.5.0)`, `indk -v` = `1.6.0` |
+| LIN-03 | ✅ | `dpkg -r`: `/usr/bin/indk` dan `/usr/share/indonesiaku` hilang |
+| LIN-04 | ✅ | CLI-14 dari folder tanpa `pustaka/` → `aaa [1]` |
+| LIN-05 | ✅ | `indk-linux.tar.gz` diekstrak ke folder polos, dijalankan tanpa dipasang; impor pustaka bekerja dari folder kerja lain |
+| LIN-06 | ⬜ | Hanya satu versi glibc tersedia di mesin uji (2.39). Distro LTS lebih tua belum dicoba |
+| LIN-07 | ✅ | `readelf -n indk \| grep 'x86 ISA'` **kosong** — tidak menuntut v2/v3/v4. `ldd` hanya `libm`, `libc`, `ld-linux` |
+| LIN-08 | ✅ | Biner glibc **tidak** berjalan di Alpine 3.20 (`sh: /p/indk: not found` — loader musl), sesuai dugaan. Jalur resminya image Docker: `teguh02/indonesiaku:1.6.0` → `indk -v` = `1.6.0`, `impor web` + `impor json` berhasil |
+| LIN-09 | ✅ | `"folder spasi/naïve ☕/s.idk"` dan `日本/s.idk` keduanya berjalan |
+| LIN-10 | ✅ | `tulis_semua("keluaran_☕.txt", "x")` menghasilkan berkas dengan nama persis itu; `ada_berkas` → `benar` |
+| LIN-11 | ✅ | Sumber ber-BOM UTF-8 dijalankan normal (T-W2 tidak terjadi di sini) |
+| LIN-12 | ✅ | Keluaran `LANG=C LC_ALL=C` **byte-identik** dengan locale UTF-8 untuk `"héllo ☕ 日本"` |
+| LIN-13 | ✅ | `tests/test_klien_http.sh` dan `tests/test_todo_server.sh` lulus di soket localhost |
+| LIN-14 | ✅ | PUS-05 → `0 benar` |
+| LIN-15 | ✅ | CLI-04 identik di `bash`, `sh`, dan `dash` → `3 ["satu", "dua tiga", "3"]`. `zsh` tidak terpasang |
+
+### Uji ulang temuan Windows di Linux
+
+| Kode Windows | Hasil di Linux | Bukti |
+|---|---|---|
+| T-W1 (jalur non-ASCII) | ✅ tidak terjadi | LIN-09, LIN-10 |
+| T-W2 (BOM UTF-8) | ✅ tidak terjadi | LIN-11 |
+| T-W3 (code page konsol) | ✅ tidak berlaku | LIN-12; tidak ada lapisan code page di Linux |
+| T-W8 (crash kompilator pada nesting dalam) | ✅ tidak terjadi | 300 `jika` bersarang ditolak rapi oleh penjaga `NESTING_MAX = 200`: `Sarang terlalu dalam (maksimum 200)`. 32 `fungsi` bersarang — pemicu asli T-W8 — dikompilasi tanpa crash |
+| T-W10 (jalur > 260 karakter) | ✅ tidak berlaku | Batas `MAX_PATH` khas Windows |
+
+**Tidak ada temuan baru.** Tidak ada kode `T-L<n>` yang dibuka pada pengujian
+ini.
+
+**Yang belum diuji:** LIN-06 (glibc lama) membutuhkan distro LTS yang lebih
+tua daripada mesin uji. Bug bahasa T-U2–T-U16 dari lampiran uji ekstensif
+Windows 1.4.0 belum diuji ulang satu per satu di sini; yang sudah pasti
+tertutup hanyalah T-U1, lewat regresi `tests/lint/lokal_implisit.idk` yang
+ikut jalan pada suite 330/330 di atas.
 
 ## 8. Riwayat pengujian
 
 | Tanggal | Versi | Paket | Penguji | Hasil |
 |---|---|---|---|---|
-| — | — | — | — | ⬜ belum ada |
+| 2026-11-08 | 1.6.0 | `indk-linux.tar.gz` + `indonesiaku_1.6.0_amd64.deb` (tag `v1.6.0`) | Claude Code (AI), di Ubuntu x86-64 glibc 2.39 atas permintaan maintainer | ✅ CLI 14/14, katalog 31/31, suite 330/330, khusus Linux 13 ✅ / 2 ⬜ (LIN-06); tanpa temuan baru |
