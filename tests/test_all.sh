@@ -151,6 +151,17 @@ if [ -f tests/test_baris_panjang.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# BOM UTF-8 di awal stdin (pipa PowerShell) dibuang sekali (T-W12).
+if [ -f tests/test_stdin_bom.sh ]; then
+    echo ""
+    if bash tests/test_stdin_bom.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES stdin-bom"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Jalur skrip/argumen/nama berkas non-ASCII (T-W1): regresi permanen.
 if [ -f tests/test_jalur_unicode.sh ]; then
     echo ""

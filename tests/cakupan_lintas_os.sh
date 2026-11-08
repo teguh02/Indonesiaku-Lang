@@ -57,6 +57,7 @@ done
 WAJIB_WINDOWS="
 tests/builtin_konsisten.sh
 tests/acak_aman.sh
+tests/test_stdin_bom.sh
 tests/test_format.sh
 tests/test_lint.sh
 tests/test_uji.sh
