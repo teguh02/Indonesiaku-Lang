@@ -1214,7 +1214,7 @@ powershell -ExecutionPolicy Bypass -File $env:TEMP\uji-v140\tests\test_todo_serv
 Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 `cp indk.exe indk`: `test_lint.sh`, `test_uji.sh`, `test_format.sh`,
 `test_panduan.sh`, `test_klien_http.sh`, `web_router_server.sh`,
-`web_badan_server.sh`, `http_pengalihan_server.sh`, `web_kuki_sesi.sh`, `web_csrf.sh`, `web_auth.sh`, `web_cors.sh`.
+`web_badan_server.sh`, `http_pengalihan_server.sh`, `web_kuki_sesi.sh`, `web_csrf.sh`, `web_auth.sh`, `web_cors.sh`, `keamanan_app.sh`.
 
 | ID | Suite | Hasil yang diharapkan |
 |---|---|---|
@@ -1231,6 +1231,7 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | OTO-11 | `web_csrf.sh` | Semua baris `ok`, terutama `serangan CSRF ditolak` (403) dan `token sesi lain ditolak` |
 | OTO-12 | `web_auth.sh` | Semua baris `ok`, termasuk `budi ditolak /admin` (403), `tanpa sesi -> 401` dan `terkunci -> 429` |
 | OTO-13 | `web_cors.sh` | `SEMUA LULUS` — CORS hanya untuk asal terdaftar, preflight 204, X-Forwarded-For hanya dari proxy tepercaya |
+| OTO-14 | `keamanan_app.sh` | Semua baris `ok` — `ID sesi diputar saat login`, `muatan XSS ter-escape`, `budi hapus catatan admin -> 403`, `sandi benar saat terkunci -> 429` |
 
 ## 6. Uji khusus Windows
 

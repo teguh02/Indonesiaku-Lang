@@ -1,0 +1,238 @@
+# Catatan — aplikasi CRUD dengan login dan peran.
+#
+# Menyatukan empat fase: basis data (Fase 10), HTTP (Fase 11), templat
+# server-side (Fase 12), dan keamanan web (Fase 13).
+#
+# Menjalankan:  indk examples/catatan_app.idk [port]      (bawaan 8090)
+# Lalu buka:    http://127.0.0.1:8090/
+#
+# Dua akun contoh dibuat saat pertama kali jalan:
+#   admin / rahasia123   (peran admin  — boleh menghapus catatan siapa pun)
+#   budi  / rahasia123   (peran anggota — hanya catatannya sendiri)
+#
+# PERINGATAN: kedua akun di atas adalah kredensial bawaan, dan kredensial
+# bawaan adalah lubang keamanan. Berkas ini sengaja memakainya supaya contoh
+# dapat langsung dijalankan, dan karena itu servernya hanya mendengarkan
+# 127.0.0.1. Aplikasi sungguhan membuat akun pertama lewat proses pendaftaran
+# atau perintah penyiapan, bukan menuliskannya di dalam kode.
+#
+# Yang sengaja ditunjukkan di sini, karena keempatnya mudah terlupa:
+#   1. tiap formulir membawa token CSRF;
+#   2. sesi diputar sesudah login (anti session fixation);
+#   3. otorisasi diperiksa di SISI SERVER, bukan dengan menyembunyikan tombol;
+#   4. seluruh keluaran lewat templat yang meng-escape otomatis.
+
+impor "pustaka/teks.idk"
+impor db
+impor templat
+impor web
+
+variabel PORT = 8090
+jika panjang(argumen) >= 1 {
+    PORT = ke_bulat(argumen[0])
+}
+
+variabel BERKAS = "data_catatan_app.db"
+
+# --- basis data -------------------------------------------------------------
+
+fungsi siapkan_db() {
+    variabel k = db.sambung(kamus_dari([["jenis", "sqlite"], ["berkas", BERKAS]]))
+    k.eksekusi("CREATE TABLE IF NOT EXISTS pengguna (" + "id INTEGER PRIMARY KEY AUTOINCREMENT, " + "nama TEXT UNIQUE NOT NULL, " + "sandi TEXT NOT NULL, " + "peran TEXT NOT NULL)")
+    k.eksekusi("CREATE TABLE IF NOT EXISTS catatan (" + "id INTEGER PRIMARY KEY AUTOINCREMENT, " + "pemilik INTEGER NOT NULL, " + "judul TEXT NOT NULL, " + "isi TEXT NOT NULL)")
+
+    jika k.ambil_satu("SELECT COUNT(*) AS n FROM pengguna")["n"] == 0 {
+        # Iterasi rendah supaya contoh ini cepat dijalankan berulang kali.
+        # Aplikasi sungguhan memakai bawaan 600.000.
+        untuk p dalam [["admin", "admin"], ["budi", "anggota"]] {
+            k.eksekusi("INSERT INTO pengguna (nama, sandi, peran) VALUES (?, ?, ?)",
+                       [p[0], web.hash_sandi("rahasia123", 10000), p[1]])
+        }
+    }
+    kembalikan k
+}
+
+fungsi kamus_dari(pasangan) {
+    variabel d = kamus()
+    untuk p dalam pasangan { d[p[0]] = p[1] }
+    kembalikan d
+}
+
+# --- templat ----------------------------------------------------------------
+#
+# Judul dan isi catatan ditulis pengguna. Semuanya keluar lewat {{ }}, yang
+# meng-escape otomatis — tanpa itu satu catatan berisi <script> akan berjalan
+# di peramban pembaca lain.
+
+variabel TATA = "<!doctype html><html lang=id><head><meta charset=utf-8>" + "<title>{{ judul }}</title></head><body>" + "<h1>{{ judul }}</h1>{{ isi }}</body></html>"
+
+fungsi halaman(judul, isi) {
+    kembalikan web.html(200, templat.render_teks(TATA,
+        kamus_dari([["judul", judul], ["isi", templat.aman(isi)]])))
+}
+
+variabel T_DAFTAR = "<p>Masuk sebagai <b>{{ nama }}</b> ({{ peran }}) " + "&middot; <form method=post action=/keluar style=display:inline>" + "<input type=hidden name=_csrf value=\"{{ csrf }}\">" + "<button>keluar</button></form></p>" + "<ul>{% untuk c dalam catatan %}<li><b>{{ c.judul }}</b>: {{ c.isi }}" + "{% jika c.boleh_hapus %} <form method=post action=/hapus style=display:inline>" + "<input type=hidden name=_csrf value=\"{{ csrf }}\">" + "<input type=hidden name=id value=\"{{ c.id }}\">" + "<button>hapus</button></form>{% akhirjika %}</li>{% akhiruntuk %}</ul>" + "<h2>Catatan baru</h2><form method=post action=/buat>" + "<input type=hidden name=_csrf value=\"{{ csrf }}\">" + "<p><input name=judul placeholder=judul required></p>" + "<p><textarea name=isi placeholder=isi required></textarea></p>" + "<button>simpan</button></form>"
+
+variabel T_MASUK = "<form method=post action=/masuk>" + "<p><input name=nama placeholder=nama required></p>" + "<p><input name=sandi type=password placeholder=sandi required></p>" + "<button>masuk</button></form>" + "{% jika pesan %}<p><b>{{ pesan }}</b></p>{% akhirjika %}" + "<p>Coba: admin / rahasia123 atau budi / rahasia123</p>"
+
+# --- aplikasi ---------------------------------------------------------------
+
+variabel koneksi = siapkan_db()
+variabel toko = web.TokoSesi(3600)
+variabel batas = web.PembatasPercobaan(5, 300)
+variabel app = web.Aplikasi()
+
+# Sesi diikat ke kuki ini; `sid` kosong berarti belum punya sesi.
+fungsi sid_dari(req) {
+    variabel kuki = web.baca_kuki(req)
+    jika "sesi" dalam kuki { kembalikan kuki["sesi"] }
+    kembalikan ""
+}
+
+fungsi pengguna_dari(req) {
+    variabel data = toko.ambil(sid_dari(req))
+    jika data == kosong { kembalikan kosong }
+    jika "pengguna" tidak dalam data { kembalikan kosong }
+    kembalikan data["pengguna"]
+}
+
+# Setiap permintaan yang MENGUBAH keadaan diperiksa tokennya. Tanpa ini,
+# halaman mana pun di internet dapat mengirim formulir ke server kita memakai
+# kuki sesi korban.
+fungsi csrf_sah(req) {
+    kembalikan web.periksa_csrf(toko, req)
+}
+
+app.rute("GET", "/", fungsi(req) {
+    variabel u = pengguna_dari(req)
+    jika u == kosong {
+        kembalikan web.alihkan("/masuk")
+    }
+    variabel baris = koneksi.ambil_semua(
+        "SELECT c.id, c.judul, c.isi, c.pemilik, p.nama AS penulis " + "FROM catatan c JOIN pengguna p ON p.id = c.pemilik ORDER BY c.id DESC")
+
+    variabel daftar_c = daftar()
+    untuk b dalam baris {
+        # Keputusan otorisasi dibuat DI SINI dan diperiksa lagi di /hapus.
+        # Menyembunyikan tombol saja tidak mengamankan apa pun: siapa pun
+        # dapat mengirim POST /hapus langsung.
+        b["boleh_hapus"] = u["peran"] == "admin" atau b["pemilik"] == u["id"]
+        tambah(daftar_c, b)
+    }
+
+    kembalikan web.html(200, templat.render_teks(TATA, kamus_dari([
+        ["judul", "Catatan"],
+        ["isi", templat.aman(templat.render_teks(T_DAFTAR, kamus_dari([
+            ["nama", u["nama"]], ["peran", u["peran"]],
+            ["csrf", web.token_csrf(toko, sid_dari(req))],
+            ["catatan", daftar_c]])))]])))
+})
+
+app.rute("GET", "/masuk", fungsi(req) {
+    kembalikan halaman("Masuk", templat.render_teks(T_MASUK,
+        kamus_dari([["pesan", ""]])))
+})
+
+app.rute("POST", "/masuk", fungsi(req) {
+    variabel nama = ""
+    jika "nama" dalam req["form"] { nama = req["form"]["nama"] }
+    variabel sandi = ""
+    jika "sandi" dalam req["form"] { sandi = req["form"]["sandi"] }
+
+    # Diperiksa SEBELUM menghitung hash: kalau tidak, penyerang tetap memaksa
+    # server bekerja keras pada setiap tebakan.
+    jika batas.terkunci(nama) {
+        kembalikan web.teks(429, "terlalu banyak percobaan, coba lagi nanti")
+    }
+
+    variabel u = koneksi.ambil_satu("SELECT * FROM pengguna WHERE nama = ?", [nama])
+    variabel sah = salah
+    jika u != kosong {
+        sah = web.periksa_sandi(sandi, u["sandi"])
+    }
+
+    jika sah == salah {
+        batas.gagal(nama)
+        # Pesan SAMA untuk nama tak dikenal dan sandi salah: pesan berbeda
+        # memberi tahu penyerang nama mana yang terdaftar.
+        kembalikan web.html(401, templat.render_teks(TATA, kamus_dari([
+            ["judul", "Masuk"],
+            ["isi", templat.aman(templat.render_teks(T_MASUK,
+                kamus_dari([["pesan", "nama atau sandi salah"]])))]])))
+    }
+
+    batas.berhasil(nama)
+
+    # ID sesi diputar sesudah login. Tanpa ini, ID yang ditanam penyerang
+    # sebelum korban masuk tetap berlaku sesudahnya (session fixation).
+    # putar() mengembalikan kosong bila belum ada sesi sama sekali —
+    # pengunjung yang langsung membuka /masuk memang belum punya.
+    variabel sid = toko.putar(sid_dari(req))
+    jika sid == kosong {
+        sid = toko.buat(kamus())
+    }
+    variabel data = toko.ambil(sid)
+    data["pengguna"] = kamus_dari([["id", u["id"]], ["nama", u["nama"]],
+                                   ["peran", u["peran"]]])
+
+    kembalikan web.set_kuki(web.alihkan("/"), "sesi", sid, kamus_dari([
+        ["path", "/"], ["httponly", benar], ["samesite", "Strict"]]))
+})
+
+app.rute("POST", "/keluar", fungsi(req) {
+    jika csrf_sah(req) == salah {
+        kembalikan web.teks(403, "token CSRF tidak sah")
+    }
+    toko.hapus(sid_dari(req))
+    kembalikan web.alihkan("/masuk")
+})
+
+app.rute("POST", "/buat", fungsi(req) {
+    variabel u = pengguna_dari(req)
+    jika u == kosong { kembalikan web.teks(401, "perlu masuk") }
+    jika csrf_sah(req) == salah { kembalikan web.teks(403, "token CSRF tidak sah") }
+
+    variabel judul = ""
+    jika "judul" dalam req["form"] { judul = teks_pangkas(req["form"]["judul"]) }
+    variabel isi = ""
+    jika "isi" dalam req["form"] { isi = teks_pangkas(req["form"]["isi"]) }
+
+    jika judul == "" atau isi == "" {
+        kembalikan web.teks(400, "judul dan isi wajib diisi")
+    }
+    jika panjang(judul) > 120 {
+        kembalikan web.teks(400, "judul terlalu panjang")
+    }
+
+    # Parameter terikat, bukan disambung ke SQL: judul berisi tanda kutip
+    # tidak akan pernah menjadi perintah.
+    koneksi.eksekusi("INSERT INTO catatan (pemilik, judul, isi) VALUES (?, ?, ?)",
+                     [u["id"], judul, isi])
+    kembalikan web.alihkan("/")
+})
+
+app.rute("POST", "/hapus", fungsi(req) {
+    variabel u = pengguna_dari(req)
+    jika u == kosong { kembalikan web.teks(401, "perlu masuk") }
+    jika csrf_sah(req) == salah { kembalikan web.teks(403, "token CSRF tidak sah") }
+
+    variabel id = 0
+    jika "id" dalam req["form"] { id = ke_bulat(req["form"]["id"]) }
+    variabel c = koneksi.ambil_satu("SELECT * FROM catatan WHERE id = ?", [id])
+    jika c == kosong { kembalikan web.teks(404, "catatan tidak ada") }
+
+    # Pemeriksaan kepemilikan diulang di server. Inilah yang sesungguhnya
+    # menjaga; tombol yang disembunyikan di halaman hanya kenyamanan.
+    jika u["peran"] != "admin" {
+        jika c["pemilik"] != u["id"] {
+            kembalikan web.teks(403, "bukan catatan Anda")
+        }
+    }
+
+    koneksi.eksekusi("DELETE FROM catatan WHERE id = ?", [id])
+    kembalikan web.alihkan("/")
+})
+
+cetak("Catatan berjalan di http://127.0.0.1:" + ke_teks(PORT))
+cetak("Akun contoh: admin/rahasia123 (admin), budi/rahasia123 (anggota)")
+app.jalankan(PORT)

@@ -9,6 +9,17 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **Contoh aplikasi CRUD dengan login dan peran.** `examples/catatan_app.idk`
+  menyatukan basis data (Fase 10), HTTP (Fase 11), templat (Fase 12), dan
+  keamanan (Fase 13): CRUD catatan, dua peran, token CSRF di tiap formulir,
+  rotasi sesi saat login, dan pemeriksaan kepemilikan di sisi server.
+  `web.alihkan(lokasi)` ditambahkan untuk pola POST-redirect-GET (303).
+
+- **Regresi keamanan menyeluruh.** `tests/keamanan_app.sh` menyerang aplikasi
+  itu lewat HTTP sungguhan: session fixation, CSRF lintas situs, izin lintas
+  pengguna, XSS tersimpan, SQL injection, enumerasi nama pengguna, kuncian
+  brute force, dan flag kuki — 25 pemeriksaan.
+
 - **CORS dan trusted-proxy (WEB-05, tuntas).** `app.cors(asal, kredensial)`
   mengizinkan asal lintas situs secara eksplisit — `"*"` **ditolak**, karena
   ia melumpuhkan pertahanan peramban dan tidak sah bersama kredensial.

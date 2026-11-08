@@ -395,6 +395,19 @@ fungsi html(kode, isi) {
     kembalikan http_response(kode, "text/html; charset=utf-8", isi)
 }
 
+# alihkan(lokasi, kode) -> respons pengalihan.
+#
+# Pola POST-redirect-GET: sesudah formulir diproses, jawab dengan pengalihan
+# supaya menyegarkan halaman tidak mengirim ulang POST yang sama.
+#
+# 303 adalah bawaan, bukan 302: 303 mewajibkan peramban memakai GET pada
+# tujuan, sedangkan 302 secara historis diperlakukan berbeda-beda untuk POST.
+fungsi alihkan(lokasi, kode = 303) {
+    kembalikan _web_sisip_header(
+        http_response(kode, "text/plain; charset=utf-8", ""),
+        [["Location", lokasi]])
+}
+
 kelas Aplikasi {
     init(maks_badan = 1048576) {
         diri.rute_daftar = []        # [metode, pola, penangan]

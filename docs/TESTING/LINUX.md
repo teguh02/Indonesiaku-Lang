@@ -1230,6 +1230,7 @@ menguji biner rilis jalankan bagian golden-nya dengan biner yang disalin
 | OTO-11 | `web_csrf.sh` | Semua baris `ok`, terutama `serangan CSRF ditolak` (403) dan `token sesi lain ditolak` |
 | OTO-12 | `web_auth.sh` | Semua baris `ok`, termasuk `budi ditolak /admin` (403), `tanpa sesi -> 401` dan `terkunci -> 429` |
 | OTO-13 | `web_cors.sh` | Semua baris `ok`, termasuk `tidak pernah '*'`, `preflight -> 204` dan `rantai: ambil paling kanan` |
+| OTO-14 | `keamanan_app.sh` | Semua baris `ok` — `ID sesi diputar saat login`, `muatan XSS ter-escape`, `budi hapus catatan admin -> 403`, `sandi benar saat terkunci -> 429` |
 
 ## 6. Uji khusus Linux
 

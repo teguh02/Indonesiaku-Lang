@@ -1544,6 +1544,15 @@ Argon2id belum tersedia: ia menuntut pustaka C pihak ketiga, sedangkan proyek
 ini hanya bergantung pada libc dan mbedTLS. PBKDF2 dengan 600k iterasi adalah
 pilihan sadar, bukan kelalaian.
 
+#### Pengalihan sesudah formulir
+
+`web.alihkan("/")` menjawab dengan **303** dan header `Location`. Dipakai
+sesudah POST diproses, supaya menyegarkan halaman tidak mengirim ulang
+formulir yang sama (pola POST-redirect-GET).
+
+303, bukan 302: 303 mewajibkan peramban memakai GET pada tujuan, sedangkan
+302 secara historis diperlakukan berbeda-beda untuk POST.
+
 #### CORS: siapa boleh membaca jawaban kita
 
 Peramban memblokir skrip dari asal lain membaca respons kita, kecuali kita
@@ -1598,6 +1607,32 @@ koneksi, dan inilah yang membuat pemeriksaan di atas mungkin.
 **Yang sengaja tidak ada:** pola wildcard asal (`https://*.situs.id`) dan
 rentang CIDR untuk proxy. Pencocokan subdomain mudah salah tulis dan menjadi
 lubang; daftar eksplisit cukup sampai ada kebutuhan nyata.
+
+#### Contoh utuh: `examples/catatan_app.idk`
+
+Semua potongan di atas baru terasa gunanya saat disatukan. `catatan_app.idk`
+adalah CRUD catatan dengan login dan dua peran, memakai basis data (Fase 10),
+HTTP (Fase 11), templat (Fase 12), dan keamanan (Fase 13) sekaligus:
+
+```
+indk examples/catatan_app.idk 8090
+# admin / rahasia123  (boleh menghapus catatan siapa pun)
+# budi  / rahasia123  (hanya catatannya sendiri)
+```
+
+Empat hal yang mudah terlewat, dan karena itu ditulis eksplisit di sana:
+
+1. **Tiap formulir membawa `_csrf`** — termasuk formulir keluar. Tombol
+   "keluar" berupa `<form method=post>`, bukan tautan, karena GET tidak boleh
+   mengubah keadaan.
+2. **`toko.putar()` dipanggil sesudah sandi terverifikasi**, bukan sebelum.
+3. **Kepemilikan diperiksa ulang di `/hapus`.** Menyembunyikan tombol hanya
+   kenyamanan tampilan — siapa pun dapat mengirim POST langsung.
+4. **Parameter SQL terikat (`?`)**, tidak pernah disambung ke dalam query.
+
+`tests/keamanan_app.sh` menyerang aplikasi ini lewat HTTP sungguhan: session
+fixation, CSRF lintas situs, penghapusan milik pengguna lain, XSS tersimpan,
+SQL injection, enumerasi nama pengguna, dan kuncian brute force.
 
 
 Digunakan oleh `examples/todo_server.idk` — REST API Todo-list berbasis HTTP
