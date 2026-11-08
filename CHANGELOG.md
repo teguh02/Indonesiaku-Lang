@@ -26,6 +26,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Dua kode mati yang langsung ditemukan linter setelah perbaikan di atas:
   `variabel selesai` yang tak pernah dipakai di `pustaka/templat.idk`, dan
   variabel perulangan `i` yang tak dipakai di `pustaka/kura.idk` (menjadi `_i`).
+- **Windows: jalur lebih dari 260 karakter** (T-W10). Dulu
+  `buat_direktori`, `tulis_semua`, `baca_semua`, `isi_direktori`,
+  `ada_berkas`, `hapus_berkas`, menjalankan skrip, dan `impor` gagal pada
+  jalur sepanjang itu, bahkan dengan `LongPathsEnabled=1`, karena biner tidak
+  punya manifest `longPathAware`. Kini jalur yang bentuk absolutnya mencapai
+  batas itu diberi awalan `\\?\` setelah dinormalkan (`GetFullPathNameW`),
+  tanpa bergantung pada registri. Jalur pendek diteruskan persis seperti
+  dulu. Di Linux/macOS tidak ada perubahan.
 
 ### Ditambahkan
 
