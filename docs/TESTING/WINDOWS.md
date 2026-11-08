@@ -962,6 +962,33 @@ Budi 2
 ```
 
 
+#### PUS-06 — ada_berkas: berkas vs direktori (folder kerja harus bisa ditulisi)
+
+Berkas `PUS-06.idk`:
+
+```indonesiaku
+# ada_berkas: berkas vs direktori (folder kerja harus bisa ditulisi)
+impor jalur
+tulis_semua("uji_ada.txt", "x")
+buat_direktori("uji_ada_dir")
+cetak(ada_berkas("uji_ada.txt"), ada_berkas("uji_ada_dir"), jalur.ada("uji_ada_dir"))
+cetak(ada_berkas("uji_tidak_ada.txt"), ada_berkas(""))
+hapus_berkas("uji_ada.txt")
+hapus_direktori("uji_ada_dir")
+cetak(ada_berkas("uji_ada.txt"))
+```
+
+Jalankan `indk PUS-06.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+benar salah benar
+salah salah
+salah
+```
+
+
 ### DB — Basis data SQLite
 
 #### DB-01 — SQLite tertanam (di memori), parameter ? wajib untuk nilai
@@ -1253,6 +1280,7 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | WIN-14 | Proses anak | PUS-05 (`proses.jalankan([jalur_indk(), "-v"])`) | `0 benar` |
 | WIN-15 | Uninstall | Jalankan `unins000.exe` | Folder dan entri `PATH` hilang; terminal baru tidak mengenali `indk` |
 | WIN-16 | SmartScreen / Defender | Unduh dan jalankan installer dari peramban | Peringatan (jika ada) dicatat; tidak ada deteksi malware |
+| WIN-17 | Berkas yang dikunci proses lain (T-W9) | Di PowerShell: `$fs = [IO.File]::Open("kunci.txt", 'Open', 'ReadWrite', 'None')`, lalu `indk` menjalankan `cetak(ada_berkas("kunci.txt"))`; tutup dengan `$fs.Close()` | `benar` (sama dengan `jalur.ada`) |
 
 ## 7. Hasil uji terakhir — `1.4.0`, 2026-11-03
 
@@ -1337,7 +1365,7 @@ sebagai bug hanya temuan terkonfirmasi.
 | T-W6 | Tinggi | Temuan keamanan pada menjalankan proses anak. Rincian dilaporkan lewat jalur privat, tidak dicantumkan di sini sampai diperbaiki |
 | T-W7 | Tinggi | Temuan keamanan pada soket server. Rincian dilaporkan lewat jalur privat, tidak dicantumkan di sini sampai diperbaiki |
 | T-W8 | Tinggi | ✅ **Diperbaiki (1.4.1).** Kompilator crash (`0xC00000FD` stack overflow, tanpa pesan) pada 32 `fungsi` bersarang atau ±2500 kurung bersarang. Pengukuran ulang per bentuk: `fungsi` jatuh pada **16 level**, sedangkan kurung dan `jika` aman sampai 1000 — sebabnya frame `function()` sebesar 42.640 byte di stack, bukan rekursi parser umum. Struct `Compiler` dan larik parameter dipindah ke heap (frame turun ke 224 byte) dan ditambah penjaga `NESTING_MAX = 200` yang memberi galat kompilasi rapi |
-| T-W9 | Sedang | `ada_berkas()` memberi `salah` untuk berkas yang ada tetapi sedang dikunci proses lain (memakai `fopen`, bukan `stat`); `jalur.ada()` benar |
+| T-W9 | Sedang | ✅ **Diperbaiki (1.6.0).** `ada_berkas()` memberi `salah` untuk berkas yang ada tetapi sedang dikunci proses lain (memakai `fopen`, bukan `stat`); `jalur.ada()` benar. Kini memakai metadata (`GetFileAttributesExW` / `stat`) yang sama dengan `jalur.ada()`; direktori dijawab `salah` di semua OS (dulu `benar` di Linux/macOS). Dijaga `tests/test_ada_berkas_terkunci.ps1` (sabotase: 2/4 merah) + `examples/ada_berkas.idk`, kasus WIN-17 dan PUS-06 |
 | T-W10 | Sedang | Jalur lebih dari 260 karakter tidak didukung: `ada_berkas` salah, `baca_semua` dan `isi_direktori` gagal, walau `LongPathsEnabled=1` |
 | T-W11 | Rendah | `jam()` mengukur waktu dinding di Windows, padahal dokumentasi menyebut waktu CPU (`clock()` di UCRT) |
 

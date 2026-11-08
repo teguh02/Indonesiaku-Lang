@@ -963,6 +963,33 @@ Budi 2
 ```
 
 
+#### PUS-06 — ada_berkas: berkas vs direktori (folder kerja harus bisa ditulisi)
+
+Berkas `PUS-06.idk`:
+
+```indonesiaku
+# ada_berkas: berkas vs direktori (folder kerja harus bisa ditulisi)
+impor jalur
+tulis_semua("uji_ada.txt", "x")
+buat_direktori("uji_ada_dir")
+cetak(ada_berkas("uji_ada.txt"), ada_berkas("uji_ada_dir"), jalur.ada("uji_ada_dir"))
+cetak(ada_berkas("uji_tidak_ada.txt"), ada_berkas(""))
+hapus_berkas("uji_ada.txt")
+hapus_direktori("uji_ada_dir")
+cetak(ada_berkas("uji_ada.txt"))
+```
+
+Jalankan `indk PUS-06.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+benar salah benar
+salah salah
+salah
+```
+
+
 ### DB — Basis data SQLite
 
 #### DB-01 — SQLite tertanam (di memori), parameter ? wajib untuk nilai

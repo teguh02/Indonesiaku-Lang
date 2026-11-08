@@ -567,7 +567,7 @@ Semua kesalahan dapat ditangkap `coba/kecuali`.
 | `baca_semua(path)` | Baca seluruh berkas dari path → string |
 | `tulis_semua(path, teks)` | Tulis (timpa) ke path |
 | `tambah_berkas(path, teks)` | Tambahkan ke akhir berkas |
-| `ada_berkas(path)` | Apakah berkas ada → boolean |
+| `ada_berkas(path)` | Apakah ada berkas (bukan direktori) di path → boolean. Berkas yang sedang dikunci program lain tetap `benar`. Untuk berkas **atau** direktori, pakai `jalur.ada(path)` |
 | `hapus_berkas(path)` | Hapus berkas |
 
 ### 1.7 Waktu & Tanggal
