@@ -1406,8 +1406,10 @@ berkas secara biasa (`indk berkas.idk`) **tidak** menjalankan fungsi `uji_*`.
 
 ### `indk periksa` — linter
 
-Melaporkan variabel lokal yang dideklarasikan dengan `variabel` tetapi tidak
-pernah dibaca:
+Melaporkan variabel lokal yang dideklarasikan di dalam fungsi tetapi tidak
+pernah dibaca — baik yang ditulis `variabel x = ...` maupun yang implisit
+(`x = ...` tanpa kata `variabel`, lihat K3). Keduanya sama-sama deklarasi,
+jadi keduanya diperiksa:
 
 ```text
 $ indk periksa berkas.idk
@@ -1418,6 +1420,21 @@ berkas.idk:3  variabel lokal 'sementara' tidak pernah dipakai
 Exit code 0 bila bersih, 1 bila ada temuan. Nama berawalan garis bawah
 (`_sisa`) sengaja diabaikan — itu konvensi "memang tidak dipakai". Parameter
 fungsi dan variabel dari `untuk`/`kecuali ... sebagai` tidak diperiksa.
+
+Menulis tanpa pernah membaca tetap dilaporkan, karena nilainya tidak pernah
+dipakai:
+
+```indonesiaku
+fungsi hitung(a, b) {
+    sisa = 5            # dilaporkan: ditulis, tidak pernah dibaca
+    jumlah = a + b
+    kembalikan jumlah
+}
+```
+
+Variabel yang ditulis di satu cabang lalu dibaca sesudahnya, akumulator di
+dalam perulangan, dan variabel yang ditangkap closure lewat `nonlokal`
+**tidak** dilaporkan — semuanya memang dipakai.
 
 ### `indk rapikan` — merapikan format kode
 

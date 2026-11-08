@@ -1298,7 +1298,6 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | T-W2 | Sedang | Berkas sumber UTF-8 dengan BOM ditolak. Python menerimanya. | Pemindai tidak melewati BOM `EF BB BF` di awal berkas. | Simpan sebagai "UTF-8" tanpa BOM |
 | T-W3 | Sedang | Teks non-ASCII yang dicetak ke konsol Windows berbahasa Inggris (code page 437/850) menjadi mojibake; keluaran yang ditangkap PowerShell ke variabel atau berkas juga rusak. | Program menulis byte UTF-8 tanpa `SetConsoleOutputCP(CP_UTF8)`. | `chcp 65001` sebelum menjalankan `indk` |
 | T-W4 | Rendah | Teks non-ASCII yang dipipakan dari PowerShell 5.1 menjadi `?`. | Perilaku PowerShell 5.1 (`$OutputEncoding` bawaan ASCII), bukan indk; dicatat agar tidak dilaporkan ulang. | `$OutputEncoding = [System.Text.UTF8Encoding]::new($false)` atau PowerShell 7 |
-| T-U1 | Rendah (semua OS) | `indk periksa` hanya melaporkan lokal yang dideklarasikan `variabel`; lokal implisit (`sisa = 5` di dalam fungsi, K3) yang tak pernah dipakai tidak dilaporkan. | Cakupan linter; uji `tests/lint/` hanya memakai `variabel`. | — |
 
 Temuan ini belum diperbaiki. Perbaikannya mengikuti alur fitur biasa
 (rencana di `docs/RENCANA_FITUR/`, uji regresi, lalu rilis patch) dan tidak
@@ -1349,6 +1348,7 @@ jadi temuan ini tidak bisa kembali tanpa membuat suite merah.
 
 | Kode | Temuan | Status | Regresi |
 |---|---|---|---|
+| T-U1 | `indk periksa` buta terhadap lokal implisit (`sisa = 5` tanpa kata `variabel`, K3); karena `variabel` opsional, itu mayoritas kode nyata | ✅ selesai | `tests/lint/lokal_implisit.idk` |
 | T-U2 | `x = a jika c selain b` tanpa `variabel` dikompilasi sebagai `(x = a) jika c selain b`: bila kondisinya salah, `x` tidak di-assign sama sekali | ✅ selesai | `examples/kondisional_assignment.idk` |
 | T-U3 | Di dalam fungsi, panggilan dengan argumen bernama membuat argumen posisi yang berupa global/upvalue menjadi `kosong`: `g(D, b = 2)` → `[kosong, 2]` (di tingkat skrip benar `[7, 2]`) | ✅ selesai | `examples/argumen_bernama_lingkup.idk` |
 | T-U4 | Variabel `untuk` berlingkup blok: variabel lama bernama sama tidak berubah setelah loop (`99`), dan nama itu tidak terdefinisi setelah loop — berbeda dengan Python | ✅ selesai | `examples/untuk_lingkup.idk` |

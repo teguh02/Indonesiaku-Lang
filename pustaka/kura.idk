@@ -129,7 +129,7 @@ kelas Kura {
             setengah = 0 - setengah
         }
         diri.kiri(setengah)
-        untuk i dalam rentang(langkah) {
+        untuk _i dalam rentang(langkah) {
             diri.maju(sisi)
             diri.kiri(w)
         }
