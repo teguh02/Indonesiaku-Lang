@@ -451,6 +451,18 @@ if [ -f tests/web_cors.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Regresi keamanan menyeluruh (Fase 13): fixation, CSRF, izin, XSS, SQLi,
+# enumerasi nama, kuncian brute force — diuji pada aplikasi CRUD nyata.
+if [ -f tests/keamanan_app.sh ]; then
+    echo ""
+    if bash tests/keamanan_app.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES keamanan-app"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Tag versi (image playground, LABEL rilis, cache-buster website) harus
 # mengikuti INDK_VERSION; yang tertinggal tidak pernah gagal sendiri.
 if [ -f tests/versi_konsisten.sh ]; then
