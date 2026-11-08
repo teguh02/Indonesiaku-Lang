@@ -21,7 +21,7 @@ GAGAL=0
 periksa() {
     local nama="$1" berkas="$2" pola="$3"
     local dapat
-    dapat="$(grep -oE "$pola" "$berkas" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | sort -u | tr '\n' ' ' | sed 's/ $//')"
+    dapat="$(grep -oE "$pola" "$berkas" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.[0-9]+)?' | sort -u | tr '\n' ' ' | sed 's/ $//')"
     if [ "$dapat" = "$VERSI" ]; then
         echo "  ok   $nama = $VERSI"
     else
@@ -31,16 +31,16 @@ periksa() {
 }
 
 echo "Tag versi konsisten dengan INDK_VERSION ($VERSI):"
-periksa "base image playground" docker/playground/Dockerfile '^FROM teguh02/indonesiaku:[0-9.]+'
-periksa "image compose playground" docker/playground/docker-compose.yml 'image: indonesiaku-website:[0-9.]+'
-periksa "LABEL version image rilis" docker/images/Dockerfile 'LABEL version="[0-9.]+"'
+periksa "base image playground" docker/playground/Dockerfile '^FROM teguh02/indonesiaku:[0-9][0-9a-z.-]*'
+periksa "image compose playground" docker/playground/docker-compose.yml 'image: indonesiaku-website:[0-9][0-9a-z.-]*'
+periksa "LABEL version image rilis" docker/images/Dockerfile 'LABEL version="[0-9][0-9a-z.-]*"'
 # Image aplikasi (docker/aplikasi) ikut dijaga di sini; kalau tidak, tag-nya
 # diam-diam menyimpang setiap kali versi dinaikkan.
-periksa "image compose aplikasi" docker/aplikasi/docker-compose.yml 'image: indonesiaku-aplikasi:[0-9.]+'
+periksa "image compose aplikasi" docker/aplikasi/docker-compose.yml 'image: indonesiaku-aplikasi:[0-9][0-9a-z.-]*'
 
 # Cache-buster aset situs: HTML baru dengan ?v= lama menampilkan CSS basi
 # karena Cloudflare menyimpan assets/* selama 4 jam.
-LAIN="$(grep -rhoE '\?v=[0-9]+\.[0-9]+\.[0-9]+' website/ | sort -u | grep -v "?v=$VERSI" | tr '\n' ' ')"
+LAIN="$(grep -rhoE '\?v=[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.[0-9]+)?' website/ | sort -u | grep -v "?v=$VERSI" | tr '\n' ' ')"
 if [ -z "$LAIN" ]; then
     echo "  ok   cache-buster website semuanya ?v=$VERSI"
 else
