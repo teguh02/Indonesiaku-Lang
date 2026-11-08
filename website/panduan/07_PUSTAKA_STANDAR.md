@@ -557,6 +557,10 @@ melihat spasi tersembunyi di ujung teks.
 
 Semua kesalahan dapat ditangkap `coba/kecuali`.
 
+Di Windows, jalur yang lebih panjang dari 260 karakter didukung oleh fungsi
+berkas dan direktori di bawah ini, juga saat menjalankan skrip dan `impor`.
+Setelan registri `LongPathsEnabled` tidak diperlukan.
+
 | Fungsi | Deskripsi |
 |--------|-----------|
 | `buka_berkas(path, mode)` | Buka berkas → handle. Mode: `"b"` baca, `"t"` tulis, `"s"` sambung |

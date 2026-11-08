@@ -1253,6 +1253,7 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | WIN-14 | Proses anak | PUS-05 (`proses.jalankan([jalur_indk(), "-v"])`) | `0 benar` |
 | WIN-15 | Uninstall | Jalankan `unins000.exe` | Folder dan entri `PATH` hilang; terminal baru tidak mengenali `indk` |
 | WIN-16 | SmartScreen / Defender | Unduh dan jalankan installer dari peramban | Peringatan (jika ada) dicatat; tidak ada deteksi malware |
+| WIN-18 | Jalur lebih dari 260 karakter (T-W10) | Jalankan `tests\test_jalur_panjang.ps1` dari folder hasil ekstrak, atau buat folder bersarang > 260 karakter lalu `indk` menjalankan `buat_direktori`, `tulis_semua`, `baca_semua`, `isi_direktori`, `hapus_berkas` di dalamnya | Semua berhasil. Catat nilai `LongPathsEnabled` mesin uji (`HKLM\SYSTEM\CurrentControlSet\Control\FileSystem`) di hasil |
 
 ## 7. Hasil uji terakhir — `1.4.0`, 2026-11-03
 
@@ -1338,7 +1339,7 @@ sebagai bug hanya temuan terkonfirmasi.
 | T-W7 | Tinggi | Temuan keamanan pada soket server. Rincian dilaporkan lewat jalur privat, tidak dicantumkan di sini sampai diperbaiki |
 | T-W8 | Tinggi | ✅ **Diperbaiki (1.4.1).** Kompilator crash (`0xC00000FD` stack overflow, tanpa pesan) pada 32 `fungsi` bersarang atau ±2500 kurung bersarang. Pengukuran ulang per bentuk: `fungsi` jatuh pada **16 level**, sedangkan kurung dan `jika` aman sampai 1000 — sebabnya frame `function()` sebesar 42.640 byte di stack, bukan rekursi parser umum. Struct `Compiler` dan larik parameter dipindah ke heap (frame turun ke 224 byte) dan ditambah penjaga `NESTING_MAX = 200` yang memberi galat kompilasi rapi |
 | T-W9 | Sedang | `ada_berkas()` memberi `salah` untuk berkas yang ada tetapi sedang dikunci proses lain (memakai `fopen`, bukan `stat`); `jalur.ada()` benar |
-| T-W10 | Sedang | Jalur lebih dari 260 karakter tidak didukung: `ada_berkas` salah, `baca_semua` dan `isi_direktori` gagal, walau `LongPathsEnabled=1` |
+| T-W10 | Sedang | ✅ **Diperbaiki (1.6.0).** Jalur lebih dari 260 karakter tidak didukung: `ada_berkas` salah, `baca_semua` dan `isi_direktori` gagal, walau `LongPathsEnabled=1` (biner tanpa manifest `longPathAware`). Kini `keLebarJalur()` di `src/sistem.c` memberi awalan `\\?\` pada jalur yang bentuk absolutnya ≥ 248 karakter. Dijaga `tests/test_jalur_panjang.ps1` (sabotase per titik panggil: 6/6 merah), kasus WIN-18 |
 | T-W11 | Rendah | `jam()` mengukur waktu dinding di Windows, padahal dokumentasi menyebut waktu CPU (`clock()` di UCRT) |
 
 **Temuan tingkat tinggi yang tidak khas Windows** (bug bahasa, kemungkinan
