@@ -549,7 +549,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 ### Strategi penomoran dan kapan menerbitkan rilis
 
-**Baseline:** tag publik terakhir ialah `v1.5.0`. Nomor berikut bersifat **rekomendasi** yang dapat digeser jika pekerjaan sebenarnya berubah. Jangan membuat tag hanya karena nomor fase berganti. Versi mengikuti SemVer (`MAJOR.MINOR.PATCH`): perubahan kompatibel dan fitur baru = minor, perbaikan tanpa penambahan fitur = patch, dan perubahan yang memutus API/sintaks atau format eksternal = major (mis. `v2.0.0`). Sejak v1.0.0, kebijakan proyek menghindari breaking change sampai v2.0.0; bila tidak dapat dihindari, pisahkan ke rencana v2.0, jangan memasukkannya diam-diam ke seri v1.x.
+**Baseline:** tag stabil terakhir ialah `v1.5.0`; prarilis terakhir `v1.6.0-rc.1` (Fase 13, 7 November 2026) menunggu uji paket di tiga OS sebelum menjadi `v1.6.0`. Nomor berikut bersifat **rekomendasi** yang dapat digeser jika pekerjaan sebenarnya berubah. Jangan membuat tag hanya karena nomor fase berganti. Versi mengikuti SemVer (`MAJOR.MINOR.PATCH`): perubahan kompatibel dan fitur baru = minor, perbaikan tanpa penambahan fitur = patch, dan perubahan yang memutus API/sintaks atau format eksternal = major (mis. `v2.0.0`). Sejak v1.0.0, kebijakan proyek menghindari breaking change sampai v2.0.0; bila tidak dapat dihindari, pisahkan ke rencana v2.0, jangan memasukkannya diam-diam ke seri v1.x.
 
 **Catatan faktual (bukan rencana):** Fase 10, 11 dan 12 selesai dalam satu rentang pengembangan dan terbit **bersama** sebagai `v1.5.0` pada 7 November 2026, bukan sebagai tiga minor terpisah. Kolom "Rilis stabil rekomendasi" di bawah sudah disesuaikan ke nomor yang akan benar-benar dipakai, sehingga tabel ini tidak lagi menjanjikan tag yang sudah terlewat. Pelajarannya ditulis di sini supaya tidak terulang: **nomor di tabel adalah rencana sampai `git tag` benar-benar dibuat**; menulis "Selesai 1.5.0" di dokumen fase ketika tag itu belum ada membuat roadmap dan kenyataan berbeda tanpa ada yang menyadarinya.
 
@@ -559,7 +559,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 | 10 — Database | — | `v1.5.0` ✅ terbit | Driver dan integration tests MySQL/MariaDB/PostgreSQL lulus |
 | 11 — HTTP/HTTPS | — | `v1.5.0` ✅ terbit | Validasi TLS dan uji keamanan/protokol server lulus |
 | 12 — HTML SSR | — | `v1.5.0` ✅ terbit | Templating aman dan contoh SSR lengkap |
-| 13 — Web security | `v1.6.0-rc.1` | `v1.6.0` | Audit dan tes auth/session/CSRF lulus |
+| 13 — Web security | `v1.6.0-rc.1` ✅ terbit | `v1.6.0` | Audit dan tes auth/session/CSRF lulus |
 | 14 — Package manager | `v1.7.0-rc.1` | `v1.7.0` | Resolusi dependensi dan supply-chain checks lulus |
 | 15 — Debugger & FFI | `v1.8.0-rc.1` | `v1.8.0` | API native/GC dan debug tests lulus |
 | 16 — WASM & performa | `v1.9.0-rc.1` | `v1.9.0` | Uji browser/WASM dan benchmark yang relevan lulus |
@@ -808,7 +808,7 @@ sesi dapat ditebak dari header `Date` — membangun session store di atasnya aka
 menghasilkan fitur yang tampak benar dan sepenuhnya tidak aman. Rencananya di
 `docs/RENCANA_FITUR/selesai/acak_aman.md`, dijaga `tests/acak_aman.sh`.
 
-**Rekomendasi rilis fase: `v1.6.0` (minor), kandidat `v1.6.0-rc.1`; patch `v1.6.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.
+**Rekomendasi rilis fase: `v1.6.0` (minor), kandidat `v1.6.0-rc.1`; patch `v1.6.1` dan seterusnya jika hanya perbaikan kompatibel.** Kandidat `v1.6.0-rc.1` **sudah ditag** (7 November 2026); `v1.6.0` stabil menunggu uji paket rilis di Windows, macOS, dan Linux sesuai `docs/TESTING/`.
 
 **Gerbang rilis:** Session, cookie, CSRF, autentikasi dan otorisasi mencapai acceptance tests serta audit keamanan dasar, tanpa klaim aman produksi absolut.
 

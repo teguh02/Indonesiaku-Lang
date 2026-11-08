@@ -7,6 +7,29 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [1.6.0-rc.1] - 2026-11-07
+
+Kandidat rilis untuk v1.6.0 (Fase 13 — keamanan web dan autentikasi).
+Seluruh butir Fase 13 selesai: sesi dan kuki, CSRF, CORS dan trusted-proxy,
+autentikasi dengan peran, contoh aplikasi CRUD, dan regresi keamanan.
+
+**Yang sudah dibuktikan:** suite 327/327; panduan 206/206; CI 23/23 hijau di
+Linux, macOS, dan Windows; goldens (166) dan tes galat (114) lulus pada build
+`-DDEBUG_STRESS_GC -fsanitize=address,undefined` tanpa satu pun temuan
+sanitizer.
+
+**Yang BELUM dibuktikan, dan karena itu ini RC dan bukan rilis stabil:**
+paket rilis (`.deb`, `.tar.gz`, installer Windows) belum diuji di mesin bersih
+pada ketiga OS. `docs/TESTING/{LINUX,MACOS,WINDOWS}.md` masih
+`⬜ belum diuji` dan tidak diisi sampai ada yang benar-benar menjalankannya.
+CI membangun dari sumber di runner — itu bukan hal yang sama dengan menguji
+paket terpasang, dan justru perbedaan itulah yang dulu melewatkan seluruh bug
+khusus Windows.
+
+Teks versi yang terlihat pengunjung di `website/*.html` sengaja tetap
+`v1.5.0`: situs publik mengiklankan rilis stabil, dan RC bukan itu. Yang
+dinaikkan hanya `INDK_VERSION`, tag image Docker, dan cache-buster aset.
+
 ### Ditambahkan
 
 - **Contoh aplikasi CRUD dengan login dan peran.** `examples/catatan_app.idk`
