@@ -1581,10 +1581,7 @@ Value nativeFnAdaBerkas(int argCount, Value* args) {
         nativeRaise("ada_berkas() hanya menerima string path");
         return BOOL_VAL(false);
     }
-    FILE* fp = sistemBukaBerkas(AS_STRING(args[0])->chars, "rb");
-    if (fp == NULL) return BOOL_VAL(false);
-    fclose(fp);
-    return BOOL_VAL(true);
+    return BOOL_VAL(sistemAdaBerkas(AS_STRING(args[0])->chars));
 }
 
 Value nativeFnHapusBerkas(int argCount, Value* args) {

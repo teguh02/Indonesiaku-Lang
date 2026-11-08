@@ -153,6 +153,19 @@ if (Test-Path $unicode) {
     }
 }
 
+# ada_berkas() untuk berkas yang dikunci proses lain (T-W9).
+$terkunci = Join-Path $PSScriptRoot "test_ada_berkas_terkunci.ps1"
+if (Test-Path $terkunci) {
+    Write-Host ""
+    $total++
+    & powershell -ExecutionPolicy Bypass -File $terkunci
+    if ($LASTEXITCODE -eq 0) {
+        $passed++
+    } else {
+        $failed++; $failures += "ada-berkas-terkunci"
+    }
+}
+
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host "TOTAL: $passed/$total PASSED" -ForegroundColor Cyan
 if ($failed -eq 0) {
