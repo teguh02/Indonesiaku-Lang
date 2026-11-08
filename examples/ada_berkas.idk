@@ -1,0 +1,27 @@
+# ada_berkas(jalur) -> benar bila ada sesuatu yang BUKAN direktori di jalur.
+#
+# Sejak T-W9, ada_berkas() menanyakan metadata berkas (stat /
+# GetFileAttributesExW), bukan mencoba membukanya. Dulu jawabannya bergantung
+# pada OS: direktori dijawab benar di Linux/macOS (fopen pada direktori
+# berhasil di sana) tetapi salah di Windows, dan berkas yang sedang dikunci
+# proses lain dijawab salah di Windows. Untuk "apakah ada berkas ATAU
+# direktori", pakai jalur.ada().
+
+impor jalur
+
+berkas = "_contoh_ada_berkas.txt"
+dir = "_contoh_ada_berkas_dir"
+
+tulis_semua(berkas, "x")
+buat_direktori(dir)
+
+cetak("berkas ada:", ada_berkas(berkas))
+cetak("direktori:", ada_berkas(dir))
+cetak("direktori lewat jalur.ada:", jalur.ada(dir))
+cetak("tidak ada:", ada_berkas("_contoh_tidak_pernah_ada.txt"))
+cetak("di dalam berkas:", ada_berkas(berkas + "/anak.txt"))
+cetak("teks kosong:", ada_berkas(""))
+
+hapus_berkas(berkas)
+hapus_direktori(dir)
+cetak("setelah dihapus:", ada_berkas(berkas), ada_berkas(dir))

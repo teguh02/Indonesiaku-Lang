@@ -25,6 +25,11 @@ void sistemSiapkanProses(int* argc, const char*** argv);
 // library calls for any path that came from a user.
 FILE* sistemBukaBerkas(const char* jalur, const char* mode);
 int sistemHapusBerkas(const char* jalur);
+// ada_berkas(): true when something that is not a directory exists at
+// `jalur`. Asks the filesystem for metadata (stat / GetFileAttributesExW)
+// instead of opening the file, so a file locked by another process or
+// without read permission still counts as existing (T-W9).
+bool sistemAdaBerkas(const char* jalur);
 // Environment variable as UTF-8 in a malloc'd buffer (free it), or NULL.
 char* sistemAmbilLingkungan(const char* nama);
 
