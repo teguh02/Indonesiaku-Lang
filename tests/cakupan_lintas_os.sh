@@ -15,6 +15,12 @@
 # sub-suite .sh jalan di Windows: banyak yang memang Linux-only (docker, /proc,
 # dpkg, valgrind). Yang dijaga adalah daftar izin di bawah -- menambah entri ke
 # sana adalah keputusan sadar, sedangkan lupa mendaftarkan tes bukan.
+#
+# CATATAN untuk siapa pun yang menambah entri ke daftar izin: mendaftarkan tes
+# ke Windows sering memerahkannya pertama kali karena indk.exe menulis CRLF,
+# sedangkan $(...) hanya memangkas newline TERAKHIR. Saring dengan `tr -d '\r'`
+# dan ambil kode keluar lewat ${PIPESTATUS[0]}, bukan $? (itu kode keluar tr,
+# yang hampir selalu 0 dan menyembunyikan kegagalan).
 
 set -u
 cd "$(dirname "$0")/.."

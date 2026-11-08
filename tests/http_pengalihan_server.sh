@@ -37,7 +37,13 @@ for _ in $(seq 1 50); do
     sleep 0.1
 done
 
-KELUARAN="$(IDK_PORT="$PORT" "$INDK" tests/bantu/klien_pengalihan.idk 2>&1)"
+# indk.exe menulis CRLF, dan $(...) hanya memangkas newline TERAKHIR -- setiap
+# baris lain tetap berakhir '\r', sehingga seluruh perbandingan gagal di
+# Windows walau nilainya benar. Saring sebelum membandingkan.
+#
+# PIPESTATUS, bukan $?: dengan pipa ke tr, $? adalah kode keluar tr (selalu 0)
+# sehingga klien yang jatuh akan lolos tanpa terdeteksi.
+KELUARAN="$(IDK_PORT="$PORT" "$INDK" tests/bantu/klien_pengalihan.idk 2>&1 | tr -d '\r'; exit "${PIPESTATUS[0]}")"
 HASIL=$?
 
 # Kuota sengaja dilebihkan, jadi server masih menunggu permintaan berikutnya.
