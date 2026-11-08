@@ -7,6 +7,18 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Diperbaiki
+
+- **`indk periksa` kini melihat lokal implisit (T-U1).** `sisa = 5` di dalam
+  fungsi membuat variabel fungsi-lokal (K3), tetapi linter hanya memeriksa
+  yang ditulis `variabel x`. Karena kata `variabel` opsional, linter praktis
+  buta terhadap mayoritas kode nyata. Slot prescan yang pasti terbayangi
+  deklarasi `variabel` di blok bersarang dikecualikan -- slot mati itu artefak
+  kompiler, bukan kesalahan pengguna. Bytecode tidak berubah.
+- Dua kode mati yang langsung ditemukan linter setelah perbaikan di atas:
+  `variabel selesai` yang tak pernah dipakai di `pustaka/templat.idk`, dan
+  variabel perulangan `i` yang tak dipakai di `pustaka/kura.idk` (menjadi `_i`).
+
 ### Ditambahkan
 
 - **Penjaga cakupan tes lintas-OS.** `tests/cakupan_lintas_os.sh` menolak

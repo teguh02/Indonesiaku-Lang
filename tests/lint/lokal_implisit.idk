@@ -1,0 +1,58 @@
+# T-U1: lokal implisit (K3) -- `x = ...` di dalam fungsi TANPA kata `variabel`.
+# Ini cara paling umum mendeklarasikan variabel di Indonesiaku, jadi linter
+# yang hanya melihat `variabel` praktis buta terhadap mayoritas kode.
+
+fungsi hitung(a, b) {
+    sisa = 5
+    jumlah = a + b
+    kembalikan jumlah
+}
+
+# Pola SAH -- tidak boleh dilaporkan:
+
+# 1. ditulis di satu cabang, dibaca sesudahnya
+fungsi cabang(x) {
+    jika x > 0 { hasil = "positif" } selain { hasil = "negatif" }
+    kembalikan hasil
+}
+
+# 2. akumulator: ditulis ulang di dalam loop, dibaca di akhir
+fungsi akumulasi(daftar) {
+    total = 0
+    untuk n dalam daftar { total = total + n }
+    kembalikan total
+}
+
+# 3. ditangkap closure lewat `nonlokal`
+fungsi penutup() {
+    pencacah = 0
+    fungsi naik() { nonlokal pencacah  pencacah = pencacah + 1  kembalikan pencacah }
+    kembalikan naik
+}
+
+# 4. awalan '_' = sengaja diabaikan
+fungsi abai() {
+    _sengaja = 99
+    kembalikan 1
+}
+
+# 5. `variabel x` di blok BERSARANG, lalu `x = ...` lagi di blok yang sama.
+#    Assignment implisit itu membuat prescan mengalokasikan slot fungsi-level,
+#    yang langsung dibayangi oleh `variabel` dan tidak pernah dibaca. Slot mati
+#    itu artefak kompiler -- bukan kesalahan pengguna. Inilah pola yang dipakai
+#    di seluruh pustaka/ (web.idk:626 dsb) dan sempat memicu 77 false positive.
+fungsi terbayangi(info) {
+    jika info > 0 {
+        variabel etag = "W/" + ke_teks(info)
+        etag = etag + "-akhir"
+        kembalikan etag
+    }
+    kembalikan ""
+}
+
+cetak(hitung(1, 2))
+cetak(cabang(1))
+cetak(akumulasi([1, 2, 3]))
+cetak(penutup()())
+cetak(abai())
+cetak(terbayangi(7))

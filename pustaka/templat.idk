@@ -320,7 +320,6 @@ fungsi _t_urai_blok(sumber, pos, henti, kedalaman, hitung) {
             }
             variabel kata = bagian[0]
 
-            variabel selesai = salah
             untuk h dalam henti {
                 jika kata == h {
                     kembalikan [node, sesudah, kata]

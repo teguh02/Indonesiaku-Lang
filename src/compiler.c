@@ -2225,6 +2225,10 @@ static void prescanFunctionBody() {
     int pendingCount = 0;
     Token declared[UINT8_COUNT];   // `variabel x` at the body's own depth
     int declaredCount = 0;
+    // `variabel x` di kedalaman mana pun — dipakai HANYA untuk menekan lint
+    // atas slot prescan yang pasti terbayangi. Tidak memengaruhi bytecode.
+    Token shadowed[UINT8_COUNT];
+    int shadowedCount = 0;
     Token chain[UINT8_COUNT];      // the names in `a, b, c = ...`
     int chainCount = 0;
     ScannerState saved = saveScanner();
@@ -2301,6 +2305,14 @@ static void prescanFunctionBody() {
                 declaredCount < UINT8_COUNT) {
                 declared[declaredCount++] = next;
             }
+            // Untuk LINT saja: `variabel x` pada kedalaman BERAPA PUN berarti
+            // slot prescan bernama sama akan dibayangi deklarasi itu dan tidak
+            // pernah dibaca. Slotnya tetap dibuat (semantik tak berubah), tapi
+            // melaporkannya sebagai "tidak pernah dipakai" adalah false
+            // positive: yang mati adalah artefak kompiler, bukan kode pengguna.
+            if (next.type == TOKEN_IDENTIFIER && shadowedCount < UINT8_COUNT) {
+                shadowed[shadowedCount++] = next;
+            }
             prev2 = token;
             prev = next;
             token = scanToken();
@@ -2363,6 +2375,13 @@ static void prescanFunctionBody() {
         if (current->localCount == UINT8_COUNT) break;
         addLocal(*name);
         markInitialized();
+        // K3 locals are real user declarations: `sisa = 5` inside a function is
+        // how most people declare a variable here, `variabel` being optional.
+        // Without this the linter only ever saw explicit `variabel` (T-U1).
+        // Kecuali bila nama itu juga dideklarasikan `variabel` di blok
+        // bersarang: slot ini pasti terbayangi, jadi "tidak pernah dipakai"
+        // bukan kesalahan pengguna.
+        if (!scopeNameDeclared(shadowed, shadowedCount, name)) markLintable();
         emitByte(OP_KOSONG);
     }
 }

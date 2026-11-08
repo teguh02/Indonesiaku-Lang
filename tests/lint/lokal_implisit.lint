@@ -1,0 +1,2 @@
+tests/lint/lokal_implisit.idk:6  variabel lokal 'sisa' tidak pernah dipakai
+1 temuan
