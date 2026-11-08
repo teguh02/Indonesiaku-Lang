@@ -1282,6 +1282,7 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | WIN-16 | SmartScreen / Defender | Unduh dan jalankan installer dari peramban | Peringatan (jika ada) dicatat; tidak ada deteksi malware |
 | WIN-17 | Berkas yang dikunci proses lain (T-W9) | Di PowerShell: `$fs = [IO.File]::Open("kunci.txt", 'Open', 'ReadWrite', 'None')`, lalu `indk` menjalankan `cetak(ada_berkas("kunci.txt"))`; tutup dengan `$fs.Close()` | `benar` (sama dengan `jalur.ada`) |
 | WIN-18 | Jalur lebih dari 260 karakter (T-W10) | Jalankan `tests\test_jalur_panjang.ps1` dari folder hasil ekstrak, atau buat folder bersarang > 260 karakter lalu `indk` menjalankan `buat_direktori`, `tulis_semua`, `baca_semua`, `isi_direktori`, `hapus_berkas` di dalamnya | Semua berhasil. Catat nilai `LongPathsEnabled` mesin uji (`HKLM\SYSTEM\CurrentControlSet\Control\FileSystem`) di hasil |
+| WIN-19 | Kode dipipakan dari PowerShell 5.1 ke REPL dengan BOM (T-W12) | Di Windows PowerShell 5.1: `$OutputEncoding = [Text.Encoding]::UTF8`, lalu `'x = 21', 'cetak(x * 2)' \| indk` | `42` tercetak, tanpa `Karakter tidak dikenal` |
 
 ## 7. Hasil uji terakhir — `1.6.0-rc.1`, 2026-11-08
 
@@ -1384,6 +1385,15 @@ Installer 1.6.0-rc.1 tidak menambahkannya, karena pemeriksaan
 Temuan lain dari uji ekstensif 1.4.0 (T-W6–T-W11, T-U*) tidak diuji ulang
 dalam putaran ini; statusnya tetap seperti tercatat di bawah dan di
 `lampiran/`.
+
+### Temuan baru sesudah `1.6.0-rc.1`
+
+Ditemukan saat mencoba paket installer `1.6.0-rc.1` di Windows 11 (PowerShell
+5.1), 2026-11-08, oleh Rafa Okta Habibilah dibantu Claude Code (AI).
+
+| Kode | Tingkat | Temuan | Status |
+|---|---|---|---|
+| T-W12 | Rendah | Kode yang dipipakan dari PowerShell 5.1 ke REPL (`'x = 21', 'cetak(x * 2)' \| indk`) gagal di baris 1 dengan `Karakter tidak dikenal`. PowerShell menyisipkan BOM di depan pipa bila encoding pipanya UTF-8 ber-BOM; setelah `$OutputEncoding = [Text.Encoding]::UTF8` bahkan **dua** (`EF BB BF EF BB BF`, dibuktikan dengan `od -t x1`). Berkas ber-BOM sudah diterima sejak T-W2, tetapi REPL tidak | ✅ **Diperbaiki (1.6.0).** REPL membuang BOM berturut-turut di awal sesi, seperti `readFile()` dan seperti `python` yang membaca kode dari pipa. Penyimpangan sadar dari Python: Python hanya membuang satu dan gagal pada BOM kedua, sehingga kasus PowerShell di atas tetap rusak di sana. `input()` sengaja tidak diubah: Python juga mempertahankan U+FEFF (lihat WIN-12 di atas). Diverifikasi di PowerShell 5.1.26100 sungguhan. Dijaga `tests/test_stdin_bom.sh` (sabotase: kode lama 4 merah, buang-di-tiap-baris 1 merah, buang-satu-BOM 1 merah), kasus WIN-19 |
 
 ### Hasil sebelumnya — `1.4.0`, 2026-11-03
 
