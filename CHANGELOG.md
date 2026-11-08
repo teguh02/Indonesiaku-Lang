@@ -5,7 +5,11 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.0] - 2026-11-08
+
+Rilis stabil Fase 13. Memuat **seluruh** perubahan pada prarilis
+`1.6.0-rc.1` di bawah, ditambah perbaikan berikut yang ditemukan saat
+uji paket rilis di Windows 11 asli.
 
 ### Diperbaiki
 
@@ -58,6 +62,8 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   diam-diam; tiga sisanya sudah diuji golden suite secara byte-exact.
 
 ## [1.6.0-rc.1] - 2026-11-07
+
+Prarilis dari 1.6.0; isinya ikut terbit pada 1.6.0.
 
 Kandidat rilis untuk v1.6.0 (Fase 13 — keamanan web dan autentikasi).
 Seluruh butir Fase 13 selesai: sesi dan kuki, CSRF, CORS dan trusted-proxy,
