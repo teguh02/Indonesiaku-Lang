@@ -1333,7 +1333,7 @@ sebagai bug hanya temuan terkonfirmasi.
 
 | Kode | Tingkat | Temuan |
 |---|---|---|
-| T-W5 | Sedang | Isi `argumen` dengan karakter di luar code page ANSI menjadi `?` (`"日本"` → `[63, 63]`); akar masalahnya sama dengan T-W1 (`main` ANSI, bukan `wmain`) |
+| T-W5 | Sedang | ✅ **Diperbaiki (1.5.0) bersama T-W1.** Isi `argumen` dengan karakter di luar code page ANSI menjadi `?` (`"日本"` → `[63, 63]`); akar masalahnya sama dengan T-W1 (`main` ANSI, bukan `wmain`). `sistemSiapkanProses()` kini mengambil argv dari `GetCommandLineW()` + `CommandLineToArgvW()`. Diverifikasi ulang di 1.6.0-rc.1: `"日本"` → `[26085, 26412]`. Dijaga `tests/test_jalur_unicode.ps1` (argumen berisi `☕`, di luar code page ANSI mana pun) |
 | T-W6 | Tinggi | Temuan keamanan pada menjalankan proses anak. Rincian dilaporkan lewat jalur privat, tidak dicantumkan di sini sampai diperbaiki |
 | T-W7 | Tinggi | Temuan keamanan pada soket server. Rincian dilaporkan lewat jalur privat, tidak dicantumkan di sini sampai diperbaiki |
 | T-W8 | Tinggi | ✅ **Diperbaiki (1.4.1).** Kompilator crash (`0xC00000FD` stack overflow, tanpa pesan) pada 32 `fungsi` bersarang atau ±2500 kurung bersarang. Pengukuran ulang per bentuk: `fungsi` jatuh pada **16 level**, sedangkan kurung dan `jika` aman sampai 1000 — sebabnya frame `function()` sebesar 42.640 byte di stack, bukan rekursi parser umum. Struct `Compiler` dan larik parameter dipindah ke heap (frame turun ke 224 byte) dan ditambah penjaga `NESTING_MAX = 200` yang memberi galat kompilasi rapi |
