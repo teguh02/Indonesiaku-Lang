@@ -455,7 +455,10 @@ jobs:
                    tests/web_csrf.sh \
                    tests/web_auth.sh \
                    tests/web_cors.sh \
-                   tests/keamanan_app.sh; do
+                   tests/keamanan_app.sh \
+                   tests/versi_konsisten.sh \
+                   tests/http_pengalihan_server.sh \
+                   tests/cakupan_lintas_os.sh; do
             echo "=== $t ==="
             if bash "$t"; then echo "  ok"; else echo "  GAGAL: $t"; gagal=1; fi
           done

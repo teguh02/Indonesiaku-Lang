@@ -7,6 +7,21 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Ditambahkan
+
+- **Penjaga cakupan tes lintas-OS.** `tests/cakupan_lintas_os.sh` menolak
+  berkas `.ps1` yang ada di repo tetapi tidak pernah dipanggil harness mana
+  pun, dan menolak sub-suite portabel yang lupa didaftarkan ke daftar Git Bash
+  Windows. Keduanya pernah terjadi tanpa memerahkan apa pun.
+- `tests/versi_konsisten.sh` dan `tests/http_pengalihan_server.sh` kini ikut
+  jalan di Windows.
+
+### Dihapus
+
+- `tests/test_output.ps1`. Tidak pernah dipanggil harness mana pun, dan dua
+  dari lima contoh yang diperiksanya sudah tidak ada sehingga dilewati
+  diam-diam; tiga sisanya sudah diuji golden suite secara byte-exact.
+
 ## [1.6.0-rc.1] - 2026-11-07
 
 Kandidat rilis untuk v1.6.0 (Fase 13 — keamanan web dan autentikasi).

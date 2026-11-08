@@ -145,8 +145,8 @@ Indonesiaku/
 │   ├── advanced/          # Advanced examples
 │   └── oop/               # OOP pattern tests
 ├── tests/                 # Test automation
-│   ├── test_all.ps1      # Run all tests
-│   └── test_output.ps1
+│   ├── test_all.sh       # Jalankan semua tes (Linux/macOS)
+│   └── test_all.ps1      # Jalankan semua tes (Windows)
 ├── website/               # Situs dokumentasi + panduan pengguna
 │   ├── index.html
 │   ├── docs.html          # Markdown reader (array DOCS)

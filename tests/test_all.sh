@@ -451,6 +451,18 @@ if [ -f tests/web_cors.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Penjaga cakupan lintas-OS: .ps1 yatim dan sub-suite portabel yang lupa
+# didaftarkan ke Windows. Keduanya pernah terjadi dan tidak memerahkan apa pun.
+if [ -f tests/cakupan_lintas_os.sh ]; then
+    echo ""
+    if bash tests/cakupan_lintas_os.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES cakupan-lintas-os"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Regresi keamanan menyeluruh (Fase 13): fixation, CSRF, izin, XSS, SQLi,
 # enumerasi nama, kuncian brute force — diuji pada aplikasi CRUD nyata.
 if [ -f tests/keamanan_app.sh ]; then
