@@ -1425,14 +1425,15 @@ dalam putaran ini; statusnya tetap seperti tercatat di bawah dan di
 
 | Kode | Tingkat | Temuan | Penyebab dugaan | Jalan pintas sementara |
 |---|---|---|---|---|
-| T-W1 | Tinggi | Skrip di jalur dengan karakter di luar code page ANSI (huruf Jepang, emoji, dsb.) tidak bisa dibuka, dan nama berkas non-ASCII yang ditulis program menjadi mojibake. Pengguna dengan nama folder pengguna non-Latin tidak bisa menjalankan skrip dari folder pribadinya. | `main()` menerima `argv` ANSI dan berkas dibuka dengan `fopen` (byte UTF-8 ditafsirkan sebagai ANSI). Tidak ada `wmain`/`_wfopen`/`GetCommandLineW`. | Letakkan skrip di jalur ASCII |
-| T-W2 | Sedang | Berkas sumber UTF-8 dengan BOM ditolak. Python menerimanya. | Pemindai tidak melewati BOM `EF BB BF` di awal berkas. | Simpan sebagai "UTF-8" tanpa BOM |
-| T-W3 | Sedang | Teks non-ASCII yang dicetak ke konsol Windows berbahasa Inggris (code page 437/850) menjadi mojibake; keluaran yang ditangkap PowerShell ke variabel atau berkas juga rusak. | Program menulis byte UTF-8 tanpa `SetConsoleOutputCP(CP_UTF8)`. | `chcp 65001` sebelum menjalankan `indk` |
+| T-W1 | Tinggi | ✅ **Diperbaiki (1.5.0).** Skrip di jalur dengan karakter di luar code page ANSI (huruf Jepang, emoji, dsb.) tidak bisa dibuka, dan nama berkas non-ASCII yang ditulis program menjadi mojibake. Pengguna dengan nama folder pengguna non-Latin tidak bisa menjalankan skrip dari folder pribadinya. | `main()` menerima `argv` ANSI dan berkas dibuka dengan `fopen` (byte UTF-8 ditafsirkan sebagai ANSI). Tidak ada `wmain`/`_wfopen`/`GetCommandLineW`. | `sistemSiapkanProses()` memakai `GetCommandLineW()` + `CommandLineToArgvW()`, dan semua pembukaan berkas lewat `_wfopen` (`src/sistem.c`). Dijaga `tests/test_jalur_unicode.{sh,ps1}`. Diverifikasi ulang di 1.6.0-rc.1: WIN-08, WIN-09 ✅ tidak kambuh |
+| T-W2 | Sedang | ✅ **Diperbaiki (1.5.0).** Berkas sumber UTF-8 dengan BOM ditolak. Python menerimanya. | Pemindai tidak melewati BOM `EF BB BF` di awal berkas. | `stripUtf8Bom()` melewati `EF BB BF` di awal skrip dan modul (`src/main.c:145`, `src/vm.c:1593`). Dijaga golden `examples/bom_utf8.idk`. Diverifikasi ulang di 1.6.0-rc.1: WIN-10 ✅ tidak kambuh |
+| T-W3 | Sedang | ✅ **Diperbaiki (1.5.0).** Teks non-ASCII yang dicetak ke konsol Windows berbahasa Inggris (code page 437/850) menjadi mojibake; keluaran yang ditangkap PowerShell ke variabel atau berkas juga rusak. | Program menulis byte UTF-8 tanpa `SetConsoleOutputCP(CP_UTF8)`. | Konsol diubah ke code page UTF-8 saat `indk` mulai dan dipulihkan saat keluar (`src/sistem.c:206-241`). Diverifikasi ulang di 1.6.0-rc.1: WIN-11 ✅ tidak kambuh pada dua kondisi code page |
 | T-W4 | Rendah | Teks non-ASCII yang dipipakan dari PowerShell 5.1 menjadi `?`. | Perilaku PowerShell 5.1 (`$OutputEncoding` bawaan ASCII), bukan indk; dicatat agar tidak dilaporkan ulang. | `$OutputEncoding = [System.Text.UTF8Encoding]::new($false)` atau PowerShell 7 |
 
-Temuan ini belum diperbaiki. Perbaikannya mengikuti alur fitur biasa
-(rencana di `docs/RENCANA_FITUR/`, uji regresi, lalu rilis patch) dan tidak
-termasuk dokumen rencana uji ini.
+Temuan yang belum bertanda ✅ masih terbuka. Perbaikannya mengikuti alur fitur
+biasa (rencana di `docs/RENCANA_FITUR/`, uji regresi, lalu rilis patch) dan
+tidak termasuk dokumen rencana uji ini. T-W4 bukan cacat `indk` melainkan
+perilaku PowerShell 5.1, sehingga tidak akan ditandai selesai.
 
 #### Uji ekstensif multi-agen
 
