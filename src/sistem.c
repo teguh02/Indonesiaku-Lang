@@ -144,6 +144,47 @@ static wchar_t* keLebar(const char* utf8) {
     return w;
 }
 
+// Long paths (T-W10). Without the \\?\ prefix the Win32 file API stops at
+// MAX_PATH (260 characters; CreateDirectoryW already at 248) unless the
+// executable's manifest declares longPathAware AND LongPathsEnabled=1. indk
+// has no such manifest, so the registry setting alone changed nothing.
+//
+// keLebarJalur() is keLebar() for filesystem paths: when the ABSOLUTE form
+// reaches that limit it returns \\?\C:\... (or \\?\UNC\server\share\...),
+// which the API accepts up to ~32767 characters. The absolute form is what
+// counts -- a short relative path under a long current directory overflows
+// too. \\?\ switches off Win32 normalisation, so GetFullPathNameW does it
+// first: relative -> absolute, '/' -> '\', '.' and '..' resolved.
+//
+// Shorter paths are passed exactly as before, so device names (NUL, CON),
+// trailing dots and every other legacy rule keep their old behaviour.
+// Not for environment variable names or command lines: use keLebar().
+#define BATAS_JALUR_PENDEK 248
+
+static wchar_t* keLebarJalur(const char* utf8) {
+    wchar_t* w = keLebar(utf8);
+    if (w == NULL) return NULL;
+    // Already a \\?\ or \\.\ path: the caller knows what it is doing.
+    if (wcsncmp(w, L"\\\\?\\", 4) == 0 || wcsncmp(w, L"\\\\.\\", 4) == 0) return w;
+    DWORD perlu = GetFullPathNameW(w, 0, NULL, NULL);   // includes the NUL
+    if (perlu == 0 || perlu - 1 < BATAS_JALUR_PENDEK) return w;
+    wchar_t* penuh = malloc(sizeof(wchar_t) * perlu);
+    if (penuh == NULL) return w;
+    DWORD n = GetFullPathNameW(w, perlu, penuh, NULL);  // excludes the NUL
+    if (n == 0 || n >= perlu) { free(penuh); return w; }
+    bool unc = penuh[0] == L'\\' && penuh[1] == L'\\';
+    const wchar_t* awalan = unc ? L"\\\\?\\UNC\\" : L"\\\\?\\";
+    const wchar_t* sisa = unc ? penuh + 2 : penuh;
+    size_t pa = wcslen(awalan), ps = wcslen(sisa);
+    wchar_t* hasil = malloc(sizeof(wchar_t) * (pa + ps + 1));
+    if (hasil == NULL) { free(penuh); return w; }
+    memcpy(hasil, awalan, sizeof(wchar_t) * pa);
+    memcpy(hasil + pa, sisa, sizeof(wchar_t) * (ps + 1));
+    free(penuh);
+    free(w);
+    return hasil;
+}
+
 static char* keUtf8(const wchar_t* w) {
     int n = WideCharToMultiByte(CP_UTF8, 0, w, -1, NULL, 0, NULL, NULL);
     if (n <= 0) return NULL;
@@ -211,7 +252,7 @@ FILE* sistemBukaBerkas(const char* jalur, const char* mode) {
     size_t i = 0;
     for (; mode[i] != '\0' && i + 1 < sizeof(m) / sizeof(m[0]); i++) m[i] = (wchar_t)mode[i];
     m[i] = L'\0';
-    wchar_t* w = keLebar(jalur);
+    wchar_t* w = keLebarJalur(jalur);
     if (w == NULL) return NULL;
     FILE* f = _wfopen(w, m);
     free(w);
@@ -223,7 +264,7 @@ FILE* sistemBukaBerkas(const char* jalur, const char* mode) {
 
 int sistemHapusBerkas(const char* jalur) {
 #ifdef _WIN32
-    wchar_t* w = keLebar(jalur);
+    wchar_t* w = keLebarJalur(jalur);
     if (w == NULL) return -1;
     int hasil = _wremove(w);
     free(w);
@@ -259,7 +300,7 @@ char* sistemAmbilLingkungan(const char* nama) {
 // existing paths.
 static int jenisJalur(const char* jalur, uint64_t* ukuran, double* waktu, Alasan* alasan) {
 #ifdef _WIN32
-    wchar_t* w = keLebar(jalur);
+    wchar_t* w = keLebarJalur(jalur);
     if (w == NULL) { *alasan = ALASAN_LAIN; return -1; }
     WIN32_FILE_ATTRIBUTE_DATA data;
     BOOL ok = GetFileAttributesExW(w, GetFileExInfoStandard, &data);
@@ -479,7 +520,7 @@ Value nativeFnIsiDirektori(int argCount, Value* args) {
     if (k > 0 && pola[k - 1] != '/' && pola[k - 1] != '\\') pola[k++] = '\\';
     pola[k++] = '*';
     pola[k] = '\0';
-    wchar_t* w = keLebar(pola);
+    wchar_t* w = keLebarJalur(pola);
     free(pola);
     WIN32_FIND_DATAW data;
     HANDLE h = w != NULL ? FindFirstFileW(w, &data) : INVALID_HANDLE_VALUE;
@@ -552,7 +593,7 @@ Value nativeFnBuatDirektori(int argCount, Value* args) {
         return KOSONG_VAL;
     }
 #ifdef _WIN32
-    wchar_t* w = keLebar(jalur);
+    wchar_t* w = keLebarJalur(jalur);
     BOOL ok = w != NULL && CreateDirectoryW(w, NULL);
     free(w);
     if (!ok) galatOS("buat_direktori", jalur, alasanTerakhir());
@@ -580,7 +621,7 @@ Value nativeFnHapusDirektori(int argCount, Value* args) {
         return KOSONG_VAL;
     }
 #ifdef _WIN32
-    wchar_t* w = keLebar(jalur);
+    wchar_t* w = keLebarJalur(jalur);
     BOOL ok = w != NULL && RemoveDirectoryW(w);
     free(w);
     if (!ok) galatOS("hapus_direktori", jalur, alasanTerakhir());

@@ -140,6 +140,19 @@ if (Test-Path $lokasi) {
     }
 }
 
+# Jalur lebih dari 260 karakter: skrip, impor, dan operasi berkas (T-W10).
+$panjang = Join-Path $PSScriptRoot "test_jalur_panjang.ps1"
+if (Test-Path $panjang) {
+    Write-Host ""
+    $total++
+    & powershell -ExecutionPolicy Bypass -File $panjang
+    if ($LASTEXITCODE -eq 0) {
+        $passed++
+    } else {
+        $failed++; $failures += "jalur-panjang"
+    }
+}
+
 # Jalur skrip, argumen, dan nama berkas di luar code page ANSI (T-W1).
 $unicode = Join-Path $PSScriptRoot "test_jalur_unicode.ps1"
 if (Test-Path $unicode) {
