@@ -61,6 +61,7 @@ static void repl() {
     size_t capacity = 8192;
     char* buffer = (char*)malloc(capacity);
     if (buffer == NULL) return;
+    bool firstLineEver = true;
 
     for (;;) {
         size_t length = 0;
@@ -81,6 +82,32 @@ static void repl() {
                 return;
             }
             first = false;
+
+            // What the REPL reads is SOURCE, so a UTF-8 BOM at the very start
+            // is dropped as readFile() does for a script (T-W2). Windows
+            // PowerShell 5.1 prepends one when piping with a UTF-8 encoding
+            // (`"x = 21" | indk` failed with "Karakter tidak dikenal", T-W12);
+            // `printf '\xef\xbb\xbf...' | python` likewise runs the code.
+            //
+            // Every CONSECUTIVE leading BOM goes, not just one: after
+            // `$OutputEncoding = [Text.Encoding]::UTF8` -- the usual advice,
+            // and the case that found this bug -- PowerShell 5.1 writes the
+            // preamble twice (EF BB BF EF BB BF, seen with od). Python stops
+            // at one and fails on the second; stopping there too would leave
+            // exactly those users broken. U+FEFF at the start of code never
+            // means anything, so dropping a run of them loses nothing.
+            //
+            // Only the start of the session: a BOM later is a stray
+            // character, as in a file. input() is untouched on purpose --
+            // Python's input() keeps U+FEFF too (WIN-12, docs/TESTING).
+            if (firstLineEver) {
+                size_t before;
+                do {
+                    before = lineLength;
+                    lineLength = stripUtf8Bom(line, lineLength);
+                } while (lineLength != before);
+                firstLineEver = false;
+            }
 
             bool appended = appendReplLine(&buffer, &length, &capacity, line, lineLength);
             depth += braceDelta(line);

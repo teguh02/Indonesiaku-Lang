@@ -17,6 +17,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `stat`). **Perubahan perilaku:** direktori kini dijawab `salah` di semua OS;
   dulu `benar` di Linux/macOS (karena `fopen` pada direktori berhasil di sana)
   tetapi `salah` di Windows. Untuk berkas atau direktori, pakai `jalur.ada()`.
+- **REPL menerima kode yang dipipakan dari PowerShell 5.1** (T-W12).
+  `'x = 21', 'cetak(x * 2)' | indk` gagal di baris 1 dengan `Karakter tidak
+  dikenal`, karena PowerShell menyisipkan BOM UTF-8 di depan pipa -- dua
+  sekaligus setelah `$OutputEncoding = [Text.Encoding]::UTF8`. REPL kini
+  membuang BOM berturut-turut di awal sesi, seperti berkas sumber (T-W2).
+  BOM di tengah sesi tetap ditolak, dan `input()` tidak berubah: U+FEFF tetap
+  sampai, sama seperti `input()` Python.
 - **`indk periksa` kini melihat lokal implisit (T-U1).** `sisa = 5` di dalam
   fungsi membuat variabel fungsi-lokal (K3), tetapi linter hanya memeriksa
   yang ditulis `variabel x`. Karena kata `variabel` opsional, linter praktis
