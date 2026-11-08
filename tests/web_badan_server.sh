@@ -83,10 +83,17 @@ periksa "server hidup setelah 413" "judul=sesudah" \
 # Badan ber-UTF-8: Content-Length menghitung BYTE, panjang() menghitung
 # KARAKTER. Saat keduanya tertukar, server menunggu byte yang tak pernah
 # datang dan menggantung selamanya -- regresi yang pernah terjadi.
+#
+# Badan dikirim dari BERKAS, bukan argumen: curl di Windows mengubah argumen
+# baris perintah ke code page ANSI, sehingga emoji sudah menjadi '?' sebelum
+# sampai ke server dan uji gagal walau indk benar. Byte ditulis dengan escape
+# oktal printf agar isi berkas tidak bergantung pada encoding shell.
+printf '{"judul":"kopi \342\230\225 dan emoji \360\237\221\250\342\200\215\360\237\221\251\342\200\215\360\237\221\247"}' \
+    > "$TMP/badan_utf8.json"
 periksa "badan UTF-8 tidak menggantung" "judul=kopi ☕ dan emoji 👨‍👩‍👧" \
     "$(curl -s --max-time 20 \
          -H 'Content-Type: application/json' \
-         --data-binary '{"judul":"kopi ☕ dan emoji 👨‍👩‍👧"}' \
+         --data-binary "@$TMP/badan_utf8.json" \
          "http://127.0.0.1:$PORT/api")"
 
 periksa "JSON rusak -> 400" "400" \

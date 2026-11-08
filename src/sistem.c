@@ -332,6 +332,21 @@ static int jenisJalur(const char* jalur, uint64_t* ukuran, double* waktu, Alasan
 #endif
 }
 
+// ada_berkas() used to answer "can fopen(jalur, "rb") succeed?", which is a
+// different question: a file locked by another process (Windows sharing
+// violation) or without read permission (chmod 000) exists but cannot be
+// opened. It also made directories OS-dependent -- fopen() on a directory
+// succeeds on glibc/macOS but fails on Windows. Metadata answers the real
+// question the same way on every OS. An error (e.g. no permission on the
+// parent directory) stays salah, as before: ada_berkas() never raises.
+bool sistemAdaBerkas(const char* jalur) {
+    uint64_t ukuran = 0;
+    double waktu = 0;
+    Alasan alasan = ALASAN_LAIN;
+    int jenis = jenisJalur(jalur, &ukuran, &waktu, &alasan);
+    return jenis == 1 || jenis == 3;
+}
+
 // ---------------------------------------------------------------------------
 // Process, stderr, environment
 // ---------------------------------------------------------------------------

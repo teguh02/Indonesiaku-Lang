@@ -9,6 +9,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- ⚠️ **`ada_berkas()` menanyakan keberadaan, bukan apakah berkas bisa dibuka
+  (T-W9).** Dulu jawabannya `fopen(path, "rb")` berhasil atau tidak, sehingga
+  berkas yang sedang dikunci program lain di Windows (editor, antivirus,
+  SQLite dalam transaksi) dijawab `salah`, padahal `jalur.ada()` menjawab
+  `benar`. Kini keduanya memakai metadata yang sama (`GetFileAttributesExW` /
+  `stat`). **Perubahan perilaku:** direktori kini dijawab `salah` di semua OS;
+  dulu `benar` di Linux/macOS (karena `fopen` pada direktori berhasil di sana)
+  tetapi `salah` di Windows. Untuk berkas atau direktori, pakai `jalur.ada()`.
 - **`indk periksa` kini melihat lokal implisit (T-U1).** `sisa = 5` di dalam
   fungsi membuat variabel fungsi-lokal (K3), tetapi linter hanya memeriksa
   yang ditulis `variabel x`. Karena kata `variabel` opsional, linter praktis

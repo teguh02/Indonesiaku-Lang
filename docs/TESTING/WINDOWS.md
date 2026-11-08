@@ -962,6 +962,33 @@ Budi 2
 ```
 
 
+#### PUS-06 — ada_berkas: berkas vs direktori (folder kerja harus bisa ditulisi)
+
+Berkas `PUS-06.idk`:
+
+```indonesiaku
+# ada_berkas: berkas vs direktori (folder kerja harus bisa ditulisi)
+impor jalur
+tulis_semua("uji_ada.txt", "x")
+buat_direktori("uji_ada_dir")
+cetak(ada_berkas("uji_ada.txt"), ada_berkas("uji_ada_dir"), jalur.ada("uji_ada_dir"))
+cetak(ada_berkas("uji_tidak_ada.txt"), ada_berkas(""))
+hapus_berkas("uji_ada.txt")
+hapus_direktori("uji_ada_dir")
+cetak(ada_berkas("uji_ada.txt"))
+```
+
+Jalankan `indk PUS-06.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+benar salah benar
+salah salah
+salah
+```
+
+
 ### DB — Basis data SQLite
 
 #### DB-01 — SQLite tertanam (di memori), parameter ? wajib untuk nilai
@@ -1253,11 +1280,114 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | WIN-14 | Proses anak | PUS-05 (`proses.jalankan([jalur_indk(), "-v"])`) | `0 benar` |
 | WIN-15 | Uninstall | Jalankan `unins000.exe` | Folder dan entri `PATH` hilang; terminal baru tidak mengenali `indk` |
 | WIN-16 | SmartScreen / Defender | Unduh dan jalankan installer dari peramban | Peringatan (jika ada) dicatat; tidak ada deteksi malware |
+| WIN-17 | Berkas yang dikunci proses lain (T-W9) | Di PowerShell: `$fs = [IO.File]::Open("kunci.txt", 'Open', 'ReadWrite', 'None')`, lalu `indk` menjalankan `cetak(ada_berkas("kunci.txt"))`; tutup dengan `$fs.Close()` | `benar` (sama dengan `jalur.ada`) |
 | WIN-18 | Jalur lebih dari 260 karakter (T-W10) | Jalankan `tests\test_jalur_panjang.ps1` dari folder hasil ekstrak, atau buat folder bersarang > 260 karakter lalu `indk` menjalankan `buat_direktori`, `tulis_semua`, `baca_semua`, `isi_direktori`, `hapus_berkas` di dalamnya | Semua berhasil. Catat nilai `LongPathsEnabled` mesin uji (`HKLM\SYSTEM\CurrentControlSet\Control\FileSystem`) di hasil |
 
-## 7. Hasil uji terakhir — `1.4.0`, 2026-11-03
+## 7. Hasil uji terakhir — `1.6.0-rc.1`, 2026-11-08
+
+Diuji di Windows asli dari baris perintah. Hasil di bawah tidak disalin dari
+CI. Skrip uji dan rencana uji diambil dari tag `v1.6.0-rc.1` (commit
+`fb0ffc2`), sama dengan biner yang diuji.
+
+| | |
+|---|---|
+| Aset | Diunduh dari URL tag eksplisit `releases/tag/v1.6.0-rc.1` (prarilis; `latest` masih `v1.5.0`) |
+| `Indonesiaku-Setup-1.6.0-rc.1.exe` | SHA-256 `8c9e216889212d23bf2f1932f7dc8894fa6b0d1266e829cc5a81c7009ec26860` — cocok dengan `SHA256SUMS.txt` |
+| `indk-windows.zip` | SHA-256 `c8747b098a04d1753b4c4cf981e47b9cf10a86f4ba7b248e783b4220c55ac645` — cocok dengan `SHA256SUMS.txt` |
+| SHA-256 `indk.exe` | `ffd1903545730c37fe394651500ad519c2f75f28643e31617b99ef117a299c80` — sama persis untuk hasil installer dan isi zip |
+| Mesin | Windows 11 Home 10.0.26300, AMD64; Windows PowerShell 5.1.26100; Git Bash 2.51 (curl 8.15); Python 3.14 untuk menjalankan kasus dengan `CreateProcessW` |
+| Penyimpangan prosedur | PowerShell 7 tidak terpasang di mesin ini. Perintah dijalankan dengan Windows PowerShell 5.1. Masukan non-ASCII dikirim lewat pipa Git Bash atau `subprocess`, bukan pipa PowerShell 5.1, supaya T-W4 (perilaku PowerShell 5.1) tidak tercampur. WIN-12 tetap diuji dengan PowerShell 5.1 secara sengaja |
+
+### Jalur pemasangan
+
+| Jalur | Hasil |
+|---|---|
+| (a) Installer | ✅ Terpasang di `C:\Program Files\Indonesiaku` (`/SILENT`, kode keluar 0). Di shell dengan `PATH` yang dibaca ulang dari registri, `Get-Command indk` menunjuk `C:\Program Files\Indonesiaku\indk.exe` dan `indk -v` mencetak `1.6.0-rc.1`. `pustaka\` (27 modul, termasuk `json.idk` dan `web.idk`) terpasang di sebelah `indk.exe`. Dari folder kerja tanpa `pustaka\`, `impor json` dan `impor web` berhasil: `{"a":[1,"dua"]} [1, 2]` / `objek ok`, kode 0 |
+| (b) Zip portabel | ✅ Diekstrak ke folder polos (`indk-windows\` berisi `indk.exe`, `pustaka\`, `examples\`). `.\indk.exe -v` → `1.6.0-rc.1`. Impor `json` dan `web` dari folder kerja lain berhasil dengan keluaran yang sama, tanpa `INDK_PATH` |
+
+Catatan lingkungan (bukan temuan rilis ini): `PATH` mesin berisi enam entri
+lama `C:\Program Files (x86)\Indonesiaku\bin` peninggalan installer lawas.
+Installer 1.6.0-rc.1 tidak menambahkannya, karena pemeriksaan
+`BelumAdaDiPath` mencegah duplikat.
 
 ### Ringkasan per bagian
+
+| Bagian | Hasil |
+|---|---|
+| 3. CLI (CLI-01–CLI-14) | ✅ 14/14 |
+| 4. Katalog bahasa (SIN, CAB, ULG, FNG, KOL, KLS, GAL, MOD, PUS, DB, GALAT, DB-MIG, SSR-TPL) | ✅ 30/30 — stdout, stderr, dan kode keluar dibandingkan per byte (setelah CRLF → LF) |
+| 5. Suite otomatis | ✅ OTO-01–OTO-07, OTO-10–OTO-14; ⚠️ OTO-08, OTO-09 (masalah skrip uji di Windows, sama seperti 1.4.0) |
+| 6. Khusus Windows | ✅ 13 · ⚠️ 1 · ⬜ 2 |
+| Temuan lama T-W1, T-W2, T-W3 | ✅ ketiganya tidak kambuh |
+| Temuan baru | Tidak ada |
+
+### Rincian
+
+| ID | Status | Catatan |
+|---|---|---|
+| CLI-01 | ✅ | `1.6.0-rc.1`, kode 0 |
+| CLI-02 | ✅ | Sesuai; bantuan kini juga mendaftar `profil` dan `awakutu` |
+| CLI-03 | ✅ | `Tidak dapat membuka file "tidak_ada.idk".`, kode 74 |
+| CLI-04 | ✅ | `3 ["satu", "dua tiga", "3"]` |
+| CLI-05 | ✅ | `Nama? Umur? Halo Budi, tahun depan 17` (stdin lewat pipa Git Bash) |
+| CLI-06 | ✅ | `> > 42` lalu `> `, kode 0 |
+| CLI-07 | ✅ | `lingkungan() tidak diizinkan dalam mode --sandbox`, kode 70 |
+| CLI-08 | ✅ | Tanpa keluaran, kode 3 |
+| CLI-09 | ✅ | `== <skrip utama> ==` + `OP_...`, kode 0; tanpa skrip: `Penggunaan: indk --dis <skrip.idk>`, kode 64 |
+| CLI-10 | ✅ | `lint.idk:3  variabel lokal 'sementara' tidak pernah dipakai`, `1 temuan`, kode 1 |
+| CLI-11 | ✅ | `GAGAL  uji_gagal: 2 + 2 bukan 5`, `LULUS  uji_tambah`, `1/2 uji lulus`, kode 1 |
+| CLI-12 | ✅ | `rp.idk belum rapi` (kode 1) → `--tulis` (kode 0) → isi sesuai → `--periksa` kode 0 |
+| CLI-13 | ✅ | `Versi terpasang : 1.6.0-rc.1`, `Versi terbaru   : v1.5.0`, `Versi Anda lebih baru daripada rilis terakhir (versi pengembangan).`, kode 0 — wajar untuk prarilis, karena `latest` masih v1.5.0 |
+| CLI-14 | ✅ | `aaa [1]` dari folder tanpa `pustaka\` |
+| SIN-01 … SSR-TPL-02 (30 kasus) | ✅ | Diekstrak otomatis dari bagian 4 tag `v1.6.0-rc.1` ke folder kosong, termasuk berkas pendukung `paket_saya/hitung.idk` dan lima templat `tampilan/*.html`, lalu dijalankan dengan `indk.exe` terpasang. GAL-02 kode 70 dan GAL-03 kode 65 sesuai |
+| OTO-01 | ✅ | `test_all.ps1` dari akar repo: **`TOTAL: 282/282 PASSED`**, nol merah. Termasuk lokasi impor (4 tata letak) dan "Jalur Unicode (skrip, modul, argumen, INDK_PATH)" |
+| OTO-02 | ✅ | `== ALL TODO CLI TESTS PASSED ==` |
+| OTO-03 | ✅ | `== ALL TODO SERVER TESTS PASSED ==` |
+| OTO-04 | ✅ | `LINTER: 5/5`, `UJI: 2/2`, `FORMAT: 8/8` (bytecode identik 204/204) |
+| OTO-05 | ✅ | `panduan: 206/206 dijalankan bersih, 40 ditandai takjalan` |
+| OTO-06 | ✅ | `ok   http_ambil GET/POST/404 (termasuk badan UTF-8)` |
+| OTO-07 | ✅ | 10/10 `ok`, `ok   pustaka/web.idk melayani HTTP sungguhan` |
+| OTO-08 | ⚠️ | 7/8 `ok`; `GAGAL badan UTF-8 tidak menggantung: ... dapat 'judul=kopi ? dan emoji ????????'`. Curl Windows mengubah argumen `--data-binary '...'` ke code page ANSI sebelum dikirim. Badan yang sama lewat `--data-binary @badan.json` diterima utuh (`judul=kopi ☕ dan emoji 👨‍👩‍👧`). Masalah skrip uji, bukan indk |
+| OTO-09 | ⚠️ | `GAGAL: keluaran tidak sesuai harapan`, tetapi kedelapan baris identik setelah 8 byte CR dibuang. `indk.exe` menulis `\r\n` dan skrip membandingkan teks mentah. Masalah skrip uji, bukan indk |
+| OTO-10 | ✅ | `web_kuki_sesi: semua lulus` (11 `ok`) |
+| OTO-11 | ✅ | `web_csrf: semua lulus` (10 `ok`) |
+| OTO-12 | ✅ | `web_auth: semua lulus` (13 `ok`) |
+| OTO-13 | ✅ | `web_cors.sh: SEMUA LULUS` (13 `ok`) |
+| OTO-14 | ✅ | `keamanan_app.sh: SEMUA LULUS` (24 `ok`) |
+| WIN-01 | ✅ | Lihat "Jalur pemasangan" (a) |
+| WIN-02 | ✅ | Lihat "Jalur pemasangan" (b) |
+| WIN-03 | ✅ | Kedua hash cocok dengan `SHA256SUMS.txt` |
+| WIN-04 | ✅ | `cmd.exe`: `1.6.0-rc.1`, `%ERRORLEVEL%` 0 lalu 74 setelah CLI-03. PowerShell: `$LASTEXITCODE` 74 |
+| WIN-05 | ✅ | Keluaran SIN-03 versi CRLF identik byte dengan versi LF. Teks tiga-kutip CRLF `"""a<CRLF>b"""` → `3 [97, 10, 98]`, tidak ada `\r` bocor |
+| WIN-06 | ✅ | `indk "folder spasi\a b.idk"` berjalan |
+| WIN-07 | ✅ | `indk José\s.idk` berjalan |
+| WIN-08 | ✅ | **T-W1 tidak kambuh.** `日本\s.idk`, `naïve ☕\s.idk`, `C:\uji\テスト\halo.idk` (absolut) dan `テスト\halo.idk` (relatif dari `C:\uji`) semua berjalan, kode 0. `impor modulku` dari folder `日本\` berhasil. Argumen `"é" "日本" "😀"` utuh: `[233]`, `[26085, 26412]`, `[128512]` (T-W5 juga tidak kambuh) |
+| WIN-09 | ✅ | Berkas `keluaran_☕.txt` dan folder `dir_テスト` tercipta dengan nama benar di disk; `isi_direktori` mengembalikan nama UTF-8 yang benar |
+| WIN-10 | ✅ | **T-W2 tidak kambuh.** Berkas ber-BOM dan tanpa BOM sama-sama mencetak `bom`, kode 0. Modul ber-BOM yang diimpor juga berjalan (`5`) |
+| WIN-11 | ✅ | **T-W3 tidak kambuh.** Di jendela PowerShell sungguhan (bukan pipa), sebelum `chcp 65001` (code page 437): `2 ☕ GARUDA` terbaca benar dan code page tetap 437 setelah `indk` keluar. Sesudah `chcp 65001`: juga `2 ☕ GARUDA`, code page tetap 65001 |
+| WIN-12 | ⚠️ | T-W4 (perilaku PowerShell 5.1, bukan indk). `$OutputEncoding` bawaan `us-ascii`: `Andrés` sampai sebagai `Andr?s` (`[..., 63, ...]`). Dengan `[System.Text.UTF8Encoding]::new($false)`: utuh, `panjang` 6. Dengan UTF-8 ber-BOM, `input()` menerima U+FEFF di depan (`panjang` 7); Python 3.14 berperilaku persis sama, jadi bukan bug indk |
+| WIN-13 | ✅ | OTO-03 dan OTO-06 lulus |
+| WIN-14 | ✅ | PUS-05: `0 benar` |
+| WIN-15 | ⬜ | Belum diuji. Uninstall tidak dijalankan agar paket yang diuji tetap terpasang |
+| WIN-16 | ⬜ | Belum diuji. Aset diunduh dengan `gh release download`, bukan peramban, jadi SmartScreen tidak teramati |
+
+### Status temuan lama di `1.6.0-rc.1`
+
+| Kode | Status | Bukti |
+|---|---|---|
+| T-W1 | ✅ tidak kambuh | WIN-08, WIN-09, dan tes "Jalur Unicode" di OTO-01 |
+| T-W2 | ✅ tidak kambuh | WIN-10 |
+| T-W3 | ✅ tidak kambuh | WIN-11, dua kondisi code page |
+| T-W4 | ⚠️ masih ada | Perilaku PowerShell 5.1; jalan pintas `$OutputEncoding` berfungsi |
+| T-W5 | ✅ tidak kambuh | WIN-08 (argumen non-ANSI) |
+
+Temuan lain dari uji ekstensif 1.4.0 (T-W6–T-W11, T-U*) tidak diuji ulang
+dalam putaran ini; statusnya tetap seperti tercatat di bawah dan di
+`lampiran/`.
+
+### Hasil sebelumnya — `1.4.0`, 2026-11-03
+
+#### Ringkasan per bagian
 
 | Bagian | Hasil |
 |---|---|
@@ -1266,7 +1396,7 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | 5. Suite otomatis | ✅ OTO-01–OTO-07; ⚠️ OTO-08, OTO-09 (masalah skrip uji, bukan indk) |
 | 6. Khusus Windows | ✅ 7 · ❌ 4 · ⚠️ 1 · ⬜ 4 |
 
-### Rincian
+#### Rincian
 
 | ID | Status | Catatan |
 |---|---|---|
@@ -1291,7 +1421,7 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | WIN-13, WIN-14 | ✅ | |
 | WIN-15, WIN-16 | ⬜ | Belum diuji |
 
-### Temuan
+#### Temuan
 
 | Kode | Tingkat | Temuan | Penyebab dugaan | Jalan pintas sementara |
 |---|---|---|---|---|
@@ -1304,7 +1434,7 @@ Temuan ini belum diperbaiki. Perbaikannya mengikuti alur fitur biasa
 (rencana di `docs/RENCANA_FITUR/`, uji regresi, lalu rilis patch) dan tidak
 termasuk dokumen rencana uji ini.
 
-### Uji ekstensif multi-agen
+#### Uji ekstensif multi-agen
 
 Di samping bagian 3–6, rilis 1.4.0 diuji secara luas oleh delapan agen
 penguji paralel, satu per area. Setiap agen menulis dan menjalankan ratusan
@@ -1334,11 +1464,11 @@ sebagai bug hanya temuan terkonfirmasi.
 
 | Kode | Tingkat | Temuan |
 |---|---|---|
-| T-W5 | Sedang | Isi `argumen` dengan karakter di luar code page ANSI menjadi `?` (`"日本"` → `[63, 63]`); akar masalahnya sama dengan T-W1 (`main` ANSI, bukan `wmain`) |
+| T-W5 | Sedang | ✅ **Diperbaiki (1.5.0) bersama T-W1.** Isi `argumen` dengan karakter di luar code page ANSI menjadi `?` (`"日本"` → `[63, 63]`); akar masalahnya sama dengan T-W1 (`main` ANSI, bukan `wmain`). `sistemSiapkanProses()` kini mengambil argv dari `GetCommandLineW()` + `CommandLineToArgvW()`. Diverifikasi ulang di 1.6.0-rc.1: `"日本"` → `[26085, 26412]`. Dijaga `tests/test_jalur_unicode.ps1` (argumen berisi `☕`, di luar code page ANSI mana pun) |
 | T-W6 | Tinggi | Temuan keamanan pada menjalankan proses anak. Rincian dilaporkan lewat jalur privat, tidak dicantumkan di sini sampai diperbaiki |
 | T-W7 | Tinggi | Temuan keamanan pada soket server. Rincian dilaporkan lewat jalur privat, tidak dicantumkan di sini sampai diperbaiki |
 | T-W8 | Tinggi | ✅ **Diperbaiki (1.4.1).** Kompilator crash (`0xC00000FD` stack overflow, tanpa pesan) pada 32 `fungsi` bersarang atau ±2500 kurung bersarang. Pengukuran ulang per bentuk: `fungsi` jatuh pada **16 level**, sedangkan kurung dan `jika` aman sampai 1000 — sebabnya frame `function()` sebesar 42.640 byte di stack, bukan rekursi parser umum. Struct `Compiler` dan larik parameter dipindah ke heap (frame turun ke 224 byte) dan ditambah penjaga `NESTING_MAX = 200` yang memberi galat kompilasi rapi |
-| T-W9 | Sedang | `ada_berkas()` memberi `salah` untuk berkas yang ada tetapi sedang dikunci proses lain (memakai `fopen`, bukan `stat`); `jalur.ada()` benar |
+| T-W9 | Sedang | ✅ **Diperbaiki (1.6.0).** `ada_berkas()` memberi `salah` untuk berkas yang ada tetapi sedang dikunci proses lain (memakai `fopen`, bukan `stat`); `jalur.ada()` benar. Kini memakai metadata (`GetFileAttributesExW` / `stat`) yang sama dengan `jalur.ada()`; direktori dijawab `salah` di semua OS (dulu `benar` di Linux/macOS). Dijaga `tests/test_ada_berkas_terkunci.ps1` (sabotase: 2/4 merah) + `examples/ada_berkas.idk`, kasus WIN-17 dan PUS-06 |
 | T-W10 | Sedang | ✅ **Diperbaiki (1.6.0).** Jalur lebih dari 260 karakter tidak didukung: `ada_berkas` salah, `baca_semua` dan `isi_direktori` gagal, walau `LongPathsEnabled=1` (biner tanpa manifest `longPathAware`). Kini `keLebarJalur()` di `src/sistem.c` memberi awalan `\\?\` pada jalur yang bentuk absolutnya ≥ 248 karakter. Dijaga `tests/test_jalur_panjang.ps1` (sabotase per titik panggil: 6/6 merah), kasus WIN-18 |
 | T-W11 | Rendah | `jam()` mengukur waktu dinding di Windows, padahal dokumentasi menyebut waktu CPU (`clock()` di UCRT) |
 
@@ -1397,3 +1527,4 @@ Temuan tingkat sedang yang paling berdampak (lengkapnya di lampiran):
 |---|---|---|---|---|
 | 2026-11-03 | 1.4.0 | Installer `Indonesiaku-Setup-1.4.0.exe` | Claude Code (AI), atas permintaan maintainer | ⚠️ bagian 3–6 lulus; temuan T-W1–T-W4, T-U1 |
 | 2026-11-03 | 1.4.0 | Installer `Indonesiaku-Setup-1.4.0.exe` | Claude Code (AI, 8 agen penguji + 8 verifikator) | ⚠️ uji ekstensif 3584/3879; 140 temuan terkonfirmasi, termasuk T-W5–T-W11 dan T-U2–T-U16 |
+| 2026-11-08 | 1.6.0-rc.1 | Installer `Indonesiaku-Setup-1.6.0-rc.1.exe` dan `indk-windows.zip` (tag `v1.6.0-rc.1`) | Claude Code (AI), di Windows 11 asli atas permintaan maintainer | ✅ CLI 14/14, katalog 30/30, `test_all.ps1` 282/282, OTO 12/14 (OTO-08/09 masalah skrip uji); T-W1, T-W2, T-W3, T-W5 tidak kambuh; tanpa temuan baru; WIN-15/16 ⬜ |
