@@ -316,6 +316,12 @@ jobs:
           name: "Indonesiaku ${{ steps.version.outputs.version }}"
           artifacts: "rilis/*"
           allowUpdates: true
+          # Tag bersufiks (-rc.N, -alpha.N, -beta.N) adalah PRARILIS dan tidak
+          # boleh menjadi "Latest release": pengunjung halaman rilis, installer,
+          # dan `indk --periksa-pembaruan` akan menawarkannya sebagai versi
+          # stabil terbaru padahal paketnya belum diuji di tiga OS.
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          makeLatest: ${{ !contains(steps.version.outputs.version, '-') }}
           # Jangan menimpa catatan rilis yang sudah ditulis tangan.
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
