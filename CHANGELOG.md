@@ -9,6 +9,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **CORS dan trusted-proxy (WEB-05, tuntas).** `app.cors(asal, kredensial)`
+  mengizinkan asal lintas situs secara eksplisit — `"*"` **ditolak**, karena
+  ia melumpuhkan pertahanan peramban dan tidak sah bersama kredensial.
+  `Vary: Origin` selalu disertakan, dan `OPTIONS` dijawab 204 tanpa menyentuh
+  penangan. `app.proxy_tepercaya(daftar)` membuat `req["alamat"]` berisi
+  alamat klien sebenarnya di belakang Nginx. Builtin baru
+  `soket_alamat_peer(soket)`.
+
 - **Autentikasi, hashing sandi, dan peran (WEB-06).** `web.hash_sandi()` dan
   `web.periksa_sandi()` memakai PBKDF2-HMAC-SHA256 dengan **600.000 iterasi**
   (rekomendasi OWASP) dan garam 16 byte per sandi; format hash
@@ -34,6 +42,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   alih kamus karena `Set-Cookie` boleh muncul berkali-kali dalam satu respons.
 
 ### Keamanan
+
+- `X-Forwarded-For` hanya dipercaya bila koneksi datang dari proxy yang
+  terdaftar, dan entri yang diambil adalah yang **paling kanan**. Entri kiri
+  ditulis klien: memercayainya membuat pembatas percobaan WEB-06 dapat
+  dilewati dengan satu baris header palsu per tebakan.
+- `Vary: Origin` wajib ikut pada setiap respons CORS; tanpa itu cache
+  perantara dapat menyajikan respons milik satu asal kepada asal lain.
 
 - Sandi tidak pernah disimpan apa adanya maupun di-hash dengan fungsi cepat:
   PBKDF2 ber-600k iterasi membuat pemecahan offline mahal, dan garam acak

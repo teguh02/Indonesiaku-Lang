@@ -1,0 +1,27 @@
+== asal terdaftar ==
+Allow-Origin : https://situs-saya.id
+Vary         : Origin
+Credentials  : true
+== asal asing ==
+Allow-Origin : (tidak ada)
+status       : 200
+== tanpa header Origin (bukan lintas asal) ==
+Allow-Origin : (tidak ada)
+== preflight OPTIONS ==
+status       : 204
+Allow-Methods: GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS
+Allow-Headers: Content-Type, X-CSRF-Token
+Max-Age      : 600
+== preflight asal asing ==
+status       : 405
+== cors('*') ditolak ==
+ditolak seperti seharusnya
+== alamat klien ==
+proxy + XFF        : 1.2.3.4
+rantai XFF         : 1.2.3.4
+XFF dipalsukan     : 8.8.8.8
+tanpa XFF          : 127.0.0.1
+== aman secara bawaan ==
+XFF tanpa izin     : 8.8.8.8
+== soket_alamat_peer ==
+alamat peer        : 127.0.0.1

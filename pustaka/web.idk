@@ -408,6 +408,101 @@ kelas Aplikasi {
         }
         diri.maks_badan = ke_bulat(maks_badan)
         diri.berjalan = salah
+        diri.cors_asal = kosong      # kosong = CORS mati
+        diri.cors_kredensial = salah
+        diri.cors_metode = "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS"
+        diri.cors_header = "Content-Type, X-CSRF-Token"
+        diri.cors_umur = 600
+        diri.proxy_daftar = []       # kosong = X-Forwarded-For diabaikan
+    }
+
+    # cors(asal, kredensial, metode, header) -> diri.
+    #
+    # `asal` adalah DAFTAR asal yang diizinkan, bukan "*". Wildcard sengaja
+    # tidak didukung: ia melumpuhkan pertahanan bawaan peramban, dan menurut
+    # spesifikasi Fetch "*" bahkan TIDAK SAH bersama kredensial -- jadi
+    # aplikasi berkuki sesi tidak akan terlayani olehnya.
+    cors(asal, kredensial = salah, metode = kosong, header = kosong) {
+        jika jenis(asal) != "daftar" {
+            naikkan GalatWeb("cors() memerlukan daftar asal")
+        }
+        untuk a dalam asal {
+            jika a == "*" {
+                naikkan GalatWeb("cors() tidak menerima '*'; sebutkan asal secara eksplisit")
+            }
+        }
+        diri.cors_asal = asal
+        diri.cors_kredensial = kredensial
+        jika metode != kosong { diri.cors_metode = metode }
+        jika header != kosong { diri.cors_header = header }
+        kembalikan diri
+    }
+
+    # proxy_tepercaya(daftar) -> diri.
+    #
+    # Hanya koneksi DARI alamat ini yang boleh menetapkan alamat klien lewat
+    # X-Forwarded-For. Tanpa pemanggilan ini header tersebut diabaikan sama
+    # sekali -- aman secara bawaan, karena header itu dikirim klien dan siapa
+    # pun dapat memalsukannya.
+    proxy_tepercaya(daftar) {
+        jika jenis(daftar) != "daftar" {
+            naikkan GalatWeb("proxy_tepercaya() memerlukan daftar alamat")
+        }
+        diri.proxy_daftar = daftar
+        kembalikan diri
+    }
+
+    # _alamat_klien(req, peer) -> alamat klien yang boleh dipercaya.
+    _alamat_klien(req, peer) {
+        jika peer == kosong {
+            kembalikan ""
+        }
+        jika tidak peer dalam diri.proxy_daftar {
+            kembalikan peer
+        }
+        jika "x-forwarded-for" tidak dalam req["header"] {
+            kembalikan peer
+        }
+        # Entri PALING KANAN yang bukan proxy tepercaya. Entri paling kiri
+        # ditulis klien dan dapat dipalsukan; yang kanan ditambahkan proxy
+        # kita sendiri. Mengambil yang kiri adalah kesalahan klasik yang
+        # membuat pembatas laju dapat dilewati dengan satu baris header.
+        variabel bagian = teks_pisah(req["header"]["x-forwarded-for"], ",")
+        variabel i = panjang(bagian) - 1
+        selagi i >= 0 {
+            variabel a = teks_pangkas(bagian[i])
+            jika a != "" {
+                jika tidak a dalam diri.proxy_daftar {
+                    kembalikan a
+                }
+            }
+            i = i - 1
+        }
+        kembalikan peer
+    }
+
+    # _cors_header(asal) -> daftar pasangan header, kosong bila tidak berlaku.
+    _cors_header(req) {
+        jika diri.cors_asal == kosong {
+            kembalikan []
+        }
+        jika "origin" tidak dalam req["header"] {
+            kembalikan []
+        }
+        variabel asal = teks_pangkas(req["header"]["origin"])
+        jika tidak asal dalam diri.cors_asal {
+            # Asal asing tidak mendapat header sama sekali; peramban lalu
+            # memblokir pembacaan responsnya.
+            kembalikan []
+        }
+        variabel h = [["Access-Control-Allow-Origin", asal]]
+        # Vary WAJIB: tanpa ini cache perantara dapat menyajikan respons
+        # ber-ACAO milik asal lain kepada pemohon berikutnya.
+        tambah(h, ["Vary", "Origin"])
+        jika diri.cors_kredensial {
+            tambah(h, ["Access-Control-Allow-Credentials", "true"])
+        }
+        kembalikan h
     }
 
     # statis(prefiks, akar) -> diri. Sajikan berkas di bawah `akar` pada URL
@@ -651,8 +746,12 @@ kelas Aplikasi {
         kembalikan teks(404, "Tidak ditemukan")
     }
 
-    # tangani(mentah) -> teks respons HTTP untuk satu request mentah.
-    tangani(mentah) {
+    # tangani(mentah, peer) -> teks respons HTTP untuk satu request mentah.
+    #
+    # `peer` adalah alamat soket ujung lain (dari soket_alamat_peer). Opsional
+    # supaya pemanggil lama -- termasuk contoh di panduan yang memanggil
+    # app.tangani(mentah) langsung -- tetap bekerja.
+    tangani(mentah, peer = kosong) {
         variabel req = kosong
         coba {
             req = http_urai_request(mentah)
@@ -741,8 +840,30 @@ kelas Aplikasi {
             }
         }
 
+        # Alamat klien. Ditetapkan SESUDAH header terurai dan SEBELUM penangan
+        # berjalan, supaya middleware dan rute sama-sama melihatnya.
+        req["alamat"] = diri._alamat_klien(req, peer)
+
+        variabel cors = diri._cors_header(req)
+
+        # Preflight dijawab di sini, tidak diteruskan ke penangan: peramban
+        # mengirim OPTIONS sebelum permintaan non-sederhana, dan rute aplikasi
+        # tidak punya alasan menangani metode itu satu per satu.
+        jika req["metode"] == "OPTIONS" {
+            jika panjang(cors) > 0 {
+                tambah(cors, ["Access-Control-Allow-Methods", diri.cors_metode])
+                tambah(cors, ["Access-Control-Allow-Headers", diri.cors_header])
+                tambah(cors, ["Access-Control-Max-Age", ke_teks(diri.cors_umur)])
+                kembalikan http_response(204, "text/plain; charset=utf-8", "", cors)
+            }
+        }
+
         coba {
-            kembalikan diri._jalankan(req, 0)
+            variabel res = diri._jalankan(req, 0)
+            jika panjang(cors) > 0 {
+                res = _web_sisip_header(res, cors)
+            }
+            kembalikan res
         } kecuali Galat sebagai e {
             jika diri.penangan_galat bukan adalah kosong {
                 kembalikan diri.penangan_galat(req, e)
@@ -861,7 +982,15 @@ kelas Aplikasi {
                     soket_batas_waktu(klien, batas_waktu)
                     variabel mentah = baca_permintaan(klien, diri.maks_badan)
                     jika mentah != "" {
-                        variabel respons = diri.tangani(mentah)
+                        # Alamat peer dibaca SEBELUM menangani: sesudah
+                        # respons terkirim soket bisa saja sudah ditutup.
+                        variabel peer = kosong
+                        coba {
+                            peer = soket_alamat_peer(klien)
+                        } kecuali e {
+                            peer = kosong
+                        }
+                        variabel respons = diri.tangani(mentah, peer)
                         soket_tulis(klien, respons)
                         jika catat {
                             diri._catat(_web_metode_dari(mentah),
@@ -977,6 +1106,25 @@ fungsi _web_kuki_encode(nilai) {
     kembalikan teks_gabung(bagian, "")
 }
 
+# _web_sisip_header(res, pasangan) -> respons dengan header tambahan.
+#
+# Respons yang masuk sudah berbentuk teks HTTP lengkap, jadi barisnya
+# disisipkan tepat sebelum baris kosong penutup header. Content-Length tidak
+# berubah: yang bertambah hanya header.
+fungsi _web_sisip_header(res, pasangan) {
+    variabel akhir = teks_cari(res, "\r\n\r\n")
+    jika akhir < 0 {
+        kembalikan res
+    }
+    variabel baris = []
+    untuk p dalam pasangan {
+        tambah(baris, "\r\n" + p[0] + ": " + p[1])
+    }
+    variabel kepala = potong(res, 0, akhir)
+    variabel ekor = potong(res, akhir, panjang(res) - akhir)
+    kembalikan kepala + teks_gabung(baris, "") + ekor
+}
+
 # set_kuki(res, nama, nilai, opsi) -> respons dengan satu baris Set-Cookie.
 #
 # Respons yang masuk sudah berbentuk teks HTTP lengkap, jadi barisnya
@@ -1016,13 +1164,7 @@ fungsi set_kuki(res, nama, nilai, opsi = kosong) {
         }
     }
 
-    variabel akhir = teks_cari(res, "\r\n\r\n")
-    jika akhir < 0 {
-        kembalikan res
-    }
-    variabel kepala = potong(res, 0, akhir)
-    variabel ekor = potong(res, akhir, panjang(res) - akhir)
-    kembalikan kepala + "\r\nSet-Cookie: " + baris + ekor
+    kembalikan _web_sisip_header(res, [["Set-Cookie", baris]])
 }
 
 # baca_kuki(req) -> kamus nama->nilai dari header Cookie.

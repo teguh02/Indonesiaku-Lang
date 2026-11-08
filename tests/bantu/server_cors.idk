@@ -1,0 +1,41 @@
+# Server untuk tests/web_cors.sh — CORS dan trusted-proxy lewat HTTP nyata.
+#
+# Berhenti setelah IDK_SISA permintaan supaya tes tidak menggantung.
+
+impor web
+
+variabel port = ke_bulat(ambil_lingkungan("IDK_PORT"))
+variabel sisa = ke_bulat(ambil_lingkungan("IDK_SISA"))
+
+variabel app = web.Aplikasi()
+app.cors(["https://situs-saya.id"], benar)
+app.proxy_tepercaya(["127.0.0.1"])
+
+app.rute("GET", "/siapa", fungsi(req) {
+    kembalikan web.teks(200, req["alamat"])
+})
+
+app.rute("GET", "/halo", fungsi(req) {
+    kembalikan web.teks(200, "halo")
+})
+
+variabel server = soket_dengar(port, "127.0.0.1")
+cetak("siap")
+
+selagi sisa > 0 {
+    variabel klien = soket_terima(server)
+    coba {
+        soket_batas_waktu(klien, 5)
+        variabel mentah = web.baca_permintaan(klien, 65536)
+        jika mentah != "" {
+            variabel peer = soket_alamat_peer(klien)
+            soket_tulis(klien, app.tangani(mentah, peer))
+        }
+    } kecuali Galat sebagai e {
+        # Koneksi rusak tidak boleh menjatuhkan server.
+    }
+    soket_tutup(klien)
+    sisa = sisa - 1
+}
+
+soket_tutup(server)

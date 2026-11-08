@@ -1544,6 +1544,61 @@ Argon2id belum tersedia: ia menuntut pustaka C pihak ketiga, sedangkan proyek
 ini hanya bergantung pada libc dan mbedTLS. PBKDF2 dengan 600k iterasi adalah
 pilihan sadar, bukan kelalaian.
 
+#### CORS: siapa boleh membaca jawaban kita
+
+Peramban memblokir skrip dari asal lain membaca respons kita, kecuali kita
+mengizinkannya. `app.cors()` menyebutkan siapa:
+
+```indonesiaku-takjalan
+app.cors(["https://situs-saya.id"], benar)   # benar = izinkan kredensial
+```
+
+Asal yang tidak terdaftar tidak mendapat header CORS sama sekali, dan
+peramban menolak memberikan isinya kepada pemanggil.
+
+**`"*"` ditolak, bukan didukung.** Ia melumpuhkan pertahanan bawaan peramban,
+dan menurut spesifikasi Fetch `*` bahkan tidak sah bersama kredensial — jadi
+aplikasi berkuki sesi justru tidak terlayani olehnya. Respons memantulkan asal
+pemohon, satu-satunya bentuk yang sah bila kuki ikut dikirim.
+
+`Vary: Origin` selalu disertakan. Tanpa itu, cache perantara dapat menyimpan
+respons yang mengizinkan satu asal lalu menyajikannya kepada asal lain —
+kebocoran lintas-asal lewat cache, bukan lewat kode.
+
+Permintaan `OPTIONS` dari asal terdaftar dijawab **204** beserta
+`Allow-Methods`, `Allow-Headers`, dan `Max-Age`, tanpa memanggil rute.
+Peramban mengirimnya sebelum setiap `PUT`/`DELETE` atau permintaan
+ber-header kustom.
+
+#### Alamat klien di belakang proxy
+
+Aplikasi di belakang Nginx melihat semua koneksi datang dari `127.0.0.1`.
+Alamat sebenarnya ada di `X-Forwarded-For` — tetapi header itu dikirim klien,
+jadi siapa pun dapat menuliskan apa saja di sana.
+
+```indonesiaku-takjalan
+app.proxy_tepercaya(["127.0.0.1"])
+# lalu di penangan:
+req["alamat"]
+```
+
+Header itu dipercaya **hanya** bila koneksinya memang datang dari alamat yang
+terdaftar. Tanpa `proxy_tepercaya()`, `X-Forwarded-For` diabaikan sepenuhnya
+dan `req["alamat"]` selalu alamat soket — aman secara bawaan.
+
+Yang diambil adalah entri **paling kanan** yang bukan proxy tepercaya. Entri
+paling kiri ditulis klien dan dapat dipalsukan; yang kanan ditambahkan proxy
+kita sendiri. Memakai yang kiri adalah kesalahan klasik: penyerang cukup
+mengganti alamat palsunya setiap kali gagal, dan pembatas percobaan di atas
+tidak pernah mengunci siapa pun.
+
+Builtin `soket_alamat_peer(soket)` mengembalikan alamat ujung lain sebuah
+koneksi, dan inilah yang membuat pemeriksaan di atas mungkin.
+
+**Yang sengaja tidak ada:** pola wildcard asal (`https://*.situs.id`) dan
+rentang CIDR untuk proxy. Pencocokan subdomain mudah salah tulis dan menjadi
+lubang; daftar eksplisit cukup sampai ada kebutuhan nyata.
+
 
 Digunakan oleh `examples/todo_server.idk` — REST API Todo-list berbasis HTTP
 di atas soket TCP.
