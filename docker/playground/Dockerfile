@@ -14,7 +14,7 @@
 #
 # Naikkan tag dasar bersamaan dengan INDK_VERSION saat rilis baru.
 # ===============================
-FROM teguh02/indonesiaku:1.6.0-rc.1
+FROM teguh02/indonesiaku:1.6.0
 
 # Image rilis tidak membawa nginx/python3 (sengaja ramping).
 RUN apk add --no-cache nginx python3 \
@@ -22,7 +22,7 @@ RUN apk add --no-cache nginx python3 \
 
 LABEL maintainer="Teguh Rijanandi <teguhrijanandi02@gmail.com>"
 LABEL description="Dokumentasi + playground bahasa pemrograman Indonesiaku"
-LABEL version="1.3.2"
+LABEL version="1.6.0"
 
 # Pustaka standar tidak boleh ditulisi oleh kode pengunjung.
 # Isinya ada di /usr/local/share/indonesiaku/pustaka (/opt/... hanya symlink).
