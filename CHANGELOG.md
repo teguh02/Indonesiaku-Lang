@@ -14,6 +14,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   "menimpa pasangan lama" dan "meng-uninstall" diganti menjadi "memperbarui
   pemasangan yang sudah ada" dan "dihapus terlebih dahulu". Isi sarannya
   (URL, perintah, urutan langkah) tidak berubah.
+- **Pemasang Windows memakai ikon Indonesiaku.** Sebelumnya `Indonesiaku-Setup-*.exe`
+  tampil dengan ikon kardus bawaan Inno Setup — di Explorer, di pojok jendela
+  wizard, dan di pintasan Start Menu. Kini memakai logo `idk` persegi
+  (`website/assets/logo-idk-square.png`) lewat `SetupIconFile` dan
+  `WizardSmallImageFile`. `UninstallDisplayIcon` dialihkan ke berkas `.ico`
+  yang ikut terpasang, karena `indk.exe` sendiri belum punya resource ikon.
+  Ditambahkan kasus uji **WIN-20**.
 
 ## [1.6.0] - 2026-11-08
 

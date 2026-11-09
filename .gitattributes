@@ -9,3 +9,10 @@ examples/bom_utf8.idk -text
 # raw \r" di AGENTS.md, tetapi di sisi masukan.
 tests/data/templat/*.html text eol=lf
 tests/data/templat/**/*.html text eol=lf
+
+# Aset biner pemasang Windows. Tanpa -text, git bisa menebaknya sebagai teks
+# dan menormalkan baris saat checkout di Windows -- tepat di mesin yang
+# menjalankan iscc -- sehingga .ico/.bmp rusak dan Inno menolaknya.
+*.ico -text
+*.bmp -text
+*.png -text

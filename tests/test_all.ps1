@@ -179,6 +179,20 @@ if (Test-Path $terkunci) {
     }
 }
 
+# Aset ikon pemasang Windows. Satu-satunya OS yang memakainya, jadi ujinya
+# wajib ikut di harness ini: test_all.ps1 tidak memanggil sub-suite .sh.
+$aset = Join-Path $PSScriptRoot "aset_pemasang.ps1"
+if (Test-Path $aset) {
+    Write-Host ""
+    $total++
+    & powershell -ExecutionPolicy Bypass -File $aset
+    if ($LASTEXITCODE -eq 0) {
+        $passed++
+    } else {
+        $failed++; $failures += "aset-pemasang"
+    }
+}
+
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host "TOTAL: $passed/$total PASSED" -ForegroundColor Cyan
 if ($failed -eq 0) {

@@ -1283,6 +1283,7 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | WIN-17 | Berkas yang dikunci proses lain (T-W9) | Di PowerShell: `$fs = [IO.File]::Open("kunci.txt", 'Open', 'ReadWrite', 'None')`, lalu `indk` menjalankan `cetak(ada_berkas("kunci.txt"))`; tutup dengan `$fs.Close()` | `benar` (sama dengan `jalur.ada`) |
 | WIN-18 | Jalur lebih dari 260 karakter (T-W10) | Jalankan `tests\test_jalur_panjang.ps1` dari folder hasil ekstrak, atau buat folder bersarang > 260 karakter lalu `indk` menjalankan `buat_direktori`, `tulis_semua`, `baca_semua`, `isi_direktori`, `hapus_berkas` di dalamnya | Semua berhasil. Catat nilai `LongPathsEnabled` mesin uji (`HKLM\SYSTEM\CurrentControlSet\Control\FileSystem`) di hasil |
 | WIN-19 | Kode dipipakan dari PowerShell 5.1 ke REPL dengan BOM (T-W12) | Di Windows PowerShell 5.1: `$OutputEncoding = [Text.Encoding]::UTF8`, lalu `'x = 21', 'cetak(x * 2)' \| indk` | `42` tercetak, tanpa `Karakter tidak dikenal` |
+| WIN-20 | Ikon pemasang dan pintasan | Lihat ikon berkas `Indonesiaku-Setup-<versi>.exe` di Explorer, ikon pojok kanan atas jendela wizard, ikon pintasan Start Menu, dan ikon entri "Indonesiaku" di Apps & features | Semuanya memakai logo `idk` persegi (latar gelap, teks `idk`, garis merah-putih). Bukan ikon kardus bawaan Inno Setup |
 
 ## 7. Hasil uji terakhir — `1.6.0-rc.1`, 2026-11-08
 
@@ -1371,6 +1372,7 @@ Installer 1.6.0-rc.1 tidak menambahkannya, karena pemeriksaan
 | WIN-14 | ✅ | PUS-05: `0 benar` |
 | WIN-15 | ⬜ | Belum diuji. Uninstall tidak dijalankan agar paket yang diuji tetap terpasang |
 | WIN-16 | ⬜ | Belum diuji. Aset diunduh dengan `gh release download`, bukan peramban, jadi SmartScreen tidak teramati |
+| WIN-20 | ⬜ | Belum ada saat rilis ini; ikon pemasang masih bawaan Inno Setup |
 
 ### Status temuan lama di `1.6.0-rc.1`
 
@@ -1430,6 +1432,7 @@ Ditemukan saat mencoba paket installer `1.6.0-rc.1` di Windows 11 (PowerShell
 | WIN-12 | ⚠️ | T-W4. Tanpa pengaturan, PowerShell 5.1 mengirim `Andr?s`. Dengan `$OutputEncoding = [System.Text.UTF8Encoding]::new($false)` teks utuh (`panjang 6`) |
 | WIN-13, WIN-14 | ✅ | |
 | WIN-15, WIN-16 | ⬜ | Belum diuji |
+| WIN-20 | ⬜ | Belum ada saat rilis ini; ikon pemasang masih bawaan Inno Setup |
 
 #### Temuan
 
