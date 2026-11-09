@@ -41,7 +41,14 @@ ArchitecturesInstallIn64BitMode=x64compatible
 CloseApplications=yes
 RestartApplications=no
 UninstallDisplayName=Indonesiaku {#VersiApp}
-UninstallDisplayIcon={app}\indk.exe
+; indk.exe belum punya resource ikon, jadi entri Add/Remove Programs
+; diarahkan ke berkas .ico yang ikut terpasang.
+UninstallDisplayIcon={app}\indonesiaku.ico
+; Ikon dan gambar wizard memakai logo "idk" persegi (website/assets/
+; logo-idk-square.png). Tanpa SetupIconFile, Inno memakai ikon kardus
+; bawaannya -- tidak ada kaitannya dengan proyek ini.
+SetupIconFile=indonesiaku.ico
+WizardSmallImageFile=wizard-kecil-55.bmp,wizard-kecil-83.bmp,wizard-kecil-110.bmp,wizard-kecil-138.bmp
 
 [Languages]
 Name: "indonesian"; MessagesFile: "compiler:Default.isl"
@@ -58,9 +65,12 @@ Source: "..\..\examples\*"; DestDir: "{app}\examples"; Flags: ignoreversion recu
 Source: "..\..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\CHANGELOG.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+; Ikon ikut dipasang supaya pintasan Start Menu tetap punya ikon setelah
+; berkas pemasang dihapus.
+Source: "indonesiaku.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\Indonesiaku (REPL)"; Filename: "{app}\indk.exe"
+Name: "{group}\Indonesiaku (REPL)"; Filename: "{app}\indk.exe"; IconFilename: "{app}\indonesiaku.ico"
 Name: "{group}\Uninstall Indonesiaku"; Filename: "{uninstallexe}"
 
 [Registry]

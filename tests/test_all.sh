@@ -378,6 +378,21 @@ if [ -f tests/builtin_konsisten.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Aset ikon pemasang Windows. Berkas .iss tidak pernah dikompilasi di CI
+# Linux/macOS, jadi ikon yang rusak atau terlepas dari .iss baru ketahuan
+# setelah rilis sampai ke pengguna.
+if [ -f tests/aset_pemasang.sh ]; then
+    if bash tests/aset_pemasang.sh > /tmp/idk_aset_pemasang.log 2>&1; then
+        echo -e "  ${GREEN}+${NC} aset_pemasang"
+        PASSED=$((PASSED+1))
+    else
+        echo -e "  ${RED}x${NC} aset_pemasang"
+        sed 's/^/      /' /tmp/idk_aset_pemasang.log
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES aset_pemasang"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Sumber acak kriptografis: acak_bita() harus berbeda lintas proses, sesuatu
 # yang GAGAL pada acak_bulat() (rand() + srand(time(NULL))) dan membuat ID
 # sesi dapat ditebak dari header Date.
