@@ -5,6 +5,16 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Diubah
+
+- **Bahasa pesan `--periksa-pembaruan` dirapikan.** Saran pemutakhiran untuk
+  Linux, Windows, dan macOS memakai kalimat baku berbahasa Indonesia. Istilah
+  "menimpa pasangan lama" dan "meng-uninstall" diganti menjadi "memperbarui
+  pemasangan yang sudah ada" dan "dihapus terlebih dahulu". Isi sarannya
+  (URL, perintah, urutan langkah) tidak berubah.
+
 ## [1.6.0] - 2026-11-08
 
 Rilis stabil Fase 13. Memuat **seluruh** perubahan pada prarilis
