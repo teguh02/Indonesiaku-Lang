@@ -33,10 +33,16 @@ Aturan memperbarui berkas ini ada di bagian 2 dan di `AGENTS.md`.
 
 ## 2. Aturan rencana uji ini
 
-Folder `docs/TESTING/` berisi tiga berkas: `WINDOWS.md`, `MACOS.md`, dan
-`LINUX.md`. Ketiganya adalah **rencana sekaligus catatan hasil** uji
-paket rilis di sistem operasi masing-masing: apa yang diuji, cara
-mengujinya, apa hasil yang diharapkan, dan apa hasil terakhirnya.
+Folder `docs/TESTING/` berisi tiga berkas per sistem operasi:
+`WINDOWS.md`, `MACOS.md`, dan `LINUX.md`. Ketiganya adalah **rencana
+sekaligus catatan hasil** uji paket rilis di sistem operasi masing-masing:
+apa yang diuji, cara mengujinya, apa hasil yang diharapkan, dan apa hasil
+terakhirnya.
+
+`SKENARIO_WEB.md` di folder yang sama berdiri sendiri: ia menguji satu
+aplikasi web utuh (landing page, formulir, AJAX, admin, proteksi) dan
+tidak terikat sistem operasi, sehingga aturan "bagian bersama identik" di
+bawah tidak berlaku untuknya.
 
 Berbeda dengan CI (`.github/workflows/test.yml`) yang membangun dari kode
 sumber, rencana ini menguji **biner yang benar-benar diterima pengguna**:

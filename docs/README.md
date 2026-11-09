@@ -18,7 +18,7 @@ Ini dokumentasi internal untuk pengembang, **bukan** panduan pengguna.
 | [`RENCANA_FITUR/TEMPLATE.md`](RENCANA_FITUR/TEMPLATE.md) | Template rencana per fitur |
 | `RENCANA_FITUR/<nama>.md` | Rencana satu fitur (dibuat saat fitur mulai dikerjakan) |
 | `RENCANA_FITUR/selesai/` | Arsip rencana fitur yang sudah selesai (catatan keputusan dan semantiknya) |
-| [`TESTING/`](TESTING/WINDOWS.md) | Rencana dan hasil uji paket rilis per OS: [`WINDOWS.md`](TESTING/WINDOWS.md), [`MACOS.md`](TESTING/MACOS.md), [`LINUX.md`](TESTING/LINUX.md). Wajib diperbarui setiap fase selesai |
+| [`TESTING/`](TESTING/WINDOWS.md) | Rencana dan hasil uji paket rilis per OS: [`WINDOWS.md`](TESTING/WINDOWS.md), [`MACOS.md`](TESTING/MACOS.md), [`LINUX.md`](TESTING/LINUX.md). Wajib diperbarui setiap fase selesai. Ditambah [`SKENARIO_WEB.md`](TESTING/SKENARIO_WEB.md): uji berbasis skenario aplikasi web utuh (landing page, formulir, AJAX, admin, proteksi), lintas-OS dan bukan per-OS |
 
 ## Aturan
 
