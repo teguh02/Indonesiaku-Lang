@@ -2,7 +2,7 @@
   "name": "indonesiaku",
   "displayName": "Indonesiaku",
   "description": "Language support for Indonesiaku (.idk): syntax highlighting, LSP diagnostics, completion, hover, go-to-definition, snippets, and formatting.",
-  "version": "0.2.0",
+  "version": "1.6.0",
   "publisher": "teguh02",
   "license": "MIT",
   "engines": {
@@ -19,7 +19,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/teguh02/Indonesiaku.git"
+    "url": "https://github.com/teguh02/Indonesiaku-Lang.git"
   },
   "main": "./extension.js",
   "files": [

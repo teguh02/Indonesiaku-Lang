@@ -47,7 +47,7 @@ node editors/vscode-indonesiaku/test-lsp.js [jalur/ke/indk]
 ```bash
 cd editors/vscode-indonesiaku
 npm run package
-code --install-extension indonesiaku-0.2.0.vsix
+code --install-extension indonesiaku-1.6.0.vsix
 ```
 
 Atau buka folder ini di VS Code lalu tekan `F5` untuk menjalankan Extension Development Host.
