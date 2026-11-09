@@ -113,7 +113,8 @@ fungsi saran_pemutakhiran(os, versi, aset = []) {
         }
         l = l + "  curl -LO " + dasar + "/indk-linux.tar.gz\n"
         l = l + "  tar -xzf indk-linux.tar.gz\n\n"
-        l = l + "Tidak perlu menghapus versi lama; paket baru menimpa yang lama."
+        l = l + "Versi sebelumnya tidak perlu dihapus; paket baru akan\n"
+        l = l + "menggantikannya secara otomatis."
         kembalikan l
     }
 
@@ -123,12 +124,13 @@ fungsi saran_pemutakhiran(os, versi, aset = []) {
         jika tidak tahu atau pemasang dalam aset {
             w = w + "  Unduh dan jalankan:\n"
             w = w + "  " + dasar + "/" + pemasang + "\n\n"
-            w = w + "Installer menimpa pasangan lama di tempat yang sama.\n"
-            w = w + "Tidak perlu meng-uninstall versi lama lebih dulu."
+            w = w + "Pemasang akan memperbarui pemasangan yang sudah ada di\n"
+            w = w + "lokasi yang sama. Versi sebelumnya tidak perlu dihapus\n"
+            w = w + "terlebih dahulu."
             kembalikan w
         }
         w = w + "  " + dasar + "/indk-windows.zip\n\n"
-        w = w + "Ekstrak lalu timpa berkas lama Anda."
+        w = w + "Ekstrak arsip, lalu salin berkas baru ke direktori pemasangan."
         kembalikan w
     }
 
@@ -136,8 +138,9 @@ fungsi saran_pemutakhiran(os, versi, aset = []) {
         variabel m = "Cara memperbarui (macOS):\n"
         m = m + "  curl -LO " + dasar + "/indk-macos.tar.gz\n"
         m = m + "  tar -xzf indk-macos.tar.gz\n\n"
-        m = m + "Salin berkas indk ke lokasi lama Anda untuk menimpanya;\n"
-        m = m + "tidak perlu menghapus versi lama lebih dulu."
+        m = m + "Salin berkas indk yang baru ke direktori pemasangan\n"
+        m = m + "sebelumnya. Versi lama tidak perlu dihapus terlebih\n"
+        m = m + "dahulu."
         kembalikan m
     }
 

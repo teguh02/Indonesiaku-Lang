@@ -22,7 +22,8 @@ Distribusi lain (tanpa dpkg):
   curl -LO https://github.com/teguh02/Indonesiaku-Lang/releases/download/v1.4.0/indk-linux.tar.gz
   tar -xzf indk-linux.tar.gz
 
-Tidak perlu menghapus versi lama; paket baru menimpa yang lama.
+Versi sebelumnya tidak perlu dihapus; paket baru akan
+menggantikannya secara otomatis.
 ---
 Versi terpasang : 1.0.0
 Versi terbaru   : v1.3.2
@@ -33,7 +34,8 @@ Cara memperbarui (Linux):
   curl -LO https://github.com/teguh02/Indonesiaku-Lang/releases/download/v1.3.2/indk-linux.tar.gz
   tar -xzf indk-linux.tar.gz
 
-Tidak perlu menghapus versi lama; paket baru menimpa yang lama.
+Versi sebelumnya tidak perlu dihapus; paket baru akan
+menggantikannya secara otomatis.
 ---
 Versi terpasang : 1.0.0
 Versi terbaru   : v1.4.0
@@ -44,8 +46,9 @@ Cara memperbarui (Windows):
   Unduh dan jalankan:
   https://github.com/teguh02/Indonesiaku-Lang/releases/download/v1.4.0/Indonesiaku-Setup-1.4.0.exe
 
-Installer menimpa pasangan lama di tempat yang sama.
-Tidak perlu meng-uninstall versi lama lebih dulu.
+Pemasang akan memperbarui pemasangan yang sudah ada di
+lokasi yang sama. Versi sebelumnya tidak perlu dihapus
+terlebih dahulu.
 ---
 Versi terpasang : 1.0.0
 Versi terbaru   : v1.4.0
@@ -56,8 +59,9 @@ Cara memperbarui (macOS):
   curl -LO https://github.com/teguh02/Indonesiaku-Lang/releases/download/v1.4.0/indk-macos.tar.gz
   tar -xzf indk-macos.tar.gz
 
-Salin berkas indk ke lokasi lama Anda untuk menimpanya;
-tidak perlu menghapus versi lama lebih dulu.
+Salin berkas indk yang baru ke direktori pemasangan
+sebelumnya. Versi lama tidak perlu dihapus terlebih
+dahulu.
 ---
 Versi terpasang : 1.4.0
 Versi terbaru   : v1.4.0
