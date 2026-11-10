@@ -37,6 +37,10 @@ periksa "LABEL version image rilis" docker/images/Dockerfile 'LABEL version="[0-
 # Image aplikasi (docker/aplikasi) ikut dijaga di sini; kalau tidak, tag-nya
 # diam-diam menyimpang setiap kali versi dinaikkan.
 periksa "image compose aplikasi" docker/aplikasi/docker-compose.yml 'image: indonesiaku-aplikasi:[0-9][0-9a-z.-]*'
+# Ekstensi VS Code adalah bagian dari bahasa, bukan proyek sampingan. Versinya
+# sempat tertinggal di 0.2.0 saat bahasa sudah 1.6.0 karena tidak ada yang
+# menjaganya di sini.
+periksa "versi ekstensi VS Code" editors/vscode-indonesiaku/package.json '"version": "[0-9][0-9a-z.-]*"'
 
 # Cache-buster aset situs: HTML baru dengan ?v= lama menampilkan CSS basi
 # karena Cloudflare menyimpan assets/* selama 4 jam.
