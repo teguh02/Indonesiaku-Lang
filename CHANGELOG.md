@@ -9,6 +9,21 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Kompiler menghabiskan RAM sampai OOM pada kode bersarang dalam yang
+  memuat kelas.** Masukan berupa 201 `{` diikuti `kelas P { fungsi m() {} }`
+  membuat `indk` tumbuh sampai 2,8 GB lalu dibunuh OOM; di CI gejalanya
+  terlihat sebagai timeout. Pagar kedalaman sudah menyala benar dan galatnya
+  tercetak tepat satu kali — kebocorannya terjadi sesudah itu. `block()`
+  menolak turun di batas sarang lalu kembali **tanpa memakan satu token pun**,
+  sedangkan `classDeclaration()` mengulang `method()` sampai `}` atau EOF,
+  sehingga putarannya tak pernah maju dan tiap putaran menumbuhkan chunk.
+  Bukan rekursi: stack 512 MB pun tetap menggantung. Kini `block()` melewati
+  isi blok sampai penutupnya, seperti yang sudah dilakukan `parsePrecedence()`.
+  Pemakaian memori untuk kasus yang dilaporkan turun dari 2,8 GB menjadi
+  2,7 MB. Konstruksi lain pada kedalaman yang sama (`fungsi`, `jika`,
+  `selagi`, `untuk`) tidak pernah terpengaruh karena pemanggilnya memakai
+  token. Ditemukan fuzzer (#109).
+
 - **Pengenal yang diawali `dan` ditolak kompiler.** `variabel danau = 1`
   gagal dengan "Harapkan nama variabel", begitu pula `dani`, `dangkal`,
   `dangkalx`, dan `dan2` — sebagai variabel, nama fungsi, maupun parameter.
