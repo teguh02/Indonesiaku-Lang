@@ -5,6 +5,7 @@
   "version": "1.6.0",
   "publisher": "teguh02",
   "license": "MIT",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -29,6 +30,7 @@
     "language-configuration.json",
     "syntaxes",
     "snippets",
+    "icon.png",
     "README.md",
     "LICENSE"
   ],
