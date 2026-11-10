@@ -5,7 +5,7 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.1] - 2026-11-10
 
 ### Diperbaiki
 
@@ -33,6 +33,14 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `untukmu`, `kelasku` selalu sah). Kata `dangkal` dipakai di panduan
   sendiri ("salinan dangkal"), jadi pengguna bisa menabraknya saat menamai
   variabel mengikuti istilah di dokumentasi.
+
+### Ditambahkan
+
+- **Ekstensi VS Code punya ikon dan terbit di Marketplace.** Tanpa `icon` di
+  `package.json`, ekstensi tampil dengan placeholder abu-abu. Kini memakai
+  logo kotak yang sudah dipakai situs, jadi identitasnya sama di situs dan
+  editor. Ekstensi dapat dipasang dengan
+  `code --install-extension teguh02.indonesiaku`.
 
 ### Diubah
 

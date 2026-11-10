@@ -19,7 +19,7 @@ FROM alpine:3.20
 
 LABEL maintainer="Teguh Rijanandi <teguhrijanandi02@gmail.com>"
 LABEL description="Docker image for Bahasa Pemrograman Indonesiaku (Python-like language built in C)"
-LABEL version="1.6.0"
+LABEL version="1.6.1"
 
 # musl provides the C runtime + sockets; no extra packages needed to run.
 WORKDIR /opt/indonesiaku
