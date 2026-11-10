@@ -7,6 +7,18 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Diperbaiki
+
+- **Pengenal yang diawali `dan` ditolak kompiler.** `variabel danau = 1`
+  gagal dengan "Harapkan nama variabel", begitu pula `dani`, `dangkal`,
+  `dangkalx`, dan `dan2` — sebagai variabel, nama fungsi, maupun parameter.
+  Penyebabnya satu daun trie di `identifierType()` yang mengembalikan
+  `TOKEN_DAN` begitu tiga huruf pertama cocok, tanpa memeriksa apakah
+  tokennya berhenti di situ. Kata kunci lain tidak terpengaruh (`jikalau`,
+  `untukmu`, `kelasku` selalu sah). Kata `dangkal` dipakai di panduan
+  sendiri ("salinan dangkal"), jadi pengguna bisa menabraknya saat menamai
+  variabel mengikuti istilah di dokumentasi.
+
 ### Diubah
 
 - **Bahasa pesan `--periksa-pembaruan` dirapikan.** Saran pemutakhiran untuk

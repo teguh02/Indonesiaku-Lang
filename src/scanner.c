@@ -194,7 +194,7 @@ static TokenType identifierType() {
                         if (scanner.current - scanner.start > 2) {
                             switch (scanner.start[2]) {
                                 case 'l': return checkKeyword(3, 2, "am", TOKEN_DALAM);
-                                case 'n': return TOKEN_DAN;
+                                case 'n': return checkKeyword(3, 0, "", TOKEN_DAN);
                                 case 'r': return checkKeyword(3, 1, "i", TOKEN_DARI);
                             }
                         }
