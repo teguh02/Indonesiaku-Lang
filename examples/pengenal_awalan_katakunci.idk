@@ -1,0 +1,46 @@
+# Pengenal yang diawali kata kunci tetap pengenal biasa.
+#
+# Scanner memakai trie, dan cabang 'dan' dulu mengembalikan TOKEN_DAN
+# tanpa memeriksa panjang kata. Akibatnya SEMUA pengenal berawalan "dan"
+# ditolak: danau, dani, dangkal, dan2. Kata "dangkal" sendiri dipakai di
+# panduan ("salinan dangkal"), jadi pengguna bisa menabraknya tanpa sadar.
+#
+# Kata kunci lain sudah benar sejak awal (jikalau, untukmu, kelasku,
+# benarkah, dalamnya); ikut diuji di sini supaya tidak ikut rusak saat
+# cabang trie lain disentuh.
+
+variabel danau = 1
+variabel dani = 2
+variabel dangkal = 3
+variabel dangkalx = 4
+variabel dan2 = 5
+cetak(danau + dani + dangkal + dangkalx + dan2)
+
+# Awalan kata kunci lain.
+variabel dalamnya = 10
+variabel jikalau = 20
+variabel untukmu = 30
+variabel kelasku = 40
+variabel benarkah = 50
+variabel atausaja = 60
+variabel tidakpun = 70
+cetak(dalamnya + jikalau + untukmu + kelasku + benarkah + atausaja + tidakpun)
+
+# Boleh juga jadi nama fungsi dan parameter.
+fungsi dangkal_salin(danau) {
+    kembalikan danau * 2
+}
+cetak(dangkal_salin(21))
+
+# Kata kuncinya sendiri harus tetap berfungsi sebagai operator, bukan
+# berubah menjadi pengenal gara-gara perbaikan di atas.
+cetak(benar dan salah)
+cetak(benar dan benar)
+cetak(salah atau benar)
+cetak(tidak salah)
+
+# 'dalam' dan 'dari' bertetangga dengan 'dan' di cabang trie yang sama.
+variabel angka = [1, 2, 3]
+cetak(2 dalam angka)
+dari teks impor teks_pangkas
+cetak(teks_pangkas("  rapi  "))
