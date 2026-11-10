@@ -2203,7 +2203,18 @@ static void expression() {
 }
 
 static void block() {
-    if (!nestingPush()) return;
+    if (!nestingPush()) {
+        // Wajib maju, dengan alasan yang sama seperti parsePrecedence() di
+        // atas: pemanggil block() mengulang sampai '}' atau EOF. Kembali di
+        // sini tanpa memakan apa pun membuat classDeclaration() memanggil
+        // method() -> function() -> block() pada token yang sama tanpa henti,
+        // dan tiap putaran menumbuhkan chunk sampai kehabisan memori (201 '{'
+        // lalu `kelas P { fungsi m() {} }` tumbuh ke beberapa GB lalu OOM;
+        // ditemukan fuzzer, issue #109). Lewati isi blok sampai penutupnya.
+        while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) advance();
+        match(TOKEN_RIGHT_BRACE);
+        return;
+    }
     while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
         declaration();
     }

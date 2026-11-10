@@ -1,0 +1,10 @@
+# Regresi issue #109: 201 '{' lalu sebuah kelas berisi metode dulu membuat
+# compiler tumbuh sampai 2,8 GB lalu dibunuh OOM (di CI terlihat timeout).
+# block() menolak turun di batas sarang tanpa memakan token, sedangkan
+# classDeclaration() mengulang method() sampai '}' atau EOF, jadi putarannya
+# tak pernah maju dan tiap putaran menumbuhkan chunk. Bukan rekursi: stack
+# 512 MB pun tetap menggantung. Harus melapor galat, bukan menghabiskan RAM.
+{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+kelas P {
+fungsi m() {}
+}
