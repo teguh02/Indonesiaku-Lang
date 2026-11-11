@@ -148,6 +148,7 @@
       { file: "panduan/04_KONTRIBUSI.md",       title: "7. Kontribusi",         en: "7. Contributing" },
       { file: "panduan/05_CREATOR.md",          title: "8. Penulis",            en: "8. Author" },
       { file: "panduan/06_PENUTUP.md",          title: "9. Penutup & FAQ",      en: "9. Closing & FAQ" },
+      { file: "__rilis__",                      title: "Riwayat Rilis",        en: "Release History" },
     ];
 
     // Contoh kode di-embed dari GitHub raw agar selalu sinkron dengan repo.
@@ -286,12 +287,121 @@
       });
     }
 
+    // ----------------------------------------------------------------
+    // Riwayat rilis: tanggal dan tautan diambil dari GitHub Releases API,
+    // isi tiap versi dari CHANGELOG.md.
+    //
+    // Kenapa digabung, bukan API saja: 7 dari 15 rilis body-nya kosong di
+    // GitHub, jadi API sendirian menghasilkan halaman bolong. CHANGELOG.md
+    // justru lengkap tapi tidak punya tanggal rilis maupun tautan unduhan.
+    // Rilis draft sengaja dilewati supaya versi yang belum diumumkan tidak
+    // bocor ke publik lewat halaman ini.
+    // ----------------------------------------------------------------
+    const RILIS_API =
+      "https://api.github.com/repos/teguh02/Indonesiaku-Lang/releases?per_page=100";
+
+    // Pecah CHANGELOG.md menjadi { "1.7.0": "isi markdown", ... }
+    function pecahChangelog(md) {
+      const bagian = {};
+      const baris = md.split("\n");
+      let versi = null;
+      let buf = [];
+      for (const b of baris) {
+        const m = b.match(/^##\s*\[?(\d+\.\d+\.\d+[^\]\s]*)\]?/);
+        if (m) {
+          if (versi) bagian[versi] = buf.join("\n").trim();
+          versi = m[1];
+          buf = [];
+        } else if (versi) {
+          buf.push(b);
+        }
+      }
+      if (versi) bagian[versi] = buf.join("\n").trim();
+      return bagian;
+    }
+
+    function tanggalLokal(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      return d.toLocaleDateString(
+        window.indkLang() === "en" ? "en-GB" : "id-ID",
+        { year: "numeric", month: "long", day: "numeric" }
+      );
+    }
+
+    async function bangunRilis() {
+      const en = window.indkLang() === "en";
+      // CHANGELOG wajib ada; API boleh gagal (rate limit 60/jam per IP).
+      const mdCh = await fetchText(RAW_BASE + "CHANGELOG.md");
+      const bagian = pecahChangelog(mdCh);
+
+      let rilis = [];
+      let galatApi = "";
+      try {
+        const res = await fetch(RILIS_API);
+        if (!res.ok) throw new Error(res.status + " " + res.statusText);
+        rilis = (await res.json()).filter((r) => !r.draft);
+      } catch (e) {
+        galatApi = String(e.message || e);
+      }
+
+      const judul = en ? "Release History" : "Riwayat Rilis";
+      let out = `# ${judul}\n\n`;
+      out += en
+        ? "Dates and download links come from the GitHub Releases API; " +
+          "the notes for each version come from `CHANGELOG.md`.\n\n"
+        : "Tanggal dan tautan unduhan diambil langsung dari GitHub Releases API, " +
+          "sedangkan catatan tiap versi berasal dari `CHANGELOG.md`.\n\n";
+
+      if (galatApi) {
+        out += en
+          ? `> Could not reach the GitHub API (${galatApi}), so dates and ` +
+            "download links are unavailable. The notes below still come " +
+            "from `CHANGELOG.md`.\n\n"
+          : `> Gagal menghubungi GitHub API (${galatApi}), jadi tanggal dan ` +
+            "tautan unduhan tidak tersedia. Catatan di bawah tetap diambil " +
+            "dari `CHANGELOG.md`.\n\n";
+      }
+
+      // Urutan mengikuti CHANGELOG (terbaru di atas), bukan urutan API,
+      // supaya versi yang belum dirilis tetap muncul pada tempatnya.
+      const petaRilis = {};
+      for (const r of rilis) petaRilis[r.tag_name.replace(/^v/, "")] = r;
+
+      const versiCh = Object.keys(bagian);
+      const semua = versiCh.concat(
+        Object.keys(petaRilis).filter((v) => !versiCh.includes(v))
+      );
+
+      for (const v of semua) {
+        const r = petaRilis[v];
+        out += `## v${v}\n\n`;
+        const meta = [];
+        if (r) meta.push(tanggalLokal(r.published_at));
+        if (r) {
+          meta.push(
+            `[${en ? "Release page" : "Halaman rilis"} ↗](${r.html_url})`
+          );
+          if (r.assets && r.assets.length) {
+            meta.push(
+              `${r.assets.length} ${en ? "download files" : "berkas unduhan"}`
+            );
+          }
+        } else {
+          meta.push(en ? "_not yet released_" : "_belum dirilis_");
+        }
+        out += meta.join(" · ") + "\n\n";
+        out += (bagian[v] || (en ? "_No notes._" : "_Tidak ada catatan._")) + "\n\n";
+      }
+      return out;
+    }
+
     async function loadDoc(file, push) {
       currentDoc = file;
       setActive(file);
       bodyEl.innerHTML = `<p class="text-ink-3 dark:text-paper/50">${escapeHtml(tr("docs_loading", "Memuat…"))}</p>`;
       try {
-        const md = await fetchText(file);
+        const md = file === "__rilis__" ? await bangunRilis() : await fetchText(file);
         bodyEl.innerHTML = marked.parse(md);
         await resolveEmbeds(bodyEl);
         fixLinks(bodyEl);
