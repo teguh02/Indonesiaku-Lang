@@ -8,8 +8,6 @@
 
   var ALPINE_URL = "https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js";
   var SCRIPT_SRC = (document.currentScript && document.currentScript.src) || "";
-  var I18N_URL = SCRIPT_SRC.replace(/[^/]*$/, "") + "i18n.json";
-
   var I18N = { id: {}, en: {} };
 
   function currentLang() {
@@ -36,6 +34,13 @@
      di v1.5.0 sementara about/author sudah v1.7.0. */
   var VERSI = (SCRIPT_SRC.match(/[?&]v=(\d+\.\d+\.\d+)/) || [])[1] || "";
   window.indkVersi = VERSI;
+
+  /* Kamus ikut membawa penanda versi. Tanpa ini browser menyimpan i18n.json
+     tanpa batas: setelah rilis yang menambah kunci baru, halaman memakai
+     kamus lama dan tombol yang bergantung pada kunci itu tidak muncul sama
+     sekali — persis yang terjadi pada tombol template playground. */
+  var I18N_URL =
+    SCRIPT_SRC.replace(/[^/]*$/, "") + "i18n.json" + (VERSI ? "?v=" + VERSI : "");
 
   function terapkanVersi() {
     if (!VERSI) return; // tanpa ?v= biarkan teks bawaan HTML apa adanya
@@ -181,5 +186,12 @@
       // Situs tetap bisa dipakai dengan teks statis berbahasa Indonesia.
       console.error("[i18n] gagal memuat " + I18N_URL + ":", err);
     })
-    .then(muatAlpine);
+    .then(function () {
+      // Halaman yang menunda pekerjaan sampai kamus siap (mis. tombol
+      // template playground) menunggu sinyal ini, bukan menebak lewat timer.
+      document.documentElement.dispatchEvent(
+        new CustomEvent("indk:i18n", { bubbles: false })
+      );
+      muatAlpine();
+    });
 })();
