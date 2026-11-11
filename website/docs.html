@@ -210,7 +210,18 @@
     marked.setOptions({ gfm: true, breaks: false });
 
     async function fetchText(url) {
-      const res = await fetch(url);
+      // Berkas panduan .md disajikan apa adanya oleh nginx, tanpa penanda
+      // versi, sehingga browser menyimpannya tanpa batas waktu dan pembaca
+      // lama tetap melihat isi lama setelah situs diperbarui. Aset lain
+      // (app.js, site.css) sudah memakai ?v= dari proses rilis, jadi
+      // dokumen lokal diberi penanda yang sama. URL absolut (raw.github)
+      // dibiarkan utuh karena sudah ber-versi lewat nama cabang/commit.
+      const absolut = /^https?:\/\//.test(url);
+      const versi = window.indkVersi;
+      const alamat = !absolut && versi
+        ? url + (url.includes("?") ? "&" : "?") + "v=" + versi
+        : url;
+      const res = await fetch(alamat);
       if (!res.ok) throw new Error(res.status + " " + res.statusText);
       return res.text();
     }
