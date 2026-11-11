@@ -1226,6 +1226,85 @@ halaman tetap milik induk, blok yang tidak ditimpa memakai isi bawaan, escaping
 tetap berlaku di dalam blok yang diwariskan, dan siklus sertakan mati dengan
 menyebut rantainya alih-alih menggantung sampai kehabisan memori.
 
+#### SSR-TPL-03 — Templat: filter, isi induk, sertakan berparameter, dan makro
+
+Buat lima berkas di `tampilan/`:
+
+`tampilan/dasar3.html`:
+
+```html
+<head>{% blok kepala %}<link href="dasar.css">{% akhirblok %}</head>
+```
+
+`tampilan/anak3.html`:
+
+```html
+{% perluas "dasar3.html" %}
+{% blok kepala %}{% induk %}<script src="anak.js"></script>{% akhirblok %}
+```
+
+`tampilan/makro.html`:
+
+```html
+{% makro tombol(teks, jenis="utama") %}<button class="btn-{{ jenis }}">{{ teks }}</button>{% akhirmakro %}
+```
+
+`tampilan/kartu3.html`:
+
+```html
+<div>{{ judul | huruf_besar }} ({{ pemilik | bawaan:"-" }})</div>
+```
+
+`tampilan/halaman3.html`:
+
+```html
+{% impor "makro.html" %}{% panggil tombol(label) %}
+{% panggil tombol(teks="Hapus", jenis="bahaya") %}
+{% sertakan "kartu3.html" dengan judul=produk.nama %}
+{% sertakan "kartu3.html" dengan judul=produk.nama hanya %}
+```
+
+Lalu `SSR-TPL-03.idk`:
+
+```indonesiaku
+impor templat
+variabel m = templat.mesin("tampilan")
+cetak(templat.render_teks(
+    "{{ nama | judul }} [{{ tag | gabung:\" / \" }}] {{ bio | bawaan:\"-\" }}",
+    {"nama": "budi santoso", "tag": ["<a>", "b"], "bio": ""}))
+cetak(m.render("anak3.html"))
+cetak(m.render("halaman3.html",
+               {"label": "<Simpan>", "pemilik": "Ani", "produk": {"nama": "buku"}}))
+coba {
+    templat.render_teks("{{ x | aman }}", {"x": "<b>"})
+} kecuali Galat sebagai e { cetak("ditolak: " + e.pesan) }
+```
+
+Jalankan `indk SSR-TPL-03.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+Budi Santoso [&lt;a&gt; / b] -
+<head><link href="dasar.css"><script src="anak.js"></script></head>
+
+<button class="btn-utama">&lt;Simpan&gt;</button>
+<button class="btn-bahaya">Hapus</button>
+<div>BUKU (Ani)</div>
+
+<div>BUKU (-)</div>
+
+
+ditolak: baris 1: filter 'aman' tidak ada: tandai HTML tepercaya dengan templat.aman() di kode .idk, bukan dari dalam templat
+```
+
+Yang diperiksa: hasil filter tetap di-escape (termasuk tiap elemen `gabung`),
+`bawaan` mengisi nilai kosong, `{% induk %}` menambah isi blok induk alih-alih
+menggantinya, makro dari berkas `impor` memakai parameter bawaannya dan
+meng-escape argumennya, `sertakan … hanya` menyembunyikan data pemanggil
+(`pemilik` menjadi `-`), dan tidak ada filter yang bisa mematikan escaping
+dari dalam templat.
+
 <!-- BERSAMA:AKHIR -->
 
 ## 5. Suite otomatis dari tag rilis

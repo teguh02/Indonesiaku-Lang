@@ -1,0 +1,137 @@
+# Templat lanjutan: filter, {% induk %}, sertakan berparameter, dan makro.
+#
+# Setiap galat diperiksa lewat PESANNYA, bukan sekadar "ditolak": templat
+# yang ditolak karena alasan yang salah sama berbahayanya dengan yang lolos.
+
+impor templat
+
+variabel m = templat.mesin("tests/data/templat")
+
+fungsi filter_bawaan() {
+    cetak("== filter bawaan ==")
+    variabel d = {"nama": "budi santoso", "kode": "  ab-12  ", "tag": ["a", "<b>", 3],
+                  "harga": 12.345, "kosong_t": "", "x": kosong, "n": 7,
+                  "html": templat.aman("<i>miring</i>")}
+    cetak(templat.render_teks("{{ nama | huruf_besar }} / {{ nama | judul }}", d))
+    cetak(templat.render_teks("[{{ kode | rapikan | huruf_kecil }}]", d))
+    cetak(templat.render_teks("{{ nama | potong:4 }} / {{ nama | potong:50 }}", d))
+    cetak(templat.render_teks("{{ nama | panjang }} {{ tag | panjang }}", d))
+    cetak(templat.render_teks("{{ tag | gabung }} | {{ tag | gabung:\" | \" }}", d))
+    cetak(templat.render_teks("{{ harga | angka:2 }} {{ n | angka:1 }} {{ harga | angka:0 }}", d))
+    cetak(templat.render_teks("{{ kosong_t | bawaan:\"-\" }} {{ x | bawaan:\"nihil\" }} {{ hilang | bawaan:\"opsional\" }}", d))
+    cetak(templat.render_teks("{{ hilang | bawaan:\"<tamu>\" | huruf_besar }}", d))
+    cetak(templat.render_teks("{{ html | rapikan }}", d))
+    # Filter yang mengubah huruf atau memotong merusak HTML tepercaya
+    # ("&amp;" -> "&AMP;", "<a hr…"), jadi ditolak untuk nilai aman().
+    untuk f dalam ["huruf_besar", "judul", "potong:3"] {
+        coba {
+            templat.render_teks("{{ html | " + f + " }}", d)
+            cetak("GAGAL (tidak ditolak): " + f + " pada aman()")
+        } kecuali Galat sebagai e {
+            cetak(f + " pada aman() -> " + e.pesan)
+        }
+    }
+}
+
+fungsi filter_kustom() {
+    cetak("== filter kustom ==")
+    m.filter("rupiah", fungsi(v, arg) { kembalikan "Rp" + ke_teks(v) + "<" })
+    m.filter("tebal", fungsi(v, arg) { kembalikan templat.aman("<b>" + ke_teks(v) + "</b>") })
+    m.filter("ulang", fungsi(v, arg) { kembalikan ke_teks(v) * arg })
+    cetak(m.render("lanjut/filter_kustom.html", {"x": "<5>"}))
+    coba {
+        templat.render_teks("{{ x | rupiah }}", {"x": 5})
+        cetak("GAGAL (tidak ditolak): filter kustom di render_teks")
+    } kecuali Galat sebagai e {
+        cetak("filter kustom di render_teks -> " + e.pesan)
+    }
+    variabel uji = [["nama bawaan", "huruf_besar"], ["aman", "aman"], ["nama tidak sah", "1x"]]
+    untuk u dalam uji {
+        coba {
+            m.filter(u[1], fungsi(v, arg) { kembalikan v })
+            cetak("GAGAL (tidak ditolak): " + u[0])
+        } kecuali Galat sebagai e {
+            cetak(u[0] + " -> " + e.pesan)
+        }
+    }
+    coba {
+        m.filter("bukan_fungsi", 3)
+    } kecuali Galat sebagai e {
+        cetak("bukan fungsi -> " + e.pesan)
+    }
+}
+
+fungsi induk_blok() {
+    cetak("== {% induk %} ==")
+    cetak(m.render("lanjut/anak.html"))
+    cetak(m.render("lanjut/cucu.html"))
+}
+
+fungsi sertakan_dengan() {
+    cetak("== sertakan dengan ==")
+    variabel d = {"judul": "pemanggil", "pemilik": "Ani",
+                  "produk": {"nama": "Buku <1>", "harga": 50},
+                  "artikel": {"judul": "Berita"}}
+    cetak(m.render("lanjut/halaman_kartu.html", d))
+    cetak("data pemanggil tetap: " + d["judul"])
+}
+
+fungsi makro() {
+    cetak("== makro ==")
+    cetak(m.render("lanjut/pakai_makro.html", {"label": "<hapus>"}))
+    cetak(m.render("lanjut/makro_anak.html"))
+    # Lingkup leksikal: makro pustaka memanggil saudaranya, bukan makro
+    # halaman yang kebetulan bernama sama.
+    cetak(m.render("lanjut/makro_leksikal.html"))
+    # Blok yang ditimpa halaman tidak mengisi blok komponen bernama sama.
+    cetak(m.render("lanjut/halaman_blok.html"))
+    cetak(templat.render_teks(
+        "{% makro t(a, b=\"2\") %}{{ a }}-{{ b }}{% akhirmakro %}{% panggil t(1) %} {% panggil t(b=3, a=x) %}",
+        {"x": "<x>"}))
+}
+
+fungsi galat() {
+    cetak("== yang harus ditolak ==")
+    variabel uji = [
+        ["induk tanpa isi induk", "lanjut/induk_tanpa_induk.html"],
+        ["induk di luar blok", "lanjut/induk_luar_blok.html"],
+        ["makro rekursif", "lanjut/makro_rekursi.html"],
+        ["argumen makro kurang", "lanjut/makro_kurang.html"],
+        ["argumen makro berlebih", "lanjut/makro_lebih.html"],
+        ["parameter makro asing", "lanjut/makro_param_asing.html"],
+        ["makro ganda", "lanjut/makro_ganda.html"],
+        ["makro tidak dikenal", "lanjut/makro_hilang.html"],
+        ["impor siklus", "lanjut/impor_siklus_a.html"],
+        ["impor traversal", "lanjut/impor_traversal.html"],
+        ["filter aman", "lanjut/filter_aman.html"],
+        ["filter tak dikenal", "lanjut/filter_asing.html"],
+        ["filter tanpa argumen wajib", "lanjut/filter_tanpa_arg.html"],
+        ["filter dengan argumen terlarang", "lanjut/filter_arg_lebih.html"],
+        ["argumen filter dari data", "lanjut/filter_arg_data.html"],
+        ["filter bergaya kurung", "lanjut/filter_kurung.html"],
+        ["nama hilang tanpa bawaan", "lanjut/nama_hilang.html"],
+        ["induk di dalam makro", "lanjut/makro_induk.html"],
+        ["angka di luar batas", "lanjut/filter_angka_besar.html"],
+        ["literal bilangan terlalu panjang", "lanjut/literal_panjang.html"]]
+    untuk u dalam uji {
+        coba {
+            m.render(u[1], {"x": "teks", "n": 3})
+            cetak("GAGAL (tidak ditolak): " + u[0])
+        } kecuali Galat sebagai e {
+            cetak(u[0] + " -> " + e.pesan)
+        }
+    }
+    coba {
+        templat.render_teks("{% impor \"lanjut/makro.html\" %}", kamus())
+        cetak("GAGAL (tidak ditolak): impor di render_teks")
+    } kecuali Galat sebagai e {
+        cetak("impor di render_teks -> " + e.pesan)
+    }
+}
+
+filter_bawaan()
+filter_kustom()
+induk_blok()
+sertakan_dengan()
+makro()
+galat()

@@ -2425,7 +2425,89 @@ Blok yang tidak ditimpa anak memakai isi bawaan induk. Aturan yang berlaku:
 - `{% sertakan %}` hanya tersedia lewat `templat.mesin(akar)`. `render_teks()`
   menolaknya karena tanpa akar tidak ada yang membatasi berkas yang dibaca.
 
-Belum ada: filter (`{{ x | huruf_besar }}`).
+**Filter.** `{{ nilai | filter | filter:argumen }}` mengolah nilai sebelum
+di-escape, dari kiri ke kanan. Argumen hanya satu dan harus literal (teks
+berkutip atau bulat). Tanda kurung tetap ditolak di dalam `{{ }}`, jadi
+tulis `potong:80`, bukan `potong(80)`.
+
+| Filter | Hasil |
+|---|---|
+| `huruf_besar`, `huruf_kecil` | Seperti fungsi bawaan bernama sama |
+| `judul` | Huruf pertama tiap kata kapital |
+| `rapikan` | Spasi di awal dan akhir dibuang |
+| `panjang` | Panjang teks, daftar, tupel, atau kamus |
+| `potong:n` | Paling banyak `n` karakter, ditambah `…` bila dipotong |
+| `gabung`, `gabung:"pemisah"` | Gabung daftar/tupel (pemisah bawaan `", "`); tiap elemen di-escape sendiri |
+| `bawaan:"x"` | `x` bila nilainya `kosong` atau `""` |
+| `angka:n` | Angka dengan tepat `n` digit di belakang titik |
+
+Nama yang tidak ada di data tetap galat, **kecuali** filter pertamanya
+`bawaan`: `{{ pengguna.julukan | bawaan:"Tamu" }}` adalah cara menulis kolom
+opsional. **Tidak ada filter `aman`** (padanan `| safe` di Jinja) — HTML
+tepercaya tetap hanya bisa ditandai dengan `aman()` di kode `.idk`. Filter
+sendiri didaftarkan pada mesin:
+
+```indonesiaku
+impor templat
+impor jalur
+
+cetak(templat.render_teks(
+    "{{ nama | judul }}: {{ bio | bawaan:\"-\" }} [{{ tag | gabung:\" / \" }}]",
+    {"nama": "budi santoso", "bio": "", "tag": ["<a>", "b"]}))
+
+buat_direktori("tampilan")
+tulis_semua(jalur.gabung("tampilan", "harga.html"), "{{ harga | rupiah }}")
+variabel m = templat.mesin("tampilan")
+m.filter("rupiah", fungsi(nilai, arg) { kembalikan "Rp" + ke_teks(nilai) })
+cetak(m.render("harga.html", {"harga": 15000}))
+hapus_berkas(jalur.gabung("tampilan", "harga.html"))
+hapus_direktori("tampilan")
+```
+
+Pada nilai `aman()`, `huruf_besar`, `huruf_kecil`, `judul`, dan `potong`
+ditolak karena merusak HTML (`&amp;` menjadi `&AMP;`, potongan membelah tag);
+olah teksnya di `.idk` sebelum `aman()`.
+
+Fungsi filter menerima nilai dan argumennya (`kosong` bila tidak diberi).
+Hasilnya di-escape seperti interpolasi biasa kecuali dibungkus `aman()`.
+Nama filter bawaan tidak bisa ditimpa. Filter sendiri hanya tersedia lewat
+`m.render()`, bukan `render_teks()`.
+
+**Isi blok induk, komponen berparameter, dan makro.** Padanan `@parent`,
+`@include(..., [...])`, dan komponen di Blade, atau `super()`, `with … only`,
+dan `{% macro %}` di Jinja:
+
+```html
+<!-- di dalam berkas yang memakai {% perluas %} -->
+{% blok kepala %}{% induk %}<script src="halaman.js"></script>{% akhirblok %}
+
+{% sertakan "kartu.html" dengan judul=produk.nama, harga=produk.harga %}
+{% sertakan "kartu.html" dengan judul=artikel.judul hanya %}
+
+{% makro tombol(teks, jenis="utama") %}
+  <button class="btn-{{ jenis }}">{{ teks }}</button>
+{% akhirmakro %}
+{% panggil tombol("Simpan") %}
+{% panggil tombol(teks=label, jenis="bahaya") %}
+
+{% impor "komponen/makro.html" %}
+```
+
+- `{% induk %}` hanya sah di dalam `{% blok %}` dan merender isi blok yang
+  sama satu tingkat di atasnya, bertingkat bila induknya juga memakai
+  `{% induk %}`. Blok tanpa tingkat di atasnya ditolak.
+- `sertakan … dengan a=x, b="teks"` memberi komponen salinan data pemanggil
+  ditambah nilai itu; data pemanggil tidak berubah. Akhiran `hanya` membuat
+  komponen melihat nilai yang diberikan saja. Berkas yang disertakan punya
+  makro dan bloknya sendiri.
+- Badan makro hanya melihat parameternya, bukan data halaman. Nilai argumen
+  dan parameter bawaan berupa jalan akses atau literal. Makro boleh dipanggil
+  sebelum definisinya, dari berkas anak atau induk pada rantai `perluas`,
+  atau dari berkas yang di-`{% impor %}` (hanya definisi makronya yang dibaca).
+  Makro yang memanggil makro lain mencari di berkas tempat ia didefinisikan,
+  jadi makro halaman tidak bisa membajak isi pustaka makro. Kedalaman
+  panggilan makro dibatasi 32.
+- `impor`, seperti `sertakan`, hanya tersedia lewat `templat.mesin(akar)`.
 
 Hasil parsing di-cache secara bawaan oleh `templat.mesin(akar)`: tiap render
 memeriksa ukuran dan waktu-ubah berkas, dan mengurai ulang hanya bila berubah.
