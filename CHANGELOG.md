@@ -5,6 +5,16 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Belum dirilis]
+
+### Diperbaiki
+
+- **Windows: `jam()` mengukur waktu dinding, bukan waktu CPU** (T-W11).
+  `clock()` di CRT Windows menghitung waktu sejak proses mulai, jadi `jam()`
+  ikut bertambah selama `henti()` (0,505 detik untuk `henti(0.5)` di 1.6.1),
+  berbeda dengan dokumentasi dan dengan Linux/macOS. Windows kini memakai
+  `GetProcessTimes` (user + kernel). Dijaga `examples/jam_waktu_cpu.idk`.
+
 ## [1.6.1] - 2026-11-10
 
 ### Diperbaiki

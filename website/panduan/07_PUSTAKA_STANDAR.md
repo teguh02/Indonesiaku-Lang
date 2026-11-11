@@ -581,7 +581,7 @@ Setelan registri `LongPathsEnabled` tidak diperlukan.
 | `waktu()` | Detik sejak epoch (Unix time) |
 | `tanggal()` | Kamus `{tahun, bulan, hari, jam, menit, detik, hari_minggu, hari_tahun}` |
 | `format_tanggal(pola)` | Format waktu sekarang dengan pola `strftime` |
-| `jam()` | Waktu CPU berjalan (detik) |
+| `jam()` | Waktu CPU yang dipakai proses (detik), bukan waktu dinding: tidak bertambah selama `henti()`. Untuk mengukur waktu dinding pakai `waktu()` |
 | `henti(detik)` | Jeda eksekusi |
 
 ### 1.8 Lain-lain
