@@ -5,7 +5,7 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Belum dirilis]
+## [1.7.0] - 2026-11-11
 
 ### Ditambahkan
 
@@ -26,8 +26,15 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
     `{% panggil nama(x, q=y) %}` dan dibagikan lewat `{% impor "berkas.html" %}`.
     Badan makro hanya melihat parameternya; kedalaman panggilan dibatasi 32.
 
+  Makro memakai lingkup leksikal (makro pustaka tidak bisa dibajak makro
+  halaman bernama sama), dan berkas yang disertakan punya lingkup makro dan
+  blok sendiri. Filter yang mengubah huruf atau memotong ditolak pada nilai
+  `aman()` karena merusak HTML-nya.
+
   Semua sintaks baru sebelumnya adalah galat, jadi templat yang sah tidak
-  berubah artinya.
+  berubah artinya. Satu-satunya perubahan pesan: `{% impor os %}` kini
+  ditolak karena nama berkas harus literal berkutip, bukan karena tag tidak
+  dikenal.
 
 ## [1.6.2] - 2026-11-11
 

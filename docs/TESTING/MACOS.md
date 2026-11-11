@@ -1387,5 +1387,6 @@ dalam) juga perlu diuji ambangnya di sini.
 
 | Tanggal | Versi | Paket | Penguji | Hasil |
 |---|---|---|---|---|
+| — | 1.7.0 | `indk-macos.tar.gz` (tag `v1.7.0`) | — | ⬜ belum diuji |
 | — | 1.6.2 | `indk-macos.tar.gz` (tag `v1.6.2`) | — | ⬜ belum diuji |
 | — | 1.6.1 | `indk-macos.tar.gz` (tag `v1.6.1`) | — | ⬜ belum diuji |
