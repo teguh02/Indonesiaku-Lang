@@ -7,7 +7,38 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Belum dirilis]
 
+### Diperbaiki
+
+- **Windows: `jam()` mengukur waktu dinding, bukan waktu CPU** (T-W11).
+  `clock()` di CRT Windows menghitung waktu sejak proses mulai, jadi `jam()`
+  ikut bertambah selama `henti()` (0,505 detik untuk `henti(0.5)` di 1.6.1),
+  berbeda dengan dokumentasi dan dengan Linux/macOS. Windows kini memakai
+  `GetProcessTimes` (user + kernel). Dijaga `examples/jam_waktu_cpu.idk`.
+
+- **Windows: uninstall meninggalkan entri `PATH` sistem** (T-W13, ditemukan
+  saat uji rilis 1.6.1 di Windows 11 asli, kasus WIN-15). `unins000.exe`
+  menghapus folder, pintasan, dan entri Apps & features, tetapi
+  `C:\Program Files\Indonesiaku` tetap tertinggal di `Path` HKLM. Kini
+  uninstaller membuang tepat entri itu dan membiarkan entri lain apa adanya;
+  entri installer lawas `Program Files (x86)\Indonesiaku\bin` tidak disentuh.
+  Pemasang juga menyiarkan perubahan lingkungan (`ChangesEnvironment=yes`),
+  sehingga terminal baru langsung melihat `PATH` yang benar. Dijaga
+  `tests/pemasang_path.ps1`, uji pasang-lalu-uninstall sungguhan di runner
+  Windows CI.
+
 ### Keamanan
+
+- **Windows: argumen `proses.jalankan` untuk berkas `.bat`/`.cmd` bisa
+  dijalankan `cmd.exe` sebagai perintah** (T-W6). Windows selalu menjalankan
+  berkas batch lewat `cmd.exe`, yang tidak mengikuti aturan kutip biasa.
+  Akibatnya argumen tanpa spasi tidak dikutip (`"a&perintah"` menjalankan
+  `perintah`), dan `%VAR%` diperluas walau dikutip. Ini bertentangan dengan
+  janji "tanpa shell, tidak ada injeksi" di panduan. Kini argumen untuk
+  berkas batch selalu dikutip, dan argumen yang memuat `"`, `%`, `!`, atau
+  baris baru ditolak dengan `GalatNilai`; program `.exe` tidak terpengaruh.
+  Arahnya sama dengan perbaikan CVE-2024-24576 di Rust. Dijaga
+  `tests/test_proses_batch.ps1` (merah pada biner 1.6.1: berkas penanda
+  terbuat).
 
 - **Windows: dua server bisa mendengarkan port yang sama** (T-W7).
   `soket_dengar` memasang `SO_REUSEADDR`. Di Winsock opsi itu mengizinkan

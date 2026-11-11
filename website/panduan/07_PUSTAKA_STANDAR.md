@@ -581,7 +581,7 @@ Setelan registri `LongPathsEnabled` tidak diperlukan.
 | `waktu()` | Detik sejak epoch (Unix time) |
 | `tanggal()` | Kamus `{tahun, bulan, hari, jam, menit, detik, hari_minggu, hari_tahun}` |
 | `format_tanggal(pola)` | Format waktu sekarang dengan pola `strftime` |
-| `jam()` | Waktu CPU berjalan (detik) |
+| `jam()` | Waktu CPU yang dipakai proses (detik), bukan waktu dinding: tidak bertambah selama `henti()`. Untuk mengukur waktu dinding pakai `waktu()` |
 | `henti(detik)` | Jeda eksekusi |
 
 ### 1.8 Lain-lain
@@ -2148,6 +2148,16 @@ hapus_berkas("_panduan_anak_sementara.idk")
 Baris baru di keluaran dinormalkan ke `\n` di semua sistem operasi.
 Program yang tidak ditemukan menghasilkan `GalatOS`. Belum ada
 `batas_waktu` (timeout). Ditolak dengan `GalatIzin` di `indk --sandbox`.
+
+**Berkas `.bat`/`.cmd` di Windows.** Windows selalu menjalankan berkas
+batch lewat `cmd.exe`, yang punya aturan kutipnya sendiri: `&` dan `|`
+memisahkan perintah, dan `%VAR%` diperluas walau berada di dalam kutip.
+Supaya janji "tanpa shell" tetap berlaku, `jalankan` selalu mengutip setiap
+argumen untuk berkas batch, dan menolak argumen (juga jalur programnya) yang
+memuat `"`, `%`, `!`, atau baris baru dengan `GalatNilai`. Karakter itu
+tidak bisa diteruskan ke berkas batch dengan aman. Kalau perlu
+melewatkannya, jalankan programnya langsung (`.exe`), bukan lewat berkas
+batch. Program biasa (`.exe`) tidak terpengaruh.
 
 ### 2.18 `pustaka/bita.idk` — data biner
 
