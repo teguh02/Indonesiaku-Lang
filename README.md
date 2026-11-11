@@ -29,6 +29,7 @@ cetak(sapa("Teguh"))
 [![Rilis](https://img.shields.io/github/v/release/teguh02/Indonesiaku-Lang)](https://github.com/teguh02/Indonesiaku-Lang/releases/latest)
 [![Lisensi](https://img.shields.io/badge/lisensi-MIT-blue)](LICENSE)
 [![Docker](https://img.shields.io/docker/pulls/teguh02/indonesiaku)](https://hub.docker.com/r/teguh02/indonesiaku)
+[![VS Code](https://img.shields.io/visual-studio-marketplace/v/teguh02.indonesiaku?label=VS%20Code)](https://marketplace.visualstudio.com/items?itemName=teguh02.indonesiaku)
 
 ---
 
@@ -49,7 +50,7 @@ README ini sengaja dibuat ringkas.
 | [07_PUSTAKA_STANDAR](website/panduan/07_PUSTAKA_STANDAR.md) | Referensi fungsi bawaan & pustaka standar |
 
 - Situs dokumentasi & playground: **[idk-lang.web.id](https://idk-lang.web.id)**
-- Ekstensi VS Code: [highlighting, formatter, dan LSP](editors/vscode-indonesiaku/README.md)
+- Ekstensi VS Code: pasang dari **[Marketplace](https://marketplace.visualstudio.com/items?itemName=teguh02.indonesiaku)** (`code --install-extension teguh02.indonesiaku`) — highlighting, formatter, dan LSP ([detail](editors/vscode-indonesiaku/README.md))
 - Spesifikasi bahasa yang normatif: **[docs/SPESIFIKASI.md](docs/SPESIFIKASI.md)**
 - Rencana pengembangan (internal, bukan panduan pengguna): **[docs/](docs/README.md)**
 

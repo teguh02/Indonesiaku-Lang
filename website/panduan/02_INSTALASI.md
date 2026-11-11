@@ -83,20 +83,48 @@ Pastikan komputer Anda terhubung ke internet untuk:
 
 ## Ekstensi VS Code & LSP
 
-Ekstensi di [`editors/vscode-indonesiaku`](https://github.com/teguh02/Indonesiaku/tree/main/editors/vscode-indonesiaku)
-menyediakan syntax highlighting, snippets, formatter, serta language server
-untuk diagnostics, completion, hover, dan go-to-definition lokal.
+Ekstensi resmi sudah tersedia di Visual Studio Marketplace:
+**[Indonesiaku — teguh02.indonesiaku](https://marketplace.visualstudio.com/items?itemName=teguh02.indonesiaku)**.
 
-### Instalasi lokal
+Ekstensi ini menyediakan syntax highlighting, snippets, formatter, serta
+language server untuk diagnostics, completion, hover, dan go-to-definition
+lokal.
+
+### Pasang dari Marketplace (cara yang disarankan)
+
+Lewat tampilan Extensions di VS Code: tekan `Ctrl+Shift+X` (macOS:
+`Cmd+Shift+X`), ketik `indonesiaku`, lalu klik **Install** pada ekstensi
+terbitan *Teguh Rijanandi*.
+
+Atau lewat baris perintah:
+
+```bash
+code --install-extension teguh02.indonesiaku
+```
+
+Memastikan terpasang:
+
+```bash
+code --list-extensions --show-versions | grep indonesiaku
+```
+
+### Pasang dari sumber
+
+Dipakai saat ingin mencoba perubahan yang belum terbit di Marketplace:
 
 ```bash
 cd editors/vscode-indonesiaku
+npm install
 npm run package
-code --install-extension indonesiaku-0.2.0.vsix
+code --install-extension indonesiaku-<versi>.vsix
 ```
 
-Pastikan interpreter `indk` tersedia di `PATH`. Jika tidak, atur path executable
-di pengaturan VS Code:
+Nama berkas `.vsix` mengikuti `version` di `package.json`.
+
+### Pengaturan
+
+Pastikan interpreter `indk` tersedia di `PATH`. Jika tidak, atur path
+executable di pengaturan VS Code:
 
 ```json
 { "indonesiaku.jalurIndk": "C:/jalur/ke/indk.exe" }
@@ -106,7 +134,7 @@ Language server menggunakan `indk --dis` untuk menganalisis dokumen tanpa
 menjalankan program. Fitur diagnostics tetap bekerja pada dokumen belum
 tersimpan; hasil analisis usang dibatalkan saat dokumen berubah.
 
-Detail extension dan tes lokal: [README ekstensi](https://github.com/teguh02/Indonesiaku/blob/main/editors/vscode-indonesiaku/README.md).
+Detail extension dan tes lokal: [README ekstensi](https://github.com/teguh02/Indonesiaku-Lang/blob/main/editors/vscode-indonesiaku/README.md).
 
 ---
 
