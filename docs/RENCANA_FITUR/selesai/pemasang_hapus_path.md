@@ -1,6 +1,6 @@
 # Rencana Fitur: uninstaller Windows membuang entri PATH-nya (T-W13)
 
-- **Status:** dikerjakan
+- **Status:** selesai
 - **Target versi:** 1.6.2
 - **Pemilik:** pemeliharaan pemasang Windows
 
