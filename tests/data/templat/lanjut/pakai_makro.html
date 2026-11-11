@@ -1,0 +1,6 @@
+{% impor "lanjut/makro.html" %}
+{% panggil tombol("Simpan") %}
+{% panggil tombol(teks=label, jenis="bahaya") %}
+{% panggil baris("Aksi", label) %}
+{% panggil sapa("Ani") %}
+{% makro sapa(nama) %}Halo {{ nama | huruf_besar }}{% akhirmakro %}

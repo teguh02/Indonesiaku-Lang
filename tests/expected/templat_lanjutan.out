@@ -1,0 +1,73 @@
+== filter bawaan ==
+BUDI SANTOSO / Budi Santoso
+[ab-12]
+budi… / budi santoso
+12 3
+a, &lt;b&gt;, 3 | a | &lt;b&gt; | 3
+12.35 7.0 12
+- nihil opsional
+&lt;TAMU&gt;
+<i>miring</i>
+huruf_besar pada aman() -> baris 1: filter 'huruf_besar' tidak bisa dipakai pada nilai aman()
+judul pada aman() -> baris 1: filter 'judul' tidak bisa dipakai pada nilai aman()
+potong:3 pada aman() -> baris 1: filter 'potong' tidak bisa dipakai pada nilai aman()
+== filter kustom ==
+Rp&lt;5&gt;&lt; <b><5></b> &lt;5&gt;&lt;5&gt;&lt;5&gt; RP&lt;5&gt;&lt;
+filter kustom di render_teks -> baris 1: filter 'rupiah' tidak dikenal
+nama bawaan -> filter bawaan 'huruf_besar' tidak boleh ditimpa
+aman -> filter 'aman' tidak diizinkan: tandai HTML tepercaya dengan templat.aman() di kode .idk
+nama tidak sah -> nama filter tidak sah: '1x'
+bukan fungsi -> filter 'bukan_fungsi' harus berupa fungsi
+== {% induk %} ==
+<head><link href="dasar.css"><script src="anak.js"></script></head>
+<main>isi dasar</main>
+
+<head><link href="dasar.css"><script src="anak.js"></script><meta cucu></head>
+<main>[isi dasar] + cucu</main>
+
+== sertakan dengan ==
+<div class="kartu">Buku &lt;1&gt; - 50 (Ani)</div>
+<div class="kartu">Berita - gratis (-)</div>
+<div class="kartu">Literal &lt;b&gt; - 3 (Ani)</div>
+judul pemanggil: pemanggil
+
+data pemanggil tetap: pemanggil
+== makro ==
+
+<button class="btn-utama">Simpan</button>
+<button class="btn-bahaya">&lt;hapus&gt;</button>
+<p>Aksi: <button class="btn-kecil">&lt;hapus&gt;</button></p>
+Halo ANI
+
+
+<main><h1>Dari anak</h1></main><footer>kaki</footer>
+
+
+b->A-pustaka A-halaman
+
+<head><link href="dasar.css"></head>
+<main>H1 <k>KARTU [isi kartu]</k> H2 [isi dasar]</main>
+
+1-2 &lt;x&gt;-3
+== yang harus ditolak ==
+induk tanpa isi induk -> lanjut/induk_tanpa_induk.html:baris 1: blok 'a' tidak punya isi induk untuk '{% induk %}'
+induk di luar blok -> lanjut/induk_luar_blok.html:baris 1: '{% induk %}' hanya boleh di dalam '{% blok %}'
+makro rekursif -> lanjut/makro_rekursi.html:baris 1: panggilan makro terlalu dalam (maksimum 32)
+argumen makro kurang -> lanjut/makro_kurang.html:baris 1: makro 'm' membutuhkan argumen 'b'
+argumen makro berlebih -> lanjut/makro_lebih.html:baris 1: makro 'm' menerima 1 argumen, diberi 2
+parameter makro asing -> lanjut/makro_param_asing.html:baris 1: makro 'm' tidak punya parameter 'z'
+makro ganda -> lanjut/makro_ganda.html:baris 2: makro 'm' didefinisikan dua kali
+makro tidak dikenal -> lanjut/makro_hilang.html:baris 1: makro 'tidakada' tidak dikenal
+impor siklus -> siklus impor: lanjut/impor_siklus_a.html -> lanjut/impor_siklus_b.html -> lanjut/impor_siklus_a.html
+impor traversal -> nama templat tidak boleh mengandung '..': '../rahasia.txt'
+filter aman -> lanjut/filter_aman.html:baris 1: filter 'aman' tidak ada: tandai HTML tepercaya dengan templat.aman() di kode .idk, bukan dari dalam templat
+filter tak dikenal -> lanjut/filter_asing.html:baris 1: filter 'tidakada' tidak dikenal
+filter tanpa argumen wajib -> lanjut/filter_tanpa_arg.html:baris 1: filter 'potong' membutuhkan argumen, mis. 'potong:...'
+filter dengan argumen terlarang -> lanjut/filter_arg_lebih.html:baris 1: filter 'huruf_besar' tidak menerima argumen
+argumen filter dari data -> lanjut/filter_arg_data.html:baris 1: argumen filter 'potong' harus literal (teks berkutip atau bulat), dapat 'n'
+filter bergaya kurung -> lanjut/filter_kurung.html:baris 1: nama filter tidak sah 'potong(3)'
+nama hilang tanpa bawaan -> lanjut/nama_hilang.html:baris 1: 'tidakada' tidak ada di data
+induk di dalam makro -> lanjut/makro_induk.html:baris 1: '{% induk %}' hanya boleh di dalam '{% blok %}'
+angka di luar batas -> lanjut/filter_angka_besar.html:baris 1: filter 'angka': argumen harus bulat 0 sampai 15
+literal bilangan terlalu panjang -> bilangan terlalu panjang di templat (maksimum 18 digit): '99999999999999999999'
+impor di render_teks -> baris 1: '{% impor %}' hanya bisa dipakai lewat templat.mesin(akar), bukan render_teks()

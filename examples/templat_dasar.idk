@@ -50,7 +50,8 @@ variabel tolak = [
     ["variabel tidak ada", "{{ tidakada }}", "tidak ada di data"],
     ["untuk tanpa penutup", "{% untuk x dalam xs %}y", "akhiruntuk"],
     ["kurung tidak ditutup", "<p>{{ a", "tanpa '}}'"],
-    ["tag tidak dikenal", "{% impor os %}", "tidak dikenal"]
+    ["tag tidak dikenal", "{% jalankan os %}", "tidak dikenal"],
+    ["impor modul, bukan berkas templat", "{% impor os %}", "tanda kutip"]
 ]
 # Memeriksa ALASAN penolakan, bukan sekadar "ada galat": `{{ keluar() }}`
 # juga akan ditolak sebagai "variabel tidak ada" kalau pagar SSR-03 dicabut,

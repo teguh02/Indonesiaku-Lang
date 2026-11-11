@@ -209,6 +209,253 @@ fungsi _t_urai_jalan(ekspr, baris) {
 }
 
 
+# --- filter, literal, dan argumen ------------------------------------------
+#
+# Semua pengurai di bawah ini tetap tunduk pada pagar SSR-03: yang boleh
+# muncul hanya rantai akses (lewat _t_urai_jalan) dan literal. Tidak ada
+# ekspresi, tidak ada pemanggilan fungsi dari dalam templat.
+
+_T_HURUF = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
+# angka:n: lebih dari 15 digit desimal sudah di luar presisi double, dan
+# pangkat(10, n) yang besar meluap dengan galat yang bukan GalatTemplat.
+_T_MAKS_DESIMAL = 15
+# Literal bulat dibatasi supaya ke_bulat() tidak meluap dengan galat mentah.
+_T_MAKS_DIGIT = 18
+
+# Aturan argumen filter bawaan: "tidak", "wajib", atau "opsional".
+_T_FILTER_ARG = {"huruf_besar": "tidak", "huruf_kecil": "tidak", "judul": "tidak",
+                 "rapikan": "tidak", "panjang": "tidak", "potong": "wajib",
+                 "gabung": "opsional", "bawaan": "wajib", "angka": "wajib"}
+
+fungsi _t_nama_sah(t) {
+    jika panjang(t) == 0 { kembalikan salah }
+    jika !(t[0] dalam _T_HURUF) { kembalikan salah }
+    untuk c dalam t {
+        jika !(c dalam _T_HURUF) dan !(c dalam _T_ANGKA) { kembalikan salah }
+    }
+    kembalikan benar
+}
+
+# Memisah `t` pada `pemisah` yang berada DI LUAR literal berkutip, supaya
+# `{{ x | gabung:" | " }}` tidak terbelah di dalam argumennya.
+fungsi _t_pisah_luar_kutip(t, pemisah) {
+    variabel hasil = daftar()
+    variabel kini = daftar()
+    variabel kutip = ""
+    untuk c dalam t {
+        jika kutip != "" {
+            kini.tambah(c)
+            jika c == kutip { kutip = "" }
+        } jika_lain c == "\"" atau c == "'" {
+            kutip = c
+            kini.tambah(c)
+        } jika_lain c == pemisah {
+            hasil.tambah(teks_gabung(kini, ""))
+            kini = daftar()
+        } selain {
+            kini.tambah(c)
+        }
+    }
+    hasil.tambah(teks_gabung(kini, ""))
+    kembalikan hasil
+}
+
+# Literal templat: teks berkutip atau bulat (boleh bertanda minus).
+# Mengembalikan [benar, nilai] bila literal, [salah, kosong] bila bukan.
+fungsi _t_coba_literal(t) {
+    variabel e = _t_rapikan(t)
+    variabel n = panjang(e)
+    jika n >= 2 {
+        variabel k = e[0]
+        jika (k == "\"" atau k == "'") dan e[n - 1] == k {
+            kembalikan [benar, e[1:n - 1]]
+        }
+    }
+    variabel awal = 0
+    jika n > 0 dan e[0] == "-" { awal = 1 }
+    jika n > awal {
+        variabel angka = benar
+        untuk d dalam e[awal:] {
+            jika !(d dalam _T_ANGKA) { angka = salah }
+        }
+        jika angka {
+            jika panjang(e) - awal > _T_MAKS_DIGIT {
+                naikkan GalatTemplat(
+                    "bilangan terlalu panjang di templat (maksimum "
+                    + ke_teks(_T_MAKS_DIGIT) + " digit): '" + e + "'")
+            }
+            kembalikan [benar, ke_bulat(e)]
+        }
+    }
+    kembalikan [salah, kosong]
+}
+
+# Operand argumen (sertakan/panggil): literal, atau jalan akses ke data.
+fungsi _t_urai_operand(t, baris) {
+    variabel lit = _t_coba_literal(t)
+    jika lit[0] { kembalikan {"literal": lit[1]} }
+    kembalikan {"jalan": _t_urai_jalan(t, baris)}
+}
+
+fungsi _t_nilai_operand(op, data, baris) {
+    jika "literal" dalam op { kembalikan op["literal"] }
+    kembalikan _t_ambil(data, op["jalan"], baris)
+}
+
+# "jalan | f1 | f2:arg" -> {"jalan": [...], "filter": [[nama, arg, ada_arg], ...]}
+fungsi _t_urai_nilai(isi, baris) {
+    variabel bagian = _t_pisah_luar_kutip(isi, "|")
+    variabel filter = daftar()
+    variabel i = 1
+    selagi i < panjang(bagian) {
+        variabel f = _t_rapikan(bagian[i])
+        jika panjang(f) == 0 {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris) + ": nama filter kosong setelah '|'")
+        }
+        variabel potongan = _t_pisah_luar_kutip(f, ":")
+        jika panjang(potongan) > 2 {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris) + ": filter hanya menerima satu argumen: '"
+                + f + "'")
+        }
+        variabel nama = _t_rapikan(potongan[0])
+        jika !_t_nama_sah(nama) {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris) + ": nama filter tidak sah '" + nama + "'")
+        }
+        jika panjang(potongan) == 2 {
+            variabel lit = _t_coba_literal(potongan[1])
+            jika !lit[0] {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris) + ": argumen filter '" + nama
+                    + "' harus literal (teks berkutip atau bulat), dapat '"
+                    + _t_rapikan(potongan[1]) + "'")
+            }
+            filter.tambah([nama, lit[1], benar])
+        } selain {
+            filter.tambah([nama, kosong, salah])
+        }
+        i = i + 1
+    }
+    kembalikan {"jalan": _t_urai_jalan(bagian[0], baris), "filter": filter}
+}
+
+# "nama(isi)" -> [nama, isi]. Dipakai {% makro %} dan {% panggil %}.
+fungsi _t_urai_tanda(t, baris, tag) {
+    variabel n = panjang(t)
+    variabel buka = _t_cari(t, "(", 0)
+    jika buka == 0 - 1 atau n == 0 atau t[n - 1] != ")" {
+        naikkan GalatTemplat(
+            "baris " + ke_teks(baris) + ": bentuk harus '{% " + tag
+            + " nama(...) %}', dapat '" + tag + " " + t + "'")
+    }
+    variabel nama = _t_rapikan(t[0:buka])
+    jika !_t_nama_sah(nama) {
+        naikkan GalatTemplat(
+            "baris " + ke_teks(baris) + ": nama makro tidak sah '" + nama + "'")
+    }
+    kembalikan [nama, t[buka + 1:n - 1]]
+}
+
+# Parameter makro: "a, b=\"x\"" -> [[nama, ada_bawaan, bawaan], ...]
+fungsi _t_urai_param(isi, baris) {
+    variabel hasil = daftar()
+    jika panjang(_t_rapikan(isi)) == 0 { kembalikan hasil }
+    variabel sudah_bawaan = salah
+    untuk bagian dalam _t_pisah_luar_kutip(isi, ",") {
+        variabel sisi = _t_pisah_luar_kutip(bagian, "=")
+        variabel nama = _t_rapikan(sisi[0])
+        jika !_t_nama_sah(nama) {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris) + ": nama parameter tidak sah '" + nama + "'")
+        }
+        untuk p dalam hasil {
+            jika p[0] == nama {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris) + ": parameter '" + nama + "' ganda")
+            }
+        }
+        jika panjang(sisi) == 1 {
+            jika sudah_bawaan {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris) + ": parameter '" + nama
+                    + "' tanpa bawaan tidak boleh sesudah parameter berbawaan")
+            }
+            hasil.tambah([nama, salah, kosong])
+        } jika_lain panjang(sisi) == 2 {
+            variabel lit = _t_coba_literal(sisi[1])
+            jika !lit[0] {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris) + ": bawaan parameter '" + nama
+                    + "' harus literal")
+            }
+            sudah_bawaan = benar
+            hasil.tambah([nama, benar, lit[1]])
+        } selain {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris) + ": parameter tidak sah '"
+                + _t_rapikan(bagian) + "'")
+        }
+    }
+    kembalikan hasil
+}
+
+# Argumen panggilan: posisional lalu bernama. Nilai berupa operand.
+fungsi _t_urai_argumen(isi, baris) {
+    variabel pos = daftar()
+    variabel kw = daftar()
+    jika panjang(_t_rapikan(isi)) == 0 { kembalikan {"pos": pos, "kw": kw} }
+    untuk bagian dalam _t_pisah_luar_kutip(isi, ",") {
+        jika panjang(_t_rapikan(bagian)) == 0 {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris) + ": argumen kosong di antara koma")
+        }
+        variabel sisi = _t_pisah_luar_kutip(bagian, "=")
+        jika panjang(sisi) == 2 dan _t_nama_sah(_t_rapikan(sisi[0])) {
+            variabel nama = _t_rapikan(sisi[0])
+            untuk k dalam kw {
+                jika k[0] == nama {
+                    naikkan GalatTemplat(
+                        "baris " + ke_teks(baris) + ": argumen '" + nama + "' ganda")
+                }
+            }
+            kw.tambah([nama, _t_urai_operand(sisi[1], baris)])
+        } selain {
+            jika panjang(kw) > 0 {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris)
+                    + ": argumen posisional tidak boleh sesudah argumen bernama")
+            }
+            pos.tambah(_t_urai_operand(bagian, baris))
+        }
+    }
+    kembalikan {"pos": pos, "kw": kw}
+}
+
+# Ikatan sertakan: "a=x.y, b=\"teks\"" -> [[nama, operand], ...]
+fungsi _t_urai_ikatan(isi, baris) {
+    variabel hasil = daftar()
+    untuk bagian dalam _t_pisah_luar_kutip(isi, ",") {
+        variabel sisi = _t_pisah_luar_kutip(bagian, "=")
+        variabel nama = _t_rapikan(sisi[0])
+        jika panjang(sisi) != 2 atau !_t_nama_sah(nama) {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris) + ": ikatan harus berbentuk nama=nilai, dapat '"
+                + _t_rapikan(bagian) + "'")
+        }
+        untuk h dalam hasil {
+            jika h[0] == nama {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris) + ": ikatan '" + nama + "' ganda")
+            }
+        }
+        hasil.tambah([nama, _t_urai_operand(sisi[1], baris)])
+    }
+    kembalikan hasil
+}
+
+
 # --- parser -----------------------------------------------------------------
 #
 # Node berupa kamus dengan kunci "jenis":
@@ -254,6 +501,87 @@ fungsi _t_cari_tag(sumber, mulai, n) {
 
 # Mengurai sampai salah satu penanda di `henti` ditemukan.
 # Mengembalikan [node, posisi_setelah_tag_henti, nama_tag_henti].
+# Tag fase lanjutan (sertakan, induk, makro, panggil, impor), dipisah dari
+# _t_urai_blok karena satu fungsi hanya boleh memuat 256 konstanta.
+# Mengembalikan [node, posisi sesudah tag], atau kosong bila `kata` bukan
+# salah satu tag ini.
+fungsi _t_urai_tag_lanjut(kata, bagian, badan_tag, sumber, sesudah, kedalaman, hitung, baris) {
+    jika kata == "sertakan" {
+        # Nama templat adalah literal berkutip, BUKAN ekspresi: nama
+        # yang datang dari data berarti penyerang memilih berkas mana
+        # yang dibaca. Alasan sama dengan `{{ }}` yang bukan kode.
+        jika panjang(bagian) < 2 atau (panjang(bagian) > 2 dan bagian[2] != "dengan") {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris)
+                + ": bentuk harus '{% sertakan \"berkas.html\" %}' atau "
+                + "'{% sertakan \"berkas.html\" dengan a=b %}', dapat '"
+                + badan_tag + "'")
+        }
+        variabel n_sertakan = {"jenis": "sertakan",
+                               "nama": _t_literal(bagian[1], baris),
+                               "baris": baris}
+        jika panjang(bagian) > 2 {
+            # Sisa tag sesudah kata "dengan", diambil dari teks mentah
+            # karena nilai literal boleh memuat spasi.
+            variabel sisa = badan_tag[_t_cari(badan_tag, bagian[1], 0) + panjang(bagian[1]):]
+            sisa = _t_rapikan(sisa)
+            sisa = _t_rapikan(sisa[6:])
+            variabel hanya = salah
+            variabel kata_akhir = _t_pisah_spasi(sisa)
+            jika panjang(kata_akhir) > 0 dan kata_akhir[panjang(kata_akhir) - 1] == "hanya" {
+                hanya = benar
+                sisa = _t_rapikan(sisa[0:panjang(sisa) - 5])
+            }
+            jika panjang(sisa) == 0 {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(baris) + ": 'dengan' tanpa ikatan nama=nilai")
+            }
+            n_sertakan["ikatan"] = _t_urai_ikatan(sisa, baris)
+            n_sertakan["hanya"] = hanya
+        }
+        kembalikan [n_sertakan, sesudah]
+    } jika_lain kata == "induk" {
+        jika panjang(bagian) != 1 {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris) + ": bentuk harus '{% induk %}', dapat '"
+                + badan_tag + "'")
+        }
+        kembalikan [{"jenis": "induk", "baris": baris}, sesudah]
+    } jika_lain kata == "makro" {
+        jika kedalaman > 0 {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris) + ": '{% makro %}' harus di tingkat "
+                + "atas berkas, bukan di dalam tag lain")
+        }
+        variabel tanda = _t_urai_tanda(_t_rapikan(badan_tag[5:]), baris, "makro")
+        variabel param = _t_urai_param(tanda[1], baris)
+        variabel hasil_m = _t_urai_blok(sumber, sesudah, ["akhirmakro"],
+                                        kedalaman + 1, hitung)
+        kembalikan [{"jenis": "makro", "nama": tanda[0], "param": param,
+                     "badan": hasil_m[0], "baris": baris}, hasil_m[1]]
+    } jika_lain kata == "panggil" {
+        variabel tanda_p = _t_urai_tanda(_t_rapikan(badan_tag[7:]), baris, "panggil")
+        variabel arg = _t_urai_argumen(tanda_p[1], baris)
+        kembalikan [{"jenis": "panggil", "nama": tanda_p[0], "pos": arg["pos"],
+                     "kw": arg["kw"], "baris": baris}, sesudah]
+    } jika_lain kata == "impor" {
+        jika kedalaman > 0 {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris) + ": '{% impor %}' harus di tingkat "
+                + "atas berkas, bukan di dalam tag lain")
+        }
+        jika panjang(bagian) != 2 {
+            naikkan GalatTemplat(
+                "baris " + ke_teks(baris)
+                + ": bentuk harus '{% impor \"makro.html\" %}', dapat '"
+                + badan_tag + "'")
+        }
+        kembalikan [{"jenis": "impor", "nama": _t_literal(bagian[1], baris),
+                     "baris": baris}, sesudah]
+    }
+    kembalikan kosong
+}
+
 fungsi _t_urai_blok(sumber, pos, henti, kedalaman, hitung) {
     jika kedalaman > _T_MAKS_DALAM {
         naikkan GalatTemplat(
@@ -301,8 +629,10 @@ fungsi _t_urai_blok(sumber, pos, henti, kedalaman, hitung) {
                     "baris " + ke_teks(baris) + ": '{{' tanpa '}}'")
             }
             variabel isi = sumber[titik + 2:tutup]
+            variabel ekspr = _t_urai_nilai(isi, baris)
             node.tambah({"jenis": "nilai",
-                         "jalan": _t_urai_jalan(isi, baris),
+                         "jalan": ekspr["jalan"],
+                         "filter": ekspr["filter"],
                          "baris": baris})
             i = tutup + 2
         } selain {
@@ -326,20 +656,11 @@ fungsi _t_urai_blok(sumber, pos, henti, kedalaman, hitung) {
                 }
             }
 
-            jika kata == "sertakan" {
-                # Nama templat adalah literal berkutip, BUKAN ekspresi: nama
-                # yang datang dari data berarti penyerang memilih berkas mana
-                # yang dibaca. Alasan sama dengan `{{ }}` yang bukan kode.
-                jika panjang(bagian) != 2 {
-                    naikkan GalatTemplat(
-                        "baris " + ke_teks(baris)
-                        + ": bentuk harus '{% sertakan \"berkas.html\" %}', dapat '"
-                        + badan_tag + "'")
-                }
-                node.tambah({"jenis": "sertakan",
-                             "nama": _t_literal(bagian[1], baris),
-                             "baris": baris})
-                i = sesudah
+            variabel lanjutan = _t_urai_tag_lanjut(kata, bagian, badan_tag, sumber, sesudah,
+                                                   kedalaman, hitung, baris)
+            jika lanjutan != kosong {
+                node.tambah(lanjutan[0])
+                i = lanjutan[1]
             } jika_lain kata == "perluas" {
                 jika panjang(bagian) != 2 {
                     naikkan GalatTemplat(
@@ -537,9 +858,13 @@ fungsi _t_benarkah(n) {
 }
 
 fungsi _t_konteks(mesin) {
-    # `blok` = override dari anak; `tumpukan` = rantai berkas yang sedang
-    # dirender, dipakai untuk mendeteksi siklus.
-    kembalikan {"mesin": mesin, "blok": kamus(), "tumpukan": daftar()}
+    # `blok` = override dari anak, per nama: daftar badan dari anak terluar
+    # ke induk terdekat; `tumpukan` = rantai berkas yang sedang dirender,
+    # dipakai untuk mendeteksi siklus; `induk` = blok yang sedang dirender,
+    # untuk {% induk %}; `makro` = makro terdaftar: nama -> [node, berkas asal];
+    # `dalam_makro` = kedalaman panggilan makro.
+    kembalikan {"mesin": mesin, "blok": kamus(), "tumpukan": daftar(),
+                "induk": daftar(), "makro": kamus(), "dalam_makro": 0}
 }
 
 fungsi _t_sertakan(n, data, keluar, ktx) {
@@ -552,7 +877,368 @@ fungsi _t_sertakan(n, data, keluar, ktx) {
             "baris " + ke_teks(n["baris"]) + ": '{% sertakan %}' hanya bisa "
             + "dipakai lewat templat.mesin(akar), bukan render_teks()")
     }
-    m._render_berkas(n["nama"], data, keluar, ktx)
+    variabel d = data
+    jika "ikatan" dalam n {
+        # Salinan: komponen boleh menimpa nama di datanya sendiri tanpa
+        # mengubah data pemanggil. `hanya` = komponen tidak melihat data
+        # pemanggil sama sekali.
+        d = kamus()
+        jika !n["hanya"] {
+            untuk k dalam kunci(data) { d[k] = data[k] }
+        }
+        untuk ik dalam n["ikatan"] {
+            d[ik[0]] = _t_nilai_operand(ik[1], data, n["baris"])
+        }
+    }
+    # Berkas yang disertakan punya lingkup makro, blok, dan {% induk %} sendiri:
+    # makro halaman pemanggil tidak boleh menimpa makro komponen bernama sama,
+    # blok yang ditimpa halaman tidak boleh mengisi blok komponen bernama sama,
+    # dan {% induk %} di komponen tidak boleh meraih blok milik pemanggil.
+    variabel makro_lama = ktx["makro"]
+    variabel induk_lama = ktx["induk"]
+    variabel blok_lama = ktx["blok"]
+    ktx["makro"] = kamus()
+    ktx["induk"] = daftar()
+    ktx["blok"] = kamus()
+    m._render_berkas(n["nama"], d, keluar, ktx)
+    ktx["makro"] = makro_lama
+    ktx["induk"] = induk_lama
+    ktx["blok"] = blok_lama
+}
+
+
+# --- filter -----------------------------------------------------------------
+
+fungsi _t_ambil_opsional(data, jalan, baris) {
+    coba {
+        kembalikan _t_ambil(data, jalan, baris)
+    } kecuali GalatTemplat sebagai e {
+        kembalikan kosong
+    }
+}
+
+fungsi _t_judul(t) {
+    variabel keluar = daftar()
+    variabel awal_kata = benar
+    untuk c dalam t {
+        jika _t_spasi(c) {
+            keluar.tambah(c)
+            awal_kata = benar
+        } jika_lain awal_kata {
+            keluar.tambah(huruf_besar(c))
+            awal_kata = salah
+        } selain {
+            keluar.tambah(huruf_kecil(c))
+        }
+    }
+    kembalikan teks_gabung(keluar, "")
+}
+
+# angka:n -> teks dengan tepat n angka di belakang koma, dibulatkan menjauhi
+# nol pada ½ (seperti bulat()). Tidak ada format "{:.2f}" di bahasa ini.
+fungsi _t_angka(v, n) {
+    variabel skala = pangkat(10, n)
+    variabel r = bulat(v * skala)
+    variabel tanda = ""
+    jika r < 0 {
+        tanda = "-"
+        r = 0 - r
+    }
+    variabel s = ke_teks(r)
+    jika n == 0 { kembalikan tanda + s }
+    selagi panjang(s) <= n { s = "0" + s }
+    kembalikan tanda + s[0:panjang(s) - n] + "." + s[panjang(s) - n:]
+}
+
+fungsi _t_filter_bawaan(nama, v, arg, ada_arg, pesan) {
+    jika nama == "bawaan" {
+        jika v == kosong { kembalikan arg }
+        jika jenis(v) == "teks" dan panjang(v) == 0 { kembalikan arg }
+        kembalikan v
+    }
+    jika nama == "panjang" {
+        variabel j = jenis(v)
+        jika j == "teks" atau j == "daftar" atau j == "tupel" atau j == "kamus" {
+            kembalikan panjang(v)
+        }
+        naikkan GalatTemplat(pesan + " tidak bisa dipakai pada " + j)
+    }
+    jika nama == "gabung" {
+        variabel jg = jenis(v)
+        jika jg != "daftar" dan jg != "tupel" {
+            naikkan GalatTemplat(pesan + " hanya untuk daftar atau tupel, bukan " + jg)
+        }
+        variabel pemisah = ", "
+        jika ada_arg { pemisah = ke_teks(arg) }
+        # Setiap elemen di-escape SENDIRI-SENDIRI, lalu hasilnya ditandai aman:
+        # meng-escape teks gabungan di akhir akan meng-escape ulang elemen
+        # aman() yang sengaja berisi HTML.
+        variabel bagian = daftar()
+        untuk x dalam v {
+            jika adalah_instansi(x, Aman) {
+                bagian.tambah(x.teks)
+            } jika_lain x == kosong {
+                bagian.tambah("")
+            } selain {
+                bagian.tambah(_t_escape(ke_teks(x)))
+            }
+        }
+        kembalikan Aman(teks_gabung(bagian, _t_escape(pemisah)))
+    }
+    jika nama == "angka" {
+        jika jenis(v) != "angka" {
+            naikkan GalatTemplat(pesan + " hanya untuk angka, bukan " + jenis(v))
+        }
+        jika jenis(arg) != "angka" atau arg < 0 atau arg > _T_MAKS_DESIMAL {
+            naikkan GalatTemplat(
+                pesan + ": argumen harus bulat 0 sampai " + ke_teks(_T_MAKS_DESIMAL))
+        }
+        kembalikan _t_angka(v, arg)
+    }
+
+    # Filter teks. Nilai aman() tetap aman: filter bekerja pada HTML-nya dan
+    # hasilnya tidak di-escape ulang (escape ulang akan merusak HTML yang
+    # sengaja ditandai tepercaya di kode .idk).
+    variabel aman_masuk = adalah_instansi(v, Aman)
+    variabel t = ""
+    jika aman_masuk {
+        t = v.teks
+    } jika_lain v != kosong {
+        t = ke_teks(v)
+    }
+    # Filter yang mengubah huruf atau memotong merusak HTML: "&amp;" menjadi
+    # "&AMP;", dan potongan bisa membelah tag ("<a hr…"). Olah teksnya di
+    # .idk SEBELUM aman().
+    jika aman_masuk dan nama != "rapikan" {
+        naikkan GalatTemplat(pesan + " tidak bisa dipakai pada nilai aman()")
+    }
+    variabel hasil = t
+    jika nama == "huruf_besar" {
+        hasil = huruf_besar(t)
+    } jika_lain nama == "huruf_kecil" {
+        hasil = huruf_kecil(t)
+    } jika_lain nama == "judul" {
+        hasil = _t_judul(t)
+    } jika_lain nama == "rapikan" {
+        hasil = _t_rapikan(t)
+    } jika_lain nama == "potong" {
+        jika jenis(arg) != "angka" atau arg < 0 {
+            naikkan GalatTemplat(pesan + ": argumen harus bulat >= 0")
+        }
+        jika panjang(t) > arg {
+            hasil = t[0:arg] + "…"
+        }
+    }
+    jika aman_masuk { kembalikan Aman(hasil) }
+    kembalikan hasil
+}
+
+fungsi _t_terapkan_filter(f, v, baris, ktx) {
+    variabel nama = f[0]
+    variabel pesan = "baris " + ke_teks(baris) + ": filter '" + nama + "'"
+    jika nama dalam _T_FILTER_ARG {
+        variabel aturan = _T_FILTER_ARG[nama]
+        jika aturan == "tidak" dan f[2] {
+            naikkan GalatTemplat(pesan + " tidak menerima argumen")
+        }
+        jika aturan == "wajib" dan !f[2] {
+            naikkan GalatTemplat(pesan + " membutuhkan argumen, mis. '" + nama + ":...'")
+        }
+        kembalikan _t_filter_bawaan(nama, v, f[1], f[2], pesan)
+    }
+    variabel m = ktx["mesin"]
+    jika m != kosong {
+        jika nama dalam m.filter_kustom {
+            variabel fn = m.filter_kustom[nama]
+            kembalikan fn(v, f[1])
+        }
+    }
+    jika nama == "aman" {
+        # Sengaja tidak ada (berbeda dengan `| safe` Jinja): satu-satunya jalan
+        # keluar dari escaping adalah aman() di kode .idk, yang terlihat saat
+        # ditinjau. Filter di berkas .html terlalu mudah ditambahkan diam-diam.
+        naikkan GalatTemplat(
+            pesan + " tidak ada: tandai HTML tepercaya dengan templat.aman() "
+            + "di kode .idk, bukan dari dalam templat")
+    }
+    naikkan GalatTemplat(pesan + " tidak dikenal")
+}
+
+
+# --- induk, makro -----------------------------------------------------------
+
+fungsi _t_induk(n, data, keluar, ktx) {
+    variabel tumpuk = ktx["induk"]
+    jika panjang(tumpuk) == 0 {
+        naikkan GalatTemplat(
+            "baris " + ke_teks(n["baris"])
+            + ": '{% induk %}' hanya boleh di dalam '{% blok %}'")
+    }
+    variabel atas = tumpuk[panjang(tumpuk) - 1]
+    variabel rantai = atas[0]
+    variabel i = atas[1] + 1
+    jika i >= panjang(rantai) {
+        naikkan GalatTemplat(
+            "baris " + ke_teks(n["baris"]) + ": blok '" + atas[2]
+            + "' tidak punya isi induk untuk '{% induk %}'")
+    }
+    tumpuk.tambah([rantai, i, atas[2]])
+    _t_render_node(rantai[i], data, keluar, ktx)
+    tumpuk.hapus_pada(panjang(tumpuk) - 1)
+}
+
+fungsi _t_render_blok(n, data, keluar, ktx) {
+    # Rantai: badan dari anak terluar, ..., induk terdekat, lalu badan blok di
+    # sini sendiri. Badan pertama yang dirender; {% induk %} maju satu langkah.
+    variabel rantai = daftar()
+    variabel timpa = ktx["blok"]
+    jika n["nama"] dalam timpa {
+        untuk bd dalam timpa[n["nama"]] { rantai.tambah(bd) }
+    }
+    rantai.tambah(n["badan"])
+    ktx["induk"].tambah([rantai, 0, n["nama"]])
+    _t_render_node(rantai[0], data, keluar, ktx)
+    ktx["induk"].hapus_pada(panjang(ktx["induk"]) - 1)
+}
+
+# Mendaftarkan makro tingkat atas sebuah berkas ke `reg` (lalu makro dari
+# berkas yang di-{% impor %}-nya). Definisi yang sudah terdaftar dari berkas
+# yang lebih dekat tidak ditimpa. `rantai` = rantai impor, untuk mendeteksi
+# siklus; `asal` = nama berkas untuk pesan galat (kosong untuk render_teks).
+#
+# Tiap entri menyimpan registri tempat ia DIDEFINISIKAN: makro pustaka yang
+# memanggil makro saudaranya harus mendapat saudaranya, bukan makro halaman
+# yang kebetulan bernama sama (lingkup leksikal, seperti makro Jinja).
+fungsi _t_daftar_makro(node, reg, ktx, rantai, asal) {
+    variabel milik = kamus()
+    untuk n dalam node {
+        jika n["jenis"] == "makro" {
+            jika n["nama"] dalam milik {
+                naikkan GalatTemplat(
+                    "baris " + ke_teks(n["baris"]) + ": makro '" + n["nama"]
+                    + "' didefinisikan dua kali")
+            }
+            milik[n["nama"]] = benar
+            jika !(n["nama"] dalam reg) {
+                reg[n["nama"]] = [n, asal, reg]
+            }
+        }
+    }
+    untuk n dalam node {
+        jika n["jenis"] == "impor" {
+            _t_impor(n, reg, ktx, rantai)
+        }
+    }
+}
+
+fungsi _t_impor(n, reg, ktx, rantai) {
+    variabel m = ktx["mesin"]
+    jika m == kosong {
+        naikkan GalatTemplat(
+            "baris " + ke_teks(n["baris"]) + ": '{% impor %}' hanya bisa dipakai "
+            + "lewat templat.mesin(akar), bukan render_teks()")
+    }
+    variabel nama = n["nama"]
+    untuk s dalam rantai {
+        jika s == nama {
+            variabel jejak = daftar()
+            untuk t dalam rantai { jejak.tambah(t) }
+            jejak.tambah(nama)
+            naikkan GalatTemplat("siklus impor: " + teks_gabung(jejak, " -> "))
+        }
+    }
+    jika panjang(rantai) >= _T_MAKS_SERTAKAN {
+        naikkan GalatTemplat(
+            "impor terlalu dalam (maksimum " + ke_teks(_T_MAKS_SERTAKAN) + ")")
+    }
+    variabel rantai_baru = daftar()
+    untuk t dalam rantai { rantai_baru.tambah(t) }
+    rantai_baru.tambah(nama)
+    variabel reg_impor = kamus()
+    coba {
+        _t_daftar_makro(m._node(nama), reg_impor, ktx, rantai_baru, nama)
+    } kecuali GalatTemplat sebagai e {
+        jika panjang(e.pesan) >= 6 dan potong(e.pesan, 0, 6) == "baris " {
+            e.pesan = nama + ":" + e.pesan
+        }
+        naikkan e
+    }
+    untuk k dalam kunci(reg_impor) {
+        jika !(k dalam reg) { reg[k] = reg_impor[k] }
+    }
+}
+
+fungsi _t_panggil(n, data, keluar, ktx) {
+    variabel b = "baris " + ke_teks(n["baris"])
+    jika !(n["nama"] dalam ktx["makro"]) {
+        naikkan GalatTemplat(b + ": makro '" + n["nama"] + "' tidak dikenal")
+    }
+    variabel entri = ktx["makro"][n["nama"]]
+    variabel mk = entri[0]
+    variabel param = mk["param"]
+    jika panjang(n["pos"]) > panjang(param) {
+        naikkan GalatTemplat(
+            b + ": makro '" + n["nama"] + "' menerima " + ke_teks(panjang(param))
+            + " argumen, diberi " + ke_teks(panjang(n["pos"])))
+    }
+    # Lingkup makro hanya parameternya sendiri, bukan data pemanggil: komponen
+    # tidak boleh diam-diam bergantung pada nama data halaman tertentu.
+    variabel lokal = kamus()
+    variabel i = 0
+    untuk op dalam n["pos"] {
+        lokal[param[i][0]] = _t_nilai_operand(op, data, n["baris"])
+        i = i + 1
+    }
+    untuk kw dalam n["kw"] {
+        variabel ada = salah
+        untuk p dalam param {
+            jika p[0] == kw[0] { ada = benar }
+        }
+        jika !ada {
+            naikkan GalatTemplat(
+                b + ": makro '" + n["nama"] + "' tidak punya parameter '" + kw[0] + "'")
+        }
+        jika kw[0] dalam lokal {
+            naikkan GalatTemplat(
+                b + ": parameter '" + kw[0] + "' makro '" + n["nama"] + "' diisi dua kali")
+        }
+        lokal[kw[0]] = _t_nilai_operand(kw[1], data, n["baris"])
+    }
+    untuk p dalam param {
+        jika !(p[0] dalam lokal) {
+            jika p[1] {
+                lokal[p[0]] = p[2]
+            } selain {
+                naikkan GalatTemplat(
+                    b + ": makro '" + n["nama"] + "' membutuhkan argumen '" + p[0] + "'")
+            }
+        }
+    }
+    jika ktx["dalam_makro"] >= _T_MAKS_SERTAKAN {
+        naikkan GalatTemplat(
+            b + ": panggilan makro terlalu dalam (maksimum "
+            + ke_teks(_T_MAKS_SERTAKAN) + ")")
+    }
+    ktx["dalam_makro"] = ktx["dalam_makro"] + 1
+    # Badan makro dirender dengan registri tempat makro itu didefinisikan,
+    # dan tanpa rantai {% induk %} milik blok pemanggil: makro bukan blok.
+    variabel makro_lama = ktx["makro"]
+    variabel induk_lama = ktx["induk"]
+    ktx["makro"] = entri[2]
+    ktx["induk"] = daftar()
+    coba {
+        _t_render_node(mk["badan"], lokal, keluar, ktx)
+    } kecuali GalatTemplat sebagai e {
+        # Galat di badan makro menyebut baris di berkas DEFINISI makro, jadi
+        # nama berkas itulah yang ditempelkan, bukan berkas pemanggil.
+        jika entri[1] != kosong dan panjang(e.pesan) >= 6 dan potong(e.pesan, 0, 6) == "baris " {
+            e.pesan = entri[1] + ":" + e.pesan
+        }
+        naikkan e
+    }
+    ktx["makro"] = makro_lama
+    ktx["induk"] = induk_lama
+    ktx["dalam_makro"] = ktx["dalam_makro"] - 1
 }
 
 fungsi _t_render_node(node, data, keluar, ktx) {
@@ -571,15 +1257,29 @@ fungsi _t_render_node(node, data, keluar, ktx) {
         } jika_lain j == "blok" {
             # Anak menimpa blok induk bila namanya terdaftar; kalau tidak,
             # badan milik induk sendiri yang dipakai.
-            variabel timpa = ktx["blok"]
-            jika n["nama"] dalam timpa {
-                _t_render_node(timpa[n["nama"]], data, keluar, ktx)
-            } selain {
-                _t_render_node(n["badan"], data, keluar, ktx)
-            }
+            _t_render_blok(n, data, keluar, ktx)
+        } jika_lain j == "induk" {
+            _t_induk(n, data, keluar, ktx)
+        } jika_lain j == "panggil" {
+            _t_panggil(n, data, keluar, ktx)
+        } jika_lain j == "makro" atau j == "impor" {
+            # Definisi saja; didaftarkan sebelum render oleh _t_daftar_makro.
+            lanjut
         } selain {
             jika j == "nilai" {
-                variabel v = _t_ambil(data, n["jalan"], n["baris"])
+                variabel filter = n["filter"]
+                variabel v = kosong
+                # `bawaan` sebagai filter PERTAMA adalah satu-satunya cara
+                # menulis kolom opsional: nama yang hilang menjadi kosong.
+                # Tanpanya, typo tetap galat, bukan string kosong diam-diam.
+                jika panjang(filter) > 0 dan filter[0][0] == "bawaan" {
+                    v = _t_ambil_opsional(data, n["jalan"], n["baris"])
+                } selain {
+                    v = _t_ambil(data, n["jalan"], n["baris"])
+                }
+                untuk f dalam filter {
+                    v = _t_terapkan_filter(f, v, n["baris"], ktx)
+                }
                 jika v == kosong {
                     keluar.tambah("")
                 } selain {
@@ -629,7 +1329,10 @@ fungsi render_teks(sumber, data = kosong) {
     # pernah membuat server di repo ini DoS, dan renderer berada persis di
     # jalur input eksternal.
     variabel keluar = daftar()
-    _t_render_node(urai(sumber), d, keluar, _t_konteks(kosong))
+    variabel node = urai(sumber)
+    variabel ktx = _t_konteks(kosong)
+    _t_daftar_makro(node, ktx["makro"], ktx, daftar(), kosong)
+    _t_render_node(node, d, keluar, ktx)
     kembalikan teks_gabung(keluar, "")
 }
 
@@ -641,6 +1344,30 @@ kelas Mesin {
         diri.akar = akar
         diri.cache = kamus()
         diri.pakai_cache = cache
+        diri.filter_kustom = kamus()
+    }
+
+    # filter(nama, fungsi) -> diri. Mendaftarkan filter kustom untuk
+    # {{ x | nama }} atau {{ x | nama:arg }}. Fungsi menerima (nilai, arg);
+    # arg kosong bila tidak diberi. Hasil teks tetap di-escape; hanya hasil
+    # aman(...) yang tidak.
+    filter(nama, fn) {
+        jika jenis(nama) != "teks" atau !_t_nama_sah(nama) {
+            naikkan GalatTemplat("nama filter tidak sah: '" + ke_teks(nama) + "'")
+        }
+        jika nama dalam _T_FILTER_ARG {
+            naikkan GalatTemplat("filter bawaan '" + nama + "' tidak boleh ditimpa")
+        }
+        jika nama == "aman" {
+            naikkan GalatTemplat(
+                "filter 'aman' tidak diizinkan: tandai HTML tepercaya dengan "
+                + "templat.aman() di kode .idk")
+        }
+        jika !bisa_dipanggil(fn) {
+            naikkan GalatTemplat("filter '" + nama + "' harus berupa fungsi")
+        }
+        diri.filter_kustom[nama] = fn
+        kembalikan diri
     }
 
     # kosongkan_cache() -> diri. Buang semua node terurai yang tersimpan.
@@ -774,6 +1501,7 @@ kelas Mesin {
             node = diri._node(nama)
             tumpukan.tambah(nama)
             variabel induk = diri._induk(node, nama)
+            _t_daftar_makro(node, ktx["makro"], ktx, [nama], nama)
             jika induk == kosong {
                 _t_render_node(node, data, keluar, ktx)
             } selain {
@@ -784,9 +1512,13 @@ kelas Mesin {
                     jika n["jenis"] == "blok" {
                         # Blok terluar menang: induk terdekat sudah menimpa,
                         # dan kakeknya tidak boleh menimpa balik.
+                        # Disimpan per nama sebagai rantai: anak terluar
+                        # dulu, lalu induk-induk berikutnya. Badan pertama
+                        # yang dirender; {% induk %} maju ke badan berikutnya.
                         jika !(n["nama"] dalam timpa) {
-                            timpa[n["nama"]] = n["badan"]
+                            timpa[n["nama"]] = daftar()
                         }
+                        timpa[n["nama"]].tambah(n["badan"])
                     }
                 }
                 diri._render_berkas(induk, data, keluar, ktx)
@@ -843,7 +1575,7 @@ kelas Mesin {
         variabel terlihat = daftar()
         untuk n dalam node {
             variabel j = n["jenis"]
-            jika j == "perluas" {
+            jika j == "perluas" atau j == "makro" atau j == "impor" {
                 lanjut
             }
             jika j == "teks" {

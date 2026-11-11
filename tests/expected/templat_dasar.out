@@ -29,6 +29,7 @@ ditolak: variabel tidak ada
 ditolak: untuk tanpa penutup
 ditolak: kurung tidak ditutup
 ditolak: tag tidak dikenal
+ditolak: impor modul, bukan berkas templat
 == templat dari berkas ==
 <h1>Judul</h1>
 <ul>

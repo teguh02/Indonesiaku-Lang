@@ -1,0 +1,3 @@
+{% makro tombol(teks, jenis="utama") %}<button class="btn-{{ jenis }}">{{ teks }}</button>{% akhirmakro %}
+{% makro baris(label, nilai) %}<p>{{ label }}: {% panggil tombol(nilai, jenis="kecil") %}</p>{% akhirmakro %}
+teks ini diabaikan saat impor
