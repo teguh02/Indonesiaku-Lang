@@ -1308,4 +1308,4 @@ dalam) juga perlu diuji ambangnya di sini.
 
 | Tanggal | Versi | Paket | Penguji | Hasil |
 |---|---|---|---|---|
-| — | — | — | — | ⬜ belum ada |
+| — | 1.6.1 | `indk-macos.tar.gz` (tag `v1.6.1`) | — | ⬜ belum diuji |

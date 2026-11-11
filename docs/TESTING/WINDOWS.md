@@ -1545,6 +1545,7 @@ Temuan tingkat sedang yang paling berdampak (lengkapnya di lampiran):
 
 | Tanggal | Versi | Paket | Penguji | Hasil |
 |---|---|---|---|---|
+| — | 1.6.1 | `Indonesiaku-Setup-1.6.1.exe` + `indk-windows.zip` (tag `v1.6.1`) | — | ⬜ belum diuji |
 | 2026-11-03 | 1.4.0 | Installer `Indonesiaku-Setup-1.4.0.exe` | Claude Code (AI), atas permintaan maintainer | ⚠️ bagian 3–6 lulus; temuan T-W1–T-W4, T-U1 |
 | 2026-11-03 | 1.4.0 | Installer `Indonesiaku-Setup-1.4.0.exe` | Claude Code (AI, 8 agen penguji + 8 verifikator) | ⚠️ uji ekstensif 3584/3879; 140 temuan terkonfirmasi, termasuk T-W5–T-W11 dan T-U2–T-U16 |
 | 2026-11-08 | 1.6.0-rc.1 | Installer `Indonesiaku-Setup-1.6.0-rc.1.exe` dan `indk-windows.zip` (tag `v1.6.0-rc.1`) | Claude Code (AI), di Windows 11 asli atas permintaan maintainer | ✅ CLI 14/14, katalog 30/30, `test_all.ps1` 282/282, OTO 12/14 (OTO-08/09 masalah skrip uji); T-W1, T-W2, T-W3, T-W5 tidak kambuh; tanpa temuan baru; WIN-15/16 ⬜ |
