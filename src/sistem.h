@@ -38,6 +38,9 @@ void sistemAturArgv0(const char* argv0);
 void sistemAturSandbox(bool aktif);
 bool sistemSandbox(void);
 
+// CPU time used by this process, in seconds (user + kernel). Backs jam().
+double sistemWaktuCpu(void);
+
 // Absolute path of the running interpreter (UTF-8) into `out`. False when it
 // cannot be determined or does not fit. Shared by jalur_indk() and the
 // module search, which looks for pustaka/ next to the interpreter.

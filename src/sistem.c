@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #ifdef _WIN32
     #include <windows.h>
@@ -44,6 +45,27 @@ static const char* programArgv0 = NULL;
 void sistemAturArgv0(const char* argv0) { programArgv0 = argv0; }
 void sistemAturSandbox(bool aktif) { sandbox = aktif; }
 bool sistemSandbox(void) { return sandbox; }
+
+// jam() didokumentasikan sebagai waktu CPU. clock() memberikannya di POSIX,
+// tetapi di CRT Windows (MSVCRT/UCRT) clock() adalah waktu dinding sejak
+// proses mulai, jadi jam() ikut berjalan selama henti() (T-W11). Windows
+// memakai GetProcessTimes: user + kernel, dalam satuan 100 ns.
+double sistemWaktuCpu(void) {
+#ifdef _WIN32
+    FILETIME dibuat, keluar, kernel, pengguna;
+    if (!GetProcessTimes(GetCurrentProcess(), &dibuat, &keluar, &kernel, &pengguna)) {
+        return (double)clock() / CLOCKS_PER_SEC;
+    }
+    ULARGE_INTEGER k, u;
+    k.LowPart = kernel.dwLowDateTime;
+    k.HighPart = kernel.dwHighDateTime;
+    u.LowPart = pengguna.dwLowDateTime;
+    u.HighPart = pengguna.dwHighDateTime;
+    return (double)(k.QuadPart + u.QuadPart) / 1e7;
+#else
+    return (double)clock() / CLOCKS_PER_SEC;
+#endif
+}
 
 // Refuse `nama` under --sandbox. Returns true (and leaves a GalatIzin
 // pending) when refused.

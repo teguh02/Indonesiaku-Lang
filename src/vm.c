@@ -83,7 +83,7 @@ static bool c3Linearize(ObjClass* klass, ObjClass** bases, int baseCount);
 static bool classMethodGet(ObjClass* klass, ObjString* name, Value* out);
 
 static Value clockNative(int argCount, Value* args) {
-    return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+    return NUMBER_VAL(sistemWaktuCpu());
 }
 
 static void resetStack() {
