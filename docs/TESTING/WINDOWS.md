@@ -1396,7 +1396,10 @@ Hasil silang itu sama dengan hasil pertama.
 | T-W9 | ✅ tidak kambuh | WIN-17 |
 | T-W10 | ✅ tidak kambuh | WIN-18 |
 | T-W12 | ✅ tidak kambuh | WIN-19 |
-| T-W6, T-W7, T-W8, T-W11 | ⬜ belum diuji ulang di 1.6.1 | — |
+| T-W6 | ❌ masih kambuh | Temuan keamanan; diuji ulang dengan biner 1.6.1 terpasang. Rincian tidak dicantumkan di sini. Perbaikan di #119 |
+| T-W7 | ❌ masih kambuh | Temuan keamanan; diuji ulang dengan biner 1.6.1 terpasang. Rincian tidak dicantumkan di sini. Perbaikan di #121 |
+| T-W8 | ✅ tidak kambuh | 31, 32, dan 40 `fungsi` bersarang → `ok`, kode 0; 2500 kurung bersarang → galat bersih `Sarang terlalu dalam (maksimum 200)`, kode 65, tanpa crash |
+| T-W11 | ❌ masih kambuh | `j = jam()` / `henti(0.5)` / `cetak("jam", jam() - j)` → `jam 0.514`; seharusnya mendekati 0 karena `jam()` adalah waktu CPU. Perbaikan di #120 |
 
 ### Temuan baru di `1.6.1`
 
