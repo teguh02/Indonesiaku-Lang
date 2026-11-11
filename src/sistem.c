@@ -821,11 +821,11 @@ static Value hasilProses(int64_t kode, Bita* keluaran, Bita* galat) {
 
 #ifdef _WIN32
 // Append `arg` to `cmd` quoted the way the MSVCRT/CommandLineToArgvW parser
-// splits it back: quotes only when needed, backslashes doubled only when
-// they precede a quote.
-static bool kutipArgumen(Bita* cmd, const char* arg) {
+// splits it back: quotes only when needed (or always, with `paksa`),
+// backslashes doubled only when they precede a quote.
+static bool kutipArgumen(Bita* cmd, const char* arg, bool paksa) {
     if (cmd->length > 0 && !bitaTambah(cmd, " ", 1)) return false;
-    if (arg[0] != '\0' && strpbrk(arg, " \t\n\v\"") == NULL) return bitaTambah(cmd, arg, strlen(arg));
+    if (!paksa && arg[0] != '\0' && strpbrk(arg, " \t\n\v\"") == NULL) return bitaTambah(cmd, arg, strlen(arg));
     if (!bitaTambah(cmd, "\"", 1)) return false;
     for (const char* p = arg;; p++) {
         size_t garis = 0;
@@ -842,6 +842,22 @@ static bool kutipArgumen(Bita* cmd, const char* arg) {
         if (!bitaTambah(cmd, p, 1)) return false;
     }
     return bitaTambah(cmd, "\"", 1);
+}
+
+// CreateProcessW menjalankan .bat/.cmd lewat cmd.exe, yang mengurai baris
+// perintah dengan aturannya sendiri, bukan aturan CommandLineToArgvW di atas:
+// & | < > ^ ( ) di luar kutip memisahkan perintah, dan %VAR% / !VAR!
+// diperluas bahkan di dalam kutip. "Tanpa shell" tidak berlaku untuk berkas
+// batch, jadi argumennya selalu dikutip, dan karakter yang tidak bisa
+// dikutip dengan aman untuk cmd.exe ditolak (T-W6; sama arahnya dengan
+// perbaikan CVE-2024-24576 di Rust). Windows membuang titik dan spasi di
+// akhir nama berkas, jadi "x.bat." dan "x.bat " juga batch.
+static bool adalahBerkasBatch(const char* program) {
+    size_t n = strlen(program);
+    while (n > 0 && (program[n - 1] == ' ' || program[n - 1] == '.')) n--;
+    if (n < 4) return false;
+    const char* ekstensi = program + n - 4;
+    return _strnicmp(ekstensi, ".bat", 4) == 0 || _strnicmp(ekstensi, ".cmd", 4) == 0;
 }
 
 static HANDLE berkasSementara(void) {
@@ -930,9 +946,20 @@ Value nativeFnJalankanProses(int argCount, Value* args) {
     bool terlaluBesar = false;
 
 #ifdef _WIN32
+    bool batch = adalahBerkasBatch(program);
+    if (batch) {
+        for (int i = 0; i < items->count; i++) {
+            if (strpbrk(AS_CSTRING(items->values[i]), "\"%!\r\n") != NULL) {
+                nativeRaiseKelas(vm.galatNilai,
+                                 "perintah untuk berkas .bat/.cmd tidak boleh memuat \", %%, !, atau baris baru "
+                                 "(cmd.exe dapat menafsirkannya sebagai perintah)");
+                return KOSONG_VAL;
+            }
+        }
+    }
     Bita cmd = {NULL, 0};
     for (int i = 0; i < items->count; i++) {
-        if (!kutipArgumen(&cmd, AS_CSTRING(items->values[i]))) {
+        if (!kutipArgumen(&cmd, AS_CSTRING(items->values[i]), batch)) {
             free(cmd.data);
             nativeRaiseKelas(vm.galatOS, "perintah terlalu panjang");
             return KOSONG_VAL;

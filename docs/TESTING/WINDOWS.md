@@ -1290,6 +1290,7 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | WIN-18 | Jalur lebih dari 260 karakter (T-W10) | Jalankan `tests\test_jalur_panjang.ps1` dari folder hasil ekstrak, atau buat folder bersarang > 260 karakter lalu `indk` menjalankan `buat_direktori`, `tulis_semua`, `baca_semua`, `isi_direktori`, `hapus_berkas` di dalamnya | Semua berhasil. Catat nilai `LongPathsEnabled` mesin uji (`HKLM\SYSTEM\CurrentControlSet\Control\FileSystem`) di hasil |
 | WIN-19 | Kode dipipakan dari PowerShell 5.1 ke REPL dengan BOM (T-W12) | Di Windows PowerShell 5.1: `$OutputEncoding = [Text.Encoding]::UTF8`, lalu `'x = 21', 'cetak(x * 2)' \| indk` | `42` tercetak, tanpa `Karakter tidak dikenal` |
 | WIN-20 | Ikon pemasang dan pintasan | Lihat ikon berkas `Indonesiaku-Setup-<versi>.exe` di Explorer, ikon pojok kanan atas jendela wizard, ikon pintasan Start Menu, dan ikon entri "Indonesiaku" di Apps & features | Semuanya memakai logo `idk` persegi (latar gelap, teks `idk`, garis merah-putih). Bukan ikon kardus bawaan Inno Setup |
+| WIN-21 | Argumen ke berkas `.bat`/`.cmd` (T-W6) | Jalankan `tests\test_proses_batch.ps1` dari folder hasil ekstrak, dengan `indk.exe` rilis di akarnya | `PROSES BATCH: semua lulus`; tidak ada berkas penanda `terbobol.txt` |
 
 ## 7. Hasil uji terakhir — `1.6.1`, 2026-11-11
 
