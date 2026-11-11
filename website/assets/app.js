@@ -28,6 +28,26 @@
   window.t18n = function (key) {
     return terjemah(currentLang(), key);
   };
+
+  /* Versi dipakai bersama oleh semua halaman.
+     Diambil dari cache-buster `app.js?v=X.Y.Z` karena itulah satu-satunya
+     penanda versi yang SELALU ikut dinaikkan proses rilis di setiap halaman.
+     Badge footer dulu ditulis tangan per halaman, jadi index.html tertinggal
+     di v1.5.0 sementara about/author sudah v1.7.0. */
+  var VERSI = (SCRIPT_SRC.match(/[?&]v=(\d+\.\d+\.\d+)/) || [])[1] || "";
+  window.indkVersi = VERSI;
+
+  function terapkanVersi() {
+    if (!VERSI) return; // tanpa ?v= biarkan teks bawaan HTML apa adanya
+    var el = document.querySelectorAll("[data-indk-versi]");
+    for (var i = 0; i < el.length; i++) el[i].textContent = "v" + VERSI;
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", terapkanVersi);
+  } else {
+    terapkanVersi();
+  }
   window.indkLang = currentLang;
 
   function simpanTema(dark) {
