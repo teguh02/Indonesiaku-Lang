@@ -50,6 +50,19 @@
   }
   window.indkLang = currentLang;
 
+  /* Salin teks ke papan klip. Dipakai Alpine (salin()) dan skrip non-Alpine
+     seperti tombol "Salin sebagai Markdown" di docs.html, supaya jalur
+     fallback untuk browser tanpa navigator.clipboard tidak ditulis dua kali. */
+  window.indkSalinTeks = function (teks) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(teks).catch(function () {
+        fallbackCopy(teks);
+      });
+    }
+    fallbackCopy(teks);
+    return Promise.resolve();
+  };
+
   function simpanTema(dark) {
     try {
       localStorage.setItem("indk-theme", dark ? "dark" : "light");
@@ -138,11 +151,8 @@
             }, 1500);
           };
 
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(done, function () {
-              fallbackCopy(text);
-              done();
-            });
+          if (window.indkSalinTeks) {
+            window.indkSalinTeks(text).then(done, done);
           } else {
             fallbackCopy(text);
             done();
