@@ -5,6 +5,21 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Belum dirilis]
+
+### Diperbaiki
+
+- **Windows: uninstall meninggalkan entri `PATH` sistem** (T-W13, ditemukan
+  saat uji rilis 1.6.1 di Windows 11 asli, kasus WIN-15). `unins000.exe`
+  menghapus folder, pintasan, dan entri Apps & features, tetapi
+  `C:\Program Files\Indonesiaku` tetap tertinggal di `Path` HKLM. Kini
+  uninstaller membuang tepat entri itu dan membiarkan entri lain apa adanya;
+  entri installer lawas `Program Files (x86)\Indonesiaku\bin` tidak disentuh.
+  Pemasang juga menyiarkan perubahan lingkungan (`ChangesEnvironment=yes`),
+  sehingga terminal baru langsung melihat `PATH` yang benar. Dijaga
+  `tests/pemasang_path.ps1`, uji pasang-lalu-uninstall sungguhan di runner
+  Windows CI.
+
 ## [1.6.1] - 2026-11-10
 
 ### Diperbaiki

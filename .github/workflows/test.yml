@@ -403,6 +403,16 @@ jobs:
           cd $env:GITHUB_WORKSPACE
           & powershell -ExecutionPolicy Bypass -File tests/test_all.ps1
 
+      # T-W13: pasang lalu uninstall pemasang Inno sungguhan dan pastikan
+      # Path HKLM kembali persis seperti semula. Runner ini admin dan sudah
+      # punya Inno Setup 6; pemasang uji memakai AppId sendiri.
+      - name: Installer PATH round-trip
+        shell: powershell
+        run: |
+          cd $env:GITHUB_WORKSPACE
+          & powershell -ExecutionPolicy Bypass -File tests/pemasang_path.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       # tests/test_all.ps1 hanya menjalankan golden + tes galat. Sub-suite di
       # tests/*.sh tidak pernah jalan di Windows, jadi fitur yang hanya diuji
       # di sana tidak terlindungi di sini. Runner windows-latest punya Git
