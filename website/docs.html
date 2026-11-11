@@ -110,6 +110,18 @@
 
     <!-- ================= ARTIKEL ================= -->
     <main class="min-w-0">
+      <div class="mb-5 flex flex-wrap items-center justify-end gap-2">
+        <button type="button" id="salin-md"
+                class="inline-flex items-center gap-2 rounded-full border border-ink/10 px-3.5 py-1.5 text-sm font-semibold text-ink-2 transition hover:border-ink/25 hover:text-ink dark:border-white/15 dark:text-paper/70 dark:hover:border-white/30 dark:hover:text-paper">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span class="salin-md-label">Salin sebagai Markdown</span>
+        </button>
+        <a id="buka-md" href="#" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 rounded-full border border-ink/10 px-3.5 py-1.5 text-sm font-semibold text-ink-2 transition hover:border-ink/25 hover:text-ink dark:border-white/15 dark:text-paper/70 dark:hover:border-white/30 dark:hover:text-paper">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+          <span class="buka-md-label">Lihat Markdown mentah</span>
+        </a>
+      </div>
       <article id="doc-body"
                class="doc-body prose prose-neutral max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-h1:text-3xl prose-h2:mt-10 prose-h2:text-2xl prose-h3:text-lg prose-p:leading-relaxed prose-a:font-medium prose-a:text-brand-700 prose-a:no-underline hover:prose-a:underline prose-pre:bg-night-2 prose-code:font-mono prose-table:text-sm dark:prose-invert dark:prose-a:text-brand-300 prose-img:rounded-xl">
         <p class="text-ink-3 dark:text-paper/50" x-text="t('docs_loading')">Memuat…</p>
@@ -157,6 +169,7 @@
     const navEl = document.getElementById("doc-nav");
     const bodyEl = document.getElementById("doc-body");
     let currentDoc = DOCS[0].file;   // dokumen aktif (basis tautan relatif)
+    let mdMentah = "";               // sumber Markdown dokumen aktif
 
     // Terjemahan dari i18n.json; pakai teks cadangan bila belum termuat.
     const tr = (key, fallback) => {
@@ -450,6 +463,8 @@
       bodyEl.innerHTML = `<p class="text-ink-3 dark:text-paper/50">${escapeHtml(tr("docs_loading", "Memuat…"))}</p>`;
       try {
         const md = file === "__rilis__" ? await bangunRilis() : await fetchText(file);
+        mdMentah = md;                 // dipakai tombol "Salin sebagai Markdown"
+        perbaruiTombolMd();
         bodyEl.innerHTML = marked.parse(md);
         await resolveEmbeds(bodyEl);
         // Sebelum fixLinks, supaya tautan video sudah berubah jadi pemutar
@@ -467,6 +482,83 @@
           `<p class="text-sm">${escapeHtml(tr("docs_err_hint", "Pastikan situs diakses lewat HTTP, bukan berkas lokal."))}</p>`;
       }
     }
+
+    // ----------------------------------------------------------------
+    // "Salin sebagai Markdown": memberi LLM sumber .md apa adanya, bukan
+    // HTML hasil render. Markdown mentah sudah ada di tangan (loadDoc
+    // memakainya untuk marked.parse), jadi tidak perlu mengubah DOM balik
+    // menjadi Markdown — cukup simpan dan salin.
+    // Judul + URL ditempelkan di atas supaya AI tahu ini dokumen apa dan
+    // dari mana, dan supaya jawabannya bisa menyebut sumber.
+    // ----------------------------------------------------------------
+    const tombolSalin = document.getElementById("salin-md");
+    const tautanMentah = document.getElementById("buka-md");
+
+    function judulDoc(file) {
+      const d = DOCS.find((x) => x.file === file);
+      if (!d) return file;
+      return window.indkLang() === "en" ? d.en : d.title;
+    }
+
+    function perbaruiTombolMd() {
+      // Riwayat Rilis dirakit di browser dari API + CHANGELOG, tidak ada
+      // berkas .md yang bisa dibuka — sembunyikan tautan "Markdown mentah"
+      // di sana, tapi menyalin isinya tetap berguna untuk AI.
+      const adaBerkas = currentDoc !== "__rilis__";
+      if (tautanMentah) {
+        tautanMentah.hidden = !adaBerkas;
+        if (adaBerkas) {
+          tautanMentah.href =
+            currentDoc + (window.indkVersi ? "?v=" + window.indkVersi : "");
+        }
+      }
+      if (tombolSalin) tombolSalin.disabled = !mdMentah;
+    }
+
+    function tandaiTersalin(gagal) {
+      const label = tombolSalin.querySelector(".salin-md-label");
+      if (!label) return;
+      if (tombolSalin._timer) clearTimeout(tombolSalin._timer);
+      const semula = window.indkLang() === "en"
+        ? "Copy as Markdown" : "Salin sebagai Markdown";
+      if (gagal) {
+        label.textContent = window.indkLang() === "en" ? "Failed" : "Gagal";
+      } else {
+        label.textContent = window.indkLang() === "en" ? "Copied" : "Tersalin";
+        label.classList.add("text-emerald-500");
+      }
+      tombolSalin._timer = setTimeout(() => {
+        label.textContent = semula;
+        label.classList.remove("text-emerald-500");
+      }, 1800);
+    }
+
+    if (tombolSalin) {
+      tombolSalin.addEventListener("click", () => {
+        if (!mdMentah) return;
+        const sumber = new URL(currentDoc, location.href).href;
+        const teks =
+          `# ${judulDoc(currentDoc)}\n` +
+          `Sumber: ${sumber}\n` +
+          `Dokumentasi bahasa pemrograman Indonesiaku.\n\n---\n\n` +
+          mdMentah;
+        if (window.indkSalinTeks) {
+          window.indkSalinTeks(teks).then(() => tandaiTersalin(false),
+                                          () => tandaiTersalin(true));
+        } else {
+          tandaiTersalin(true);
+        }
+      });
+    }
+
+    // Label ikut berganti saat bahasa diubah.
+    document.documentElement.addEventListener("indk:lang", () => {
+      const l1 = tombolSalin && tombolSalin.querySelector(".salin-md-label");
+      const l2 = tautanMentah && tautanMentah.querySelector(".buka-md-label");
+      const en = window.indkLang() === "en";
+      if (l1) l1.textContent = en ? "Copy as Markdown" : "Salin sebagai Markdown";
+      if (l2) l2.textContent = en ? "View raw Markdown" : "Lihat Markdown mentah";
+    });
 
     renderNav();
     // Judul sidebar mengikuti bahasa; muat ulang daftar saat bahasa berubah.
