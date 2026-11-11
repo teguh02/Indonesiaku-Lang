@@ -407,6 +407,43 @@
       return out;
     }
 
+    // Ubah tautan YouTube di Markdown menjadi pemutar tersemat.
+    //
+    // Ditulis sebagai tautan biasa (bukan <iframe> di dalam .md) supaya
+    // berkas yang sama tetap tampil benar di GitHub dan di editor teks;
+    // hanya situs ini yang mengubahnya jadi pemutar. Pakai youtube-nocookie
+    // agar pembaca tidak dilacak sebelum menekan putar, dan loading=lazy
+    // supaya tidak membebani halaman yang videonya jauh di bawah.
+    function sematVideo(container) {
+      container.querySelectorAll("a[href]").forEach((a) => {
+        const href = a.getAttribute("href") || "";
+        const m = href.match(
+          /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/
+        );
+        // Hanya tautan yang berdiri sendiri satu paragraf yang disematkan,
+        // supaya tautan di tengah kalimat tetap jadi tautan biasa.
+        if (!m) return;
+        const induk = a.parentElement;
+        if (!induk || induk.tagName !== "P") return;
+        if (induk.textContent.trim() !== a.textContent.trim()) return;
+
+        const judul = a.textContent.trim() || "Video";
+        const bingkai = document.createElement("figure");
+        bingkai.className = "video-semat my-6";
+        bingkai.innerHTML =
+          `<div class="relative w-full overflow-hidden rounded-xl bg-night-2" style="aspect-ratio:16/9">` +
+          `<iframe class="absolute inset-0 h-full w-full" ` +
+          `src="https://www.youtube-nocookie.com/embed/${m[1]}" ` +
+          `title="${escapeHtml(judul)}" loading="lazy" ` +
+          `allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" ` +
+          `referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>` +
+          `<figcaption class="mt-2 text-center text-sm text-ink-3 dark:text-paper/50">` +
+          `<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(judul)} ↗</a>` +
+          `</figcaption>`;
+        induk.replaceWith(bingkai);
+      });
+    }
+
     async function loadDoc(file, push) {
       currentDoc = file;
       setActive(file);
@@ -415,6 +452,9 @@
         const md = file === "__rilis__" ? await bangunRilis() : await fetchText(file);
         bodyEl.innerHTML = marked.parse(md);
         await resolveEmbeds(bodyEl);
+        // Sebelum fixLinks, supaya tautan video sudah berubah jadi pemutar
+        // dan tidak ikut dipasangi penanganan tautan biasa.
+        sematVideo(bodyEl);
         fixLinks(bodyEl);
         bodyEl.querySelectorAll("pre code:not(.hljs)").forEach((el) => hljs.highlightElement(el));
         window.scrollTo({ top: 0, behavior: "instant" });
