@@ -1,0 +1,16 @@
+# jam() adalah waktu CPU proses, bukan waktu dinding (T-W11).
+#
+# Di Windows jam() dulu memakai clock() CRT, yang di sana menghitung waktu
+# dinding: tidur 0,3 detik menaikkan jam() sekitar 0,3. Waktu CPU nyaris
+# tidak bergerak selama tidur, tetapi naik saat benar-benar menghitung.
+variabel awal = jam()
+henti(0.3)
+cetak("selama henti, jam() hampir diam:", jam() - awal < 0.15)
+
+awal = jam()
+variabel x = 0
+untuk i dalam rentang(1000000) {
+    x += i
+}
+cetak("selama menghitung, jam() naik:", jam() - awal > 0)
+cetak("hasil hitungan:", x)

@@ -9,6 +9,12 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **Windows: `jam()` mengukur waktu dinding, bukan waktu CPU** (T-W11).
+  `clock()` di CRT Windows menghitung waktu sejak proses mulai, jadi `jam()`
+  ikut bertambah selama `henti()` (0,505 detik untuk `henti(0.5)` di 1.6.1),
+  berbeda dengan dokumentasi dan dengan Linux/macOS. Windows kini memakai
+  `GetProcessTimes` (user + kernel). Dijaga `examples/jam_waktu_cpu.idk`.
+
 - **Windows: uninstall meninggalkan entri `PATH` sistem** (T-W13, ditemukan
   saat uji rilis 1.6.1 di Windows 11 asli, kasus WIN-15). `unins000.exe`
   menghapus folder, pintasan, dan entri Apps & features, tetapi
