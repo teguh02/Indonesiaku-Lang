@@ -1965,9 +1965,18 @@ Value nativeFnSoketDengar(int argCount, Value* args) {
         return KOSONG_VAL;
     }
 
-    // Izinkan reuse alamat agar restart cepat tidak "address in use".
+#ifndef _WIN32
+    // POSIX: izinkan reuse alamat agar restart cepat tidak "address in use"
+    // selama koneksi lama masih TIME_WAIT. Dua soket LISTEN pada port yang
+    // sama tetap ditolak kernel.
     int yes = 1;
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&yes, sizeof(yes));
+#endif
+    // Windows: JANGAN SO_REUSEADDR (T-W7). Di Winsock opsi itu mengizinkan
+    // soket lain mengikat port yang sedang dipakai, sehingga server kedua
+    // diam-diam ikut menerima koneksi. Perilaku bawaan Windows sudah
+    // mengizinkan bind ulang selama koneksi lama TIME_WAIT, jadi restart
+    // cepat tidak terganggu. asyncio Python juga tidak memakainya di Windows.
 
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));

@@ -1,0 +1,28 @@
+# soket_dengar: satu port hanya untuk satu server (T-W7), tetapi server
+# boleh langsung mendengarkan ulang setelah ditutup.
+#
+# Di Windows, SO_REUSEADDR dulu membuat soket_dengar kedua pada port yang
+# sama BERHASIL, sehingga dua server diam-diam berbagi koneksi.
+variabel PORT = 18961
+
+variabel server = soket_dengar(PORT)
+coba {
+    soket_dengar(PORT)
+    cetak("kedua: berhasil (SALAH)")
+} kecuali e {
+    cetak("kedua: ditolak")
+}
+
+# Satu koneksi utuh, ditutup dari sisi server lebih dulu: koneksinya masuk
+# TIME_WAIT di sisi server. Port itu harus tetap bisa didengarkan ulang.
+variabel klien = soket_sambung("127.0.0.1", PORT)
+variabel diterima = soket_terima(server)
+soket_tulis(diterima, "halo")
+cetak("klien membaca:", soket_baca(klien))
+soket_tutup(diterima)
+soket_tutup(klien)
+soket_tutup(server)
+
+variabel ulang = soket_dengar(PORT)
+cetak("dengar ulang: berhasil")
+soket_tutup(ulang)

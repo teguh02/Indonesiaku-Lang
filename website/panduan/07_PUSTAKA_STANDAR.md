@@ -647,7 +647,7 @@ ditangkap `coba/kecuali`. Untuk server **dan klien** HTTP, gunakan
 
 | Fungsi | Deskripsi |
 |--------|-----------|
-| `soket_dengar(port [, alamat])` | Buat soket server. `alamat` bawaan `"127.0.0.1"`; `"0.0.0.0"` untuk semua antarmuka (wajib di dalam container). Hanya dua nilai itu yang diterima |
+| `soket_dengar(port [, alamat])` | Buat soket server. `alamat` bawaan `"127.0.0.1"`; `"0.0.0.0"` untuk semua antarmuka (wajib di dalam container). Hanya dua nilai itu yang diterima. Satu port hanya untuk satu server: `soket_dengar` kedua pada port yang sedang dipakai gagal, di semua OS |
 | `soket_terima(server)` | Blocking: terima koneksi → soket klien |
 | `soket_baca(klien)` | Baca data yang diterima (satu recv) → string |
 | `soket_tulis(klien, teks)` | Kirim teks → jumlah byte |
