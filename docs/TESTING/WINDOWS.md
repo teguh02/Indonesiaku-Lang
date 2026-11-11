@@ -1668,6 +1668,7 @@ Temuan tingkat sedang yang paling berdampak (lengkapnya di lampiran):
 
 | Tanggal | Versi | Paket | Penguji | Hasil |
 |---|---|---|---|---|
+| — | 1.6.2 | `Indonesiaku-Setup-1.6.2.exe` + `indk-windows.zip` (tag `v1.6.2`) | — | ⬜ belum diuji. Prioritas uji ulang: WIN-15 (T-W13), WIN-21 (T-W6), T-W7, T-W11 |
 | 2026-11-11 | 1.6.1 | `Indonesiaku-Setup-1.6.1.exe` + `indk-windows.zip` (tag `v1.6.1`) | Claude Code (AI, dibantu 3 agen), di Windows 11 asli atas permintaan maintainer | ⚠️ CLI 14/14, katalog 31/31, `test_all.ps1` 288/288, OTO 14/14; WIN 17 ✅ · 1 ❌ (WIN-15: T-W13 uninstaller meninggalkan entri `PATH`) · 2 ⚠️ (WIN-12 T-W4; WIN-16 Defender bersih, SmartScreen ⬜) |
 | 2026-11-03 | 1.4.0 | Installer `Indonesiaku-Setup-1.4.0.exe` | Claude Code (AI), atas permintaan maintainer | ⚠️ bagian 3–6 lulus; temuan T-W1–T-W4, T-U1 |
 | 2026-11-03 | 1.4.0 | Installer `Indonesiaku-Setup-1.4.0.exe` | Claude Code (AI, 8 agen penguji + 8 verifikator) | ⚠️ uji ekstensif 3584/3879; 140 temuan terkonfirmasi, termasuk T-W5–T-W11 dan T-U2–T-U16 |

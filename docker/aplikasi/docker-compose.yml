@@ -50,7 +50,7 @@ services:
     build:
       context: ../..
       dockerfile: docker/aplikasi/Dockerfile
-    image: indonesiaku-aplikasi:1.6.1
+    image: indonesiaku-aplikasi:1.6.2
     container_name: indk-app
     restart: unless-stopped
     # Tidak ada `ports:` sama sekali. Aplikasi hanya dapat dihubungi proxy
