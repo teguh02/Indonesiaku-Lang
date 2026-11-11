@@ -5,6 +5,22 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Belum dirilis]
+
+### Keamanan
+
+- **Windows: argumen `proses.jalankan` untuk berkas `.bat`/`.cmd` bisa
+  dijalankan `cmd.exe` sebagai perintah** (T-W6). Windows selalu menjalankan
+  berkas batch lewat `cmd.exe`, yang tidak mengikuti aturan kutip biasa.
+  Akibatnya argumen tanpa spasi tidak dikutip (`"a&perintah"` menjalankan
+  `perintah`), dan `%VAR%` diperluas walau dikutip. Ini bertentangan dengan
+  janji "tanpa shell, tidak ada injeksi" di panduan. Kini argumen untuk
+  berkas batch selalu dikutip, dan argumen yang memuat `"`, `%`, `!`, atau
+  baris baru ditolak dengan `GalatNilai`; program `.exe` tidak terpengaruh.
+  Arahnya sama dengan perbaikan CVE-2024-24576 di Rust. Dijaga
+  `tests/test_proses_batch.ps1` (merah pada biner 1.6.1: berkas penanda
+  terbuat).
+
 ## [1.6.1] - 2026-11-10
 
 ### Diperbaiki
