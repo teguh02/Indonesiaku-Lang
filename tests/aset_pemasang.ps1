@@ -29,6 +29,15 @@ foreach ($kunci in @("SetupIconFile=indonesiaku.ico",
     else { Tolak "iss tidak memuat $kunci" }
 }
 
+# T-W13: uninstall harus membuang entri PATH-nya sendiri. Perilakunya diuji
+# sungguhan oleh tests\pemasang_path.ps1 (butuh iscc + admin); ini penjaga
+# murah yang juga berjalan tanpa keduanya.
+foreach ($kunci in @("ChangesEnvironment=yes", "procedure CurUninstallStepChanged",
+                     "HapusDariPath(PathLama, ExpandConstant('{app}'))")) {
+    if ($isi.Contains($kunci)) { Lulus "iss memuat $kunci" }
+    else { Tolak "iss tidak memuat $kunci" }
+}
+
 if ($isi -match 'Source: "indonesiaku\.ico"; DestDir: "\{app\}"') {
     Lulus "iss memasang indonesiaku.ico ke {app}"
 } else {
