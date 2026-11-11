@@ -179,6 +179,20 @@ if (Test-Path $terkunci) {
     }
 }
 
+# proses.jalankan ke berkas .bat/.cmd: argumen tidak boleh lolos ke cmd.exe
+# sebagai perintah (T-W6).
+$batch = Join-Path $PSScriptRoot "test_proses_batch.ps1"
+if (Test-Path $batch) {
+    Write-Host ""
+    $total++
+    & powershell -ExecutionPolicy Bypass -File $batch
+    if ($LASTEXITCODE -eq 0) {
+        $passed++
+    } else {
+        $failed++; $failures += "proses-batch"
+    }
+}
+
 # Aset ikon pemasang Windows. Satu-satunya OS yang memakainya, jadi ujinya
 # wajib ikut di harness ini: test_all.ps1 tidak memanggil sub-suite .sh.
 $aset = Join-Path $PSScriptRoot "aset_pemasang.ps1"

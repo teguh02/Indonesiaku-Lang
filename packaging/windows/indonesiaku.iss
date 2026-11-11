@@ -16,8 +16,15 @@
   #define VersiApp "0.0.0"
 #endif
 
+; Hanya tests\pemasang_path.ps1 yang menimpa ini (/DAppIdApp=...), agar
+; pemasang uji tidak pernah menimpa atau meng-uninstall Indonesiaku milik
+; pengguna. Rilis selalu memakai GUID bawaan di bawah.
+#ifndef AppIdApp
+  #define AppIdApp "{{B7F1C4E2-9A3D-4F58-8C21-6E0D5A9B3C47}"
+#endif
+
 [Setup]
-AppId={{B7F1C4E2-9A3D-4F58-8C21-6E0D5A9B3C47}
+AppId={#AppIdApp}
 AppName=Indonesiaku
 AppVersion={#VersiApp}
 AppVerName=Indonesiaku {#VersiApp}
@@ -40,6 +47,9 @@ ArchitecturesInstallIn64BitMode=x64compatible
 ; Menimpa pasangan lama tanpa menanyakan apa pun.
 CloseApplications=yes
 RestartApplications=no
+; Siarkan WM_SETTINGCHANGE setelah PATH berubah (pasang maupun uninstall),
+; supaya terminal baru dari Explorer langsung melihat PATH yang benar.
+ChangesEnvironment=yes
 UninstallDisplayName=Indonesiaku {#VersiApp}
 ; indk.exe belum punya resource ikon, jadi entri Add/Remove Programs
 ; diarahkan ke berkas .ico yang ikut terpasang.
@@ -75,23 +85,76 @@ Name: "{group}\Uninstall Indonesiaku"; Filename: "{uninstallexe}"
 
 [Registry]
 ; PATH sistem. {olddata} dipertahankan agar entri lain tidak hilang.
+; Uninstall TIDAK bisa memakai flag uninsdeletevalue di sini: flag itu
+; menghapus seluruh nilai Path. Entri {app} dibuang oleh
+; CurUninstallStepChanged di [Code] (T-W13).
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
     ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; \
     Tasks: tambahpath; Check: BelumAdaDiPath(ExpandConstant('{app}'))
 
 [Code]
+const
+  KunciEnv = 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment';
+
 // Mencegah {app} ditambahkan dua kali ketika pengguna memasang ulang atau
 // memperbarui: tanpa ini, PATH memanjang setiap upgrade.
 function BelumAdaDiPath(Dir: string): Boolean;
 var
   PathSekarang: string;
 begin
-  if not RegQueryStringValue(HKEY_LOCAL_MACHINE,
-       'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
-       'Path', PathSekarang) then
+  if not RegQueryStringValue(HKEY_LOCAL_MACHINE, KunciEnv, 'Path', PathSekarang) then
   begin
     Result := True;
     exit;
   end;
   Result := Pos(';' + Uppercase(Dir) + ';', ';' + Uppercase(PathSekarang) + ';') = 0;
+end;
+
+// Path tanpa entri Dir. Pembandingan tanpa beda huruf besar/kecil, dengan
+// spasi tepi dan '\' penutup diabaikan. Entri lain (termasuk urutan dan
+// entri kosong yang sudah ada) dibiarkan apa adanya, dan pembuangan tidak
+// meninggalkan ';;' baru.
+function HapusDariPath(PathLama, Dir: string): string;
+var
+  Sisa, Entri, Target: string;
+  P: Integer;
+  Pertama: Boolean;
+begin
+  Result := '';
+  Pertama := True;
+  Target := Uppercase(RemoveBackslashUnlessRoot(Trim(Dir)));
+  Sisa := PathLama;
+  repeat
+    P := Pos(';', Sisa);
+    if P > 0 then
+    begin
+      Entri := Copy(Sisa, 1, P - 1);
+      Delete(Sisa, 1, P);
+    end else
+      Entri := Sisa;
+    if Uppercase(RemoveBackslashUnlessRoot(Trim(Entri))) <> Target then
+    begin
+      if not Pertama then
+        Result := Result + ';';
+      Result := Result + Entri;
+      Pertama := False;
+    end;
+  until P = 0;
+end;
+
+// T-W13: uninstaller dulu meninggalkan {app} di PATH sistem. Dibuang di
+// usUninstall, sebelum berkas dihapus; nilai registri hanya ditulis ulang
+// bila memang berubah. Entri installer lawas (Program Files (x86)\
+// Indonesiaku\bin) bukan milik pasangan ini dan tidak disentuh.
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  PathLama, PathBaru: string;
+begin
+  if CurUninstallStep <> usUninstall then
+    exit;
+  if not RegQueryStringValue(HKEY_LOCAL_MACHINE, KunciEnv, 'Path', PathLama) then
+    exit;
+  PathBaru := HapusDariPath(PathLama, ExpandConstant('{app}'));
+  if PathBaru <> PathLama then
+    RegWriteExpandStringValue(HKEY_LOCAL_MACHINE, KunciEnv, 'Path', PathBaru);
 end;

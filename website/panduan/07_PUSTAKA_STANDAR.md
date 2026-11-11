@@ -2149,6 +2149,16 @@ Baris baru di keluaran dinormalkan ke `\n` di semua sistem operasi.
 Program yang tidak ditemukan menghasilkan `GalatOS`. Belum ada
 `batas_waktu` (timeout). Ditolak dengan `GalatIzin` di `indk --sandbox`.
 
+**Berkas `.bat`/`.cmd` di Windows.** Windows selalu menjalankan berkas
+batch lewat `cmd.exe`, yang punya aturan kutipnya sendiri: `&` dan `|`
+memisahkan perintah, dan `%VAR%` diperluas walau berada di dalam kutip.
+Supaya janji "tanpa shell" tetap berlaku, `jalankan` selalu mengutip setiap
+argumen untuk berkas batch, dan menolak argumen (juga jalur programnya) yang
+memuat `"`, `%`, `!`, atau baris baru dengan `GalatNilai`. Karakter itu
+tidak bisa diteruskan ke berkas batch dengan aman. Kalau perlu
+melewatkannya, jalankan programnya langsung (`.exe`), bukan lewat berkas
+batch. Program biasa (`.exe`) tidak terpengaruh.
+
 ### 2.18 `pustaka/bita.idk` — data biner
 
 Bahasa ini belum punya tipe byte tersendiri, jadi **data biner adalah daftar
