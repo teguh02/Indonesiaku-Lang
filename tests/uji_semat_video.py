@@ -122,26 +122,41 @@ def main():
     for nama, out in hasil.items():
         print(f"  {'semat ' if out else 'biasa '} {nama}")
 
-    # Tautan videonya memang ada di Ikhtisar, bukan cuma kodenya yang siap.
-    md = IKHTISAR.read_text(encoding="utf8")
-    m = re.search(r"^\[([^\]]+)\]\((https://youtu\.be/([A-Za-z0-9_-]{11}))\)$",
-                  md, re.M)
-    if not m:
-        salah.append("tautan video tidak ada di panduan/README.md "
-                     "(atau tidak berdiri sendiri satu paragraf)")
-    else:
-        print(f"  ok     tautan di Ikhtisar: {m.group(1)} -> {m.group(3)}")
-        # Video harus benar-benar ada di YouTube, bukan ID karangan.
+    # Tautan video di panduan harus berdiri sendiri satu paragraf (kalau
+    # tidak, sematVideo melewatkannya) dan videonya harus benar-benar ada.
+    panduan = sorted((REPO / "website/panduan").glob("*.md"))
+    temuan = []
+    for berkas in panduan:
+        isi = berkas.read_text(encoding="utf8")
+        # Tautan video apa pun di dalam berkas, berdiri sendiri atau tidak.
+        for m in re.finditer(
+                r"\[([^\]]*)\]\((https://(?:youtu\.be/|www\.youtube\.com/watch\?v=)"
+                r"([A-Za-z0-9_-]{11}))\)", isi):
+            baris = isi[:m.start()].count("\n") + 1
+            sendiri = re.search(
+                rf"^{re.escape(m.group(0))}$", isi, re.M) is not None
+            temuan.append((berkas.name, baris, m.group(1), m.group(2),
+                           m.group(3), sendiri))
+
+    if not temuan:
+        salah.append("tidak ada tautan video di panduan/")
+
+    for nama, baris, judul, url, vid, sendiri in temuan:
+        if not sendiri:
+            salah.append(f"{nama}:{baris} tautan video tidak berdiri sendiri "
+                         "satu paragraf -> tidak akan disematkan")
+            continue
         try:
             req = urllib.request.Request(
-                "https://www.youtube.com/oembed?url=" + m.group(2) +
-                "&format=json", headers={"User-Agent": "uji-indk"})
+                "https://www.youtube.com/oembed?url=" + url + "&format=json",
+                headers={"User-Agent": "uji-indk"})
             with urllib.request.urlopen(req, timeout=40) as resp:
                 data = json.loads(resp.read().decode("utf8"))
-            print(f"  ok     video hidup: {data['title']} "
-                  f"({data['author_name']})")
+            print(f"  ok     {nama}: {data['title']} ({vid})")
         except Exception as e:
-            salah.append(f"video tidak bisa diverifikasi di YouTube: {e}")
+            salah.append(f"{nama}:{baris} video {vid} tidak ada di YouTube: {e}")
+
+    md = IKHTISAR.read_text(encoding="utf8")
 
     if "Fitur utama v1.0.0" in md:
         salah.append("Daftar Isi masih menyebut 'Fitur utama v1.0.0'")
