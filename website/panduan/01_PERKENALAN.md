@@ -21,15 +21,15 @@ Menjadi bahasa pemrograman pertama yang fully mendukung pemrograman dalam Bahasa
 
 ## Fitur Utama
 
-### ✅ v1.0.0 (Saat Ini)
+### ✅ Tersedia saat ini (v1.7.0)
 
 **Tipe Data**
 - ✅ Angka (integer & float, direpresentasikan sebagai `double`)
 - ✅ Boolean (`benar`, `salah`)
-- ✅ String (dengan escape `\n \t \r \" \\`)
+- ✅ String (dengan escape `\n \t \r \" \\`) dan **f-string** (`f"nilai {x}"`)
 - ✅ `kosong` (null)
-- ✅ **List** (`[1, 2, 3]`) + pengindeksan baca/tulis
-- ✅ **Kamus/dictionary** (`kamus()` + indeks string)
+- ✅ **List** (`[1, 2, 3]`) + pengindeksan baca/tulis + **slicing** (`list[a:b]`)
+- ✅ **Kamus/dictionary** — literal `{ }` maupun `kamus()`
 
 **Kontrol Program**
 - ✅ Variabel global & lokal (`variabel` untuk lokal/closure)
@@ -37,37 +37,54 @@ Menjadi bahasa pemrograman pertama yang fully mendukung pemrograman dalam Bahasa
 - ✅ `selagi` (while) dan **`untuk ... dalam`** (for-in)
 - ✅ **`hentikan` / `lanjut`** (break/continue)
 - ✅ Fungsi, rekursi, dan **closure** (menangkap variabel)
+- ✅ **Argumen bawaan & bernama** (`fungsi f(a, b=5)`, dipanggil `f(1, b=2)`)
 - ✅ **Kelas & OOP**: `kelas`, `init`, `diri`, pewarisan (`<`), `super`
-- ✅ **Penanganan kesalahan**: `naikkan`, `coba` / `kecuali`
-- ✅ **Modul**: `impor "file.idk"`
+- ✅ **Penanganan kesalahan**: `naikkan`, `coba` / `kecuali` / `akhirnya`
+- ✅ **Generator** dengan `hasilkan`
+- ✅ **Comprehension** (`(x*2 untuk x dalam rentang(3))`)
+- ✅ **Anotasi tipe opsional** (`fungsi f(a: angka) -> angka`)
+- ✅ **Modul**: `impor "file.idk"`, setiap modul punya global sendiri
 
 **Operator**
 - ✅ Aritmatika: `+`, `-`, `*`, `/`, `%`, `**`
 - ✅ Assignment gabungan: `+=`, `-=`, `*=`, `/=`, `%=`, `**=`
 - ✅ Perbandingan: `==`, `!=`, `<`, `>`, `<=`, `>=` (juga membandingkan string)
-- ✅ Logika: `dan`, `atau`, `tidak`
+- ✅ Logika: `dan`, `atau`, `tidak`; keanggotaan: **`dalam`**
 
-**Fungsi Bawaan** (lengkap di [07_PUSTAKA_STANDAR.md](07_PUSTAKA_STANDAR.md))
-- Matematika, string, list, kamus, konversi (`ke_angka`/`ke_teks`/`format`)
-- Berkas (File I/O), waktu/tanggal, soket TCP, utilitas
+**Pustaka Standar** (27 modul, lengkap di [07_PUSTAKA_STANDAR.md](07_PUSTAKA_STANDAR.md))
+- ✅ Dasar: `teks`, `daftar`, `kamus`, `matematika`, `statistik`, `iterasi`, `fungsional`
+- ✅ Data: `json`, `csv`, `base64`, `bita`, `pola` (regex), `koleksi`
+- ✅ Sistem: `jalur`, `proses`, `log`, `salin`, `opsi`
+- ✅ Web: `http` (klien), `web` (server HTTP, routing, kuki, sesi, CSRF, CORS, auth), `templat` (mesin templat HTML)
+- ✅ Database: `db` (SQLite), `pg` (PostgreSQL), `my` (MySQL), `migrasi`
+
+**Perkakas**
+- ✅ `indk periksa` (linter), `indk rapikan` (formatter), `indk uji` (test runner), `indk --dis` (disassembler)
+- ✅ **Ekstensi VS Code resmi** dengan LSP: diagnostics, completion, hover, go-to-definition
+- ✅ Mode `--sandbox` dan `indk --periksa-pembaruan`
 
 **Infrastruktur**
 - ✅ Garbage collector mark-sweep
-- ✅ Pustaka standar dalam bahasa sendiri (`pustaka/`)
-- ✅ Contoh aplikasi: Todo-list JSON DB (CLI + REST HTTP server)
+- ✅ Pustaka standar ditulis dalam bahasa sendiri (`pustaka/`)
+- ✅ **API embedding C** (`src/indk.h`) — menanam interpreter di aplikasi C
+- ✅ Paket siap pasang per sistem operasi (installer Windows, `.deb`, `.zip`, `.tar.gz`, Docker)
+
+Riwayat lengkap tiap rilis ada di
+[CHANGELOG](https://github.com/teguh02/Indonesiaku-Lang/blob/main/CHANGELOG.md).
 
 ---
 
 ## Peta Jalan Pengembangan
-Semua fitur inti (list, kamus, kelas/OOP, exception, modul, GC, File I/O, soket)
-sudah **terimplementasi** di v1.0.0, dan tahap stabilisasi (`akhirnya`,
-`lewati`, kesalahan yang bisa ditangkap, teks Unicode) sudah selesai.
+
+Seluruh fitur inti sudah terimplementasi dan stabil: list, kamus, kelas/OOP,
+exception, modul, GC, File I/O, soket, generator, comprehension, anotasi tipe,
+server web, serta driver SQLite/PostgreSQL/MySQL.
+
 Kandidat pekerjaan berikutnya:
 
-- 🔮 `rentang()`, operator `dalam`, argumen bawaan & bernama
-- 🔮 Literal kamus `{ }` dan slicing `list[a:b]`
-- 🔮 Metode pada teks/list/kamus (`teks.huruf_besar()`)
-- 🔮 Standard library yang lebih luas & package manager
+- 🔮 Package manager dan ekosistem pustaka pihak ketiga
+- 🔮 Kompilasi AOT dan optimasi performa VM
+- 🔮 Dukungan GUI
 
 Rencana lengkapnya ada di
 [ROADMAP](https://github.com/teguh02/Indonesiaku-Lang/blob/main/docs/ROADMAP.md).
@@ -169,11 +186,12 @@ cetak("Luas:", hitung_luas(10, 5))
 
 | Metrik | Nilai |
 |--------|-------|
-| Baris kode (src) | ~4.9K |
-| Jumlah opcode VM | 47 |
-| Contoh program (`examples/`) | 50+ |
-| Golden test | 51 |
-| Pustaka standar (`pustaka/`) | teks, daftar, matematika, kamus, json, http |
+| Baris kode (`src/`, tanpa SQLite bawaan) | ~20,9K |
+| Jumlah opcode VM | 87 |
+| Contoh program (`examples/`) | 182 |
+| Golden test | 171 |
+| Tes kesalahan (`tests/galat/`) | 116 |
+| Pustaka standar (`pustaka/`) | 27 modul — teks, daftar, matematika, kamus, json, http, web, templat, db, pg, my, csv, pola, proses, dan lainnya |
 
 ---
 
@@ -185,7 +203,7 @@ cetak("Luas:", hitung_luas(10, 5))
 | Easy to Learn | ✅ Ya | ✅ Ya | ⚠️ Medium |
 | Performance | ⚠️ Medium | ⚠️ Medium | ✅ Good |
 | Community | ⚠️ Kecil | ✅ Besar | ✅ Besar |
-| Libraries | ❌ Sedikit | ✅ Banyak | ✅ Banyak |
+| Libraries | ⚠️ Fokus (27 modul inti) | ✅ Banyak | ✅ Banyak |
 | Educational | ✅ Sempurna | ✅ Sempurna | ✅ Baik |
 
 ---
@@ -193,17 +211,26 @@ cetak("Luas:", hitung_luas(10, 5))
 ## Siapa yang Cocok Menggunakan?
 
 ### ✅ Cocok Untuk:
-- Pelajar Indonesia baru belajar programming
+- Pelajar Indonesia yang baru belajar programming
 - Sekolah/universitas yang mengajar programming
 - Proyek pendidikan lokal
 - Penelitian tentang programming languages
-- Enthusiasts yang ingin support bahasa lokal
+- Aplikasi web skala kecil–menengah: REST API, SSR dengan mesin templat,
+  autentikasi, sesi, dan CSRF (lihat [08_DEPLOYMENT.md](08_DEPLOYMENT.md))
+- Otomasi dan skrip: berkas, proses, CSV/JSON, HTTP, regex
+- Aplikasi berbasis database: SQLite, PostgreSQL, dan MySQL
+- Menanam interpreter di aplikasi C lewat API embedding
+  (lihat [09_EMBEDDING.md](09_EMBEDDING.md))
 
-### ⚠️ Kurang Cocok Untuk:
-- Production systems (use Python/Go/Rust)
-- High-performance computing
-- Large-scale applications
-- Proyek dengan tight deadlines
+### ⚠️ Perlu Dipertimbangkan:
+- **Komputasi berat dan latensi sangat rendah** — Indonesiaku adalah VM
+  bytecode, bukan bahasa terkompilasi. Untuk beban kerja yang menuntut
+  performa maksimal, bahasa seperti Go, Rust, atau C lebih tepat.
+- **Ekosistem pustaka pihak ketiga** — tersedia 27 modul pustaka standar
+  yang menutupi kebutuhan umum, tetapi belum ada package manager dan
+  ekosistem sebesar Python atau JavaScript.
+- **Komunitas dan materi belajar** — masih berkembang, sehingga mencari
+  jawaban atas masalah yang tidak umum butuh usaha lebih.
 
 ---
 
