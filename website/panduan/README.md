@@ -2,6 +2,12 @@
 
 Selamat datang di dokumentasi lengkap **Bahasa Pemrograman Indonesiaku** - Bahasa pemrograman yang menggunakan sintaks dan keyword dalam bahasa Indonesia.
 
+## 🎬 Video Pengenalan
+
+Baru pertama kali ke sini? Mulai dari video singkat ini.
+
+[Pengenalan Indonesiaku](https://youtu.be/8mC2Wu_Ti44)
+
 ---
 
 ## 📖 Daftar Isi
@@ -10,7 +16,7 @@ Selamat datang di dokumentasi lengkap **Bahasa Pemrograman Indonesiaku** - Bahas
 Pengenalan umum tentang Bahasa Pemrograman Indonesiaku, sejarah, visi, dan misi.
 - Apa itu Bahasa Pemrograman Indonesiaku?
 - Mengapa dibuat?
-- Fitur utama v1.0.0
+- Fitur utama versi terkini
 - Roadmap pengembangan
 
 ### 2. [Panduan Instalasi](02_INSTALASI.md)
