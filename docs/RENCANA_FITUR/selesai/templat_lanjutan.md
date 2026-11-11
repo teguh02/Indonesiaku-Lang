@@ -92,6 +92,10 @@ tetap ditolak di dalam `{{ }}`.** Karena itu filter memakai gaya Django
   pengecualian: bila filter **pertama** adalah `bawaan`, jalan yang tidak ada
   dianggap `kosong`. Ini padanan `default` di Jinja, dan satu-satunya cara
   menulis kolom opsional tanpa `{% jika %}`.
+- Pada nilai `aman()`, filter yang mengubah huruf atau memotong
+  (`huruf_besar`, `huruf_kecil`, `judul`, `potong`) ditolak: hasilnya merusak
+  HTML (`&amp;` → `&AMP;`, tag terbelah). `angka:n` dibatasi `n` ≤ 15 dan
+  literal bulat ≤ 18 digit, supaya luapan menjadi `GalatTemplat`.
 - Filter yang tidak dikenal, argumen yang salah jenis, atau filter yang
   butuh argumen tetapi tidak diberi → `GalatTemplat` dengan nomor baris.
 
@@ -114,6 +118,8 @@ tetap ditolak di dalam `{{ }}`.** Karena itu filter memakai gaya Django
   pemanggil).
 - Akhiran `hanya`: komponen melihat **hanya** nilai yang diberikan (padanan
   `with … only` di Django/Jinja), tanpa data pemanggil.
+- Berkas yang disertakan punya lingkup makro, blok, dan `{% induk %}`
+  sendiri: blok yang ditimpa halaman tidak mengisi blok komponen bernama sama.
 - Nama templat tetap wajib literal berkutip. Nilai boleh berupa jalan akses
   atau literal saja; filter tidak diizinkan di sini pada versi ini.
 
@@ -134,6 +140,10 @@ tetap ditolak di dalam `{{ }}`.** Karena itu filter memakai gaya Django
   makro dari berkas itu; teks dan tag lain di berkas impor diabaikan.
   Berkas impor tunduk pada pagar yang sama dengan `sertakan`: nama literal,
   di bawah akar mesin, siklus ditolak, kedalaman dibatasi.
+- **Lingkup leksikal:** makro yang memanggil makro lain mencari di registri
+  berkas tempat ia didefinisikan (beserta impornya), bukan registri
+  pemanggil, sehingga makro halaman tidak membajak isi pustaka makro.
+  `{% induk %}` di badan makro ditolak seperti di luar blok.
 - Makro memanggil makro lain diperbolehkan. Kedalaman panggilan dibatasi 32,
   sama dengan `sertakan`, sehingga rekursi tanpa akhir berhenti dengan galat
   dan tidak menghabiskan stack.

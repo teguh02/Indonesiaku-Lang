@@ -5,6 +5,30 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Belum dirilis]
+
+### Ditambahkan
+
+- **Templat: filter, isi blok induk, sertakan berparameter, dan makro**
+  (`pustaka/templat.idk`), padanan fitur Blade/Jinja yang belum ada:
+  - filter gaya Django `{{ x | huruf_besar | potong:80 }}` dengan filter bawaan
+    `huruf_besar`, `huruf_kecil`, `judul`, `rapikan`, `panjang`, `potong:n`,
+    `gabung:"pemisah"`, `bawaan:"x"`, dan `angka:n`, plus filter sendiri lewat
+    `m.filter(nama, fungsi)`. Hasil filter tetap di-escape; sengaja **tidak ada**
+    filter `aman` — HTML tepercaya tetap hanya lewat `templat.aman()` di `.idk`.
+    Nama yang hilang tetap galat kecuali filter pertamanya `bawaan`;
+  - `{% induk %}` di dalam `{% blok %}` merender isi blok yang sama satu tingkat
+    di atasnya (padanan `@parent` / `super()`), bertingkat;
+  - `{% sertakan "x.html" dengan a=jalan, b="teks" %}` memberi komponen nilai
+    sendiri tanpa mengubah data pemanggil, dan akhiran `hanya` menyembunyikan
+    data pemanggil;
+  - makro `{% makro nama(p, q="bawaan") %}…{% akhirmakro %}`, dipanggil dengan
+    `{% panggil nama(x, q=y) %}` dan dibagikan lewat `{% impor "berkas.html" %}`.
+    Badan makro hanya melihat parameternya; kedalaman panggilan dibatasi 32.
+
+  Semua sintaks baru sebelumnya adalah galat, jadi templat yang sah tidak
+  berubah artinya.
+
 ## [1.6.2] - 2026-11-11
 
 ### Diperbaiki
