@@ -5,6 +5,20 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Belum dirilis]
+
+### Keamanan
+
+- **Windows: dua server bisa mendengarkan port yang sama** (T-W7).
+  `soket_dengar` memasang `SO_REUSEADDR`. Di Winsock opsi itu mengizinkan
+  soket lain mengikat port yang sedang dipakai, sehingga `soket_dengar`
+  kedua berhasil diam-diam dan kedua server berbagi koneksi; proses lokal
+  lain pun bisa ikut menerima koneksi yang ditujukan ke server Indonesiaku.
+  Di Windows opsi itu kini tidak dipasang lagi (seperti asyncio Python), dan
+  `soket_dengar` kedua gagal dengan pesan `gagal bind ke port`. Mendengarkan
+  ulang port segera setelah server ditutup tetap berfungsi. Linux/macOS
+  tidak berubah. Dijaga `examples/soket_port_eksklusif.idk`.
+
 ## [1.6.1] - 2026-11-10
 
 ### Diperbaiki
