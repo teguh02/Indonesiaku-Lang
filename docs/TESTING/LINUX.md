@@ -1370,5 +1370,6 @@ Sisanya tetap `⬜ belum diuji` untuk 1.6.1.
 
 | Tanggal | Versi | Paket | Penguji | Hasil |
 |---|---|---|---|---|
+| — | 1.6.2 | `indk-linux.tar.gz` + `indonesiaku_1.6.2_amd64.deb` (tag `v1.6.2`) | — | ⬜ belum diuji |
 | 2026-11-10 | 1.6.1 | `indk-linux.tar.gz` + `indonesiaku_1.6.1_amd64.deb` (tag `v1.6.1`) | Claude Code (AI), di Ubuntu x86-64 glibc 2.39 atas permintaan maintainer | ✅ CLI 14/14, katalog 31/31, golden rilis 283/283, khusus Linux 14 ✅ / 1 ⬜ (LIN-06); repro issue #109 terbukti tertutup di paket rilis; tanpa temuan baru |
 | 2026-11-08 | 1.6.0 | `indk-linux.tar.gz` + `indonesiaku_1.6.0_amd64.deb` (tag `v1.6.0`) | Claude Code (AI), di Ubuntu x86-64 glibc 2.39 atas permintaan maintainer | ✅ CLI 14/14, katalog 31/31, suite 330/330, khusus Linux 13 ✅ / 2 ⬜ (LIN-06); tanpa temuan baru |

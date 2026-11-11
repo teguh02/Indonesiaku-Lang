@@ -5,7 +5,7 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Belum dirilis]
+## [1.6.2] - 2026-11-11
 
 ### Diperbaiki
 
