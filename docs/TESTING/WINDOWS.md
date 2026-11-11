@@ -1291,7 +1291,126 @@ Skrip `.sh` dijalankan dari Git Bash di folder yang sama, setelah
 | WIN-19 | Kode dipipakan dari PowerShell 5.1 ke REPL dengan BOM (T-W12) | Di Windows PowerShell 5.1: `$OutputEncoding = [Text.Encoding]::UTF8`, lalu `'x = 21', 'cetak(x * 2)' \| indk` | `42` tercetak, tanpa `Karakter tidak dikenal` |
 | WIN-20 | Ikon pemasang dan pintasan | Lihat ikon berkas `Indonesiaku-Setup-<versi>.exe` di Explorer, ikon pojok kanan atas jendela wizard, ikon pintasan Start Menu, dan ikon entri "Indonesiaku" di Apps & features | Semuanya memakai logo `idk` persegi (latar gelap, teks `idk`, garis merah-putih). Bukan ikon kardus bawaan Inno Setup |
 
-## 7. Hasil uji terakhir — `1.6.0-rc.1`, 2026-11-08
+## 7. Hasil uji terakhir — `1.6.1`, 2026-11-11
+
+Diuji di Windows asli dari baris perintah, terhadap paket rilis hasil
+unduhan, bukan hasil build. Hasil di bawah tidak disalin dari CI atau
+`LINUX.md`. Skrip uji dan rencana uji diambil dari tag `v1.6.1` (commit
+`5ada5e5`). Sebagian pengujian dikerjakan oleh tiga agen AI yang berjalan di
+mesin yang sama:
+- satu agen menyelesaikan dan memeriksa bagian 5;
+- satu agen mengulang bagian 3, 4, dan 6 secara independen tanpa melihat
+  hasil pertama;
+- satu agen menjalankan WIN-15.
+
+Hasil silang itu sama dengan hasil pertama.
+
+| | |
+|---|---|
+| Aset | Diunduh dari `releases/tag/v1.6.1` dengan `gh release download` |
+| `Indonesiaku-Setup-1.6.1.exe` | SHA-256 `252b923cc11086690b704efa2a593db34c9f24df98bdbf01d2827eb43dcddada` — cocok dengan `SHA256SUMS.txt` |
+| `indk-windows.zip` | SHA-256 `5160d76aef78afedbd83231c55c562f15ef56afaa0ca8b419be79de12298aded` — cocok dengan `SHA256SUMS.txt` |
+| SHA-256 `indk.exe` | `9dbeb8d301facaf43ff203f9d287d5ca8d29eebf34a4dc517ad029aa3f38cb52` — sama persis untuk hasil installer, isi zip, dan setelah pasang ulang (WIN-15) |
+| Mesin | Windows 11 Home 10.0.26300, AMD64; Windows PowerShell 5.1.26100; Git Bash 2.51 (curl 8.15); Python 3.14 untuk menjalankan kasus dengan `CreateProcessW`; `LongPathsEnabled = 1` |
+| Prosedur | Setiap pemanggilan `indk` dibungkus batas waktu (`timeout 30` atau `subprocess` 60 s). Exit 124 dan *timeout* dihitung gagal; tidak ada yang terjadi. `\r` disaring sebelum membandingkan. stdout, stderr, dan kode keluar dibandingkan terpisah. PowerShell 7 tidak terpasang, sehingga semua uji PowerShell memakai 5.1 |
+
+### Jalur pemasangan
+
+| Jalur | Hasil |
+|---|---|
+| (a) Installer | ✅ `/SILENT`, kode keluar 0. Di **tab terminal baru** `Get-Command indk` menunjuk `C:\Program Files\Indonesiaku\indk.exe`, dan `indk -v` mencetak `1.6.1`. Hasilnya sama di shell dengan `PATH` yang dibaca ulang dari registri. `pustaka\` (27 modul) ada di sebelah `indk.exe`. Dari folder kerja tanpa `pustaka\`, `impor json` dan `impor web` → `{"a":[1,"dua"]} [1, 2]` / `objek ok`, kode 0 |
+| (b) Zip portabel | ✅ Diekstrak ke folder polos (`indk-windows\`: `indk.exe`, `pustaka\`, `examples\`, `README.md`, `CHANGELOG.md`, `LICENSE`, `SPESIFIKASI.md`). `.\indk.exe -v` → `1.6.1`, kode 0. Impor `json` dan `web` dari folder lain memberi keluaran yang sama |
+
+### Ringkasan per bagian
+
+| Bagian | Hasil |
+|---|---|
+| 3. CLI (CLI-01–CLI-14) | ✅ 14/14 (juga 14/14 pada uji silang) |
+| 4. Katalog bahasa (31 kasus) | ✅ 31/31 — diekstrak otomatis dari bagian 4, dibandingkan per byte. Uji silang mengulang 14 kasus, semuanya cocok |
+| 5. Suite otomatis (OTO-01–OTO-14) | ✅ 14/14, termasuk OTO-08 dan OTO-09 yang ⚠️ di 1.6.0-rc.1 |
+| 6. Khusus Windows (WIN-01–WIN-20) | ✅ 17 · ❌ 1 (WIN-15) · ⚠️ 2 (WIN-12, WIN-16) |
+| Temuan baru | **T-W13** — uninstaller meninggalkan entri `PATH` |
+
+### Rincian
+
+| ID | Status | Catatan |
+|---|---|---|
+| CLI-01 | ✅ | `1.6.1`, kode 0 |
+| CLI-02 | ✅ | `Indonesiaku 1.6.1` lalu `Penggunaan: indk [--sandbox] [path] [argumen...]`; opsi `--dis`, `--periksa-pembaruan`; perintah `periksa`, `uji`, `rapikan` (juga `profil`, `awakutu`), kode 0 |
+| CLI-03 | ✅ | stderr `Tidak dapat membuka file "tidak_ada.idk".`, kode 74 |
+| CLI-04 | ✅ | `3 ["satu", "dua tiga", "3"]` |
+| CLI-05 | ✅ | `Nama? Umur? Halo Budi, tahun depan 17` (stdin lewat pipa Git Bash) |
+| CLI-06 | ✅ | `> > 42` lalu `> `, kode 0 saat stdin habis |
+| CLI-07 | ✅ | stderr diawali `lingkungan() tidak diizinkan dalam mode --sandbox`, kode 70 |
+| CLI-08 | ✅ | Tanpa keluaran, kode 3 |
+| CLI-09 | ✅ | `== <skrip utama> ==` dan `0000    2 OP_CONSTANT         1 'Budi'`, kode 0; `indk --dis` → `Penggunaan: indk --dis <skrip.idk>`, kode 64 |
+| CLI-10 | ✅ | `lint.idk:3  variabel lokal 'sementara' tidak pernah dipakai`, `1 temuan` (keduanya di stderr), kode 1 |
+| CLI-11 | ✅ | `  GAGAL  uji_gagal: 2 + 2 bukan 5`, `  LULUS  uji_tambah`, `1/2 uji lulus`, kode 1 |
+| CLI-12 | ✅ | `rp.idk belum rapi` (kode 1) → `--tulis` (kode 0) → `fungsi f(a, b) {` / `    kembalikan a + b` / `}` → `--periksa` kode 0 |
+| CLI-13 | ✅ | `Versi terpasang : 1.6.1`, `Versi terbaru   : v1.6.1`, `Versi Anda sudah yang terbaru.`, kode 0 |
+| CLI-14 | ✅ | `aaa [1]` dari folder tanpa `pustaka\` |
+| SIN-01 … SSR-TPL-02 (31 kasus) | ✅ | Semua stdout, stderr, dan kode keluar sama dengan katalog. GAL-02 kode 70 dan GAL-03 kode 65 sesuai. Berkas pendukung `paket_saya/hitung.idk` dan lima templat `tampilan/*.html` dibuat dari dokumen. SSR-TPL-01 dan SSR-TPL-02 (escaping, penolakan `{{ keluar() }}`, pewarisan blok, blok bawaan, siklus sertakan) cocok per byte |
+| OTO-01 | ✅ | `TOTAL: 288/288 PASSED`, `SEMUA UJI ASET PEMASANG LULUS`, nol merah pada percobaan pertama (*flake* `(exit=)` kosong tidak muncul) |
+| OTO-02 | ✅ | `== ALL TODO CLI TESTS PASSED ==` |
+| OTO-03 | ✅ | `== ALL TODO SERVER TESTS PASSED ==` |
+| OTO-04 | ✅ | `LINTER: 6/6 lulus`, `UJI: 2/2 lulus`, `FORMAT: 8/8 lulus` (bytecode identik 206/206). Linter kini punya 6 kasus, bukan 5 seperti di tabel bagian 5 |
+| OTO-05 | ✅ | `panduan: 207/207 dijalankan bersih, 40 ditandai takjalan` |
+| OTO-06 | ✅ | `ok   http_ambil GET/POST/404 (termasuk badan UTF-8)` |
+| OTO-07 | ✅ | 10 `ok` + `ok   pustaka/web.idk melayani HTTP sungguhan` |
+| OTO-08 | ✅ | 8 `ok`, termasuk `ok   badan UTF-8 tidak menggantung`; `ok   parsing badan bekerja terhadap curl sungguhan` |
+| OTO-09 | ✅ | `ok   http_ambil() mengikuti pengalihan` |
+| OTO-10 | ✅ | 11 `ok`, `web_kuki_sesi: semua lulus` |
+| OTO-11 | ✅ | 10 `ok`, termasuk `ok   serangan CSRF ditolak`; `web_csrf: semua lulus` |
+| OTO-12 | ✅ | 13 `ok`, termasuk `ok   budi ditolak /admin` dan `ok   terkunci -> 429`; `web_auth: semua lulus` |
+| OTO-13 | ✅ | 13 `ok`, `web_cors.sh: SEMUA LULUS` |
+| OTO-14 | ✅ | 25 `ok`, termasuk `ok   ID sesi diputar saat login` dan `ok   muatan XSS ter-escape`; `keamanan_app.sh: SEMUA LULUS` |
+| WIN-01 | ✅ | Lihat "Jalur pemasangan" (a) |
+| WIN-02 | ✅ | Lihat "Jalur pemasangan" (b) |
+| WIN-03 | ✅ | Kedua hash cocok dengan `SHA256SUMS.txt` sebelum memasang |
+| WIN-04 | ✅ | `cmd.exe`: `1.6.1`, `%ERRORLEVEL%` 0 lalu 74 setelah CLI-03. PowerShell: `$LASTEXITCODE` 74 |
+| WIN-05 | ✅ | SIN-03 versi CRLF identik byte dengan versi LF. Tiga-kutip CRLF `"""a<CRLF>b"""` → `3 [97, 10, 98]` |
+| WIN-06 | ✅ | `indk "folder spasi\a b.idk"` berjalan |
+| WIN-07 | ✅ | `indk José\s.idk` berjalan |
+| WIN-08 | ✅ | `日本\s.idk`, `naïve ☕\s.idk`, `C:\uji\テスト\halo.idk` (absolut dan relatif) berjalan, kode 0. Impor modul di folder `日本\` berhasil. Argumen `"é" "日本" "😀"` utuh: `[233]`, `[26085, 26412]`, `[128512]` |
+| WIN-09 | ✅ | `keluaran_☕.txt` dan `dir_テスト` tercipta dengan nama benar di disk (diperiksa lewat daftar direktori, Explorer tidak dibuka) |
+| WIN-10 | ✅ | Berkas ber-BOM dan tanpa BOM sama-sama mencetak `bom`; modul ber-BOM yang diimpor → `5` |
+| WIN-11 | ✅ | Jendela PowerShell sungguhan: di code page 437 dan sesudah `chcp 65001`, baris terakhir `2 ☕ GARUDA`. Code page tidak diubah oleh `indk` |
+| WIN-12 | ⚠️ | T-W4, perilaku PowerShell 5.1, sama seperti 1.6.0-rc.1. `$OutputEncoding` bawaan `us-ascii` → `6 [65, 110, 100, 114, 63, 115]` (`é` menjadi `?`). Dengan `[System.Text.UTF8Encoding]::new($false)` → `6 [65, 110, 100, 114, 233, 115]`, utuh |
+| WIN-13 | ✅ | OTO-03, OTO-06 lulus |
+| WIN-14 | ✅ | PUS-05: `0 benar` |
+| WIN-15 | ❌ | **T-W13.** `unins000.exe /SILENT` kode 0, dan folder program, folder Start Menu, serta entri Apps & features (`{B7F1C4E2-…}_is1`) hilang. Di shell baru `Get-Command indk` gagal, karena foldernya sudah tidak ada. Tetapi entri `PATH` mesin `C:\Program Files\Indonesiaku` **tetap ada** setelah uninstall. Pasang ulang kode 0, `indk -v` → `1.6.1`, SHA-256 sama |
+| WIN-16 | ⚠️ | Defender: `MpCmdRun -Scan -ScanType 3` pada installer, zip, dan `indk.exe` terpasang → `found no threats` (signature 1.463.233.0). **SmartScreen ⬜ belum diuji**: aset diunduh dengan `gh`, bukan peramban, dan dialog SmartScreen butuh klik manusia |
+| WIN-17 | ✅ | Saat `kunci.txt` dikunci `[IO.File]::Open(..., 'None')`: `ada_berkas` dan `jalur.ada` → `benar benar` (T-W9 tidak kambuh) |
+| WIN-18 | ✅ | `tests\test_jalur_panjang.ps1`: `JALUR PANJANG: semua berjalan`. Uji manual dengan biner terpasang: jalur relatif 7 × 60 karakter, absolut lebih dari 400 karakter → `buat_direktori`, `tulis_semua`, `ada_berkas`, `baca_semua`, `isi_direktori`, `hapus_berkas` berhasil (T-W10 tidak kambuh). `LongPathsEnabled = 1` |
+| WIN-19 | ✅ | PowerShell 5.1.26100, `$OutputEncoding = [Text.Encoding]::UTF8`: `> > 42`, kode 0, tanpa `Karakter tidak dikenal` (T-W12 tidak kambuh) |
+| WIN-20 | ✅ | Ikon `Indonesiaku-Setup-1.6.1.exe`, pintasan Start Menu `Indonesiaku (REPL)` (`indonesiaku.ico`), pintasan uninstall, dan `DisplayIcon` entri Apps & features semuanya logo `idk` persegi (latar gelap, teks `idk`, garis merah-putih), diperiksa dengan mengekstrak ikonnya. Ikon pojok jendela wizard ⬜ tidak teramati karena pemasangan memakai `/SILENT` |
+
+### Status temuan lama di `1.6.1`
+
+| Kode | Status | Bukti |
+|---|---|---|
+| T-W1, T-W5 | ✅ tidak kambuh | WIN-08, WIN-09 |
+| T-W2 | ✅ tidak kambuh | WIN-10 |
+| T-W3 | ✅ tidak kambuh | WIN-11 |
+| T-W4 | ⚠️ masih ada | Perilaku PowerShell 5.1, WIN-12 |
+| T-W9 | ✅ tidak kambuh | WIN-17 |
+| T-W10 | ✅ tidak kambuh | WIN-18 |
+| T-W12 | ✅ tidak kambuh | WIN-19 |
+| T-W6, T-W7, T-W8, T-W11 | ⬜ belum diuji ulang di 1.6.1 | — |
+
+### Temuan baru di `1.6.1`
+
+| Kode | Tingkat | Temuan |
+|---|---|---|
+| T-W13 | Rendah | **Uninstaller meninggalkan entri `PATH` sistem `C:\Program Files\Indonesiaku`.** Folder, pintasan, dan entri Apps & features terhapus, tetapi nilai `Path` di `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment` masih memuat folder yang sudah tidak ada. Penyebab di `packaging/windows/indonesiaku.iss` (tag `v1.6.1`): bagian `[Registry]` menambahkan `{olddata};{app}` (`Tasks: tambahpath`, `Check: BelumAdaDiPath`), tetapi tidak ada kode uninstall (`CurUninstallStepChanged`/`usUninstall`) yang membuangnya kembali. Flag `uninsdeletevalue` tidak cocok karena akan menghapus seluruh nilai `Path`. Dampaknya kecil: `indk` tidak ditemukan setelah uninstall, dan pemasangan ulang tidak menggandakan entri karena `BelumAdaDiPath`, tetapi `PATH` tetap kotor. Program pemicu: `unins000.exe /SILENT /SUPPRESSMSGBOXES /NORESTART`, lalu `[Environment]::GetEnvironmentVariable('Path','Machine')`. Keluaran sebenarnya: entri `C:\Program Files\Indonesiaku` masih ada. Diharapkan: entri itu hilang. Kode keluar uninstaller: 0 |
+
+Catatan lingkungan (bukan temuan rilis ini): `PATH` mesin juga berisi enam
+entri `C:\Program Files (x86)\Indonesiaku\bin`, dan `PATH` pengguna berisi
+`C:\Program Files (x86)\Indonesiaku` dan `C:\Program Files\Indonesiaku`.
+Semuanya peninggalan installer lawas, sudah ada sebelum pengujian ini, dan
+tidak ditulis oleh installer 1.6.1 (yang hanya menulis ke HKLM).
+
+### Hasil sebelumnya — `1.6.0-rc.1`, 2026-11-08
 
 Diuji di Windows asli dari baris perintah. Hasil di bawah tidak disalin dari
 CI. Skrip uji dan rencana uji diambil dari tag `v1.6.0-rc.1` (commit
@@ -1306,7 +1425,7 @@ CI. Skrip uji dan rencana uji diambil dari tag `v1.6.0-rc.1` (commit
 | Mesin | Windows 11 Home 10.0.26300, AMD64; Windows PowerShell 5.1.26100; Git Bash 2.51 (curl 8.15); Python 3.14 untuk menjalankan kasus dengan `CreateProcessW` |
 | Penyimpangan prosedur | PowerShell 7 tidak terpasang di mesin ini. Perintah dijalankan dengan Windows PowerShell 5.1. Masukan non-ASCII dikirim lewat pipa Git Bash atau `subprocess`, bukan pipa PowerShell 5.1, supaya T-W4 (perilaku PowerShell 5.1) tidak tercampur. WIN-12 tetap diuji dengan PowerShell 5.1 secara sengaja |
 
-### Jalur pemasangan
+#### Jalur pemasangan
 
 | Jalur | Hasil |
 |---|---|
@@ -1318,7 +1437,7 @@ lama `C:\Program Files (x86)\Indonesiaku\bin` peninggalan installer lawas.
 Installer 1.6.0-rc.1 tidak menambahkannya, karena pemeriksaan
 `BelumAdaDiPath` mencegah duplikat.
 
-### Ringkasan per bagian
+#### Ringkasan per bagian
 
 | Bagian | Hasil |
 |---|---|
@@ -1329,7 +1448,7 @@ Installer 1.6.0-rc.1 tidak menambahkannya, karena pemeriksaan
 | Temuan lama T-W1, T-W2, T-W3 | ✅ ketiganya tidak kambuh |
 | Temuan baru | Tidak ada |
 
-### Rincian
+#### Rincian
 
 | ID | Status | Catatan |
 |---|---|---|
@@ -1380,7 +1499,7 @@ Installer 1.6.0-rc.1 tidak menambahkannya, karena pemeriksaan
 | WIN-16 | ⬜ | Belum diuji. Aset diunduh dengan `gh release download`, bukan peramban, jadi SmartScreen tidak teramati |
 | WIN-20 | ⬜ | Belum ada saat rilis ini; ikon pemasang masih bawaan Inno Setup |
 
-### Status temuan lama di `1.6.0-rc.1`
+#### Status temuan lama di `1.6.0-rc.1`
 
 | Kode | Status | Bukti |
 |---|---|---|
@@ -1394,7 +1513,7 @@ Temuan lain dari uji ekstensif 1.4.0 (T-W6–T-W11, T-U*) tidak diuji ulang
 dalam putaran ini; statusnya tetap seperti tercatat di bawah dan di
 `lampiran/`.
 
-### Temuan baru sesudah `1.6.0-rc.1`
+#### Temuan baru sesudah `1.6.0-rc.1`
 
 Ditemukan saat mencoba paket installer `1.6.0-rc.1` di Windows 11 (PowerShell
 5.1), 2026-11-08, oleh Rafa Okta Habibilah dibantu Claude Code (AI).
@@ -1403,9 +1522,9 @@ Ditemukan saat mencoba paket installer `1.6.0-rc.1` di Windows 11 (PowerShell
 |---|---|---|---|
 | T-W12 | Rendah | Kode yang dipipakan dari PowerShell 5.1 ke REPL (`'x = 21', 'cetak(x * 2)' \| indk`) gagal di baris 1 dengan `Karakter tidak dikenal`. PowerShell menyisipkan BOM di depan pipa bila encoding pipanya UTF-8 ber-BOM; setelah `$OutputEncoding = [Text.Encoding]::UTF8` bahkan **dua** (`EF BB BF EF BB BF`, dibuktikan dengan `od -t x1`). Berkas ber-BOM sudah diterima sejak T-W2, tetapi REPL tidak | ✅ **Diperbaiki (1.6.0).** REPL membuang BOM berturut-turut di awal sesi, seperti `readFile()` dan seperti `python` yang membaca kode dari pipa. Penyimpangan sadar dari Python: Python hanya membuang satu dan gagal pada BOM kedua, sehingga kasus PowerShell di atas tetap rusak di sana. `input()` sengaja tidak diubah: Python juga mempertahankan U+FEFF (lihat WIN-12 di atas). Diverifikasi di PowerShell 5.1.26100 sungguhan. Dijaga `tests/test_stdin_bom.sh` (sabotase: kode lama 4 merah, buang-di-tiap-baris 1 merah, buang-satu-BOM 1 merah), kasus WIN-19 |
 
-### Hasil sebelumnya — `1.4.0`, 2026-11-03
+#### Hasil sebelumnya — `1.4.0`, 2026-11-03
 
-#### Ringkasan per bagian
+##### Ringkasan per bagian
 
 | Bagian | Hasil |
 |---|---|
@@ -1414,7 +1533,7 @@ Ditemukan saat mencoba paket installer `1.6.0-rc.1` di Windows 11 (PowerShell
 | 5. Suite otomatis | ✅ OTO-01–OTO-07; ⚠️ OTO-08, OTO-09 (masalah skrip uji, bukan indk) |
 | 6. Khusus Windows | ✅ 7 · ❌ 4 · ⚠️ 1 · ⬜ 4 |
 
-#### Rincian
+##### Rincian
 
 | ID | Status | Catatan |
 |---|---|---|
@@ -1440,7 +1559,7 @@ Ditemukan saat mencoba paket installer `1.6.0-rc.1` di Windows 11 (PowerShell
 | WIN-15, WIN-16 | ⬜ | Belum diuji |
 | WIN-20 | ⬜ | Belum ada saat rilis ini; ikon pemasang masih bawaan Inno Setup |
 
-#### Temuan
+##### Temuan
 
 | Kode | Tingkat | Temuan | Penyebab dugaan | Jalan pintas sementara |
 |---|---|---|---|---|
@@ -1454,7 +1573,7 @@ biasa (rencana di `docs/RENCANA_FITUR/`, uji regresi, lalu rilis patch) dan
 tidak termasuk dokumen rencana uji ini. T-W4 bukan cacat `indk` melainkan
 perilaku PowerShell 5.1, sehingga tidak akan ditandai selesai.
 
-#### Uji ekstensif multi-agen
+##### Uji ekstensif multi-agen
 
 Di samping bagian 3–6, rilis 1.4.0 diuji secara luas oleh delapan agen
 penguji paralel, satu per area. Setiap agen menulis dan menjalankan ratusan
@@ -1545,7 +1664,7 @@ Temuan tingkat sedang yang paling berdampak (lengkapnya di lampiran):
 
 | Tanggal | Versi | Paket | Penguji | Hasil |
 |---|---|---|---|---|
-| — | 1.6.1 | `Indonesiaku-Setup-1.6.1.exe` + `indk-windows.zip` (tag `v1.6.1`) | — | ⬜ belum diuji |
+| 2026-11-11 | 1.6.1 | `Indonesiaku-Setup-1.6.1.exe` + `indk-windows.zip` (tag `v1.6.1`) | Claude Code (AI, dibantu 3 agen), di Windows 11 asli atas permintaan maintainer | ⚠️ CLI 14/14, katalog 31/31, `test_all.ps1` 288/288, OTO 14/14; WIN 17 ✅ · 1 ❌ (WIN-15: T-W13 uninstaller meninggalkan entri `PATH`) · 2 ⚠️ (WIN-12 T-W4; WIN-16 Defender bersih, SmartScreen ⬜) |
 | 2026-11-03 | 1.4.0 | Installer `Indonesiaku-Setup-1.4.0.exe` | Claude Code (AI), atas permintaan maintainer | ⚠️ bagian 3–6 lulus; temuan T-W1–T-W4, T-U1 |
 | 2026-11-03 | 1.4.0 | Installer `Indonesiaku-Setup-1.4.0.exe` | Claude Code (AI, 8 agen penguji + 8 verifikator) | ⚠️ uji ekstensif 3584/3879; 140 temuan terkonfirmasi, termasuk T-W5–T-W11 dan T-U2–T-U16 |
 | 2026-11-08 | 1.6.0-rc.1 | Installer `Indonesiaku-Setup-1.6.0-rc.1.exe` dan `indk-windows.zip` (tag `v1.6.0-rc.1`) | Claude Code (AI), di Windows 11 asli atas permintaan maintainer | ✅ CLI 14/14, katalog 30/30, `test_all.ps1` 282/282, OTO 12/14 (OTO-08/09 masalah skrip uji); T-W1, T-W2, T-W3, T-W5 tidak kambuh; tanpa temuan baru; WIN-15/16 ⬜ |
