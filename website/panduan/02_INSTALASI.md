@@ -2,6 +2,12 @@
 
 Panduan lengkap instalasi Bahasa Pemrograman Indonesiaku di berbagai sistem operasi: Windows, Linux, dan macOS.
 
+## 🎬 Video Panduan Instalasi
+
+Ingin melihat langkahnya langsung? Ikuti video berikut.
+
+[Instalasi | Indonesiaku-Lang](https://youtu.be/VTmxHgHKfDI)
+
 ---
 
 ## 📋 Daftar Isi
