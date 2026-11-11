@@ -334,13 +334,18 @@ cetak("Rata-rata:", (1 + 2 + 3) / 3)
 
     // templat-playground.js dimuat dengan `defer`, jadi window.INDK_TEMPLAT
     // belum tentu ada saat skrip inline ini berjalan — dan pada navigasi SPA
-    // (Senna) tidak ada event `load` baru. Coba sekarang, lalu ulangi.
+    // (Senna) tidak ada event `load` baru. Coba sekarang, lalu tunggu sinyal.
+    //
+    // Kamusnya TIDAK ditunggu pakai timer: kalau i18n.json lambat (atau
+    // tersaji dari cache lama), timer menyerah diam-diam dan tombolnya hilang
+    // tanpa jejak. app.js memancarkan "indk:i18n" begitu kamus selesai dimuat.
     if (!bangunTemplat()) {
       let sisa = 40;                         // ~6 detik, lalu menyerah
       const tungguTpl = setInterval(() => {
         if (bangunTemplat() || --sisa <= 0) clearInterval(tungguTpl);
       }, 150);
     }
+    document.documentElement.addEventListener("indk:i18n", bangunTemplat);
     // app.js memancarkan "indk:lang" di <html> setiap bahasa ditukar
     // (lihat assets/app.js) — label tombol ikut diterjemahkan ulang.
     // Di titik ini kamus sudah pasti siap, jadi penjaga di atas tidak menahan.
