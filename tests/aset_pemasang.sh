@@ -41,6 +41,19 @@ for kunci in "SetupIconFile=indonesiaku.ico" \
     fi
 done
 
+# T-W13: uninstall harus membuang entri PATH-nya sendiri. Perilakunya diuji
+# sungguhan oleh tests/pemasang_path.ps1 di runner Windows (butuh iscc +
+# admin); di sini cukup memastikan kodenya tidak hilang.
+for kunci in "ChangesEnvironment=yes" \
+             "procedure CurUninstallStepChanged" \
+             "HapusDariPath(PathLama, ExpandConstant('{app}'))"; do
+    if grep -qF "$kunci" "$ISS"; then
+        lulus "iss memuat $kunci"
+    else
+        tolak "iss tidak memuat $kunci"
+    fi
+done
+
 # indonesiaku.ico harus ikut dipasang, kalau tidak pintasan Start Menu
 # kehilangan ikonnya begitu berkas pemasang dihapus.
 if grep -qE '^Source: "indonesiaku\.ico"; DestDir: "\{app\}"' "$ISS"; then
