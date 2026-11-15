@@ -137,6 +137,11 @@ a 20
 
 ### SINTAKS-06 — [sedang] Indeks di luar jangkauan pada teks/rentang menimbulkan Galat biasa, bukan GalatIndeks
 
+> **Status: ✅ selesai** — diperbaiki setelah 1.7.0. Seluruh jalur indeks
+> (daftar, tupel, teks, `rentang()`, serta `karakter()`, `potong()`,
+> `hapus_pada()`, `sisip()`) kini menaikkan `GalatIndeks`.
+> Dijaga oleh `examples/galat_indeks_seragam.idk`.
+
 Reproduced: `kecuali GalatIndeks` catches daftar[5] but not "ha"[5] or rentang(2)[5]; those fall through to the generic kecuali. GalatIndeks is documented as a built-in class, and in Python this is IndexError.
 
 Reproduksi:

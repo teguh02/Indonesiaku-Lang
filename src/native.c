@@ -1689,7 +1689,7 @@ Value nativeFnKarakter(int argCount, Value* args) {
     ObjString* s = AS_STRING(args[0]);
     int i = (int)AS_NUMBER(args[1]);
     if (i < 0 || i >= s->charCount) {
-        nativeRaise("karakter() indeks di luar jangkauan (indeks %d, panjang %d)", i, s->charCount);
+        nativeRaiseKelas(vm.galatIndeks, "karakter() indeks di luar jangkauan (indeks %d, panjang %d)", i, s->charCount);
         return KOSONG_VAL;
     }
     int offset = utf8ByteOffset(s, i);
@@ -1711,7 +1711,7 @@ Value nativeFnPotong(int argCount, Value* args) {
     int start = (int)AS_NUMBER(args[1]);
     int count = (int)AS_NUMBER(args[2]);
     if (start < 0 || start > s->charCount) {
-        nativeRaise("potong() 'mulai' di luar jangkauan (%d, panjang %d)", start, s->charCount);
+        nativeRaiseKelas(vm.galatIndeks, "potong() 'mulai' di luar jangkauan (%d, panjang %d)", start, s->charCount);
         return KOSONG_VAL;
     }
     if (count < 0) count = 0;
@@ -1844,7 +1844,7 @@ Value nativeFnHapusPada(int argCount, Value* args) {
     ObjList* list = AS_LIST(args[0]);
     int i = (int)AS_NUMBER(args[1]);
     if (i < 0 || i >= list->items.count) {
-        nativeRaise("hapus_pada() indeks di luar jangkauan (indeks %d, panjang %d)", i, list->items.count);
+        nativeRaiseKelas(vm.galatIndeks, "hapus_pada() indeks di luar jangkauan (indeks %d, panjang %d)", i, list->items.count);
         return KOSONG_VAL;
     }
     Value removed = list->items.values[i];
@@ -1869,7 +1869,7 @@ Value nativeFnSisip(int argCount, Value* args) {
     ObjList* list = AS_LIST(args[0]);
     int i = (int)AS_NUMBER(args[1]);
     if (i < 0 || i > list->items.count) {
-        nativeRaise("sisip() indeks di luar jangkauan (indeks %d, panjang %d)", i, list->items.count);
+        nativeRaiseKelas(vm.galatIndeks, "sisip() indeks di luar jangkauan (indeks %d, panjang %d)", i, list->items.count);
         return KOSONG_VAL;
     }
     // Grow by appending a placeholder (writeValueArray handles capacity + GC),

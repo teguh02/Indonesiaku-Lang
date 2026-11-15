@@ -1,0 +1,45 @@
+# Indeks di luar jangkauan selalu GalatIndeks, apa pun yang diindeks.
+#
+# Dulu hanya daftar/tupel yang memberi GalatIndeks; teks, rentang, dan empat
+# builtin indeks memberi Galat polos, sehingga `kecuali GalatIndeks` tidak
+# menangkapnya. Temuan SINTAKS-06 (uji ekstensif Windows 1.4.0).
+
+fungsi kelas_galat(f) {
+    coba {
+        f()
+        kembalikan "TIDAK GALAT"
+    } kecuali GalatIndeks sebagai e {
+        kembalikan "GalatIndeks"
+    } kecuali Galat sebagai e {
+        kembalikan "Galat lain"
+    }
+}
+
+# Indeks lewat operator []
+cetak(kelas_galat(fungsi() { variabel x = [10, 20][5] }))
+cetak(kelas_galat(fungsi() { variabel x = (10, 20)[5] }))
+cetak(kelas_galat(fungsi() { variabel x = "ha"[5] }))
+cetak(kelas_galat(fungsi() { variabel x = rentang(2)[5] }))
+
+# Indeks negatif yang terlalu jauh juga di luar jangkauan
+cetak(kelas_galat(fungsi() { variabel x = "ha"[-3] }))
+cetak(kelas_galat(fungsi() { variabel x = rentang(2)[-3] }))
+
+# Builtin yang menerima indeks
+cetak(kelas_galat(fungsi() { karakter("ab", 9) }))
+cetak(kelas_galat(fungsi() { potong("ab", 9, 1) }))
+cetak(kelas_galat(fungsi() { hapus_pada([1], 9) }))
+cetak(kelas_galat(fungsi() { sisip([1], 9, 0) }))
+
+# GalatIndeks tetap turunan Galat, jadi penangkap umum masih bekerja
+coba {
+    variabel x = "ha"[5]
+} kecuali Galat sebagai e {
+    cetak("tertangkap Galat umum")
+}
+
+# Indeks yang sah tidak terpengaruh
+cetak("ha"[1])
+cetak(rentang(5)[2])
+cetak(karakter("ab", 1))
+cetak(potong("abcde", 1, 3))

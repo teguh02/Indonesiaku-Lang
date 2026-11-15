@@ -219,6 +219,9 @@ coba {
 - Hierarki berakar pada `Galat`; `GalatNilai`, `GalatTipe`, `GalatNama`,
   `GalatAritmetika`, `GalatPencarian`, `GalatIndeks`, `GalatAtribut`,
   `GalatLuapan`, `HentiIterasi`, dan lainnya adalah turunannya.
+- Indeks di luar jangkauan selalu menaikkan `GalatIndeks`, baik pada daftar,
+  tupel, teks, maupun `rentang()`, termasuk lewat `karakter()`, `potong()`,
+  `hapus_pada()`, dan `sisip()`.
 - `kecuali` tanpa tipe menangkap semua dan **wajib menjadi klausa terakhir**.
 - Klausa dicoba berurutan; yang tidak cocok dilempar ulang ke `coba` di luar.
 - `akhirnya` tetap berjalan saat `kembalikan`, `hentikan`, atau `lanjut`
