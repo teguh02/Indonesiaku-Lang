@@ -7,6 +7,16 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Belum dirilis]
 
+### Ditambahkan
+
+- **`ambil(kamus, kunci[, bawaan])`** — membaca kamus dengan nilai bawaan
+  eksplisit, padanan `dict.get()` Python. Tersedia juga sebagai metode
+  (`d.ambil("k", 0)`). Yang menentukan adalah keberadaan kunci, bukan
+  kebenaran nilainya: kunci yang ada tetapi bernilai `kosong` mengembalikan
+  `kosong`, bukan `bawaan`. Kamus tidak pernah diubah. Tanpa `bawaan`,
+  hasilnya `kosong` — sama seperti `kamus[kunci]`, jadi tidak ada perilaku
+  lama yang berubah.
+
 ### Diperbaiki
 
 - **Indeks di luar jangkauan kini selalu menaikkan `GalatIndeks`**

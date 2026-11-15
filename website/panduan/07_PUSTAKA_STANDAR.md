@@ -455,6 +455,7 @@ posisi iterasi perlu disimpan atau dilanjutkan belakangan.
 |--------|-----------|
 | `kamus()` | Buat kamus kosong |
 | `punya(kamus, kunci)` | Apakah kunci ada → boolean. Kunci boleh nilai apa pun yang hashable |
+| `ambil(kamus, kunci[, bawaan])` | Nilai kunci, atau `bawaan` bila kunci tidak ada. Tanpa `bawaan` → `kosong` |
 | `kunci(kamus)` | List semua kunci, urutan penyisipan |
 | `hapus_kunci(kamus, kunci)` | Hapus pasangan kunci-nilai |
 | `enumerasi(urutan, awal=0)` | List pasangan `[indeks, nilai]` untuk list, teks, rentang, atau kamus |
@@ -462,6 +463,29 @@ posisi iterasi perlu disimpan atau dilanjutkan belakangan.
 Akses: `k[kunci]`, `k[kunci] = nilai`. Kunci boleh teks, angka (`bulat`/
 `desimal`), `benar`/`salah`, atau `kosong`; `1` dan `1.0` adalah kunci yang
 sama. Daftar/kamus/rentang tidak bisa menjadi kunci (`GalatTipe`).
+
+#### `ambil` — membaca dengan nilai bawaan
+
+`k[kunci]` memberi `kosong` untuk kunci yang tidak ada, sehingga "tidak ada"
+dan "ada tapi bernilai `kosong`" tidak bisa dibedakan. `ambil()` memberi nilai
+bawaan yang jelas:
+
+```indonesiaku
+variabel d = {"a": 1, "nol": 0, "kosongan": kosong}
+
+cetak(ambil(d, "a"))             # 1
+cetak(ambil(d, "zz"))            # kosong
+cetak(ambil(d, "zz", 99))        # 99
+cetak(ambil(d, "nol", 99))       # 0  -- nilai falsy tetap dipakai
+cetak(ambil(d, "kosongan", 99))  # kosong  -- kuncinya ADA
+
+cetak(d.ambil("zz", "bawaan"))   # bawaan  -- juga sebagai metode
+```
+
+Yang menentukan adalah **keberadaan kunci**, bukan kebenaran nilainya: kunci
+yang ada tetapi bernilai `kosong` mengembalikan `kosong`, bukan `bawaan`.
+Gunakan `punya()` bila yang dibutuhkan hanya pemeriksaan keberadaan. `ambil()`
+tidak pernah mengubah kamus.
 
 ### 1.5 Konversi & Format
 
