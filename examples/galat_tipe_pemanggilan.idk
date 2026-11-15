@@ -1,0 +1,62 @@
+# Galat pemanggilan fungsi selalu GalatTipe.
+#
+# Dulu jumlah argumen yang salah memberi Galat polos, sementara galat
+# pemanggilan lain (parameter bernama salah, parameter wajib kosong, objek
+# bukan fungsi) sudah GalatTipe. Temuan ALUR-FUNGSI-08.
+
+fungsi kelas_galat(f) {
+    coba {
+        f()
+        kembalikan "TIDAK GALAT"
+    } kecuali GalatTipe sebagai e {
+        kembalikan "GalatTipe"
+    } kecuali Galat sebagai e {
+        kembalikan "Galat lain"
+    }
+}
+
+fungsi satu(a) {
+    kembalikan a
+}
+
+fungsi dua_bawaan(a, b = 2) {
+    kembalikan a + b
+}
+
+# Terlalu banyak argumen
+cetak(kelas_galat(fungsi() { satu(1, 2, 3) }))
+cetak(kelas_galat(fungsi() { dua_bawaan(1, 2, 3) }))
+
+# Terlalu sedikit: parameter wajib tidak diisi
+cetak(kelas_galat(fungsi() { satu() }))
+
+# Parameter bernama yang tidak ada
+cetak(kelas_galat(fungsi() { satu(zz = 1) }))
+
+# Objek yang tidak dapat dipanggil
+cetak(kelas_galat(fungsi() {
+    variabel x = 5
+    x()
+}))
+
+# Galat bawaan menerima paling banyak satu argumen pesan
+cetak(kelas_galat(fungsi() { naikkan Galat(1, 2, 3) }))
+
+# Fungsi bawaan juga: jumlah argumen salah = GalatTipe
+cetak(kelas_galat(fungsi() { panjang() }))
+cetak(kelas_galat(fungsi() { panjang([1], 2) }))
+cetak(kelas_galat(fungsi() { akar() }))
+cetak(kelas_galat(fungsi() { bulat(1, 2, 3) }))
+
+# GalatTipe tetap turunan Galat
+coba {
+    satu(1, 2, 3)
+} kecuali Galat sebagai e {
+    cetak("tertangkap Galat umum")
+}
+
+# Pemanggilan yang sah tidak terpengaruh
+cetak(satu(7))
+cetak(dua_bawaan(1))
+cetak(dua_bawaan(1, 5))
+cetak(dua_bawaan(a = 3))

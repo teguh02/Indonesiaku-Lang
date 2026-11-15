@@ -896,10 +896,15 @@ static bool call(ObjClosure* closure, int argCount, ObjList* names) {
     int positional = argCount - namedCount;
 
     if (argCount > fn->arity) {
+        vm.runtimeErrorClass = vm.galatTipe;
         runtimeError("Harapkan paling banyak %d argumen tetapi mendapat %d.",
                      fn->arity, argCount);
         return false;
     }
+    // Tidak terjangkau: positional = argCount - namedCount <= argCount, dan
+    // pemeriksaan di atas sudah memastikan argCount <= arity. Dibiarkan
+    // sebagai jaring pengaman; kelas galatnya sengaja tidak diubah karena
+    // tidak ada kasus uji yang dapat membuktikannya.
     if (positional > fn->arity) {
         runtimeError("Terlalu banyak argumen posisional.");
         return false;
@@ -1090,6 +1095,7 @@ static bool callValue(Value callee, int argCount, ObjList* names) {
                     pop();                // argumen pesan
                     return true;
                 } else if (argCount != 0) {
+                    vm.runtimeErrorClass = vm.galatTipe;
                     runtimeError("Harapkan 0 argumen tetapi mendapat %d.", argCount);
                     return false;
                 }

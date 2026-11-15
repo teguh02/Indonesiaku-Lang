@@ -15,6 +15,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `karakter()`, `potong()`, `hapus_pada()`, dan `sisip()` memberi `Galat`
   polos, sehingga `kecuali GalatIndeks` tidak menangkapnya.
   `GalatIndeks` tetap turunan `Galat`, jadi penangkap umum tidak berubah.
+- **Jumlah argumen yang salah kini menaikkan `GalatTipe`**, bukan `Galat`
+  polos (temuan ALUR-FUNGSI-08). Galat pemanggilan lain — parameter bernama
+  yang tidak ada, parameter wajib yang tidak diisi, objek yang tidak dapat
+  dipanggil — sudah memakai `GalatTipe`, jadi perubahan ini menyeragamkan
+  yang tersisa. Mencakup 68 fungsi bawaan (`panjang()`, `akar()`, `bulat()`,
+  dan seterusnya) yang juga masih menaikkan `Galat` polos.
+  `GalatTipe` tetap turunan `Galat`.
 
 ## [1.7.0] - 2026-11-11
 

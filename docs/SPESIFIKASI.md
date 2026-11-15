@@ -222,6 +222,9 @@ coba {
 - Indeks di luar jangkauan selalu menaikkan `GalatIndeks`, baik pada daftar,
   tupel, teks, maupun `rentang()`, termasuk lewat `karakter()`, `potong()`,
   `hapus_pada()`, dan `sisip()`.
+- Galat pemanggilan fungsi — jumlah argumen salah, parameter bernama yang
+  tidak ada, parameter wajib tidak diisi, objek bukan fungsi — menaikkan
+  `GalatTipe`, termasuk pada fungsi bawaan.
 - `kecuali` tanpa tipe menangkap semua dan **wajib menjadi klausa terakhir**.
 - Klausa dicoba berurutan; yang tidak cocok dilempar ulang ke `coba` di luar.
 - `akhirnya` tetap berjalan saat `kembalikan`, `hentikan`, atau `lanjut`
