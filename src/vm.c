@@ -737,6 +737,7 @@ void initVM() {
 
     defineNative("kamus", nativeFnKamus);
     defineNative("punya", nativeFnPunya);
+    defineNative("ambil", nativeFnAmbil);
     defineNative("hapus_kunci", nativeFnHapusKunci);
     defineNative("enumerasi", nativeFnEnumerasi);
     defineNative("tupel", nativeFnTupel);
@@ -1281,6 +1282,7 @@ static NativeMethod setMethods[] = {
 static NativeMethod dictMethods[] = {
     {"panjang", nativeFnPanjang},
     {"punya", nativeFnPunya},
+    {"ambil", nativeFnAmbil},
     {"hapus_kunci", nativeFnHapusKunci},
     {"kunci", nativeFnKunci},
     {"enumerasi", nativeFnEnumerasi},

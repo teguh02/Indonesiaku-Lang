@@ -1304,6 +1304,64 @@ meng-escape argumennya, `sertakan … hanya` menyembunyikan data pemanggil
 (`pemilik` menjadi `-`), dan tidak ada filter yang bisa mematikan escaping
 dari dalam templat.
 
+#### PUS-07 — `ambil()`: nilai bawaan pada kamus
+
+`PUS-07.idk`:
+
+```indonesiaku
+variabel stok = {"apel": 12, "jeruk": 0, "mangga": kosong}
+
+cetak(ambil(stok, "apel"))
+cetak(ambil(stok, "pisang"))
+cetak(ambil(stok, "pisang", 0))
+cetak(ambil(stok, "jeruk", 99))
+cetak(ambil(stok, "mangga", 99))
+cetak(stok.ambil("apel", 0))
+cetak(stok.ambil("pisang", "habis"))
+cetak(punya(stok, "mangga"))
+cetak(punya(stok, "pisang"))
+cetak(panjang(stok))
+
+coba {
+    ambil(stok)
+} kecuali GalatTipe sebagai e {
+    cetak("GalatTipe: argumen kurang")
+}
+
+coba {
+    ambil([1, 2], "a")
+} kecuali GalatTipe sebagai e {
+    cetak("GalatTipe: bukan kamus")
+}
+```
+
+Jalankan `indk PUS-07.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+12
+kosong
+0
+0
+kosong
+12
+habis
+benar
+salah
+3
+GalatTipe: argumen kurang
+GalatTipe: bukan kamus
+```
+
+Yang diperiksa: tanpa `bawaan` kunci yang tidak ada memberi `kosong` (sama
+seperti `stok["pisang"]`), `bawaan` dipakai hanya ketika kuncinya benar-benar
+tidak ada, nilai falsy `0` **tidak** diganti `bawaan`, kunci yang ada tetapi
+bernilai `kosong` mengembalikan `kosong` bukan `bawaan`, bentuk metode
+`stok.ambil(...)` setara dengan bentuk fungsi, `ambil()` tidak menambah kunci
+baru (`panjang` tetap 3), dan salah pakai menaikkan `GalatTipe` yang dapat
+ditangkap `coba/kecuali`.
+
 <!-- BERSAMA:AKHIR -->
 
 ## 5. Suite otomatis dari tag rilis

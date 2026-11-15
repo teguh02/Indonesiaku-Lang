@@ -1200,6 +1200,7 @@ orang["nama"] = "Budi"
 orang["umur"] = 25
 cetak(orang["nama"])         # Budi
 cetak(punya(orang, "umur"))  # benar
+cetak(ambil(orang, "kota", "tidak diisi"))  # tidak diisi
 hapus_kunci(orang, "umur")
 untuk k dalam orang {             # iterasi kunci sesuai penyisipan
     cetak(k, "=", orang[k])

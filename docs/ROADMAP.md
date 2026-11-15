@@ -129,6 +129,7 @@ fungsi) selalu benar atau gagal dengan pesan jelas. Tanpa fitur besar baru.
 | Fungsi anonim (ekspresi `fungsi(x) { ... }`), ekspresi kondisional ([rencana](RENCANA_FITUR/selesai/fungsi_anonim_kondisional.md)) | 02 §B | ✅ |
 | f-string, string `"""` multi-baris, literal `1e3`, `0x`, `0b`, `1_000` ([rencana](RENCANA_FITUR/selesai/literal_fstring.md)) | 02 §B | ✅ |
 | Metode pada `teks`/`daftar`/`kamus` (P1 dari katalog 06) ([rencana](RENCANA_FITUR/selesai/metode_tipe.md)) | K10, 06 §1–3 | ✅ |
+| `ambil(kamus, kunci[, bawaan])` — padanan `dict.get()` ([rencana](RENCANA_FITUR/selesai/ambil_kamus_bawaan.md)) | 02 §C.3 | ✅ |
 | `+`/`*` untuk teks & daftar, `==` struktural | K7 | ✅ |
 | `pastikan` (assert) ([rencana](RENCANA_FITUR/selesai/pastikan.md)) | 02 §A | ✅ |
 | Traceback dengan kolom + potongan baris; saran "mungkin maksudmu…" ([rencana](RENCANA_FITUR/selesai/traceback_kolom.md)) | 04 §5, 05 §5 | ✅ |

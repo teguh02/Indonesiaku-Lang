@@ -1,0 +1,46 @@
+# ambil(kamus, kunci[, bawaan]) - membaca kamus dengan nilai bawaan eksplisit.
+#
+# kamus[kunci] memberi kosong untuk kunci yang tidak ada, sehingga "tidak ada"
+# dan "ada tapi bernilai kosong" tidak bisa dibedakan. ambil() memberi nilai
+# bawaan yang jelas, dan punya() tetap menjadi cara memeriksa keberadaan.
+
+variabel d = {"a": 1, "nol": 0, "kosongan": kosong}
+
+# Kunci ada
+cetak(ambil(d, "a"))
+cetak(ambil(d, "a", 99))
+
+# Kunci tidak ada
+cetak(ambil(d, "zz"))
+cetak(ambil(d, "zz", 99))
+cetak(ambil(d, "zz", "teks bawaan"))
+
+# Nilai yang falsy tetap dikembalikan apa adanya, bukan diganti bawaan
+cetak(ambil(d, "nol", 99))
+
+# Kunci ADA tetapi nilainya kosong: bawaan TIDAK dipakai
+cetak(ambil(d, "kosongan", 99))
+
+# Sebagai metode kamus
+cetak(d.ambil("a"))
+cetak(d.ambil("zz", "bawaan metode"))
+
+# punya() tetap cara memeriksa keberadaan kunci
+cetak(punya(d, "kosongan"))
+cetak(punya(d, "zz"))
+
+# Kamus tidak berubah setelah ambil()
+cetak(panjang(d))
+
+# Galat pemakaian
+coba {
+    ambil(d)
+} kecuali GalatTipe sebagai e {
+    cetak("GalatTipe untuk argumen kurang")
+}
+
+coba {
+    ambil([1, 2], "a")
+} kecuali GalatTipe sebagai e {
+    cetak("GalatTipe untuk bukan kamus")
+}

@@ -133,7 +133,7 @@ menunggu native-nya dibuat.
 ### C.3 Metode `dict`
 
 `keys`→`.kunci()`, `values`→`.nilai()`, `items`→`.pasangan()`,
-`get`→`.ambil(k, bawaan)`, `pop`→`.ambil_keluar`, `update`→`.perbarui`,
+`get`→`.ambil(k, bawaan)` ✅, `pop`→`.ambil_keluar`, `update`→`.perbarui`,
 `setdefault`→`.atur_bawaan`, `clear`→`.kosongkan`, `copy`→`.salin`.
 
 ## D. Fungsi bawaan Python (71) → Indonesiaku
