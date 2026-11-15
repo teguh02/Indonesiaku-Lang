@@ -5,6 +5,17 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Belum dirilis]
+
+### Diperbaiki
+
+- **Indeks di luar jangkauan kini selalu menaikkan `GalatIndeks`**
+  (temuan SINTAKS-06 uji ekstensif Windows 1.4.0). Sebelumnya hanya
+  daftar dan tupel yang memberi `GalatIndeks`; teks, `rentang()`, serta
+  `karakter()`, `potong()`, `hapus_pada()`, dan `sisip()` memberi `Galat`
+  polos, sehingga `kecuali GalatIndeks` tidak menangkapnya.
+  `GalatIndeks` tetap turunan `Galat`, jadi penangkap umum tidak berubah.
+
 ## [1.7.0] - 2026-11-11
 
 ### Ditambahkan

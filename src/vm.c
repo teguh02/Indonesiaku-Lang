@@ -3577,6 +3577,7 @@ static InterpretResult run() {
                     double length = rangeLength(range);
                     if (index < 0) index += length;
                     if (index != floor(index) || index < 0 || index >= length) {
+                        vm.runtimeErrorClass = vm.galatIndeks;
                         runtimeError("Indeks rentang di luar jangkauan (indeks %.15g, panjang %.15g).",
                                      index, length);
                         return INTERPRET_RUNTIME_ERROR;
@@ -3620,6 +3621,7 @@ static InterpretResult run() {
                     int given = index;
                     if (index < 0) index += str->charCount;
                     if (index < 0 || index >= str->charCount) {
+                        vm.runtimeErrorClass = vm.galatIndeks;
                         runtimeError("Indeks string di luar jangkauan (indeks %d, panjang %d).",
                                      given, str->charCount);
                         return INTERPRET_RUNTIME_ERROR;
