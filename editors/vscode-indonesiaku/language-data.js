@@ -11,7 +11,7 @@ const KEYWORDS = [
 const BUILTINS = [
   "abs", "acak", "acak_bita", "acak_bulat", "acos",
   "ada_berkas", "ada_yang", "adalah_instansi", "akar",
-  "ambil_atribut", "ambil_lingkungan", "asin", "atan",
+  "ambil", "ambil_atribut", "ambil_lingkungan", "asin", "atan",
   "atan2", "atap", "atur_atribut", "baca",
   "baca_baris", "baca_semua", "bagi_sisa", "biner",
   "bisa_dipanggil", "buat_direktori", "buka_berkas", "bulat",

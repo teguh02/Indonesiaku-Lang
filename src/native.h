@@ -107,6 +107,7 @@ Value nativeFnKamus(int argCount, Value* args);
 Value nativeFnPunya(int argCount, Value* args);
 
 // hapus_kunci(kamus, kunci) - Menghapus pasangan kunci-nilai
+Value nativeFnAmbil(int argCount, Value* args);
 Value nativeFnHapusKunci(int argCount, Value* args);
 
 // enumerasi(urutan[, awal]) - Pasangan [indeks, nilai]

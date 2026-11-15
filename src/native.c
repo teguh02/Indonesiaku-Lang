@@ -859,6 +859,25 @@ Value nativeFnPunya(int argCount, Value* args) {
     return BOOL_VAL(valueTableGet(&AS_DICT(args[0])->table, args[1], &tmp));
 }
 
+// ambil(kamus, kunci[, bawaan]) - nilai kunci, atau `bawaan` bila tidak ada.
+// Tanpa `bawaan`, kunci yang tidak ada menghasilkan kosong -- sama seperti
+// kamus[kunci], sehingga ambil() tidak mengubah perilaku yang sudah ada,
+// hanya memberi cara menyatakan nilai bawaan secara eksplisit.
+Value nativeFnAmbil(int argCount, Value* args) {
+    if (argCount != 2 && argCount != 3) {
+        nativeRaiseKelas(vm.galatTipe,
+                         "ambil() memerlukan 2 atau 3 argumen (kamus, kunci[, bawaan])");
+        return KOSONG_VAL;
+    }
+    if (!IS_DICT(args[0])) {
+        nativeRaiseKelas(vm.galatTipe, "ambil() memerlukan (kamus, kunci[, bawaan])");
+        return KOSONG_VAL;
+    }
+    Value found;
+    if (valueTableGet(&AS_DICT(args[0])->table, args[1], &found)) return found;
+    return argCount == 3 ? args[2] : KOSONG_VAL;
+}
+
 Value nativeFnHapusKunci(int argCount, Value* args) {
     if (argCount != 2) {
         nativeRaiseKelas(vm.galatTipe, "hapus_kunci() memerlukan 2 argumen (kamus, kunci)");
