@@ -299,7 +299,7 @@ Value nativeFnAcakBita(int argCount, Value* args) {
             mbedtls_entropy_free(&acakEntropy);
             // Jangan pernah jatuh ke rand() di sini: fallback senyap persis
             // kelemahan yang builtin ini ada untuk menutupnya.
-            nativeRaise("acak_bita() gagal menyiapkan sumber acak sistem");
+            nativeRaiseKelas(vm.galatOS, "acak_bita() gagal menyiapkan sumber acak sistem");
             return KOSONG_VAL;
         }
         acakSiap = true;
@@ -314,7 +314,7 @@ Value nativeFnAcakBita(int argCount, Value* args) {
                                  ? MBEDTLS_CTR_DRBG_MAX_REQUEST : sisa);
         if (mbedtls_ctr_drbg_random(&acakDrbg, p, potong) != 0) {
             FREE_ARRAY(unsigned char, buf, (int)n);
-            nativeRaise("acak_bita() gagal membaca sumber acak sistem");
+            nativeRaiseKelas(vm.galatOS, "acak_bita() gagal membaca sumber acak sistem");
             return KOSONG_VAL;
         }
         p += potong;
@@ -1385,7 +1385,7 @@ Value nativeFnBukaBerkas(int argCount, Value* args) {
 
     FILE* fp = sistemBukaBerkas(path->chars, cmode);
     if (fp == NULL) {
-        nativeRaise("buka_berkas() gagal membuka '%s'", path->chars);
+        nativeRaiseKelas(vm.galatOS, "buka_berkas() gagal membuka '%s'", path->chars);
         return KOSONG_VAL;
     }
     return OBJ_VAL(newFile(fp, path));
@@ -1501,7 +1501,7 @@ Value nativeFnTulis(int argCount, Value* args) {
     ObjString* text = AS_STRING(args[1]);
     size_t written = fwrite(text->chars, 1, (size_t)text->length, (FILE*)file->handle);
     if (written != (size_t)text->length) {
-        nativeRaise("tulis() gagal menulis ke '%s'", file->path->chars);
+        nativeRaiseKelas(vm.galatOS, "tulis() gagal menulis ke '%s'", file->path->chars);
         return KOSONG_VAL;
     }
     return INT_VAL((int64_t)written);
@@ -1519,7 +1519,7 @@ Value nativeFnBacaSemua(int argCount, Value* args) {
     ObjString* path = AS_STRING(args[0]);
     FILE* fp = sistemBukaBerkas(path->chars, "rb");
     if (fp == NULL) {
-        nativeRaise("baca_semua() gagal membuka '%s'", path->chars);
+        nativeRaiseKelas(vm.galatOS, "baca_semua() gagal membuka '%s'", path->chars);
         return KOSONG_VAL;
     }
     fseek(fp, 0L, SEEK_END);
@@ -1536,13 +1536,13 @@ Value nativeFnBacaSemua(int argCount, Value* args) {
 static Value writeWholeFile(const char* path, ObjString* text, const char* mode, const char* fname) {
     FILE* fp = sistemBukaBerkas(path, mode);
     if (fp == NULL) {
-        nativeRaise("%s() gagal membuka '%s'", fname, path);
+        nativeRaiseKelas(vm.galatOS, "%s() gagal membuka '%s'", fname, path);
         return KOSONG_VAL;
     }
     size_t written = fwrite(text->chars, 1, (size_t)text->length, fp);
     fclose(fp);
     if (written != (size_t)text->length) {
-        nativeRaise("%s() gagal menulis ke '%s'", fname, path);
+        nativeRaiseKelas(vm.galatOS, "%s() gagal menulis ke '%s'", fname, path);
         return KOSONG_VAL;
     }
     return INT_VAL((int64_t)written);
@@ -1594,7 +1594,7 @@ Value nativeFnHapusBerkas(int argCount, Value* args) {
         return BOOL_VAL(false);
     }
     if (sistemHapusBerkas(AS_STRING(args[0])->chars) != 0) {
-        nativeRaise("hapus_berkas() gagal menghapus '%s'", AS_STRING(args[0])->chars);
+        nativeRaiseKelas(vm.galatOS, "hapus_berkas() gagal menghapus '%s'", AS_STRING(args[0])->chars);
         return BOOL_VAL(false);
     }
     return BOOL_VAL(true);
@@ -1633,7 +1633,7 @@ Value nativeFnTanggal(int argCount, Value* args) {
     time_t t = time(NULL);
     struct tm* lt = localtime(&t);
     if (lt == NULL) {
-        nativeRaise("tanggal() gagal membaca waktu sistem");
+        nativeRaiseKelas(vm.galatOS, "tanggal() gagal membaca waktu sistem");
         return KOSONG_VAL;
     }
 
@@ -1664,7 +1664,7 @@ Value nativeFnFormatTanggal(int argCount, Value* args) {
     time_t t = time(NULL);
     struct tm* lt = localtime(&t);
     if (lt == NULL) {
-        nativeRaise("format_tanggal() gagal membaca waktu sistem");
+        nativeRaiseKelas(vm.galatOS, "format_tanggal() gagal membaca waktu sistem");
         return KOSONG_VAL;
     }
     char buf[256];
@@ -1961,7 +1961,7 @@ Value nativeFnSoketDengar(int argCount, Value* args) {
 
     indk_socket_t s = socket(AF_INET, SOCK_STREAM, 0);
     if (s == INDK_INVALID_SOCKET) {
-        nativeRaise("soket_dengar() gagal membuat soket");
+        nativeRaiseKelas(vm.galatOS, "soket_dengar() gagal membuat soket");
         return KOSONG_VAL;
     }
 
@@ -1986,12 +1986,12 @@ Value nativeFnSoketDengar(int argCount, Value* args) {
 
     if (bind(s, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
         INDK_CLOSESOCKET(s);
-        nativeRaise("soket_dengar() gagal bind ke port %d", port);
+        nativeRaiseKelas(vm.galatOS, "soket_dengar() gagal bind ke port %d", port);
         return KOSONG_VAL;
     }
     if (listen(s, 16) != 0) {
         INDK_CLOSESOCKET(s);
-        nativeRaise("soket_dengar() gagal listen di port %d", port);
+        nativeRaiseKelas(vm.galatOS, "soket_dengar() gagal listen di port %d", port);
         return KOSONG_VAL;
     }
 
@@ -2109,7 +2109,7 @@ Value nativeFnSoketTerima(int argCount, Value* args) {
     }
     indk_socket_t c = accept((indk_socket_t)server->fd, NULL, NULL);
     if (c == INDK_INVALID_SOCKET) {
-        nativeRaise("soket_terima() gagal menerima koneksi");
+        nativeRaiseKelas(vm.galatOS, "soket_terima() gagal menerima koneksi");
         return KOSONG_VAL;
     }
     return OBJ_VAL(newSocket((long long)c));
@@ -2164,7 +2164,7 @@ Value nativeFnSoketBatasWaktu(int argCount, Value* args) {
 #endif
     if (setsockopt((indk_socket_t)sock->fd, SOL_SOCKET, SO_RCVTIMEO, p, n) != 0 ||
         setsockopt((indk_socket_t)sock->fd, SOL_SOCKET, SO_SNDTIMEO, p, n) != 0) {
-        nativeRaise("soket_batas_waktu() gagal mengatur batas waktu soket");
+        nativeRaiseKelas(vm.galatOS, "soket_batas_waktu() gagal mengatur batas waktu soket");
         return KOSONG_VAL;
     }
     return KOSONG_VAL;
@@ -2206,7 +2206,7 @@ Value nativeFnSoketBaca(int argCount, Value* args) {
         if (batasWaktu) {
             nativeRaise("soket_baca() melewati batas waktu menunggu data");
         } else {
-            nativeRaise("soket_baca() gagal membaca dari soket");
+            nativeRaiseKelas(vm.galatOS, "soket_baca() gagal membaca dari soket");
         }
         return KOSONG_VAL;
     }
@@ -2258,7 +2258,7 @@ Value nativeFnSoketBacaBita(int argCount, Value* args) {
         if (batasWaktu) {
             nativeRaise("soket_baca_bita() melewati batas waktu menunggu data");
         } else {
-            nativeRaise("soket_baca_bita() gagal membaca dari soket");
+            nativeRaiseKelas(vm.galatOS, "soket_baca_bita() gagal membaca dari soket");
         }
         return KOSONG_VAL;
     }
@@ -2341,7 +2341,7 @@ Value nativeFnSoketTulis(int argCount, Value* args) {
             if (sent < 0 && soketBatasWaktuTerlampaui()) {
                 nativeRaise("soket_tulis() melewati batas waktu mengirim data");
             } else {
-                nativeRaise("soket_tulis() gagal mengirim data");
+                nativeRaiseKelas(vm.galatOS, "soket_tulis() gagal mengirim data");
             }
             return NUMBER_VAL(total);
         }
@@ -2378,7 +2378,7 @@ Value nativeFnSoketAlamatPeer(int argCount, Value* args) {
     struct sockaddr_storage addr;
     socklen_t len = sizeof(addr);
     if (getpeername((indk_socket_t)sock->fd, (struct sockaddr*)&addr, &len) != 0) {
-        nativeRaise("soket_alamat_peer() gagal membaca alamat");
+        nativeRaiseKelas(vm.galatOS, "soket_alamat_peer() gagal membaca alamat");
         return KOSONG_VAL;
     }
 
@@ -2387,13 +2387,13 @@ Value nativeFnSoketAlamatPeer(int argCount, Value* args) {
     if (addr.ss_family == AF_INET) {
         struct sockaddr_in* v4 = (struct sockaddr_in*)&addr;
         if (inet_ntop(AF_INET, &v4->sin_addr, buf, sizeof(buf)) == NULL) {
-            nativeRaise("soket_alamat_peer() gagal mengurai alamat IPv4");
+            nativeRaiseKelas(vm.galatOS, "soket_alamat_peer() gagal mengurai alamat IPv4");
             return KOSONG_VAL;
         }
     } else if (addr.ss_family == AF_INET6) {
         struct sockaddr_in6* v6 = (struct sockaddr_in6*)&addr;
         if (inet_ntop(AF_INET6, &v6->sin6_addr, buf, sizeof(buf)) == NULL) {
-            nativeRaise("soket_alamat_peer() gagal mengurai alamat IPv6");
+            nativeRaiseKelas(vm.galatOS, "soket_alamat_peer() gagal mengurai alamat IPv6");
             return KOSONG_VAL;
         }
     } else {
