@@ -1,0 +1,54 @@
+# Galat sistem berkas dan soket menaikkan GalatOS.
+#
+# Dulu operasi berkas yang gagal memberi Galat polos, sehingga tidak bisa
+# dibedakan dari galat program biasa. Python memakai OSError untuk ini.
+#
+# Catatan: berkas uji sengaja memakai nama yang pasti tidak ada. Untuk
+# kegagalan menulis dipakai jalur yang memperlakukan sebuah BERKAS sebagai
+# direktori -- gagal di semua sistem operasi, tidak bergantung /proc atau
+# status root (keduanya membuat tes ini hijau di Linux tapi merah di Windows).
+
+fungsi kelas_galat(f) {
+    coba {
+        f()
+        kembalikan "TIDAK GALAT"
+    } kecuali GalatOS sebagai e {
+        kembalikan "GalatOS"
+    } kecuali Galat sebagai e {
+        kembalikan "Galat lain"
+    }
+}
+
+variabel hilang = "_berkas_yang_pasti_tidak_ada_12345.txt"
+
+# Operasi berkas yang gagal
+cetak(kelas_galat(fungsi() { baca_semua(hilang) }))
+cetak(kelas_galat(fungsi() { buka_berkas(hilang, "b") }))
+cetak(kelas_galat(fungsi() { hapus_berkas(hilang) }))
+variabel berkas_biasa = "_contoh_bukan_direktori.txt"
+tulis_semua(berkas_biasa, "x")
+cetak(kelas_galat(fungsi() { tulis_semua(berkas_biasa + "/x.txt", "a") }))
+hapus_berkas(berkas_biasa)
+
+# GalatIzin adalah turunan GalatOS, jadi penangkap GalatOS menangkapnya juga
+cetak(kelas_galat(fungsi() {
+    naikkan GalatIzin("contoh izin ditolak")
+}))
+
+# GalatOS tetap turunan Galat
+coba {
+    baca_semua(hilang)
+} kecuali Galat sebagai e {
+    cetak("tertangkap Galat umum")
+}
+
+# Galat yang BUKAN urusan sistem tidak ikut berubah
+cetak(kelas_galat(fungsi() { ke_angka("bukanangka") }))
+cetak(kelas_galat(fungsi() { akar(-1) }))
+
+# Operasi berkas yang berhasil tidak terpengaruh
+variabel jalur = "_contoh_uji_galat_os.txt"
+tulis_semua(jalur, "halo")
+cetak(baca_semua(jalur))
+hapus_berkas(jalur)
+cetak(kelas_galat(fungsi() { baca_semua(jalur) }))

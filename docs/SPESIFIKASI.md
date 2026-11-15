@@ -225,6 +225,8 @@ coba {
 - Galat pemanggilan fungsi — jumlah argumen salah, parameter bernama yang
   tidak ada, parameter wajib tidak diisi, objek bukan fungsi — menaikkan
   `GalatTipe`, termasuk pada fungsi bawaan.
+- Kegagalan yang berasal dari sistem — berkas, jam, sumber acak, soket —
+  menaikkan `GalatOS`; `GalatIzin` adalah turunannya.
 - `kecuali` tanpa tipe menangkap semua dan **wajib menjadi klausa terakhir**.
 - Klausa dicoba berurutan; yang tidak cocok dilempar ulang ke `coba` di luar.
 - `akhirnya` tetap berjalan saat `kembalikan`, `hentikan`, atau `lanjut`

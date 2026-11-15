@@ -22,6 +22,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   yang tersisa. Mencakup 68 fungsi bawaan (`panjang()`, `akar()`, `bulat()`,
   dan seterusnya) yang juga masih menaikkan `Galat` polos.
   `GalatTipe` tetap turunan `Galat`.
+- **Galat sistem kini menaikkan `GalatOS`**, bukan `Galat` polos: operasi
+  berkas yang gagal (`baca_semua()`, `buka_berkas()`, `tulis()`,
+  `tulis_semua()`, `hapus_berkas()`), jam sistem, sumber acak sistem, dan
+  galat soket. Sebelumnya galat sistem tidak dapat dibedakan dari galat
+  program biasa. `GalatIzin` tetap turunan `GalatOS`, dan `GalatOS` tetap
+  turunan `Galat`. Galat yang bukan urusan sistem — misalnya `ke_angka()`
+  pada teks yang bukan angka — sengaja tidak ikut berubah.
 
 ## [1.7.0] - 2026-11-11
 
