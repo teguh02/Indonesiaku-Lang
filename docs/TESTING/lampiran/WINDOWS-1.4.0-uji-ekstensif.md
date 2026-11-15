@@ -621,6 +621,11 @@ kosong  exit 0
 
 ### ALUR-FUNGSI-08 — [sedang] Too many positional arguments raises an untyped error, not GalatTipe
 
+> **Status: ✅ selesai** — diperbaiki setelah 1.7.0. Jumlah argumen yang
+> salah kini menaikkan `GalatTipe`, baik pada fungsi pengguna maupun pada
+> 68 fungsi bawaan (termasuk `panjang()` yang disebut di laporan ini).
+> Dijaga oleh `examples/galat_tipe_pemanggilan.idk`.
+
 Reproduced. A missing argument and an unknown keyword both raise GalatTipe, but f(1, 2) and panjang() raise plain string errors that kecuali GalatTipe does not catch. That is inconsistent with the other call errors and with Python's TypeError. OS-independent.
 
 Reproduksi:

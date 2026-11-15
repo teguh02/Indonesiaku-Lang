@@ -65,7 +65,7 @@ Value nativeFnMax(int argCount, Value* args) {
 
 Value nativeFnAbs(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("abs() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "abs() memerlukan 1 argumen");
         return NUMBER_VAL(0);
     }
     if (!IS_NUMBER(args[0])) {
@@ -85,7 +85,7 @@ Value nativeFnAbs(int argCount, Value* args) {
 
 Value nativeFnAkar(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("akar() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "akar() memerlukan 1 argumen");
         return NUMBER_VAL(0);
     }
     if (!IS_NUMBER(args[0])) {
@@ -149,7 +149,7 @@ Value nativeFnAtan2(int argCount, Value* args) {
 
 Value nativeFnPangkat(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("pangkat() memerlukan 2 argumen");
+        nativeRaiseKelas(vm.galatTipe, "pangkat() memerlukan 2 argumen");
         return NUMBER_VAL(0);
     }
     if (!IS_NUMBER(args[0]) || !IS_NUMBER(args[1])) {
@@ -188,7 +188,7 @@ static bool doubleToBulat(const char* fn, double hasil, Value* out) {
 
 Value nativeFnBulat(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("bulat() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "bulat() memerlukan 1 argumen");
         return NUMBER_VAL(0);
     }
     if (!IS_NUMBER(args[0])) {
@@ -206,7 +206,7 @@ Value nativeFnBulat(int argCount, Value* args) {
 
 Value nativeFnLantai(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("lantai() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "lantai() memerlukan 1 argumen");
         return NUMBER_VAL(0);
     }
     if (!IS_NUMBER(args[0])) {
@@ -224,7 +224,7 @@ Value nativeFnLantai(int argCount, Value* args) {
 
 Value nativeFnAtap(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("atap() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "atap() memerlukan 1 argumen");
         return NUMBER_VAL(0);
     }
     if (!IS_NUMBER(args[0])) {
@@ -271,7 +271,7 @@ static bool acakSiap = false;
 
 Value nativeFnAcakBita(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("acak_bita() memerlukan 1 argumen (jumlah bita)");
+        nativeRaiseKelas(vm.galatTipe, "acak_bita() memerlukan 1 argumen (jumlah bita)");
         return KOSONG_VAL;
     }
     if (!IS_NUMBER(args[0])) {
@@ -733,7 +733,7 @@ Value nativeFnId(int argCount, Value* args) {
 // (byte non-UTF-8 hilang dari iterasi, byte >= 0x80 dihitung dua kali).
 Value nativeFnPanjangByte(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("panjang_byte() memerlukan 1 argumen (teks)");
+        nativeRaiseKelas(vm.galatTipe, "panjang_byte() memerlukan 1 argumen (teks)");
         return NUMBER_VAL(0);
     }
     if (!IS_STRING(args[0])) {
@@ -745,7 +745,7 @@ Value nativeFnPanjangByte(int argCount, Value* args) {
 
 Value nativeFnPanjang(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("panjang() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "panjang() memerlukan 1 argumen");
         return NUMBER_VAL(0);
     }
     if (IS_STRING(args[0])) {
@@ -793,7 +793,7 @@ static bool rejectFrozenSet(Value value) {
 
 Value nativeFnTambah(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("tambah() memerlukan 2 argumen (list, nilai)");
+        nativeRaiseKelas(vm.galatTipe, "tambah() memerlukan 2 argumen (list, nilai)");
         return KOSONG_VAL;
     }
     if (rejectTuple(args[0])) return KOSONG_VAL;
@@ -815,7 +815,7 @@ Value nativeFnTambah(int argCount, Value* args) {
 
 Value nativeFnHapus(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("hapus() memerlukan 1 argumen (list)");
+        nativeRaiseKelas(vm.galatTipe, "hapus() memerlukan 1 argumen (list)");
         return KOSONG_VAL;
     }
     if (rejectTuple(args[0])) return KOSONG_VAL;
@@ -848,7 +848,7 @@ Value nativeFnKamus(int argCount, Value* args) {
 
 Value nativeFnPunya(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("punya() memerlukan 2 argumen (kamus, kunci)");
+        nativeRaiseKelas(vm.galatTipe, "punya() memerlukan 2 argumen (kamus, kunci)");
         return BOOL_VAL(false);
     }
     if (!IS_DICT(args[0])) {
@@ -861,7 +861,7 @@ Value nativeFnPunya(int argCount, Value* args) {
 
 Value nativeFnHapusKunci(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("hapus_kunci() memerlukan 2 argumen (kamus, kunci)");
+        nativeRaiseKelas(vm.galatTipe, "hapus_kunci() memerlukan 2 argumen (kamus, kunci)");
         return BOOL_VAL(false);
     }
     if (!IS_DICT(args[0])) {
@@ -874,7 +874,7 @@ Value nativeFnHapusKunci(int argCount, Value* args) {
 // enumerasi(urutan[, awal]) - pasangan [indeks, nilai] untuk iterable dasar
 Value nativeFnEnumerasi(int argCount, Value* args) {
     if (argCount < 1 || argCount > 2) {
-        nativeRaise("enumerasi() memerlukan 1 atau 2 argumen");
+        nativeRaiseKelas(vm.galatTipe, "enumerasi() memerlukan 1 atau 2 argumen");
         return KOSONG_VAL;
     }
     if (argCount == 2 && !IS_NUMBER(args[1])) {
@@ -928,7 +928,7 @@ Value nativeFnEnumerasi(int argCount, Value* args) {
 
 Value nativeFnKunci(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("kunci() memerlukan 1 argumen (kamus)");
+        nativeRaiseKelas(vm.galatTipe, "kunci() memerlukan 1 argumen (kamus)");
         return KOSONG_VAL;
     }
     if (!IS_DICT(args[0])) {
@@ -948,7 +948,7 @@ Value nativeFnKunci(int argCount, Value* args) {
 
 Value nativeFnHurofBesar(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("huruf_besar() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "huruf_besar() memerlukan 1 argumen");
         return KOSONG_VAL;
     }
     if (!IS_STRING(args[0])) {
@@ -970,7 +970,7 @@ Value nativeFnHurofBesar(int argCount, Value* args) {
 
 Value nativeFnHurofKecil(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("huruf_kecil() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "huruf_kecil() memerlukan 1 argumen");
         return KOSONG_VAL;
     }
     if (!IS_STRING(args[0])) {
@@ -992,7 +992,7 @@ Value nativeFnHurofKecil(int argCount, Value* args) {
 
 Value nativeFnGanti(int argCount, Value* args) {
     if (argCount != 3) {
-        nativeRaise("ganti() memerlukan 3 argumen");
+        nativeRaiseKelas(vm.galatTipe, "ganti() memerlukan 3 argumen");
         return KOSONG_VAL;
     }
     if (!IS_STRING(args[0]) || !IS_STRING(args[1]) || !IS_STRING(args[2])) {
@@ -1048,7 +1048,7 @@ Value nativeFnGanti(int argCount, Value* args) {
 
 Value nativeFnJenis(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("jenis() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "jenis() memerlukan 1 argumen");
         return OBJ_VAL(copyString("kosong", 6));
     }
 
@@ -1158,7 +1158,7 @@ Value nativeFnInput(int argCount, Value* args) {
 
 Value nativeFnHenti(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("henti() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "henti() memerlukan 1 argumen");
         return KOSONG_VAL;
     }
     if (!IS_NUMBER(args[0])) {
@@ -1203,7 +1203,7 @@ static bool valueText(Value v, bool repr, Value* out) {
 
 Value nativeFnKeAngka(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("ke_angka() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "ke_angka() memerlukan 1 argumen");
         return NUMBER_VAL(0);
     }
     if (IS_NUMBER(args[0])) return args[0];
@@ -1251,7 +1251,7 @@ Value nativeFnKeAngka(int argCount, Value* args) {
 // tumbuh amortized, sehingga semua pemakai teks_gabung ikut linear sekaligus.
 Value nativeFnTeksGabung(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("teks_gabung() memerlukan 2 argumen (daftar, perekat)");
+        nativeRaiseKelas(vm.galatTipe, "teks_gabung() memerlukan 2 argumen (daftar, perekat)");
         return KOSONG_VAL;
     }
     if (!IS_LIST(args[0])) {
@@ -1286,7 +1286,7 @@ Value nativeFnTeksGabung(int argCount, Value* args) {
 
 Value nativeFnKeTeks(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("ke_teks() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "ke_teks() memerlukan 1 argumen");
         return KOSONG_VAL;
     }
     Value text;
@@ -1297,7 +1297,7 @@ Value nativeFnKeTeks(int argCount, Value* args) {
 // format(pola, ...) - ganti setiap '{}' di pola dengan argumen berikutnya.
 Value nativeFnFormat(int argCount, Value* args) {
     if (argCount < 1) {
-        nativeRaise("format() memerlukan minimal 1 argumen (pola)");
+        nativeRaiseKelas(vm.galatTipe, "format() memerlukan minimal 1 argumen (pola)");
         return KOSONG_VAL;
     }
     if (!IS_STRING(args[0])) {
@@ -1338,7 +1338,7 @@ Value nativeFnFormat(int argCount, Value* args) {
 // acak_bulat(min, maks) - bilangan bulat acak dalam [min, maks].
 Value nativeFnAcakBulat(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("acak_bulat() memerlukan 2 argumen (min, maks)");
+        nativeRaiseKelas(vm.galatTipe, "acak_bulat() memerlukan 2 argumen (min, maks)");
         return NUMBER_VAL(0);
     }
     if (!IS_NUMBER(args[0]) || !IS_NUMBER(args[1])) {
@@ -1364,7 +1364,7 @@ Value nativeFnAcakBulat(int argCount, Value* args) {
 // mode: "b" (baca), "t" (tulis), "s" (sambung/append).
 Value nativeFnBukaBerkas(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("buka_berkas() memerlukan 2 argumen (path, mode)");
+        nativeRaiseKelas(vm.galatTipe, "buka_berkas() memerlukan 2 argumen (path, mode)");
         return KOSONG_VAL;
     }
     if (!IS_STRING(args[0]) || !IS_STRING(args[1])) {
@@ -1393,7 +1393,7 @@ Value nativeFnBukaBerkas(int argCount, Value* args) {
 
 Value nativeFnTutup(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("tutup() memerlukan 1 argumen (berkas)");
+        nativeRaiseKelas(vm.galatTipe, "tutup() memerlukan 1 argumen (berkas)");
         return KOSONG_VAL;
     }
     if (!IS_FILE(args[0])) {
@@ -1411,7 +1411,7 @@ Value nativeFnTutup(int argCount, Value* args) {
 
 Value nativeFnBaca(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("baca() memerlukan 1 argumen (berkas)");
+        nativeRaiseKelas(vm.galatTipe, "baca() memerlukan 1 argumen (berkas)");
         return KOSONG_VAL;
     }
     if (!IS_FILE(args[0])) {
@@ -1441,7 +1441,7 @@ Value nativeFnBaca(int argCount, Value* args) {
 
 Value nativeFnBacaBaris(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("baca_baris() memerlukan 1 argumen (berkas)");
+        nativeRaiseKelas(vm.galatTipe, "baca_baris() memerlukan 1 argumen (berkas)");
         return KOSONG_VAL;
     }
     if (!IS_FILE(args[0])) {
@@ -1486,7 +1486,7 @@ Value nativeFnBacaBaris(int argCount, Value* args) {
 
 Value nativeFnTulis(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("tulis() memerlukan 2 argumen (berkas, teks)");
+        nativeRaiseKelas(vm.galatTipe, "tulis() memerlukan 2 argumen (berkas, teks)");
         return KOSONG_VAL;
     }
     if (!IS_FILE(args[0]) || !IS_STRING(args[1])) {
@@ -1509,7 +1509,7 @@ Value nativeFnTulis(int argCount, Value* args) {
 
 Value nativeFnBacaSemua(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("baca_semua() memerlukan 1 argumen (path)");
+        nativeRaiseKelas(vm.galatTipe, "baca_semua() memerlukan 1 argumen (path)");
         return KOSONG_VAL;
     }
     if (!IS_STRING(args[0])) {
@@ -1550,7 +1550,7 @@ static Value writeWholeFile(const char* path, ObjString* text, const char* mode,
 
 Value nativeFnTulisSemua(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("tulis_semua() memerlukan 2 argumen (path, teks)");
+        nativeRaiseKelas(vm.galatTipe, "tulis_semua() memerlukan 2 argumen (path, teks)");
         return KOSONG_VAL;
     }
     if (!IS_STRING(args[0]) || !IS_STRING(args[1])) {
@@ -1562,7 +1562,7 @@ Value nativeFnTulisSemua(int argCount, Value* args) {
 
 Value nativeFnTambahBerkas(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("tambah_berkas() memerlukan 2 argumen (path, teks)");
+        nativeRaiseKelas(vm.galatTipe, "tambah_berkas() memerlukan 2 argumen (path, teks)");
         return KOSONG_VAL;
     }
     if (!IS_STRING(args[0]) || !IS_STRING(args[1])) {
@@ -1574,7 +1574,7 @@ Value nativeFnTambahBerkas(int argCount, Value* args) {
 
 Value nativeFnAdaBerkas(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("ada_berkas() memerlukan 1 argumen (path)");
+        nativeRaiseKelas(vm.galatTipe, "ada_berkas() memerlukan 1 argumen (path)");
         return BOOL_VAL(false);
     }
     if (!IS_STRING(args[0])) {
@@ -1586,7 +1586,7 @@ Value nativeFnAdaBerkas(int argCount, Value* args) {
 
 Value nativeFnHapusBerkas(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("hapus_berkas() memerlukan 1 argumen (path)");
+        nativeRaiseKelas(vm.galatTipe, "hapus_berkas() memerlukan 1 argumen (path)");
         return BOOL_VAL(false);
     }
     if (!IS_STRING(args[0])) {
@@ -1654,7 +1654,7 @@ Value nativeFnTanggal(int argCount, Value* args) {
 // format_tanggal(pola) - Format waktu lokal saat ini dengan pola strftime.
 Value nativeFnFormatTanggal(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("format_tanggal() memerlukan 1 argumen (pola)");
+        nativeRaiseKelas(vm.galatTipe, "format_tanggal() memerlukan 1 argumen (pola)");
         return KOSONG_VAL;
     }
     if (!IS_STRING(args[0])) {
@@ -1679,7 +1679,7 @@ Value nativeFnFormatTanggal(int argCount, Value* args) {
 // karakter(teks, i) - Karakter (string 1-byte) pada indeks i.
 Value nativeFnKarakter(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("karakter() memerlukan 2 argumen (teks, indeks)");
+        nativeRaiseKelas(vm.galatTipe, "karakter() memerlukan 2 argumen (teks, indeks)");
         return KOSONG_VAL;
     }
     if (!IS_STRING(args[0]) || !IS_NUMBER(args[1])) {
@@ -1700,7 +1700,7 @@ Value nativeFnKarakter(int argCount, Value* args) {
 // Jika jumlah melewati akhir string, dipotong sampai akhir.
 Value nativeFnPotong(int argCount, Value* args) {
     if (argCount != 3) {
-        nativeRaise("potong() memerlukan 3 argumen (teks, mulai, jumlah)");
+        nativeRaiseKelas(vm.galatTipe, "potong() memerlukan 3 argumen (teks, mulai, jumlah)");
         return KOSONG_VAL;
     }
     if (!IS_STRING(args[0]) || !IS_NUMBER(args[1]) || !IS_NUMBER(args[2])) {
@@ -1768,7 +1768,7 @@ static int encodeUtf8(uint32_t code, char* out) {
 // ord(karakter) - Kode Unicode (code point) dari string 1 karakter.
 Value nativeFnOrd(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("ord() memerlukan 1 argumen (karakter)");
+        nativeRaiseKelas(vm.galatTipe, "ord() memerlukan 1 argumen (karakter)");
         return NUMBER_VAL(0);
     }
     if (!IS_STRING(args[0])) {
@@ -1786,7 +1786,7 @@ Value nativeFnOrd(int argCount, Value* args) {
 // chr(kode) - Karakter dari kode Unicode 0-0x10FFFF (dikodekan sebagai UTF-8).
 Value nativeFnChr(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("chr() memerlukan 1 argumen (kode)");
+        nativeRaiseKelas(vm.galatTipe, "chr() memerlukan 1 argumen (kode)");
         return KOSONG_VAL;
     }
     if (!IS_NUMBER(args[0])) {
@@ -1810,7 +1810,7 @@ Value nativeFnChr(int argCount, Value* args) {
 // Deret bilangan bulat yang malas (seperti range di Python 3).
 Value nativeFnRentang(int argCount, Value* args) {
     if (argCount < 1 || argCount > 3) {
-        nativeRaise("rentang() memerlukan 1 sampai 3 argumen, bukan %d", argCount);
+        nativeRaiseKelas(vm.galatTipe, "rentang() memerlukan 1 sampai 3 argumen, bukan %d", argCount);
         return KOSONG_VAL;
     }
     for (int i = 0; i < argCount; i++) {
@@ -1833,7 +1833,7 @@ Value nativeFnRentang(int argCount, Value* args) {
 // hapus_pada(list, i) - Hapus & kembalikan elemen pada indeks i, geser sisanya.
 Value nativeFnHapusPada(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("hapus_pada() memerlukan 2 argumen (list, indeks)");
+        nativeRaiseKelas(vm.galatTipe, "hapus_pada() memerlukan 2 argumen (list, indeks)");
         return KOSONG_VAL;
     }
     if (rejectTuple(args[0])) return KOSONG_VAL;
@@ -1858,7 +1858,7 @@ Value nativeFnHapusPada(int argCount, Value* args) {
 // sisip(list, i, nilai) - Sisipkan nilai pada indeks i (i == panjang -> append).
 Value nativeFnSisip(int argCount, Value* args) {
     if (argCount != 3) {
-        nativeRaise("sisip() memerlukan 3 argumen (list, indeks, nilai)");
+        nativeRaiseKelas(vm.galatTipe, "sisip() memerlukan 3 argumen (list, indeks, nilai)");
         return KOSONG_VAL;
     }
     if (rejectTuple(args[0])) return KOSONG_VAL;
@@ -1917,7 +1917,7 @@ static void indkEnsureWinsock() { }
 // padahal server jelas hidup.
 Value nativeFnSoketDengar(int argCount, Value* args) {
     if (argCount < 1 || argCount > 2) {
-        nativeRaise("soket_dengar() memerlukan 1-2 argumen (port [, alamat])");
+        nativeRaiseKelas(vm.galatTipe, "soket_dengar() memerlukan 1-2 argumen (port [, alamat])");
         return KOSONG_VAL;
     }
     // Membuka port dengar adalah akses ke luar program, sama seperti
@@ -2095,7 +2095,7 @@ Value nativeFnTlsMulai(int argCount, Value* args) {
 // soket_terima(server) -> soket klien (blocking sampai ada koneksi).
 Value nativeFnSoketTerima(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("soket_terima() memerlukan 1 argumen (soket server)");
+        nativeRaiseKelas(vm.galatTipe, "soket_terima() memerlukan 1 argumen (soket server)");
         return KOSONG_VAL;
     }
     if (!IS_SOCKET(args[0])) {
@@ -2131,7 +2131,7 @@ static bool soketBatasWaktuTerlampaui(void) {
 // tanpa batas (perilaku bawaan, sama seperti sebelum builtin ini ada).
 Value nativeFnSoketBatasWaktu(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("soket_batas_waktu() memerlukan 2 argumen (soket, detik)");
+        nativeRaiseKelas(vm.galatTipe, "soket_batas_waktu() memerlukan 2 argumen (soket, detik)");
         return KOSONG_VAL;
     }
     if (!IS_SOCKET(args[0]) || !IS_NUMBER(args[1])) {
@@ -2174,7 +2174,7 @@ Value nativeFnSoketBatasWaktu(int argCount, Value* args) {
 // string kosong jika koneksi ditutup pihak lain.
 Value nativeFnSoketBaca(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("soket_baca() memerlukan 1 argumen (soket klien)");
+        nativeRaiseKelas(vm.galatTipe, "soket_baca() memerlukan 1 argumen (soket klien)");
         return KOSONG_VAL;
     }
     if (!IS_SOCKET(args[0])) {
@@ -2226,7 +2226,7 @@ Value nativeFnSoketBaca(int argCount, Value* args) {
 // dipakai db_* untuk BLOB dan pustaka/bita.idk -- bukan konvensi baru.
 Value nativeFnSoketBacaBita(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("soket_baca_bita() memerlukan 1 argumen (soket klien)");
+        nativeRaiseKelas(vm.galatTipe, "soket_baca_bita() memerlukan 1 argumen (soket klien)");
         return KOSONG_VAL;
     }
     if (!IS_SOCKET(args[0])) {
@@ -2280,7 +2280,7 @@ Value nativeFnSoketBacaBita(int argCount, Value* args) {
 // ter-enkode UTF-8 menjadi DUA byte di kawat, bukan satu.
 Value nativeFnSoketTulis(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("soket_tulis() memerlukan 2 argumen (soket, teks atau daftar bita)");
+        nativeRaiseKelas(vm.galatTipe, "soket_tulis() memerlukan 2 argumen (soket, teks atau daftar bita)");
         return NUMBER_VAL(0);
     }
     if (!IS_SOCKET(args[0]) || (!IS_STRING(args[1]) && !IS_LIST(args[1]))) {
@@ -2360,7 +2360,7 @@ Value nativeFnSoketTulis(int argCount, Value* args) {
 // dikenal, dan tanpa alamat peer hal itu tidak dapat diperiksa.
 Value nativeFnSoketAlamatPeer(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("soket_alamat_peer() memerlukan 1 argumen (soket)");
+        nativeRaiseKelas(vm.galatTipe, "soket_alamat_peer() memerlukan 1 argumen (soket)");
         return KOSONG_VAL;
     }
     if (!IS_SOCKET(args[0])) {
@@ -2407,7 +2407,7 @@ Value nativeFnSoketAlamatPeer(int argCount, Value* args) {
 // soket_tutup(soket) -> tutup soket (server atau klien).
 Value nativeFnSoketTutup(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("soket_tutup() memerlukan 1 argumen (soket)");
+        nativeRaiseKelas(vm.galatTipe, "soket_tutup() memerlukan 1 argumen (soket)");
         return KOSONG_VAL;
     }
     if (!IS_SOCKET(args[0])) {
@@ -2517,7 +2517,7 @@ static Value iterAt(Value v, int i) {
 // kamus (kuncinya), seperti tuple() di Python.
 Value nativeFnTupel(int argCount, Value* args) {
     if (argCount > 1) {
-        nativeRaise("tupel() memerlukan 0 atau 1 argumen, bukan %d", argCount);
+        nativeRaiseKelas(vm.galatTipe, "tupel() memerlukan 0 atau 1 argumen, bukan %d", argCount);
         return KOSONG_VAL;
     }
     if (argCount == 0) return OBJ_VAL(newTuple());
@@ -2551,7 +2551,7 @@ Value nativeFnTupel(int argCount, Value* args) {
 // membuat himpunan; tidak ada literal {1, 2}). Seperti set() di Python.
 Value nativeFnHimpunan(int argCount, Value* args) {
     if (argCount > 1) {
-        nativeRaise("himpunan() memerlukan 0 atau 1 argumen, bukan %d", argCount);
+        nativeRaiseKelas(vm.galatTipe, "himpunan() memerlukan 0 atau 1 argumen, bukan %d", argCount);
         return KOSONG_VAL;
     }
     if (argCount == 0) return OBJ_VAL(newSet());
@@ -2601,7 +2601,7 @@ Value nativeFnHimpunanHapus(int argCount, Value* args) {
 // jumlah(d[, awal]) - seperti sum(); hanya angka.
 Value nativeFnJumlah(int argCount, Value* args) {
     if (argCount < 1 || argCount > 2) {
-        nativeRaise("jumlah() memerlukan 1 atau 2 argumen");
+        nativeRaiseKelas(vm.galatTipe, "jumlah() memerlukan 1 atau 2 argumen");
         return NUMBER_VAL(0);
     }
     // Fase 5: generator/iterator kustom dicairkan dulu jadi daftar.
@@ -2649,7 +2649,7 @@ Value nativeFnJumlah(int argCount, Value* args) {
 // semua(d) - seperti all(); daftar kosong -> benar.
 Value nativeFnSemua(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("semua() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "semua() memerlukan 1 argumen");
         return BOOL_VAL(false);
     }
     // Fase 5: generator/iterator kustom dicairkan dulu jadi daftar.
@@ -2668,7 +2668,7 @@ Value nativeFnSemua(int argCount, Value* args) {
 // ada_yang(d) - seperti any(); daftar kosong -> salah.
 Value nativeFnAdaYang(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("ada_yang() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "ada_yang() memerlukan 1 argumen");
         return BOOL_VAL(false);
     }
     // Fase 5: generator/iterator kustom dicairkan dulu jadi daftar.
@@ -2744,7 +2744,7 @@ static bool sortInstances(ObjList* hasil, int count, bool menurun) {
 // terurut(d[, menurun]) - seperti sorted(); selalu daftar BARU.
 Value nativeFnTerurut(int argCount, Value* args) {
     if (argCount < 1 || argCount > 2) {
-        nativeRaise("terurut() memerlukan 1 atau 2 argumen");
+        nativeRaiseKelas(vm.galatTipe, "terurut() memerlukan 1 atau 2 argumen");
         return KOSONG_VAL;
     }
     // Fase 5: generator/iterator kustom dicairkan dulu jadi daftar.
@@ -2815,7 +2815,7 @@ Value nativeFnTerurut(int argCount, Value* args) {
 // terbalik(d) - seperti reversed(), tetapi mengembalikan daftar baru.
 Value nativeFnTerbalik(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("terbalik() memerlukan 1 argumen");
+        nativeRaiseKelas(vm.galatTipe, "terbalik() memerlukan 1 argumen");
         return KOSONG_VAL;
     }
     // Fase 5: generator/iterator kustom dicairkan dulu jadi daftar.
@@ -2840,7 +2840,7 @@ Value nativeFnTerbalik(int argCount, Value* args) {
 // pasangkan(a, b, ...) - seperti zip(); panjang = iterable terpendek.
 Value nativeFnPasangkan(int argCount, Value* args) {
     if (argCount < 2) {
-        nativeRaise("pasangkan() memerlukan minimal 2 argumen");
+        nativeRaiseKelas(vm.galatTipe, "pasangkan() memerlukan minimal 2 argumen");
         return KOSONG_VAL;
     }
     int shortest = -1;
@@ -2874,7 +2874,7 @@ Value nativeFnPasangkan(int argCount, Value* args) {
 // peta(f, d) - seperti map(), tetapi eager: hasilnya daftar.
 Value nativeFnPeta(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("peta() memerlukan 2 argumen (fungsi, iterable)");
+        nativeRaiseKelas(vm.galatTipe, "peta() memerlukan 2 argumen (fungsi, iterable)");
         return KOSONG_VAL;
     }
     // Fase 5: generator/iterator kustom dicairkan dulu jadi daftar.
@@ -2906,7 +2906,7 @@ Value nativeFnPeta(int argCount, Value* args) {
 // saring(f, d) - seperti filter(), tetapi eager: hasilnya daftar.
 Value nativeFnSaring(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("saring() memerlukan 2 argumen (fungsi, iterable)");
+        nativeRaiseKelas(vm.galatTipe, "saring() memerlukan 2 argumen (fungsi, iterable)");
         return KOSONG_VAL;
     }
     // Fase 5: generator/iterator kustom dicairkan dulu jadi daftar.
@@ -2998,7 +2998,7 @@ Value nativeFnCetak(int argCount, Value* args) {
 // hash(x) - bulat hash, exposing the dict-key rule to the language.
 Value nativeFnHash(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("hash() memerlukan 1 argumen, bukan %d", argCount);
+        nativeRaiseKelas(vm.galatTipe, "hash() memerlukan 1 argumen, bukan %d", argCount);
         return KOSONG_VAL;
     }
     uint32_t h;
@@ -3012,7 +3012,7 @@ Value nativeFnHash(int argCount, Value* args) {
 // turunan_dari(kelas, induk) - issubclass; a class is its own subclass.
 Value nativeFnTurunanDari(int argCount, Value* args) {
     if (argCount != 2) {
-        nativeRaise("turunan_dari() memerlukan 2 argumen, bukan %d", argCount);
+        nativeRaiseKelas(vm.galatTipe, "turunan_dari() memerlukan 2 argumen, bukan %d", argCount);
         return BOOL_VAL(false);
     }
     if (!IS_CLASS(args[0]) || !IS_CLASS(args[1])) {
@@ -3028,7 +3028,7 @@ Value nativeFnTurunanDari(int argCount, Value* args) {
 // ke_desimal(x) - float(). Needed since K2 made ke_angka("3") a bulat.
 Value nativeFnKeDesimal(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("ke_desimal() memerlukan 1 argumen, bukan %d", argCount);
+        nativeRaiseKelas(vm.galatTipe, "ke_desimal() memerlukan 1 argumen, bukan %d", argCount);
         return NUMBER_VAL(0);
     }
     Value v = args[0];
@@ -3059,7 +3059,7 @@ Value nativeFnKeDesimal(int argCount, Value* args) {
 // daftar() / daftar(urutan) - list(). Always a fresh copy, even from a daftar.
 Value nativeFnDaftar(int argCount, Value* args) {
     if (argCount > 1) {
-        nativeRaise("daftar() memerlukan 0 atau 1 argumen, bukan %d", argCount);
+        nativeRaiseKelas(vm.galatTipe, "daftar() memerlukan 0 atau 1 argumen, bukan %d", argCount);
         return KOSONG_VAL;
     }
     if (argCount == 0) return OBJ_VAL(newList());
@@ -3091,7 +3091,7 @@ Value nativeFnDaftar(int argCount, Value* args) {
 // himpunan_beku() / himpunan_beku(urutan) - a hashable himpunan.
 Value nativeFnHimpunanBeku(int argCount, Value* args) {
     if (argCount > 1) {
-        nativeRaise("himpunan_beku() memerlukan 0 atau 1 argumen, bukan %d", argCount);
+        nativeRaiseKelas(vm.galatTipe, "himpunan_beku() memerlukan 0 atau 1 argumen, bukan %d", argCount);
         return KOSONG_VAL;
     }
     if (argCount == 0) {
@@ -3131,7 +3131,7 @@ Value nativeFnHimpunanBeku(int argCount, Value* args) {
 // iter(urutan) - an explicit cursor, pairing with lanjutkan().
 Value nativeFnIter(int argCount, Value* args) {
     if (argCount != 1) {
-        nativeRaise("iter() memerlukan 1 argumen, bukan %d", argCount);
+        nativeRaiseKelas(vm.galatTipe, "iter() memerlukan 1 argumen, bukan %d", argCount);
         return KOSONG_VAL;
     }
     Value src = args[0];
@@ -3169,7 +3169,7 @@ Value nativeFnIter(int argCount, Value* args) {
 // `lanjut` is already the continue keyword.
 Value nativeFnLanjutkan(int argCount, Value* args) {
     if (argCount < 1 || argCount > 2) {
-        nativeRaise("lanjutkan() memerlukan 1 atau 2 argumen, bukan %d", argCount);
+        nativeRaiseKelas(vm.galatTipe, "lanjutkan() memerlukan 1 atau 2 argumen, bukan %d", argCount);
         return KOSONG_VAL;
     }
     if (!IS_ITERATOR(args[0])) {
