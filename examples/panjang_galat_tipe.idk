@@ -1,0 +1,23 @@
+# panjang() pada nilai tanpa panjang kini menaikkan GalatTipe (temuan OOP-12),
+# bukan Galat polos, konsisten dengan galat panjang() lainnya (argumen salah).
+
+fungsi kelas_galat(f) {
+    coba {
+        f()
+        kembalikan "TIDAK GALAT"
+    } kecuali GalatTipe sebagai e {
+        kembalikan "GalatTipe"
+    } kecuali Galat sebagai e {
+        kembalikan "Galat lain"
+    }
+}
+
+cetak(kelas_galat(fungsi() { panjang(5) }))
+cetak(kelas_galat(fungsi() { panjang(benar) }))
+cetak(kelas_galat(fungsi() { panjang(kosong) }))
+
+# Tipe yang didukung tetap bekerja seperti biasa.
+cetak(panjang("abc"))
+cetak(panjang([1, 2, 3]))
+cetak(panjang({"a": 1, "b": 2}))
+cetak(panjang(rentang(5)))

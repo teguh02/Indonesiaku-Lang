@@ -19,6 +19,11 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Diperbaiki
 
+- **`panjang()` pada nilai yang tidak punya panjang kini menaikkan
+  `GalatTipe`** (temuan OOP-12), bukan `Galat` polos — konsisten dengan
+  galat `panjang()` lain (jumlah argumen salah). `panjang(5)`,
+  `panjang(benar)`, `panjang(kosong)` kini dapat ditangkap dengan
+  `kecuali GalatTipe`.
 - **Indeks di luar jangkauan kini selalu menaikkan `GalatIndeks`**
   (temuan SINTAKS-06 uji ekstensif Windows 1.4.0). Sebelumnya hanya
   daftar dan tupel yang memberi `GalatIndeks`; teks, `rentang()`, serta
