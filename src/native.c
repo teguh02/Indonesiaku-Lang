@@ -770,7 +770,8 @@ Value nativeFnPanjang(int argCount, Value* args) {
         if (found == 1) return INT_VAL(length);
         if (found == 0) return NUMBER_VAL(0);   // raised; error already pending
     }
-    nativeRaise("panjang() hanya menerima string, list, kamus, rentang, "
+    nativeRaiseKelas(vm.galatTipe,
+                "panjang() hanya menerima string, list, kamus, rentang, "
                 "atau objek dengan _panjang_()");
     return NUMBER_VAL(0);
 }
