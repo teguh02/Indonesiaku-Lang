@@ -1,0 +1,9 @@
+{
+  "iconDefinitions": {
+    "_idk_file": { "iconPath": "../icon.png" }
+  },
+  "fileExtensions": {
+    "idk": "_idk_file",
+    "indk": "_idk_file"
+  }
+}

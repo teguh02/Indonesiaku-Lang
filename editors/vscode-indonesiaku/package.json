@@ -30,6 +30,7 @@
     "language-configuration.json",
     "syntaxes",
     "snippets",
+    "fileicons",
     "icon.png",
     "README.md",
     "LICENSE"
@@ -65,6 +66,35 @@
         "path": "./snippets/indonesiaku.code-snippets"
       }
     ],
+    "iconThemes": [
+      {
+        "id": "indonesiaku-icons",
+        "label": "Indonesiaku Icons",
+        "path": "./fileicons/indonesiaku-icon-theme.json"
+      }
+    ],
+    "commands": [
+      { "command": "indonesiaku.jalankan", "title": "Indonesiaku: Jalankan", "icon": "$(play)" },
+      { "command": "indonesiaku.periksa", "title": "Indonesiaku: Periksa (Lint)", "icon": "$(search)" },
+      { "command": "indonesiaku.rapikan", "title": "Indonesiaku: Rapikan (Format)", "icon": "$(sparkle)" },
+      { "command": "indonesiaku.profil", "title": "Indonesiaku: Profil", "icon": "$(graph-line)" },
+      { "command": "indonesiaku.awakutu", "title": "Indonesiaku: Awakutu (Debugger CLI)", "icon": "$(debug)" }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        { "id": "indonesiakuPanel", "title": "Indonesiaku", "icon": "icon.png" }
+      ]
+    },
+    "views": {
+      "indonesiakuPanel": [
+        { "id": "indonesiaku.aksi", "name": "Perintah" }
+      ]
+    },
+    "menus": {
+      "editor/title": [
+        { "command": "indonesiaku.jalankan", "when": "resourceLangId == indonesiaku", "group": "navigation" }
+      ]
+    },
     "configuration": {
       "title": "Indonesiaku",
       "properties": {
