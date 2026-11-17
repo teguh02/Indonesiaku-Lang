@@ -1073,7 +1073,7 @@ kalkulator-indonesiaku/
 
 **Tujuan:** aplikasi Indonesiaku mudah didiagnosis, diperbarui, diaudit dan dipelihara. Kualitas, keamanan dan kompatibilitas adalah kegiatan **lintas fase sejak sekarang**, bukan alasan untuk menunggu Fase 22.
 
-1. [ ] Buat `docs/RENCANA_FITUR/observability_production.md` serta kebijakan tertulis support matrix, compatibility policy, deprecation, security disclosure dan release lifecycle.
+1. [x] Buat `docs/RENCANA_FITUR/observability_production.md` serta kebijakan tertulis support matrix, compatibility policy, deprecation, security disclosure dan release lifecycle. (rencana ditulis; implementasi paket A-D item 2-10 masih ⬜)
 2. [ ] Sediakan **structured logging**: timestamp, level, module, request/task correlation ID, format dapat dibaca mesin, masking rahasia secara default, rotasi atau integrasi collector.
 3. [ ] Sediakan **metrics dan tracing** dasar: latensi request, error rate, durasi query, queue depth, memori/GC, task/connections; tentukan pilihan interoperabilitas misalnya OpenTelemetry/Prometheus tanpa mengunci satu vendor.
 4. [ ] Implementasikan **profiler** CPU/wall time, alokasi memori, GC pause, hot functions dan diagnostik kebocoran; jaga overhead profiling opt-in dan dokumentasikan akurasi pengukuran.
