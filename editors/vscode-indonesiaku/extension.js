@@ -137,7 +137,7 @@ async function activate(context) {
     { label: "Periksa (Lint)", command: "indonesiaku.periksa", icon: "search" },
     { label: "Rapikan (Format)", command: "indonesiaku.rapikan", icon: "sparkle" },
     { label: "Profil", command: "indonesiaku.profil", icon: "graph-line" },
-    { label: "Awakutu (Debugger CLI)", command: "indonesiaku.awakutu", icon: "debug" },
+    { label: "Debugger (Awakutu)", command: "indonesiaku.awakutu", icon: "debug" },
   ];
   class AksiProvider {
     getTreeItem(item) { return item; }

@@ -78,7 +78,7 @@
       { "command": "indonesiaku.periksa", "title": "Indonesiaku: Periksa (Lint)", "icon": "$(search)" },
       { "command": "indonesiaku.rapikan", "title": "Indonesiaku: Rapikan (Format)", "icon": "$(sparkle)" },
       { "command": "indonesiaku.profil", "title": "Indonesiaku: Profil", "icon": "$(graph-line)" },
-      { "command": "indonesiaku.awakutu", "title": "Indonesiaku: Awakutu (Debugger CLI)", "icon": "$(debug)" }
+      { "command": "indonesiaku.awakutu", "title": "Indonesiaku: Debugger (Awakutu)", "icon": "$(debug)" }
     ],
     "viewsContainers": {
       "activitybar": [
