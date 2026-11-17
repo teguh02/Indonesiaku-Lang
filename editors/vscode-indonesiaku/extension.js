@@ -130,6 +130,88 @@ function toVscodeRange(vscodeApi, range) {
 
 async function activate(context) {
   const { spawnSync } = require("child_process");
+
+  // ---- Panel Activity Bar: tombol Jalankan/Periksa/Rapikan/Profil/Awakutu ----
+  const AKSI = [
+    { label: "Jalankan", command: "indonesiaku.jalankan", icon: "play" },
+    { label: "Periksa (Lint)", command: "indonesiaku.periksa", icon: "search" },
+    { label: "Rapikan (Format)", command: "indonesiaku.rapikan", icon: "sparkle" },
+    { label: "Profil", command: "indonesiaku.profil", icon: "graph-line" },
+    { label: "Awakutu (Debugger CLI)", command: "indonesiaku.awakutu", icon: "debug" },
+  ];
+  class AksiProvider {
+    getTreeItem(item) { return item; }
+    getChildren() {
+      return AKSI.map(a => {
+        const item = new vscode.TreeItem(a.label, vscode.TreeItemCollapsibleState.None);
+        item.command = { command: a.command, title: a.label };
+        item.iconPath = new vscode.ThemeIcon(a.icon);
+        return item;
+      });
+    }
+  }
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider("indonesiaku.aksi", new AksiProvider())
+  );
+
+  // Satu terminal dipakai ulang (ponytail: satu terminal bersama, bukan satu
+  // per aksi -- cukup untuk pemakaian CLI dev biasa).
+  let terminalIndk;
+  function terminalAktif() {
+    if (!terminalIndk || terminalIndk.exitStatus !== undefined) {
+      terminalIndk = vscode.window.createTerminal("Indonesiaku");
+    }
+    return terminalIndk;
+  }
+  function berkasAktif() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.languageId !== "indonesiaku") {
+      vscode.window.showWarningMessage("Indonesiaku: buka berkas .idk dulu.");
+      return null;
+    }
+    return editor.document.fileName;
+  }
+  function daftarAksiTerminal(command, subperintah) {
+    context.subscriptions.push(vscode.commands.registerCommand(command, () => {
+      const berkas = berkasAktif();
+      if (!berkas) return;
+      const bin = vscode.workspace.getConfiguration("indonesiaku").get("jalurIndk") || "indk";
+      const t = terminalAktif();
+      t.show();
+      const argBerkas = JSON.stringify(berkas);
+      t.sendText(subperintah ? `${bin} ${subperintah} ${argBerkas}` : `${bin} ${argBerkas}`);
+    }));
+  }
+  daftarAksiTerminal("indonesiaku.jalankan", null);
+  daftarAksiTerminal("indonesiaku.periksa", "periksa");
+  daftarAksiTerminal("indonesiaku.profil", "profil");
+  daftarAksiTerminal("indonesiaku.awakutu", "awakutu");
+  // Rapikan lewat command bawaan supaya hasilnya tertulis balik ke editor
+  // (jalur yang sama dengan formatter di bawah), bukan dicetak ke terminal.
+  context.subscriptions.push(vscode.commands.registerCommand("indonesiaku.rapikan", () => {
+    if (!berkasAktif()) return;
+    vscode.commands.executeCommand("editor.action.formatDocument");
+  }));
+
+  // Tawarkan sekali saja (globalState) supaya tidak mengganti File Icon
+  // Theme pengguna diam-diam -- ini pilihan global yang memengaruhi SEMUA
+  // jenis berkas, bukan cuma .idk.
+  const sudahDitawarkan = context.globalState.get("indonesiaku.tawarIkonDitampilkan", false);
+  const temaSekarang = vscode.workspace.getConfiguration().get("workbench.iconTheme");
+  if (!sudahDitawarkan && temaSekarang !== "indonesiaku-icons") {
+    context.globalState.update("indonesiaku.tawarIkonDitampilkan", true);
+    vscode.window.showInformationMessage(
+      "Pakai ikon khusus untuk berkas .idk di Explorer?",
+      "Aktifkan", "Nanti saja"
+    ).then(pilihan => {
+      if (pilihan === "Aktifkan") {
+        vscode.workspace.getConfiguration().update(
+          "workbench.iconTheme", "indonesiaku-icons", vscode.ConfigurationTarget.Global
+        );
+      }
+    });
+  }
+
   const formatter = vscode.languages.registerDocumentFormattingEditProvider("indonesiaku", {
     provideDocumentFormattingEdits(document) {
       if (document.isUntitled || document.isDirty) return [];

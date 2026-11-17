@@ -1,4 +1,18 @@
 {
+  "Cocokkan (pattern matching)": {
+    "prefix": "cocokkan",
+    "body": [
+      "cocokkan ${1:nilai} {",
+      "\tkasus ${2:pola} {",
+      "\t\t$3",
+      "\t}",
+      "\tkasus _ {",
+      "\t\t$0",
+      "\t}",
+      "}"
+    ],
+    "description": "Pernyataan cocokkan/kasus (pattern matching), kasus _ sebagai bawaan"
+  },
   "List comprehension": {
     "prefix": "komprehensi",
     "body": [
