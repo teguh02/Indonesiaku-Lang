@@ -32,9 +32,16 @@ Adapter Protocol (DAP)** server yang menjembatani VS Code ↔ `indk awakutu`.
 - Perlu `contributes.debuggers` di `package.json` + `src/debugAdapter.js`
   yang menerjemahkan request DAP (`setBreakpoints`, `continue`, `variables`)
   ke protokol stdin/stdout `indk awakutu` yang sudah ada.
-- **Blocker nyata**: harus cek dulu apakah `indk awakutu` punya mode
-  "scriptable" (bukan interaktif manusia) — kalau belum, itu pekerjaan C
-  di `src/` dulu, bukan cuma ekstensi JS. Audit sebelum estimasi.
+- **Audit selesai (hasil: BISA tanpa sentuh C)**: `awakutuPrompt()` di
+  `src/vm.c` baca command dari `stdin` via `readLineAlloc()` baris-per-
+  baris, dan nulis state (`[baris N] ...`, `(awakutu)`) ke `stderr` dengan
+  format konsisten. Adapter DAP cukup `spawn("indk", ["awakutu", file])`
+  + tulis command teks ke stdin (`b <baris>`, `lanjut`, `langkah`,
+  `lihat <nama>`, `tumpukan`) + parse stdout/stderr -- reuse REPL yang
+  sudah ada, BUKAN protokol baru di bahasa. Next: `src/debugAdapter.js`
+  (state machine parser) + `contributes.debuggers` di `package.json`.
+  Estimasi beberapa jam kerja (parser state + mapping breakpoint↔baris +
+  UI launch config) -- jalankan di sesi terpisah, bukan diff kecil.
 
 ### B — Snippet & completion untuk builtin baru otomatis
 `language-data.js` BUILTINS di-generate manual dari `defineNative()` —
