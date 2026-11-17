@@ -803,7 +803,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 
 ### Fase 13 — Keamanan dan fitur aplikasi web
 
-**Tujuan:** membangun fondasi aplikasi bisnis yang membutuhkan input pengguna, login, session dan otorisasi. **Status:** ⬜ belum (prasyarat sumber acak sudah ditutup). **Pemetaan:** WEB-04, WEB-05, WEB-06.
+**Tujuan:** membangun fondasi aplikasi bisnis yang membutuhkan input pengguna, login, session dan otorisasi. **Status:** ✅ selesai, terbit di `v1.6.0`. Satu gap dicatat sadar: unggah berkas berbahaya belum diuji (belum ada API penyimpanan berkas yang punya permukaan serang). **Pemetaan:** WEB-04, WEB-05, WEB-06.
 
 **Prasyarat yang sudah dikerjakan:** builtin `acak_bita()` (CSPRNG). Sebelum ini
 satu-satunya sumber acak adalah `rand()` + `srand(time(NULL))`, yang membuat ID
