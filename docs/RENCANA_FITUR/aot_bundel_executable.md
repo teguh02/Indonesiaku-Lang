@@ -1,8 +1,28 @@
 # Rencana Fitur: AOT / Bundel Executable (Fase 8, butir tersisa)
 
-- **Status:** usulan
-- **Target versi:** v1.9.0 (bareng Fase 16 per tabel rilis roadmap)
+- **Status:** ✅ selesai (V1: skrip tunggal, tanpa `impor` lintas-berkas)
+- **Target versi:** belum dirilis (menunggu minor berikutnya)
 - **Pemilik:** Teguh R
+
+## 0. Hasil implementasi (diverifikasi nyata, bukan klaim)
+
+- `src/main.c`: `ekstrakBundel()` dicek di awal `main()`, sebelum parsing
+  flag apa pun, supaya argumen bundel sendiri (`./app --nama=Budi`) tidak
+  disalahartikan sebagai flag `indk`.
+- `scripts/bangun_bundel.sh`: tempel skrip + footer `IDKBND01` + panjang
+  LE 8 byte, murni bash (tidak ada dependency python/perl baru).
+- `tests/bundel_aot.sh` (7 asersi, didaftarkan di `tests/test_all.sh`):
+  keluaran identik run biasa, argumen diteruskan apa adanya, regresi nol
+  untuk `indk` tanpa payload (REPL + `-v` tetap normal), skrip rusak gagal
+  bersih (exit 65, bukan crash), berkas sementara tidak menumpuk, dan
+  keterbatasan `impor` lintas-berkas gagal BERSIH (bukan diam-diam salah).
+- Sabotase dibuktikan: menghapus `remove(jalurBundel)` membuat tes #5 merah
+  (berkas sementara menumpuk) -- guard itu beneran berfungsi, bukan dead code.
+- **Belum**: `tests/test_all.ps1` (Windows) tidak memanggil sub-suite
+  `.sh` manapun (gap pre-existing yang sama berlaku ke `keamanan_app.sh`
+  dkk) -- bundel AOT belum teruji otomatis di Windows meski kode C-nya
+  memakai jalur yang sama lintas platform (`sistemJalurInterpreter`,
+  `_getpid`/`getpid` ter-guard `#ifdef _WIN32`).
 
 ## 1. Masalah
 
