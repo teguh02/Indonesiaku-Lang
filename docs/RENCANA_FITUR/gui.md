@@ -1,73 +1,57 @@
-# Rencana Fitur: GUI (Fase 8, butir tersisa)
+# Rencana Fitur: GUI (Fase 8, butir ditutup)
 
-- **Status:** usulan — **BLOCKED pada keputusan arsitektur, lihat §2**
-- **Target versi:** belum dijadwalkan (lihat alasan di §2)
+- **Status:** **DITOLAK — di luar ruang lingkup proyek secara permanen**
+- **Keputusan:** Teguh R (pemilik proyek), lihat `docs/ROADMAP.md` §Visi
 - **Pemilik:** Teguh R
 
-## 1. Masalah
+## 1. Keputusan
+
+Indonesiaku berfokus pada **web/server-side** (SSR, REST API, akses
+database) — konsep yang sama dengan PHP. PHP sendiri tidak punya jalur
+resmi untuk membangun aplikasi desktop atau mobile, dan Indonesiaku
+sengaja mengikuti batas yang sama. GUI/windowing native (desktop) **tidak
+akan dikerjakan**, bukan sekadar ditunda menunggu keputusan arsitektur.
+
+Dokumen ini sebelumnya mencatat audit rujukan K18 (lihat §2 di bawah,
+dipertahankan sebagai jejak sejarah) dan tiga opsi arsitektur (FFI umum /
+binding native / vendoring toolkit tunggal). Opsi-opsi itu **tidak lagi
+relevan untuk diputuskan** karena fiturnya sendiri sudah ditutup di luar
+ruang lingkup, bukan karena salah satu opsi dipilih.
+
+## 2. Jejak sejarah: audit rujukan K18 (sebelum keputusan penutupan)
 
 Fase 8 asli (ANALISIS/04_TEKNIK_LANJUTAN.md §11) merencanakan akses GUI
 lewat **FFI gaya `ctypes` via libffi**, supaya skrip `.idk` bisa memanggil
 toolkit GUI native (GTK/Qt/dll.) tanpa menulis binding C khusus per
-toolkit. Tabel Fase 8 di `docs/ROADMAP.md` mencatat **FFI "❌ dibatalkan
-beralasan — K18"**.
+toolkit. Tabel Fase 8 di `docs/ROADMAP.md` sempat mencatat **FFI "❌
+dibatalkan beralasan — K18"** untuk GUI juga, padahal K18 hanya menjelaskan
+kenapa SQLite di-vendor sebagai amalgamation `.c` tunggal ketimbang
+menunggu FFI (SQLite kebetulan punya distribusi "satu file C tanpa
+dependensi"). K18 **tidak pernah menyatakan FFI dibatalkan secara umum**.
+Audit ini tetap benar secara historis, tapi tidak lagi relevan untuk GUI
+karena GUI sudah ditutup di luar ruang lingkup terlepas dari isu FFI.
 
-## 2. Temuan audit: rujukan K18 TIDAK berlaku untuk pembatalan ini
+## 3. Opsi yang SEMPAT dipertimbangkan (tidak lagi diproses)
 
-Dibaca ulang `docs/ANALISIS/03_KEPUTUSAN_DESAIN.md` K18: isinya **hanya**
-alasan kenapa SQLite di-vendor sebagai amalgamation `.c` tunggal ketimbang
-menunggu FFI -- karena SQLite kebetulan punya distribusi "satu file C
-tanpa dependensi" yang bisa disalin apa adanya (presedenan `src/vendor/`
-sudah ada untuk mbedTLS). **K18 tidak pernah menyatakan FFI dibatalkan
-secara umum** untuk SEMUA kebutuhan; itu argumen khusus kasus SQLite.
+| Opsi | Catatan |
+|---|---|
+| A. FFI umum (libffi) | Tidak diproses — fitur ditutup |
+| B. Binding native per-toolkit | Tidak diproses — fitur ditutup |
+| C. Toolkit tunggal minimal via vendoring | Tidak diproses — fitur ditutup |
 
-Akibatnya: tabel roadmap Fase 8 salah mengutip K18 sebagai alasan GUI
-tidak bisa jalan. GUI **tidak** punya opsi vendor "satu file C" seperti
-SQLite -- toolkit GUI (GTK, Qt, native Win32/Cocoa) semuanya butuh
-linking dinamis ke pustaka sistem yang besar dan berbeda per OS, jadi
-alasan vendoring K18 memang tidak berlaku untuk kasus ini (beda dari
-kesalahan kutipnya), tapi untuk alasan yang beda sama sekali.
+## 4. Tindakan yang diambil
 
-**Perlu keputusan baru** (bukan sekadar baca ulang K18) sebelum rencana
-GUI bisa ditulis konkret: apakah proyek ini membuka FFI umum (libffi)
-lagi untuk kasus GUI, atau membatasi diri ke binding native per-toolkit
-yang ditulis manual di C (pola sama seperti driver MySQL/PostgreSQL --
-protokol/API ditulis langsung di `src/`, bukan generic FFI)?
+- `docs/ROADMAP.md` diperbarui: Fase 8 kini **selesai** (bukan "sebagian"),
+  GUI ditandai ❌ di luar ruang lingkup permanen, bukan "blocked".
+- `docs/ROADMAP.md` §Visi menambahkan pernyataan ruang lingkup eksplisit
+  (web/server-side, bukan desktop/mobile).
+- Dokumen ini tetap disimpan (bukan dihapus) sebagai jejak audit dan
+  keputusan, supaya pertanyaan "kenapa GUI tidak ada" punya jawaban yang
+  tertelusur.
 
-## 3. Opsi yang dipertimbangkan (belum dipilih)
+## 5. Kalau ada yang minta GUI/desktop/mobile di masa depan
 
-| Opsi | Plus | Minus |
-|---|---|---|
-| **A. FFI umum (libffi)** | Satu implementasi, skrip `.idk` bisa panggil toolkit APA PUN tanpa nunggu binding ditulis manual | Permukaan serang besar (panggil fungsi C sembarang dari skrip = tidak ada batas tipe/memori), dependency pihak ketiga, GC-safety antara heap Indonesiaku dan memori C arbitrary jadi sangat rawan use-after-free |
-| **B. Binding native per-toolkit** (pola driver DB) | Aman terkontrol (API publik yang di-whitelist, bukan panggilan C bebas), konsisten pola `pustaka/pg.idk`/`my.idk` | Tiap toolkit (GTK/Qt/native) butuh binding terpisah ditulis manual, kerja besar per platform |
-| **C. Toolkit tunggal minimal via vendoring** (mis. vendor `nuklear` atau `raylib` single-header, dikompilasi langsung seperti SQLite) | Konsisten K18 (vendoring murni, bukan FFI), satu toolkit lintas-OS, cocok untuk kebutuhan sekolah (gambar sederhana, bukan aplikasi desktop penuh) | Fitur GUI sangat terbatas dibanding GTK/Qt asli, tidak native-looking di tiap OS |
-
-**Rekomendasi awal (bisa didiskusikan)**: Opsi C untuk v1 -- selaras
-dengan audiens utama bahasa ini (sekolah/edukasi, lihat `--sandbox` untuk
-playground), dan konsisten pola vendoring yang sudah terbukti jalan untuk
-SQLite dan mbedTLS. Opsi A (FFI umum) ditunda permanen kecuali ada
-permintaan nyata untuk akses toolkit sistem penuh -- risikonya (GC-safety
-+ permukaan serang) sepadan dengan risiko yang membuat FFI ditahan di
-Fase 15 untuk alasan serupa.
-
-## 4. Kenapa belum ditulis sebagai rencana implementasi penuh
-
-Sesuai `AGENTS.md` ("Plan in docs/ first"), rencana implementasi konkret
-(API target, opcode/native baru, tes) baru bisa ditulis SETELAH opsi di
-§3 diputuskan oleh pemilik proyek -- menuliskannya sebelum keputusan
-berarti menebak arah yang bisa dibuang begitu keputusan beda.
-
-## 5. Tindakan yang DIAMBIL sekarang
-
-- Dokumen ini dibuat sebagai pencatatan audit + opsi, BUKAN rencana
-  implementasi final (beda dari `aot_bundel_executable.md` yang sudah
-  konkret karena tidak punya blocker arsitektur).
-- `docs/ROADMAP.md` tabel Fase 8 diperbaiki: rujukan "K18" untuk FFI
-  dihapus (tidak akurat), diganti catatan bahwa GUI menunggu keputusan
-  opsi A/B/C di dokumen ini.
-
-## 6. Risiko kalau dipaksa jalan tanpa keputusan ini
-
-Menulis binding GUI apa pun sekarang (misal langsung bikin binding GTK
-manual) berisiko dibuang kalau pemilik proyek memilih opsi lain setelah
-direview -- lebih mahal daripada menunggu satu keputusan arah dulu.
+Jawabannya: di luar ruang lingkup proyek by design, sama seperti PHP tidak
+punya jalur resmi bikin aplikasi desktop. Kalau pemilik proyek berubah
+pikiran, itu perubahan visi besar yang perlu ditulis ulang dari
+`docs/ROADMAP.md` §Visi dulu, bukan ditambal diam-diam di fase ini.

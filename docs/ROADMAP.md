@@ -9,6 +9,11 @@ semantik selaras dengan Python 3 sehingga apa yang dipelajari di
 Indonesiaku langsung berlaku di Python, dan sebaliknya. Dasar analisis dan
 alasan setiap fase ada di [`ANALISIS/`](ANALISIS/README.md).
 
+**Ruang lingkup (keputusan pemilik proyek):** Indonesiaku berfokus pada
+**web/server-side** — SSR, REST API, akses database — sama seperti konsep
+PHP. **Bukan** bahasa untuk aplikasi desktop atau mobile; GUI/windowing
+native **di luar ruang lingkup secara permanen**, bukan sekadar ditunda.
+
 ## Prinsip desain wajib untuk seluruh fase
 
 **Indonesiaku bukan replika identik Python.** Python adalah **referensi semantik**, bukan aturan yang harus ditiru 100%. Semua implementasi oleh manusia maupun AI agent **harus** memakai keyword dan API bahasa yang berbahasa Indonesia, serta struktur blok `{ ... }` (termasuk fungsi/kelas/metode) seperti pendekatan PHP/C. Tidak boleh mengganti atau menambah alternatif sintaks blok `:` dan indentasi Python. Lihat [spesifikasi bahasa](SPESIFIKASI.md#1a-kaidah-arsitektur-bahasa-dan-aturan-unused-kebijakan-desain) dan `AGENTS.md`.
@@ -22,6 +27,7 @@ alasan setiap fase ada di [`ANALISIS/`](ANALISIS/README.md).
 3. [ ] Mulai dengan **warning** yang actionable (lokasi, simbol, alasan, saran hapus/komentar), aturan suppression/ignore eksplisit untuk kode yang memang sengaja tidak dipakai, serta opsi ketat bila desain dan kompatibilitas telah disepakati.
 4. [ ] Uji positif/negatif, multi-file, import dinamis, API publik, class inheritance/override, closure, entrypoint dan benchmark waktu lint; cegah false positive yang mengganggu developer.
 5. [ ] Dokumentasikan aturan unused dan cara memperbaikinya pada panduan penggunaan dan API linter. **Error default yang breaking baru boleh dipertimbangkan sebagai perubahan major v2.0**, bukan diam-diam disisipkan dalam patch/minor v1.x.
+6. [ ] **`indk periksa` saat ini (lokal saja) dipertahankan apa adanya** — jangan diubah perilakunya. Pemeriksaan simbol global/fungsi/kelas yang sama sekali tidak dipakai di seluruh proyek baru muncul sebagai **pemeriksaan mode build/production** (terpisah dari `indk periksa` interaktif harian), meniru pola Go: warning yang menyarankan penghapusan, bukan error blocking dadakan di tengah development.
 
 **Pertimbangan versi:** peringatan linter yang kompatibel dan berfitur baru dapat masuk rilis **minor v1.x** yang sesuai; perbaikan false positive dapat masuk **patch**; strict mode opsional dan teruji dapat datang melalui minor. Kewajiban error kompilasi default pada deklarasi yang sebelumnya sah perlu deprecation, migration guide, pengujian kompatibilitas dan **target major v2.0.0 bila breaking**. Prioritas implementasi boleh dinaikkan bila cocok dengan Fase 9/14/19 atau fase tooling lain tanpa menambah fase baru.
 
@@ -460,12 +466,13 @@ Ref: 04 §1, §8–10, §12.
 ### Fase 8 — Ekosistem
 
 Manajer paket + registri, API embedding C, FFI, MySQL/PostgreSQL (klien
-jaringan — `sqlite` sendiri sudah dimajukan ke Fase 3), TLS/HTTPS, GUI,
+jaringan — `sqlite` sendiri sudah dimajukan ke Fase 3), TLS/HTTPS,
+~~GUI~~ (di luar ruang lingkup),
 AOT/bundel executable, ~~anotasi tipe opsional~~ ✅ ([rencana](RENCANA_FITUR/selesai/anotasi_tipe.md)), mode sandbox untuk
 sekolah.
 Ref: 04 §11–13, 05.
 
-**Status:** 🔶 sebagian — **dan ini disengaja, bukan fase yang ditinggalkan**. Dari sepuluh butir: enam selesai, dua dipindah dengan alasan tertulis, dua sisanya sengaja tidak dijadwalkan.
+**Status:** ✅ selesai — dari sepuluh butir: tujuh selesai, satu dipindah dengan alasan tertulis, satu ditutup di luar ruang lingkup (lihat visi), satu (FFI) dibatalkan beralasan untuk kasus SQLite.
 
 | Butir | Status |
 |---|---|
@@ -476,11 +483,11 @@ Ref: 04 §11–13, 05.
 | Mode sandbox | ✅ selesai |
 | API embedding C | ✅ selesai |
 | Manajer paket + registri | ➡️ dipindah ke **Fase 14** |
-| FFI | ❌ dibatalkan untuk kasus SQLite (K18) — **bukan pembatalan umum**, lihat `RENCANA_FITUR/gui.md` §2 untuk kasus GUI yang masih terbuka |
-| GUI | ⬜ belum dijadwalkan — **blocked pada keputusan arsitektur** (FFI umum vs binding native vs vendoring toolkit tunggal), lihat `RENCANA_FITUR/gui.md` |
+| FFI | ❌ dibatalkan untuk kasus SQLite (K18) — **bukan pembatalan umum**, lihat `RENCANA_FITUR/gui.md` §2 |
+| GUI | ❌ **di luar ruang lingkup secara permanen** — proyek ini berfokus web/server-side (lihat Visi), bukan aplikasi desktop/mobile; lihat `RENCANA_FITUR/gui.md` untuk audit keputusan |
 | AOT / bundel executable | ✅ selesai (V1: skrip tunggal, `scripts/bangun_bundel.sh` + `tests/bundel_aot.sh`) |
 
-**Mengapa Fase 9 ke atas dikerjakan lebih dulu padahal Fase 8 belum penuh.** Satu butir tersisa (GUI) tidak memblokir apa pun: subsistem besar yang tidak punya ketergantungan dengan jalur web/database. Menahan Fase 9–13 demi itu berarti menunda fondasi yang justru dipakai sekarang. **AOT sudah selesai diimplementasikan** (V1 skrip tunggal, lihat tabel di atas). **GUI masih blocked** pada keputusan arsitektur FFI/binding/vendoring (`RENCANA_FITUR/gui.md`) -- Opsi C (vendor toolkit minimal) direkomendasikan tapi implementasi native window-system per OS (Linux/Windows/macOS) belum dikerjakan; menulis kode untuk OS yang tidak bisa diuji di sini (Windows/macOS) tanpa verifikasi nyata bukan "selesai", itu klaim palsu. Urutan nomor fase adalah urutan penulisan dokumen, **bukan janji bahwa fase diselesaikan berurutan**.
+**Mengapa Fase 9 ke atas dikerjakan lebih dulu padahal GUI belum ada keputusan saat itu.** GUI sudah ditutup sebagai di luar ruang lingkup (lihat Visi di atas), jadi Fase 8 kini selesai sepenuhnya dalam ruang lingkup yang berlaku. **AOT sudah selesai diimplementasikan** (V1 skrip tunggal, lihat tabel di atas). Urutan nomor fase adalah urutan penulisan dokumen, **bukan janji bahwa fase diselesaikan berurutan**.
 
 - [x] **API embedding C** (`src/indk.h`, `src/indk_api.c`,
       [rencana](RENCANA_FITUR/selesai/embedding_c.md)) — `make libindk.a`
@@ -544,7 +551,7 @@ Ref: 04 §11–13, 05.
 
 ## Roadmap implementasi per fase — setelah v1.4.0
 
-Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR-01–10, serta kebutuhan transfer berkas dan keamanan runtime yang sebelumnya tersebar dalam beberapa tabel. **Fase 0–6 sudah selesai; Fase 7 perkakasnya selesai sedangkan sisi kinerjanya dikerjakan hanya bila pengukuran membenarkan (mask tabel hash dikerjakan, computed goto / `OP_TRY_BEGIN` / cache `.idkc` / WASM ditolak beralasan); Fase 8 sebagian secara sengaja (tersisa GUI dan AOT, lihat tabel butirnya). Fase 9 selesai di `v1.4.0`; Fase 10, 11 dan 12 terbit bersama di `v1.5.0` — Fase 11 masih menyisakan satu butir.** Fase 13 dan seterusnya adalah urutan kerja yang **diusulkan**, bukan penanda implementasi saat ini. Nomor ID lama tetap dipakai sebagai jejak rencana.
+Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR-01–10, serta kebutuhan transfer berkas dan keamanan runtime yang sebelumnya tersebar dalam beberapa tabel. **Fase 0–6 sudah selesai; Fase 7 perkakasnya selesai sedangkan sisi kinerjanya dikerjakan hanya bila pengukuran membenarkan (mask tabel hash dikerjakan, computed goto / `OP_TRY_BEGIN` / cache `.idkc` / WASM ditolak beralasan); Fase 8 selesai (GUI ditutup di luar ruang lingkup, AOT selesai, lihat tabel butirnya). Fase 9 selesai di `v1.4.0`; Fase 10, 11 dan 12 terbit bersama di `v1.5.0` — Fase 11 masih menyisakan satu butir.** Fase 13 dan seterusnya adalah urutan kerja yang **diusulkan**, bukan penanda implementasi saat ini. Nomor ID lama tetap dipakai sebagai jejak rencana.
 
 **Cara membaca:** setiap fase memiliki tujuan, kebutuhan awal, langkah implementasi berurutan, contoh API target, pengujian wajib, serta definisi selesai. Tanda [ ] berarti belum. Implementasi dapat dibuat dalam pull request kecil; jangan memaksa seluruh fase dalam satu PR. Semua perubahan tetap tunduk pada "Definisi selesai" dan "Feature workflow" di AGENTS.md, termasuk rencana detail sebelum kode, golden test, negative test, dokumentasi dan editor.
 
@@ -923,7 +930,7 @@ kalkulator-indonesiaku/
 2. [ ] Jalankan playground .idk langsung dalam browser untuk kode lokal tanpa bergantung pada eksekusi server (**P7**); pertahankan Docker playground yang sudah ada sebagai alternatif.
 3. [ ] Tambahkan tes kesetaraan hasil interpreter native vs WASM, timeout/memory guard, penanganan error dan perbedaan runtime browser.
 4. [x] Profilkan program nyata lebih dulu sebelum menilai cache .idkc, computed goto dan optimasi lain. **Selesai (v1.4.0).** `tests/beban/*.idk` + `indk profil` + `perf`. Hasilnya: mask tabel hash dikerjakan (−43,8%); cache `.idkc` ditunda (kompilasi berkas terbesar hanya 1,8 ms); computed goto ditolak (sebaran opcode rata, 15 opcode untuk 94%); `OP_TRY_BEGIN` ditolak (0,12% pada beban nyata). Catatan lengkap di bagian Fase 7.
-5. [ ] Rencanakan threading/asinkron, GUI, AOT/bundel executable dan penguatan sandbox sebagai subproyek terpisah; jangan klaim selesai tanpa spesifikasi, tes isolasi dan deployment yang aman.
+5. [ ] Rencanakan threading/asinkron, AOT/bundel executable dan penguatan sandbox sebagai subproyek terpisah; jangan klaim selesai tanpa spesifikasi, tes isolasi dan deployment yang aman. (GUI dihapus dari daftar ini — di luar ruang lingkup permanen, lihat Visi.)
 
 **Selesai jika:** playground WASM bekerja pada contoh yang didukung, perbedaan fitur terdokumentasi, serta optimasi hanya digabung setelah benchmark dan regresi membuktikan manfaat.
 
