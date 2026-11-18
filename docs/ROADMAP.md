@@ -476,11 +476,11 @@ Ref: 04 §11–13, 05.
 | Mode sandbox | ✅ selesai |
 | API embedding C | ✅ selesai |
 | Manajer paket + registri | ➡️ dipindah ke **Fase 14** |
-| FFI | ❌ dibatalkan beralasan — [K18](ANALISIS/03_KEPUTUSAN_DESAIN.md) |
-| GUI | ⬜ belum dijadwalkan |
-| AOT / bundel executable | ⬜ belum dijadwalkan |
+| FFI | ❌ dibatalkan untuk kasus SQLite (K18) — **bukan pembatalan umum**, lihat `RENCANA_FITUR/gui.md` §2 untuk kasus GUI yang masih terbuka |
+| GUI | ⬜ belum dijadwalkan — **blocked pada keputusan arsitektur** (FFI umum vs binding native vs vendoring toolkit tunggal), lihat `RENCANA_FITUR/gui.md` |
+| AOT / bundel executable | ⬜ belum dijadwalkan — rencana konkret sudah ada di `RENCANA_FITUR/aot_bundel_executable.md`, tinggal implementasi |
 
-**Mengapa Fase 9 ke atas dikerjakan lebih dulu padahal Fase 8 belum penuh.** Dua butir tersisa tidak memblokir apa pun: GUI adalah subsistem besar yang tidak punya ketergantungan dengan jalur web/database, sedangkan AOT hanya relevan setelah pustaka standar stabil. Menahan Fase 9–13 demi keduanya berarti menunda fondasi yang justru dipakai sekarang. Keduanya belum punya `docs/RENCANA_FITUR/`, dan sesuai AGENTS.md tidak boleh diimplementasikan sebelum rencana ditulis — sehingga keduanya tetap terbuka di sini, bukan dihapus diam-diam. Urutan nomor fase adalah urutan penulisan dokumen, **bukan janji bahwa fase diselesaikan berurutan**.
+**Mengapa Fase 9 ke atas dikerjakan lebih dulu padahal Fase 8 belum penuh.** Dua butir tersisa tidak memblokir apa pun: GUI adalah subsistem besar yang tidak punya ketergantungan dengan jalur web/database, sedangkan AOT hanya relevan setelah pustaka standar stabil. Menahan Fase 9–13 demi keduanya berarti menunda fondasi yang justru dipakai sekarang. **AOT sekarang sudah punya rencana konkret** (`RENCANA_FITUR/aot_bundel_executable.md`), tinggal menunggu giliran implementasi. **GUI masih blocked** pada keputusan arsitektur FFI/binding/vendoring (`RENCANA_FITUR/gui.md`) sebelum rencana implementasi bisa ditulis, sesuai AGENTS.md. Urutan nomor fase adalah urutan penulisan dokumen, **bukan janji bahwa fase diselesaikan berurutan**.
 
 - [x] **API embedding C** (`src/indk.h`, `src/indk_api.c`,
       [rencana](RENCANA_FITUR/selesai/embedding_c.md)) — `make libindk.a`
