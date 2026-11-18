@@ -478,9 +478,9 @@ Ref: 04 §11–13, 05.
 | Manajer paket + registri | ➡️ dipindah ke **Fase 14** |
 | FFI | ❌ dibatalkan untuk kasus SQLite (K18) — **bukan pembatalan umum**, lihat `RENCANA_FITUR/gui.md` §2 untuk kasus GUI yang masih terbuka |
 | GUI | ⬜ belum dijadwalkan — **blocked pada keputusan arsitektur** (FFI umum vs binding native vs vendoring toolkit tunggal), lihat `RENCANA_FITUR/gui.md` |
-| AOT / bundel executable | ⬜ belum dijadwalkan — rencana konkret sudah ada di `RENCANA_FITUR/aot_bundel_executable.md`, tinggal implementasi |
+| AOT / bundel executable | ✅ selesai (V1: skrip tunggal, `scripts/bangun_bundel.sh` + `tests/bundel_aot.sh`) |
 
-**Mengapa Fase 9 ke atas dikerjakan lebih dulu padahal Fase 8 belum penuh.** Dua butir tersisa tidak memblokir apa pun: GUI adalah subsistem besar yang tidak punya ketergantungan dengan jalur web/database, sedangkan AOT hanya relevan setelah pustaka standar stabil. Menahan Fase 9–13 demi keduanya berarti menunda fondasi yang justru dipakai sekarang. **AOT sekarang sudah punya rencana konkret** (`RENCANA_FITUR/aot_bundel_executable.md`), tinggal menunggu giliran implementasi. **GUI masih blocked** pada keputusan arsitektur FFI/binding/vendoring (`RENCANA_FITUR/gui.md`) sebelum rencana implementasi bisa ditulis, sesuai AGENTS.md. Urutan nomor fase adalah urutan penulisan dokumen, **bukan janji bahwa fase diselesaikan berurutan**.
+**Mengapa Fase 9 ke atas dikerjakan lebih dulu padahal Fase 8 belum penuh.** Satu butir tersisa (GUI) tidak memblokir apa pun: subsistem besar yang tidak punya ketergantungan dengan jalur web/database. Menahan Fase 9–13 demi itu berarti menunda fondasi yang justru dipakai sekarang. **AOT sudah selesai diimplementasikan** (V1 skrip tunggal, lihat tabel di atas). **GUI masih blocked** pada keputusan arsitektur FFI/binding/vendoring (`RENCANA_FITUR/gui.md`) -- Opsi C (vendor toolkit minimal) direkomendasikan tapi implementasi native window-system per OS (Linux/Windows/macOS) belum dikerjakan; menulis kode untuk OS yang tidak bisa diuji di sini (Windows/macOS) tanpa verifikasi nyata bukan "selesai", itu klaim palsu. Urutan nomor fase adalah urutan penulisan dokumen, **bukan janji bahwa fase diselesaikan berurutan**.
 
 - [x] **API embedding C** (`src/indk.h`, `src/indk_api.c`,
       [rencana](RENCANA_FITUR/selesai/embedding_c.md)) — `make libindk.a`

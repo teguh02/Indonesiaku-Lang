@@ -2,6 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>   // clock() untuk `indk profil`
+#ifdef _WIN32
+    #include <process.h>   // _getpid()
+    #define INDK_GETPID _getpid
+#else
+    #include <unistd.h>    // getpid()
+    #define INDK_GETPID getpid
+#endif
 
 #include "common.h"
 #include "chunk.h"
@@ -12,6 +19,66 @@
 #include "object.h"
 #include "vm.h"
 #include "sistem.h"
+
+// --- Bundel executable (AOT V1, lihat docs/RENCANA_FITUR/aot_bundel_executable.md) ---
+//
+// Dibangun oleh scripts/bangun_bundel.sh: salin biner indk apa adanya, tempel
+// isi SATU skrip .idk di akhir file, lalu footer [MAGIC 8 byte][panjang LE 8
+// byte]. Dijalankan tanpa argumen (argc==1): kalau footer cocok, skrip
+// diekstrak ke berkas sementara lalu dijalankan seperti biasa -- TIDAK ada
+// jalur eksekusi baru, murni `runFile()` yang sudah ada.
+//
+// ponytail: V1 cuma satu skrip, TANPA modul yang di-`impor` (arsip
+// multi-berkas ditunda sampai ada kebutuhan nyata -- lihat §2 rencana).
+#define BUNDLE_MAGIC "IDKBND01"
+#define BUNDLE_MAGIC_LEN 8
+
+static bool ekstrakBundel(char* jalurOut, size_t ukuranOut) {
+    char exePath[600];
+    if (!sistemJalurInterpreter(exePath, sizeof exePath)) return false;
+
+    FILE* f = fopen(exePath, "rb");
+    if (!f) return false;
+    if (fseek(f, 0, SEEK_END) != 0) { fclose(f); return false; }
+    long ukuranBerkas = ftell(f);
+    long ukuranFooter = BUNDLE_MAGIC_LEN + 8;
+    if (ukuranBerkas < ukuranFooter) { fclose(f); return false; }
+
+    if (fseek(f, ukuranBerkas - ukuranFooter, SEEK_SET) != 0) { fclose(f); return false; }
+    char magic[BUNDLE_MAGIC_LEN];
+    uint8_t lenBytes[8];
+    if (fread(magic, 1, BUNDLE_MAGIC_LEN, f) != (size_t)BUNDLE_MAGIC_LEN ||
+        fread(lenBytes, 1, 8, f) != 8) { fclose(f); return false; }
+    if (memcmp(magic, BUNDLE_MAGIC, BUNDLE_MAGIC_LEN) != 0) { fclose(f); return false; }
+
+    uint64_t panjangPayload = 0;
+    for (int i = 7; i >= 0; i--) panjangPayload = (panjangPayload << 8) | lenBytes[i];
+    long awalFooter = ukuranBerkas - ukuranFooter;
+    if (panjangPayload == 0 || (long)panjangPayload > awalFooter) { fclose(f); return false; }
+    long awalPayload = awalFooter - (long)panjangPayload;
+
+    if (fseek(f, awalPayload, SEEK_SET) != 0) { fclose(f); return false; }
+    char* buf = (char*)malloc(panjangPayload);
+    if (!buf) { fclose(f); return false; }
+    size_t terbaca = fread(buf, 1, panjangPayload, f);
+    fclose(f);
+    if (terbaca != panjangPayload) { free(buf); return false; }
+
+    char* tmpAlloc = sistemAmbilLingkungan("TMPDIR");
+#ifdef _WIN32
+    if (!tmpAlloc) tmpAlloc = sistemAmbilLingkungan("TEMP");
+#endif
+    const char* tmpDir = tmpAlloc ? tmpAlloc : "/tmp";
+    snprintf(jalurOut, ukuranOut, "%s/indk_bundel_%d.idk", tmpDir, (int)INDK_GETPID());
+    if (tmpAlloc) free(tmpAlloc);
+
+    FILE* out = fopen(jalurOut, "wb");
+    if (!out) { free(buf); return false; }
+    size_t tertulis = fwrite(buf, 1, panjangPayload, out);
+    fclose(out);
+    free(buf);
+    return tertulis == panjangPayload;
+}
 
 // Count net brace depth in a line, ignoring braces inside strings and after
 // a '#' comment. Used by the REPL to keep reading until a block is complete.
@@ -285,6 +352,20 @@ static int runFile(const char* path) {
 int main(int argc, const char* argv[]) {
     sistemSiapkanProses(&argc, &argv);   // Windows: UTF-8 argv + console
     sistemAturArgv0(argv[0]);
+
+    // Bundel AOT (lihat ekstrakBundel() di atas): dicek PALING AWAL, sebelum
+    // flag apa pun di-parse, supaya argv[1..] murni milik aplikasi yang
+    // dibundel -- `./aplikasiku --nama=Budi` tidak boleh disalahartikan
+    // sebagai flag indk sendiri.
+    char jalurBundel[700];
+    if (ekstrakBundel(jalurBundel, sizeof jalurBundel)) {
+        initVM();
+        defineArgs(argc, argv, 1);
+        int exitCode = runFile(jalurBundel);
+        remove(jalurBundel);
+        freeVM();
+        return exitCode;
+    }
 
     // `indk --sandbox skrip.idk ...`: refuse environment, directory listing
     // and running programs (the web playground runs every program this way).

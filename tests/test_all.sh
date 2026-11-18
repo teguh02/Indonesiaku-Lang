@@ -501,6 +501,18 @@ if [ -f tests/keamanan_app.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Bundel AOT V1 (Fase 8): skrip tunggal ditempel ke biner indk, dijalankan
+# tanpa argumen, keluaran harus identik dengan run biasa.
+if [ -f tests/bundel_aot.sh ]; then
+    echo ""
+    if bash tests/bundel_aot.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES bundel-aot"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Tag versi (image playground, LABEL rilis, cache-buster website) harus
 # mengikuti INDK_VERSION; yang tertinggal tidak pernah gagal sendiri.
 if [ -f tests/versi_konsisten.sh ]; then

@@ -9,6 +9,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **Bundel executable AOT V1** (`indk` tanpa argumen menjalankan skrip yang
+  ditempel ke akhir biner lewat `scripts/bangun_bundel.sh`) — distribusi
+  satu-file untuk skrip tunggal (Fase 8). Argumen bundel sendiri diteruskan
+  apa adanya, tidak disalahartikan sebagai flag `indk`. **Keterbatasan V1**:
+  hanya skrip tunggal, belum mendukung `impor` modul lain (gagal bersih
+  dengan pesan jelas, bukan diam-diam salah). Diuji `tests/bundel_aot.sh`
+  (7 asersi, termasuk regresi nol untuk `indk` tanpa payload).
 - **`ambil(kamus, kunci[, bawaan])`** — membaca kamus dengan nilai bawaan
   eksplisit, padanan `dict.get()` Python. Tersedia juga sebagai metode
   (`d.ambil("k", 0)`). Yang menentukan adalah keberadaan kunci, bukan
