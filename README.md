@@ -213,9 +213,10 @@ Selebihnya ada di folder [`examples/`](examples/) — sekaligus dipakai sebagai
 
 ## 🗺️ Rencana Selanjutnya
 
-Rilis terbaru adalah **v1.5.0**. Fase 0–7 selesai, Fase 8 sebagian secara
-sengaja (tersisa GUI dan AOT), Fase 9 (LSP untuk ekstensi VS Code) selesai di
-v1.4.0, dan Fase 10–12 terbit bersama di v1.5.0: driver MySQL/PostgreSQL,
+Rilis terbaru adalah **v1.5.0**. Fase 0–8 selesai (GUI ditutup di luar
+ruang lingkup permanen — proyek fokus web/server-side, lihat
+`docs/ROADMAP.md` §Visi; AOT selesai), Fase 9 (LSP untuk ekstensi VS Code)
+selesai di v1.4.0, dan Fase 10–12 terbit bersama di v1.5.0: driver MySQL/PostgreSQL,
 HTTPS/TLS, server HTTP modular, serta templat HTML server-side sudah dapat
 dipakai. Fase 13 (keamanan aplikasi web: sesi, login, CSRF) sedang berjalan.
 

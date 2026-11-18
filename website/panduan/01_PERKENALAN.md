@@ -83,8 +83,10 @@ server web, serta driver SQLite/PostgreSQL/MySQL.
 Kandidat pekerjaan berikutnya:
 
 - 🔮 Package manager dan ekosistem pustaka pihak ketiga
-- 🔮 Kompilasi AOT dan optimasi performa VM
-- 🔮 Dukungan GUI
+
+Catatan: kompilasi AOT sudah selesai (v1.5.0). GUI/aplikasi desktop tidak
+direncanakan — Indonesiaku fokus web/server-side (SSR, REST API, database),
+setara PHP.
 
 Rencana lengkapnya ada di
 [ROADMAP](https://github.com/teguh02/Indonesiaku-Lang/blob/main/docs/ROADMAP.md).
