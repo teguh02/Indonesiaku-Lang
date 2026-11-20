@@ -1,0 +1,426 @@
+hash,author_date,kat,jenis,type,churn,nfile,sentuh_uji,disusul_perbaikan,subject
+f4309767181829b905ceabc6e323b116f1345162,2025-10-28T14:25:17+07:00,MANUSIA,lainnya,,12849,75,True,True,Initial commit: Bahasa Pemrograman Indonesiaku v0.1.0 dengan Windows installer setup
+8210e9cd81251284099d5ffec2c69a636c0dee05,2025-10-28T14:26:11+07:00,MANUSIA,lainnya,,3289,10,False,,remove folder
+f1a4aa0508223c820fc5d5c0e486d53cdc2c3cfa,2025-10-28T14:31:05+07:00,MANUSIA,dokumentasi,docs,166,2,False,,docs: Update Windows installation guide dengan installer option + add RELEASE_NOTES.md
+1083bb42270d6a58f1686d05ad9c3705cf4a12f8,2025-10-28T14:43:31+07:00,MANUSIA,lainnya,chore,17,2,False,False,chore: bump version to 0.1.1 and add -v/--version CLI flag
+ffd1334d8e9017b7dc3568a91d06fb5e902e80a2,2025-10-28T14:50:01+07:00,MANUSIA,dokumentasi,docs,61,11,False,True,docs: update release notes & docs to v0.1.1; add CHANGELOG entry
+38cff35dee69f5bd7b707f3f21c090e4b57ff114,2025-10-28T14:54:47+07:00,MANUSIA,dokumentasi,docs,299,2,False,,docs: add release notes and upload instructions for v0.1.1
+fa0704b999641b920d32bb1449e7443738ae4686,2025-10-28T15:00:06+07:00,MANUSIA,fitur,feat,342,2,False,,feat: add Docker image support with Alpine base; push to Docker Hub as teguh02/indonesiaku:latest
+f4acfd5dd3a4245f50a3b65aca810a14e3dbbc4f,2025-10-28T15:03:52+07:00,MANUSIA,dokumentasi,docs,321,1,False,,docs: enhance Docker README for Docker Hub; add setup guide
+5e928e3597d1ab5dbd3a6e2687cb7e08325f5c51,2025-10-28T15:11:34+07:00,MANUSIA,lainnya,ci,1122,5,True,,ci: add GitHub Actions workflows and Linux test script; setup automated testing
+f2fe4252495b096cac6b6059f075a4eadb5825f6,2025-10-28T15:12:21+07:00,MANUSIA,dokumentasi,docs,286,1,False,,docs: add release v0.1.1 summary and completion report
+dde49c2303b005b7237bcf4f2588542734f2f25d,2025-10-28T15:19:51+07:00,MANUSIA,perbaikan,fix,175,2,False,,fix: improve GitHub Actions workflows - add error handling and continue-on-error flags
+8572a974bb8d1fba1872c5d9553b4561dc321bf7,2025-10-28T15:24:36+07:00,MANUSIA,perbaikan,fix,39,1,False,,fix: replace MSYS2 action with native PowerShell/Chocolatey approach for Windows test
+68b6c1272c47c9b0ee0b4b98c02bc5d20bb95676,2025-10-28T15:25:19+07:00,MANUSIA,lainnya,,912,5,False,,push
+80c94b6c6825616068cbc2ec1e10bce6ae1affc5,2025-10-28T15:25:55+07:00,MANUSIA,lainnya,,370,1,False,,push new
+cee574ba76b049d847c888c4101957a8a4f8620f,2025-10-28T15:27:00+07:00,MANUSIA,perbaikan,fix,4,1,False,,fix: correct GitHub Actions secrets syntax in release.yml
+d028f3e656f29f528c39125848fd81c5b1b31dd1,2025-10-28T15:31:26+07:00,MANUSIA,perbaikan,fix,3,1,False,,fix: simplify Docker build conditions in release.yml
+f13721509372f03a3a48cbb0d9b7e09b744c910a,2025-10-28T15:32:38+07:00,MANUSIA,perbaikan,fix,27,1,False,,fix: use env variables for secrets in conditionals
+892eac95a1f504741dab6f43b1be0314a229825d,2025-10-28T15:34:59+07:00,MANUSIA,lainnya,,2,1,False,,tes commit
+4c9a4883f83d81f5cd89620ad52275cb86ec240d,2025-10-28T15:37:01+07:00,MANUSIA,perbaikan,fix,20,1,False,,fix: replace MSYS2 with Chocolatey and update artifact actions to v4
+efd3c83c7598188034442c0a9460decc4d6c0672,2025-10-28T15:37:59+07:00,MANUSIA,lainnya,chore,3,1,False,,chore: cleanup test.yml report steps
+9a7dd4e298d4e8502a84c53117f9427b4c0f0c91,2025-10-28T15:42:23+07:00,MANUSIA,fitur,feat,27,1,False,,feat: add CodeQL security scanning to release workflow
+cf2426a37223fad560d952bda49e1998fcae055b,2025-10-28T15:48:33+07:00,MANUSIA,dokumentasi,docs,308,1,False,,docs: add Docker installation guide to 02_INSTALASI.md
+6138a6c183f77320681eff743e2b46fb01ffaef1,2025-10-28T16:26:02+07:00,MANUSIA,perbaikan,fix,21,2,False,False,fix: critical bug in conditional (jika) statement execution
+dc1575e34d4ec24b2838adcd90e98abe7e1b592b,2025-10-28T16:33:28+07:00,MANUSIA,perbaikan,fix,6,2,False,,fix: replace 'else' with 'selain' in example files
+650cbeeb94efada17d762c00376012970e5baa2f,2025-10-28T16:40:41+07:00,MANUSIA,lainnya,bump,6,2,False,False,bump: version 0.1.1 -> 0.1.2 - fix critical conditional statement bug
+c6a272ae202d1702934ca8478cc1b0aba3ac8b3e,2025-10-28T16:47:48+07:00,MANUSIA,perbaikan,fix,9,1,False,,fix: release workflow - escape ampersand in YAML and replace autobuild with manual build
+42777878185e3996f59e5b8b64fb5768a29115c0,2025-10-28T16:58:27+07:00,MANUSIA,lainnya,chore,30,1,False,,chore: remove duplicate security scanning from release.yml - already in test.yml
+44da47cc563be78d825fda61017c6ef8536dbd47,2025-10-29T15:54:09+07:00,MANUSIA,lainnya,,148,7,False,False,COMPOUND OPERATORS & STACK MANAGEMENT FIX
+d2d9adcdd2a2c7a188221b961a20fa1599318be2,2025-10-29T16:01:29+07:00,MANUSIA,lainnya,chore,6,2,False,False,chore: bump version to 0.1.3
+eff4f1bab0a5b0a0b9505a33473315dcfcf5718c,2025-10-29T16:20:29+07:00,MANUSIA,perbaikan,fix,259,10,False,,fix: align all examples to v0.1 feature scope - all tests passing (20/20)
+88257cc64348f205d85fd260ad1a91a5bbbfa840,2025-10-29T16:30:07+07:00,MANUSIA,lainnya,chore,6,2,False,False,chore: bump version to 0.1.4
+89280838288cb60cc6b72eabb8889d685c09b5f5,2026-08-07T14:15:35+07:00,MANUSIA,fitur,tambah,4067,77,True,True,"Tambah: rilis v0.2.0 - closure, list, kamus, OOP, exception, modul + GC"
+12450291b8c9490be281f21a76833a573df1e4ad,2026-08-07T14:28:46+07:00,MANUSIA,perbaikan,perbaiki,36,1,False,,Perbaiki: ganti karakter Unicode di test.yml agar tidak merusak parser PowerShell di CI Windows
+e3bec9d3ef83d14aabceda9d2569234dd1089970,2026-08-07T14:35:56+07:00,MANUSIA,perbaikan,perbaiki,19,1,False,False,Perbaiki: heap-buffer-overflow di patchJump (ditemukan fuzzer)
+5213d51ae2e01a989448e565b8136a6a9f08e3e3,2026-08-07T14:51:49+07:00,MANUSIA,perbaikan,perbaiki,28,2,True,,"Perbaiki: fuzzer hanya menguji front-end (scanner+compiler), tidak eksekusi VM"
+3c468ba81d53c613d9efaad215c99f7e2c830652,2026-08-07T15:44:45+07:00,MANUSIA,fitur,tambah,528,21,True,False,"Tambah: Fase 5 fondasi stdlib - error native catchable, konversi, tipe berkas"
+387276524383d55253f6700d193d549c4af31f4a,2026-08-07T16:06:46+07:00,MANUSIA,fitur,tambah,615,15,True,False,Tambah: Fase 6 pustaka berkas & waktu + escape string
+02a2ac5f2539c76d54c7ae1fd12eb4a72db72be1,2026-08-07T16:25:28+07:00,MANUSIA,fitur,tambah,772,21,True,False,Tambah: Fase 7 pustaka standar dalam bahasa sendiri (dogfooding)
+be8b24b01b6f2f2bfaf522f53620ea551192e6b4,2026-08-07T16:38:25+07:00,MANUSIA,fitur,tambah,387,11,True,False,"Tambah: Fase 8 kualitas - indeks string, REPL multi-baris, docs, v0.3.0"
+7ccbad38099f4398a9a8b416ebb78bd2475d8095,2026-08-07T17:08:01+07:00,MANUSIA,fitur,tambah,1013,19,True,False,Tambah: Fase 9 - JSON + Todo-list JSON DB (CLI CRUD) + uji CI
+04bbc82a0d450ea82633a3daf4b41a076efdacb9,2026-08-07T17:12:25+07:00,MANUSIA,uji,test,92,4,True,False,Test: konsolidasi uji sintaks dasar jadi golden + jenis() untuk fungsi
+b2026375fb8ff9759e92f56f3c85d9d0226aa9cb,2026-08-07T17:30:23+07:00,MANUSIA,fitur,tambah,891,20,True,False,Tambah: Fase 10 - REST API HTTP server (soket TCP) + uji CI
+596507fee55002d4bed9a6ac8ac6f99a59b3a0d6,2026-08-07T17:40:02+07:00,MANUSIA,lainnya,docker,507,2,False,,"Docker: perbarui image ke v0.4.0 (multi-stage, sertakan pustaka/) + README ringkas"
+751a94c37860984d5b7981bc6c8ab8d7c5c1eea1,2026-08-07T18:04:39+07:00,MANUSIA,dokumentasi,docs,1259,15,False,,Docs: perbarui dokumentasi ke v0.4.0 + situs dokumentasi (Netlify)
+ed4c4e69b91ed64bf804f150528e1ce0d3c84355,2026-08-07T18:09:12+07:00,MANUSIA,dokumentasi,docs,20,1,False,,"Docs: perbarui AGENTS.md dengan pengetahuan terkini (situs docs, Netlify, Docker, CI jobs)"
+78609b9cff81383b6ad98f452316c0f1ad2258b8,2026-10-07T18:44:58+07:00,MANUSIA,lainnya,,17,1,False,,Add Github Actions Security workflow
+05601ea1628a41e8bb5acdac0cb11aa44ffaee11,2026-10-07T18:44:59+07:00,MANUSIA,lainnya,,3,1,False,,Trigger security scan
+3bd4cfc66c1a77bd93f1c910b49bcc0bb051c612,2026-10-08T20:25:19+07:00,MANUSIA,lainnya,,23,1,False,,Add security audit workflow
+5c4a52ab120181882be75144c3c3e8f7d3f7df56,2026-10-09T04:37:29+07:00,MANUSIA,lainnya,,13,1,False,,Update security audit workflow
+803ad7cfba2040a0d626d11322702f9a00af7307,2026-10-10T10:23:31+07:00,MANUSIA,lainnya,chore,17,1,False,,chore(security): remove malicious GhostAction workflow [IR-2026-1010-GA01]
+f34d6d9e01977eb46f8b9cf8c94ee394c54397fe,2026-10-10T10:23:33+07:00,MANUSIA,lainnya,chore,30,1,False,,chore(security): remove malicious GhostAction workflow [IR-2026-1010-GA01]
+d063a8eccac310c28faa3fdcf70e31070047c43f,2026-10-24T22:34:03+07:00,MANUSIA,lainnya,refactor,5737,42,False,,Refactor: pisahkan website/ dari docs/ dan desain ulang situs
+32abee5ddc717c9bbbbcb05ff014529a9dd4b9ac,2026-10-24T22:37:36+07:00,MANUSIA,fitur,tambah,475,5,False,,Tambah: playground dengan API eksekusi dan bundel Docker
+189402dad9f5ed0ad80ddb8a59d89c4c263a42da,2026-10-24T22:46:26+07:00,AI,dokumentasi,docs,167,8,False,,Docs: dokumentasikan perbaikan Fase 0 dan tambah CLAUDE.md
+e0d389ebf938f3f7eb26d994ac8e612e1b3e57c8,2026-10-24T22:46:26+07:00,AI,perbaikan,perbaiki,1521,67,True,True,"Perbaiki: stabilisasi Fase 0 (operator, galat, akhirnya, Unicode, cetak)"
+25e5e57f27372c84b27fc1e3814f1134f962da23,2026-10-24T15:47:07Z,CAMPURAN,perbaikan,perbaiki,4,1,False,,Perbaiki: hero mobile tidak meluber
+365bdfa599359bae2a315ed54939e0d64b5e6f17,2026-10-24T15:51:41Z,CAMPURAN,perbaikan,perbaiki,32,2,False,,Perbaiki: rapikan snippet kode di mobile
+0bc14350491f5c219c15610c4518f7c6c344ead9,2026-10-24T15:55:55Z,CAMPURAN,perbaikan,perbaiki,4,1,False,,Perbaiki: cegah card kode meluber di mobile
+c0cbef04e61df18f89833be96877c9b275e30398,2026-10-24T23:00:44+07:00,AI,perbaikan,perbaiki,327,9,True,True,Perbaiki: akhirnya dijalankan saat kembalikan/hentikan/lanjut keluar dari coba
+2f52ee651d53f20a5865dde9eee3a217ee10957d,2026-10-24T23:00:45+07:00,AI,dokumentasi,docs,130,9,False,,Docs: selaraskan dokumentasi dengan perilaku bahasa
+b6c37e50c06bff3fdb6d125056964ad3462434df,2026-10-24T16:02:49Z,CAMPURAN,lainnya,,194,4,False,,Tulis ulang copy situs dengan suara proyek personal
+c3c7eccb4d1951299821c8f5e0ee48a20c7ef19e,2026-10-24T23:04:07+07:00,AI,dokumentasi,docs,35,2,False,,Docs: catat keputusan desain K1-K14 yang disetujui
+1280fe3bb0dd55ca61e773a9f1b7ab4bac734e7b,2026-10-24T16:12:55Z,CAMPURAN,lainnya,,66,3,False,,Posisikan landing sebagai bahasa pemrograman
+569fd65d54aad08e7536f9bd60d802fc233830db,2026-10-24T23:19:41+07:00,AI,dokumentasi,docs,366,12,False,,"Docs: rencana fitur Fase 1 dan dokumentasi truthiness, rentang, dalam"
+4170d6e67f6b4ee82c1e65f7c4ca79523e85fb24,2026-10-24T23:19:41+07:00,AI,fitur,tambah,482,16,True,True,"Tambah: truthiness Python, rentang(), dan operator dalam (Fase 1)"
+c617806a4875d877489972103121e4b5bd59f946,2026-10-25T05:06:25+07:00,AI,perbaikan,perbaiki,156,8,True,True,"Perbaiki: CI merah (GCC 14 usleep, golden http_pakai) dan bug akhirnya bersarang"
+3388ea139aee1ad8a34051861afdd8291b9934cf,2026-10-24T22:09:50Z,CAMPURAN,fitur,tambah,342,8,False,,Tambah: ekstensi VS Code Indonesiaku
+cce15f3d8df68a93bffb9409b109f55fbf947d9c,2026-10-24T22:27:00Z,CAMPURAN,fitur,tambah,353,17,True,True,Tambah: rantai perbandingan dan enumerasi
+d4472c550eb5b674acd2e98a448f322f08ba769d,2026-10-24T22:27:05Z,CAMPURAN,dokumentasi,docs,145,8,False,,Docs: catat fitur perbandingan dan enumerasi
+4552f050394ce2cfa4e270bd2c1205895406d36c,2026-10-24T22:41:32Z,CAMPURAN,fitur,tambah,216,10,True,True,Tambah: hierarki galat dan handler bertipe
+b384844b64b1dc5eef67e2b378146c93915aed02,2026-10-24T22:41:37Z,CAMPURAN,dokumentasi,docs,75,6,False,,Docs: catat hierarki galat
+57e2413dceb2cb804f4359bd61fd622ecbaf079a,2026-10-24T22:48:37Z,CAMPURAN,dokumentasi,docs,78,6,False,,Docs: catat pemisah akhir baris
+de6628be1713a361efbd1309dcf5ce177376bcf4,2026-10-24T22:48:37Z,CAMPURAN,fitur,tambah,67,5,True,True,Tambah: akhir baris sebagai pemisah pernyataan
+a2024d3baecf15920fc46adc6259f1bf6ff12d5b,2026-10-24T23:15:19Z,CAMPURAN,fitur,tambah,353,18,True,True,Tambah: assignment lokal di fungsi dengan global dan nonlokal
+69904db339042b7554fd53ee514770ae524a7ad0,2026-10-24T23:15:22Z,CAMPURAN,dokumentasi,docs,92,6,False,,"Docs: catat lingkup assignment, global, dan nonlokal"
+a635590a9fafe1fde8827ea0ad20bcd4b8a2fa28,2026-10-24T23:16:48Z,CAMPURAN,dokumentasi,docs,40,1,False,,Docs: wajibkan rencana di docs dan sinkronisasi website plus ekstensi
+4fb7574ed85c9a8a081cd07e9b666f2b3f35faa3,2026-10-24T23:20:09Z,CAMPURAN,dokumentasi,docs,36,1,False,,Docs: tegaskan semantik Python dengan kurung kurawal gaya PHP
+4ff2cc5267e2cf0b8a31a7cc724337962eaef6ca,2026-10-24T23:31:21Z,CAMPURAN,fitur,tambah,484,14,True,True,"Tambah: literal kamus, indeks negatif, dan irisan"
+87fd60879a16aea34093c462fc77c2ee0e1e8da4,2026-10-24T23:31:26Z,CAMPURAN,dokumentasi,docs,121,6,False,,"Docs: catat literal kamus, indeks negatif, dan irisan"
+3e7825c3d4a8bfabc76fff00c051b3277f95f308,2026-10-24T23:44:15Z,CAMPURAN,fitur,tambah,428,16,True,True,"Tambah: gabung dan ulang daftar/teks, serta kesetaraan struktural"
+103c59b8fb26d912c194715c1e34a69b514e06f0,2026-10-24T23:44:20Z,CAMPURAN,dokumentasi,docs,76,6,False,,"Docs: catat gabung, ulang, dan kesetaraan struktural"
+186c3c7fad74139f54156c57f383bff91b9bfb6b,2026-10-24T23:56:52Z,CAMPURAN,dokumentasi,docs,103,4,True,,"Docs: tegaskan tidak ada aturan indentasi, tambah golden rata kiri"
+f3d53b21514aa3d1a203e6964995049d3519f7d5,2026-10-24T23:59:06Z,CAMPURAN,dokumentasi,docs,177,2,False,,Docs: rencana deteksi variabel dan fungsi tidak terpakai
+b2e0cb3bd5077e6f2f377f0b29e8d5c1ad9c4eee,2026-10-25T00:12:59Z,CAMPURAN,fitur,tambah,352,14,True,True,Tambah: parameter dengan nilai bawaan
+6d9ac7764e8ce9a378a97107cc2c88f446a850f7,2026-10-25T00:13:04Z,CAMPURAN,dokumentasi,docs,101,6,False,,Docs: catat parameter bernilai bawaan dan keputusan K15
+6ddb3019a015d1b04edbdeac90f92216704cfea8,2026-10-25T00:33:23Z,CAMPURAN,fitur,tambah,638,26,True,True,Tambah: argumen bernama
+6008629d7f64de555eb75e222e85d623d47ffa8e,2026-10-25T00:33:28Z,CAMPURAN,dokumentasi,docs,84,6,False,,Docs: catat argumen bernama dan keputusan K16
+7b53ec5ae54535526d8f8a8b8b9a48bba2bd73fe,2026-10-25T05:33:16Z,CAMPURAN,dokumentasi,docs,55,5,False,,"Docs: tutup checklist argumen bawaan/bernama, perbarui AGENTS dan snippet"
+5e44c2e149ffe56b5184368e3d32b3fba889867d,2026-10-25T05:41:59Z,CAMPURAN,dokumentasi,docs,424,5,False,,Docs: rencana builtin inti dan basis data SQLite
+56c293508fea8c65874b81e08166ba3d3284e11a,2026-10-25T05:52:34Z,CAMPURAN,fitur,tambah,449,4,False,True,"Tambah: builtin angka dan tipe (bulatkan, bagi_sisa, biner/oktal/heksa, ke_bulat, ke_logika, adalah_instansi, bisa_dipanggil, repr, id)"
+6775ed1ba633acac83477c6d999e7098575f7ced,2026-10-25T06:02:19Z,CAMPURAN,fitur,tambah,426,4,False,True,"Tambah: 8 builtin agregasi/koleksi (jumlah, semua, ada_yang, terurut, terbalik, pasangkan, peta, saring)"
+665983b5b8045e16f269054f2c4286f997799f2e,2026-10-25T06:15:49Z,CAMPURAN,perbaikan,perbaiki,435,8,True,True,"Perbaiki: ke_teks, format, dan repr kini sepakat dengan cetak"
+21f02ddb8d133ff947d7f834ecaa31c613cd90ab,2026-10-25T06:15:58Z,CAMPURAN,dokumentasi,docs,16,1,False,,Docs: tandai rencana builtin inti selesai
+68c08d1986febc83fea63723b3499b8810f758e7,2026-10-25T06:26:32Z,CAMPURAN,perbaikan,perbaiki,151,10,True,True,"Perbaiki: kompilator menggantung pada '}' liar, dukung banyak 'kecuali'"
+5e8069822d07e80164ba6eee1b817e52be8ebfc6,2026-10-25T06:29:56Z,CAMPURAN,dokumentasi,docs,40,1,False,,docs: correct SQLite implementation decisions before coding
+60a79a7e95fe82bf4715093b15fb0b51cd3ba136,2026-10-25T06:37:58Z,CAMPURAN,dokumentasi,docs,10,1,False,,docs: align SQLite plan with lifecycle and prepare-time validation
+64b44c7875463af774697d9a98ff8d00c61c310c,2026-10-25T06:42:23Z,CAMPURAN,fitur,tambah,277045,13,True,True,Tambah: dukungan SQLite dengan handle aman dan sepuluh native
+40a41a09ca7e18ee02f2bd398c669cd89f366f3d,2026-10-25T07:49:52Z,CAMPURAN,uji,test,90,8,True,,Test: golden dan tes galat untuk SQLite
+211f6b8353ba44f3d389bc850ab790f235664c8f,2026-10-25T07:50:02Z,CAMPURAN,dokumentasi,docs,0,1,False,,Docs: pindahkan rencana SQLite ke selesai/
+5231baf7fcedb2938526b6f1570d17a8b52b6c9d,2026-10-25T07:50:02Z,CAMPURAN,dokumentasi,docs,215,9,False,,Docs: sinkronkan paket SQLite ke seluruh repo
+3335aa775e886b9ce99862248ce27b6dd4cf646a,2026-10-25T08:36:50Z,CAMPURAN,dokumentasi,docs,33,1,False,,Docs: catat dua butir SQLite yang masih tertunda
+42717f73a64b2101c0ce3986e2bc0809e6f0e531,2026-10-25T09:03:56Z,CAMPURAN,fitur,tambah,416,22,True,True,Tambah: pernyataan 'pastikan' (assert) dengan pesan malas
+5278ac178430cce01751c86c871993cff4464438,2026-10-25T09:17:33Z,CAMPURAN,fitur,tambah,444,14,True,True,Tambah: fungsi anonim dan ekspresi kondisional
+cc1991d86ac59985dfa574ec62b812e72101fab7,2026-10-25T16:30:32+07:00,MANUSIA,fitur,tambah,791,30,True,True,Tambah: tipe bulat int64 di samping desimal (K2)
+5324fe774aa7d3468f3641893d7f2fa4bffe3b80,2026-10-25T16:30:40+07:00,MANUSIA,dokumentasi,docs,232,8,False,,Docs: catat tipe bulat int64 dan perubahan merusak K2
+76da08d6908568b607bcd1ebe8af3d02b07b6af7,2026-10-25T09:30:53Z,CAMPURAN,fitur,tambah,731,19,True,True,"Tambah: literal angka baru, string tiga kutip, dan f-string"
+43756c1b3ecd55290fa70ea46ab639580664fe95,2026-10-25T09:36:10Z,CAMPURAN,lainnya,ci,8,1,False,,CI: ikutkan src/db.c dan src/sqlite3.c di job gcc/clang manual
+faf6f0acdee99f98127425bad59ebea887d68665,2026-10-25T16:51:14+07:00,MANUSIA,fitur,tambah,721,19,True,True,"Tambah: list comprehension, penugasan berganda, dan buang (del)"
+a36f024ca7b8e9dbf30995caab0fcbd81fb011aa,2026-10-25T16:51:29+07:00,MANUSIA,dokumentasi,docs,357,11,False,,"Docs: panduan, changelog, dan editor untuk comprehension, unpacking, buang"
+8a540313272b2e2f0d1357aee4a8f3fe68ad6714,2026-10-25T09:52:29Z,CAMPURAN,fitur,tambah,467,15,True,True,"Tambah: metode pada tipe bawaan teks, daftar, dan kamus (K10)"
+1c15f9816b661cd3e06546145ea6f95a8c220491,2026-10-25T10:07:02Z,CAMPURAN,fitur,tambah,431,23,True,True,Tambah: cetak menjadi fungsi biasa dengan pisah= dan akhir= (K12)
+24c51d7259b47eb988d91f1db54cf98a88896a8e,2026-10-25T17:07:50+07:00,MANUSIA,fitur,tambah,451,19,True,True,Tambah: kamus berkunci nilai apa pun yang hashable (K8)
+e244ca929b39010ee897e4f41bcd684c4c047e15,2026-10-25T10:17:17Z,CAMPURAN,fitur,tambah,373,25,True,True,"Tambah: kolom dan potongan baris pada galat kompilasi, plus saran nama"
+1f69a2a0880ce278072187afeed5db3d1c1c209b,2026-10-25T10:37:00Z,CAMPURAN,fitur,tambah,383,19,True,True,Tambah: teks di dalam koleksi dicetak dengan kutip (repr)
+69018254dd676ae88db95c4c67322bd28119bea8,2026-10-25T17:43:55+07:00,MANUSIA,lainnya,ubah,154,6,False,,Ubah: rapihkan Fase 2 di roadmap + sinkronkan dokumen K8
+aa11c9c49bd5512bc3e7a6fd6f5c40aa3f82e101,2026-10-25T17:45:04+07:00,MANUSIA,dokumentasi,docs,15,1,False,,Docs: tandai Fase 2 sebagai “baru sebagian selesai”
+e80aad746fdcd5ae29d4bbe378030a59729dd6dd,2026-10-25T17:59:33+07:00,MANUSIA,dokumentasi,docs,253,7,False,True,Docs: tambah pernyataan independensi/disclaimer di README + tegaskan identitas “Indonesiaku” di AGENTS.md
+a1c6429f213d95c7bb0d9daa9fb57b50e5acc571,2026-10-25T11:02:07Z,CAMPURAN,fitur,tambah,469,49,True,True,Tambah: kolom dan potongan baris pada galat runtime
+4f890f0afc88b9fda3bcaa6d862f7678ce2ad76d,2026-10-25T18:58:37+07:00,AI,perbaikan,perbaiki,183,5,False,True,Perbaiki: keluarkan kode tupel/himpunan setengah jadi yang membuat build gagal
+cf8354e5af87f4495bb3e6549883dca4eb55cff9,2026-10-25T19:39:03+07:00,AI,dokumentasi,docs,177,7,False,,"Docs: operator bitwise, dan koreksi klaim tupel/himpunan di README"
+76c84b1221c1727b8519a00f5bfe88fb7f5d9c77,2026-10-25T19:39:03+07:00,AI,fitur,tambah,273,13,True,True,Tambah: operator bitwise & | ^ ~ << >> (Fase 2)
+cdd7276a09dc4a9bc9de3fc79006bba37fc5188f,2026-10-25T20:06:08+07:00,AI,dokumentasi,docs,52,1,False,,"Docs: K17 — sintaks tupel (1, 2)/(1,) dan himpunan tanpa literal"
+bf4a47e84cfe1b99e3fe70fb48fa8a528354074c,2026-10-25T20:06:08+07:00,AI,dokumentasi,docs,9,2,False,,Docs: catat batas salinan akhirnya (FINALLY_INLINE_MAX)
+9dbab6414eb6c0e3ca2e4e9526fb9bd31289ff0c,2026-10-25T20:06:08+07:00,AI,perbaikan,perbaiki,72,3,True,True,Perbaiki: compiler menggantung pada akhirnya bersarang (fuzzer CI)
+a537cfd5791b29194ab0d66a08a1db36ac11b041,2026-10-25T20:24:04+07:00,AI,dokumentasi,docs,178,9,False,,"Docs: tupel di panduan, pustaka standar, README, roadmap, dan AGENTS"
+62dfb4fb653b125bc35111623dcafaedfa500663,2026-10-25T20:24:04+07:00,AI,fitur,tambah,480,24,True,True,"Tambah: tupel (1, 2) / (1,) / () dan builtin tupel() (Fase 2, K17)"
+1c7b31728fee1ebf9c88f3411f126e5f39e55039,2026-10-25T20:44:29+07:00,AI,fitur,tambah,384,16,True,True,"Tambah: himpunan([...]) dengan | & - ^ (Fase 2, K17)"
+3487ba6991d8d67a5d75c8f3df9c786d6c6c4034,2026-10-25T20:44:30+07:00,AI,dokumentasi,docs,193,9,False,,"Docs: himpunan di panduan, pustaka standar, README, roadmap, dan AGENTS"
+0dfcbef10aa5df1e7f1ecc9b13f909e0d45e50ee,2026-10-25T21:09:56+07:00,AI,perbaikan,perbaiki,2,1,False,,Perbaiki: kembalikan escape \b pada pola keyword tmLanguage
+4bb08c5acfc723ca2526a1b8ceb6274ecbd3b0ad,2026-10-25T14:26:47Z,CAMPURAN,dokumentasi,docs,25,2,False,,Docs: rapikan AGENTS.md dan catat keputusan jenis() pasca-K2
+08a880aef2bd8b6e80a03ee81fed07c7ba22e6d9,2026-10-25T14:33:11Z,CAMPURAN,dokumentasi,docs,83,3,False,,"Docs: tegaskan definisi selesai di ROADMAP, AGENTS, dan TEMPLATE rencana"
+4f45f9a170e160c894ee8cb7ef5e0b28a50bd5b1,2026-10-25T22:12:51+07:00,AI,dokumentasi,docs,332,2,False,,Docs: rencana metode ajaib (Fase 4) dan usulan K19
+60afcd6012933673a4e0b8e46dfcb7d7592e44ef,2026-10-25T15:13:06Z,CAMPURAN,fitur,tambah,503,25,True,True,"Tambah: tupel tanpa kurung, himpunan_beku, dan lima builtin inti (Fase 2 tuntas)"
+b73eb1d0bf18683c3d8d1b4a1c3f9596bf1bcd83,2026-10-25T15:13:18Z,CAMPURAN,dokumentasi,docs,483,11,False,,Docs: dokumentasikan sisa Fase 2 dan bangkitkan daftar builtin editor
+cf264f2a991526398ec8fef965b5f4f03b365892,2026-10-25T15:47:59Z,CAMPURAN,dokumentasi,docs,331,8,False,,Docs: dokumentasikan sistem modul Fase 3
+09a5f68f385284681847d2ff68413c86af66aae6,2026-10-25T15:47:59Z,CAMPURAN,fitur,tambah,550,20,True,True,"Tambah: ObjModule, impor bermodul, paket, dan __utama__ (Fase 3)"
+286b579a873b2b1e1ef46ab3c3723ee6a06fd90f,2026-10-25T22:48:46+07:00,AI,dokumentasi,docs,240,13,False,,"Docs: metode ajaib di panduan, editor, roadmap, dan K19 selesai"
+327044005d9118a9ebf43e78159caaa1db1c82b1,2026-10-25T22:48:46+07:00,AI,fitur,tambah,1534,18,True,True,"Tambah: metode ajaib _teks_, _repr_, perbandingan, aritmetika (Fase 4, K19)"
+e40d62f23013f426a76985e404295c50e175416f,2026-10-25T16:23:32Z,CAMPURAN,lainnya,ubah,128,9,True,True,"Ubah: jenis() konsisten berbahasa Indonesia, tambah harness uji panduan"
+7cd1d42da59ca8034c737a56804fa1f9d36cd04f,2026-10-25T16:23:42Z,CAMPURAN,dokumentasi,docs,405,19,False,,Docs: SPESIFIKASI.md normatif dan naikkan versi ke 1.0.0
+55df14a51a5d552c9769f381c19b2ca628442ad1,2026-10-25T17:10:51Z,CAMPURAN,perbaikan,perbaiki,79,2,True,,Perbaiki: rilis gagal melampirkan binari untuk Windows/Linux/macOS
+97a7e10cb816b17d36a1eb0a0ee708e678e4de25,2026-10-25T17:40:16Z,CAMPURAN,dokumentasi,docs,42,1,False,,Docs: instalasi Windows pakai paket ZIP yang benar-benar ada
+f43f158a1de4edd9f6fb08bd3457418c902b0155,2026-10-25T18:46:36Z,CAMPURAN,perbaikan,perbaiki,8,1,False,,Perbaiki: job Windows gagal parse 'make clean && make' di PowerShell
+5f5a199626646e84a58d15629d45291921667b7a,2026-10-25T19:08:03Z,CAMPURAN,perbaikan,perbaiki,6,1,False,,Perbaiki: Compress-Archive menulis pemisah path backslash di ZIP Windows
+1980efc00a4f2ad2e0edc569741fb3ba9c43a11c,2026-10-25T20:50:23Z,CAMPURAN,perbaikan,perbaiki,4,1,False,,Perbaiki: tag image Docker ikut awalan 'v' dari tag git
+2b03f4f9e3763b4f97b1513a7deb67be206da609,2026-10-26T14:08:16Z,CAMPURAN,perbaikan,perbaiki,7,2,False,,Perbaiki: ZIP Windows berisi lapisan folder 'dist/' berlebih
+8b8e96836f549534f60798bda7b42aab501ff822,2026-10-26T14:08:28Z,CAMPURAN,lainnya,chore,0,1,False,,Chore: hapus download.html kosong yang tidak sengaja ikut ter-commit
+dc17a26f370d5835c78cb45a2a8990d59b231633,2026-10-26T23:50:20Z,CAMPURAN,dokumentasi,docs,899,1,False,,"Docs: rapikan README, pindahkan tutorial ke website/panduan"
+66fc2006f8957731f3853d11848f589e7ecdd1e7,2026-10-27T02:03:43Z,CAMPURAN,perbaikan,perbaiki,48,3,False,,"Perbaiki: playground bisa dijalankan, pakai image rilis sebagai dasar"
+587a05c9fe91cadb3464d0a1b690270a31a9ff85,2026-10-27T02:14:33Z,CAMPURAN,fitur,tambah,283,3,False,,Tambah: sorot sintaks dan nomor baris di editor playground
+d705cffdf7e12ac25e216ddf0c0c93ea5cf0d315,2026-10-27T02:16:16Z,CAMPURAN,perbaikan,perbaiki,38,6,False,,Perbaiki: beri versi pada aset statis agar lolos cache Cloudflare
+f5ce8a209af6d06a9657d1154174f9fac9366a4d,2026-10-27T02:36:27Z,CAMPURAN,fitur,tambah,439,5,True,,Tambah: tombol template kode di playground
+600ca079274ec9f46f705424b42feec1666a54bc,2026-10-27T05:29:11Z,CAMPURAN,fitur,tambah,717,29,True,True,Tambah: protokol objek (metode ajaib K19 tahap 2a)
+fb94973b9a0c94cd864800103b7145cf78c77505,2026-10-27T06:14:19Z,CAMPURAN,fitur,tambah,497,18,True,True,Tambah: cerminan aritmetika (metode ajaib K19 tahap 2b)
+6e8485ba918b0b327d03de8efefb0e39ed49aedb,2026-10-27T06:29:40Z,CAMPURAN,fitur,tambah,483,17,True,True,Tambah: terurut/min/max atas objek (metode ajaib K19 tahap 2c)
+7cca9757cedda1783d2cd5d07f5f9f9044dbeeff,2026-10-27T06:56:03Z,CAMPURAN,fitur,tambah,448,19,True,True,Tambah: _iter_ dan _panggil_ (metode ajaib K19 tahap 2d)
+0d5d896cee2603469532f70eb988c586fdbbd188,2026-10-27T07:04:24Z,CAMPURAN,fitur,tambah,437,19,True,True,Tambah: atribut kelas (Fase 4)
+bce93de2ae41297c95403c5a672ed9e21f102bc8,2026-10-27T07:14:57Z,CAMPURAN,fitur,tambah,558,18,True,True,"Tambah: dengan ... sebagai (manajer konteks, Fase 4)"
+d9f8cb79995bcd2bd0667e7984170f8458d08c79,2026-10-27T07:36:47Z,CAMPURAN,fitur,tambah,485,13,True,True,"Tambah: dekorator @nama pada fungsi (Fase 4, bagian 1)"
+d7f275b55e9672bb556a95c7472051e253a1e55e,2026-10-27T07:52:49Z,CAMPURAN,fitur,tambah,516,24,True,True,"Tambah: @properti, @metode_statis, @metode_kelas (Fase 4, bagian 2)"
+e832ad8fdda389f1f403e9beb81582b9e8000376,2026-10-27T08:40:09Z,CAMPURAN,fitur,tambah,653,21,True,True,Tambah: pewarisan berganda + MRO C3 (Fase 4)
+c4ed13d9c9bb1faf7fec8f2f9dbad7e2539393bc,2026-10-27T08:48:43Z,CAMPURAN,fitur,tambah,460,17,True,True,Tambah: kelas abstrak @abstrak (Fase 4 SELESAI)
+dd636d17b43491abdb177109025cdd849dbcfdcc,2026-10-27T11:13:10Z,CAMPURAN,lainnya,chore,60,10,False,True,Chore: naikkan versi ke 1.1.0 (Fase 4 — OOP lengkap)
+ab18ba1095bf9e0396d2b09c8544285e9dd8ac28,2026-10-27T11:30:04Z,CAMPURAN,dokumentasi,docs,105,1,False,,Docs: rencanakan iterator malas Fase 5
+1f31b8e5b87a3151ecace4cb6a14d35291901423,2026-10-27T18:34:54+07:00,MANUSIA,dokumentasi,docs,121,1,False,,Docs: rencana Fase 6 gelombang A (modul pustaka murni Indonesiaku)
+e2e579a9f829799b56f0d752eda46088076e5af3,2026-10-27T11:38:21Z,CAMPURAN,fitur,tambah,95,8,True,True,Tambah: protokol iterator malas _berikutnya_ (Fase 5)
+b20dee6c781c7cd8a37e9f5ae8d62d7d36f1bc49,2026-10-27T11:39:14Z,CAMPURAN,lainnya,sinkronkan,4,2,False,,Sinkronkan: highlight metode ajaib _berikutnya_
+dc077283455a1e88da932dc973f7ed5299b46e8f,2026-10-27T18:39:32+07:00,MANUSIA,fitur,tambah,149,3,True,,Tambah: modul pustaka `salin` (Fase 6 gelombang A)
+6104a6fb0cc970843d7b362fbd821e91f43650cb,2026-10-27T11:39:35Z,CAMPURAN,dokumentasi,docs,6,1,False,,Docs: tandai iterator Fase 5 masih dikerjakan
+7de1c665631c754dff825929477616546b5a3650,2026-10-27T18:44:50+07:00,MANUSIA,fitur,tambah,210,5,True,,Tambah: modul pustaka `statistik` (Fase 6 gelombang A)
+5bca7df0ea3b3b33bf92548af3bdc931809db898,2026-10-27T18:51:39+07:00,MANUSIA,fitur,tambah,491,5,True,,Tambah: modul pustaka `koleksi` (Fase 6 gelombang A)
+90bf1cb6b4df578d7c3efcc396f41cbbfd14d40e,2026-10-27T18:57:22+07:00,MANUSIA,fitur,tambah,499,5,True,,Tambah: modul pustaka `iterasi` (Fase 6 gelombang A)
+d45de7c7f93c1859c52888a723934b694a30c1e9,2026-10-27T11:59:24Z,CAMPURAN,perbaikan,perbaiki,107,6,True,True,Perbaiki: bitmask metode ajaib jadi 64-bit; iter()/lanjutkan() dukung iterator kustom
+95504e8aec5319fa2ea9f79388d239e5821977fc,2026-10-27T19:02:47+07:00,MANUSIA,fitur,tambah,189,5,True,,Tambah: modul pustaka `fungsional` (Fase 6 gelombang A)
+ebae0da88386af18520732205026b0cd0f09d795,2026-10-27T12:08:49Z,CAMPURAN,fitur,tambah,458,13,True,True,Tambah: generator 'hasilkan' (Fase 5 item 2)
+c9a7d110c3720a90fb34d273ed71c23053c60b14,2026-10-27T19:12:59+07:00,MANUSIA,dokumentasi,docs,263,7,False,,"Docs: modul pustaka Fase 6 gelombang A (panduan, changelog, roadmap, AGENTS)"
+e52d6936940a4a1ce8a14e7ea9131a427ba8b35c,2026-10-27T19:22:22+07:00,MANUSIA,fitur,tambah,307,6,True,,Tambah: modul pustaka `bita` + rencana gelombang B (Fase 6)
+aadff01e2ba2fd541bcaf38722840fbe3fbc4919,2026-10-27T19:28:19+07:00,MANUSIA,fitur,tambah,198,5,True,,Tambah: modul pustaka `base64` (Fase 6 gelombang B)
+01091aecbbb5f6867ce6460227bd754366da523a,2026-10-27T19:34:34+07:00,MANUSIA,fitur,tambah,216,3,True,,Tambah: modul pustaka `csv` (Fase 6 gelombang B)
+9fb0721f9b7d3837443152e90ab33e4d99d38d0a,2026-10-27T13:04:40Z,CAMPURAN,fitur,tambah,348,7,True,True,Tambah: generator expression + comprehension kamus/himpunan (Fase 5 item 3-4)
+93af4e2de3a0aa059728db8f0f4b6bd8ab08f3b8,2026-10-27T13:19:01Z,CAMPURAN,fitur,tambah,443,11,True,True,Tambah: cocokkan/kasus pattern matching + dokumentasi Fase 5
+58c0f5095e956bd9377bfb7de1b69c3bc7feea98,2026-10-27T13:41:29Z,CAMPURAN,fitur,tambah,307,20,True,True,"Tambah: indk --dis dan indk periksa (Fase 7, perkakas)"
+467ed815de65f5f45fef185a46f443d801835b74,2026-10-27T20:46:31+07:00,AI,fitur,tambah,528,10,True,True,"Tambah: builtin md5, sha1, sha256, sha512 (Fase 6 gelombang B)"
+15589257df0b2e85c054449fbfe1f4e963ceadb0,2026-10-27T20:46:43+07:00,AI,fitur,tambah,253,3,True,,Tambah: modul pustaka `jalur` (Fase 6 gelombang C)
+2b44b4948b60783383407db44c7ce95e3e38b8c0,2026-10-27T14:06:19Z,CAMPURAN,fitur,tambah,259,14,True,True,"Tambah: indk uji (Fase 7, perkakas)"
+dcfbbc4a34f5509beb1b935706c281342df1aa35,2026-10-27T14:08:54Z,CAMPURAN,lainnya,dokumentasi,32,1,False,,Dokumentasi: catat hasil pengukuran dan penghalang sisa Fase 7
+105ecf26fb391dc329ec4d71f28ba04fbca14c19,2026-10-27T21:09:11+07:00,AI,fitur,tambah,1924,11,True,True,"Tambah: modul pustaka `pola` (ekspresi reguler, Fase 6 gelombang C)"
+a9b07305de7811bc22cb5815d6744961d1c34384,2026-10-27T21:09:23+07:00,AI,dokumentasi,docs,285,2,False,,Docs: rencana Fase 6 gelombang C dan perbaiki perintah build manual
+d1a367fe3aa96f6e8a2d606b81cd5f4e15c734d9,2026-10-27T14:28:12Z,CAMPURAN,lainnya,rencana,207,2,False,,Rencana: scanner penyimpan komentar + indk rapikan
+4a86097891214388f49438bd1b6a89ecaa5c4bda,2026-10-27T21:28:12+07:00,AI,dokumentasi,docs,219,8,False,,"Docs: panduan, changelog, roadmap, katalog, dan editor untuk jalur dan pola"
+388864f8031f70d4ccf382438a22e65b0487c66a,2026-10-27T22:02:22+07:00,AI,dokumentasi,docs,385,12,False,,"Docs: panduan, editor, dan roadmap untuk sistem.c, --sandbox, opsi, log, proses"
+e5e8892108df763c8dc400bace8015f1fafbe3c2,2026-10-27T22:02:22+07:00,AI,fitur,tambah,2100,31,True,True,"Tambah: src/sistem.c, mode --sandbox, dan modul opsi, log, proses (Fase 6 C2)"
+fb954d1d82b9058219021f7f29a63af1d7f2624b,2026-10-27T15:14:35Z,CAMPURAN,fitur,tambah,325,22,True,True,Tambah: TOKEN_KOMENTAR opt-in + kerangka indk rapikan (Fase 7)
+a7ced330dd6bcd66461b502f046d953b8726894b,2026-10-27T22:26:29+07:00,AI,dokumentasi,docs,38,5,False,,Docs: urutan pencarian modul dan lokasi pustaka standar
+0d2ecd7ca7bb532d9ffed6e3f9d63125cdfa4400,2026-10-27T22:26:29+07:00,AI,perbaikan,perbaiki,454,11,True,True,"Perbaiki: pustaka/ dicari dari lokasi interpreter, bukan hanya direktori kerja"
+673a7e4e841a866f7dc3fa665fc8ad08301c31aa,2026-10-27T15:35:12Z,CAMPURAN,fitur,tambah,418,14,True,False,"Tambah: aturan tata letak indk rapikan (Fase 7, langkah 3-4)"
+232409b71128f9e69c7f460c29152026077380e2,2026-10-27T22:58:13+07:00,AI,dokumentasi,docs,425,12,False,,"Docs: panduan, editor, dan roadmap untuk klien HTTP, trigonometri, kura"
+1e1898a2e8cd22ccee9ba590a5f528b33e5f55af,2026-10-27T22:58:13+07:00,AI,fitur,tambah,973,18,True,True,"Tambah: klien HTTP, soket_sambung, trigonometri, dan modul kura (Fase 6)"
+48db215030a2411a913c666e10c35efed0b7b8f6,2026-10-28T00:44:23Z,CAMPURAN,lainnya,dokumentasi,110,2,False,,Dokumentasi: diagram arsitektur SVG di README
+e4e2b2a6b0d577610267d819497c4c87313ff120,2026-10-28T01:27:52Z,CAMPURAN,perbaikan,perbaiki,10,3,False,,Perbaiki: sorotan sintaks Indonesiaku di halaman dokumentasi
+1c6ae7668567f4183d16bb7d53be3e13e90a13b6,2026-10-28T01:45:21Z,CAMPURAN,lainnya,,8,1,False,,Perbaiki CI: beri timeout pada loop yang menjalankan semua examples
+bf7f796e5b0067632d862a9191eb6e80cf758361,2026-10-28T10:32:26Z,CAMPURAN,perbaikan,perbaiki,206,10,True,,Perbaiki: sinkronkan perkakas Fase 7 dengan ekstensi editor dan dokumentasi
+bc404b5abf4185f53130f40cbd3bb093a5dee384,2026-10-28T10:56:38Z,CAMPURAN,perbaikan,perbaiki,36,2,True,,Perbaiki: lengkapi daftar sumber di panduan instalasi dan komentar fuzz
+755a97d5d5b752c535badf8cd84050f99afad885,2026-10-28T12:19:56Z,CAMPURAN,lainnya,aset,0,1,False,,Aset: logo landscape Idk-Lang
+f1d943e9c08fa736402c04c9ae913690038b5ea7,2026-10-28T12:20:59Z,CAMPURAN,lainnya,dokumentasi,4,1,False,,Dokumentasi: pasang logo Idk-Lang di kepala README
+b670e3250bb6055c8b56b1392a1aeac0238f1bbf,2026-10-28T12:32:49Z,CAMPURAN,lainnya,situs,33,7,False,,Situs: favicon ikon kotak idk dan og:image di semua halaman
+9df23d17f2018f0dba5023e21db9b87083515bbe,2026-10-28T12:59:17Z,CAMPURAN,lainnya,,100,10,False,True,Rilis 1.2.0
+457605cb310f9ca47de85088466a2c61171462f2,2026-10-28T13:29:26Z,CAMPURAN,perbaikan,perbaiki,21,2,False,,Perbaiki: binari rilis menuntut AVX2 sehingga mati di CPU lawas
+d2fdd61934dee07e75f0e1a4762c93bc47c38519,2026-10-28T13:31:39Z,CAMPURAN,lainnya,rencana,146,2,False,,Rencana: anotasi tipe opsional (Fase 8)
+dd24ba91b4b709528b4f83a222bc65949675e626,2026-10-28T13:53:29Z,CAMPURAN,lainnya,,355,13,True,True,Anotasi tipe opsional (Fase 8)
+6c8d8b82d9cc29f9582a7c7bc35dddfb5496a1f9,2026-10-28T14:18:27Z,CAMPURAN,lainnya,,104,11,False,True,Rilis 1.3.0
+c0fe3e45f20a49f93db534b74f12f6d01038f1b4,2026-10-28T14:40:40Z,CAMPURAN,lainnya,,125,13,True,True,Rilis 1.3.1: perbaikan AVX2 1.3.0 tidak sampai ke artefak
+fb1d5a1ad1b67f865b62c84911f58a47c0966de7,2026-10-28T15:06:59Z,CAMPURAN,lainnya,,150,12,False,True,Rilis 1.3.2: penanda ISA palsu menolak binari di CPU tanpa AVX2
+80a6b8acd13607f8afb7ab1644c897412f3ac24f,2026-10-29T01:04:49Z,CAMPURAN,lainnya,ubah,0,2,False,,Ubah: logo latar transparan + versi opaque untuk latar terang
+4c0b388534f9dae02df777f93a19259373dc0858,2026-10-29T01:08:45Z,CAMPURAN,lainnya,ubah,0,4,False,,"Ubah: logo kotak baru -> favicon, apple-touch, og square"
+725c39dd398b5039d02623b4504d4075235162a9,2026-10-29T01:17:41Z,CAMPURAN,perbaikan,perbaiki,4,2,False,,Perbaiki: favicon hilang di playground dan di /favicon.ico
+2cc93379b83a775ce59c9b3dd0884197d198fd08,2026-10-29T01:19:37Z,CAMPURAN,dokumentasi,docs,5,1,False,,Docs: README pakai <picture> agar logo menyesuaikan tema GitHub
+b2ffe6e15c90cfabbf3d30a93b9652f670e6853d,2026-10-29T01:23:46Z,CAMPURAN,lainnya,ubah,2,2,False,,Ubah: README pakai logo transparan di light mode (tanpa kotak hitam)
+fb5d42409b705744c380415957fc2be91357b2a1,2026-10-29T01:41:51Z,CAMPURAN,dokumentasi,docs,763,7,False,,Docs: panduan jadi Bahasa Indonesia yang konsisten
+eb026433e51d547adcf7581fdc7ee26f5cb5f397,2026-10-29T08:42:19+07:00,MANUSIA,dokumentasi,docs,30,1,False,,"docs: prioritaskan LSP, HTTPS/TLS dan manajer paket setelah v1.3.2"
+f517125ada5a092b4708abc959dc8f5ab6bbeb74,2026-10-29T08:50:59+07:00,MANUSIA,dokumentasi,docs,47,1,False,,docs: tambah roadmap backend web dan dukungan database tanpa HTML
+149eabf0f62d214bddfe5d37f87a108e7c7595f2,2026-10-29T08:56:09+07:00,MANUSIA,dokumentasi,docs,36,1,False,,docs: rencanakan SSR dan template engine HTML untuk aplikasi web
+56ebf5942ec7b046e86183e0728a730e3fe3a62f,2026-10-29T01:58:40Z,CAMPURAN,perbaikan,perbaiki,102,13,False,,Perbaiki: seluruh rujukan menunjuk repo teguh02/Indonesiaku-Lang
+2a1a3da10cec5ac042e7e591ed1b6928318a4a02,2026-10-29T09:00:03+07:00,MANUSIA,dokumentasi,docs,218,1,False,,docs: susun roadmap fase 9-16 dengan langkah implementasi dan kriteria penerimaan
+59647ec7b12a53e565c8fb26fbb2b87d25b70316,2026-10-29T09:02:03+07:00,MANUSIA,dokumentasi,docs,34,1,False,,docs: tetapkan target SemVer dan gerbang rilis untuk fase 9-16
+f86389d8e8625282b3ccc000c3ed6b303e2e231f,2026-10-29T09:05:59+07:00,MANUSIA,dokumentasi,docs,51,1,False,,docs: roadmap fase 17 transfer file dan fase 18 kriptografi keamanan VM
+d46aef2fc7517dac2d07c185c80a24c716bfbd36,2026-10-29T09:08:09+07:00,MANUSIA,dokumentasi,docs,43,1,False,,docs: petakan kategori fitur PHP W3Schools ke Indonesiaku dan fase 19
+b0a1ff862cbf0d2481e9af2ae213bcc8fd4041e1,2026-10-29T09:10:21+07:00,MANUSIA,dokumentasi,docs,21,1,False,,docs: perinci portal tutorial dan referensi API website di fase 19
+d77a424434fde53666db74a7363047e4b9c0a2d5,2026-10-29T09:12:10+07:00,MANUSIA,lainnya,community,31,1,False,,community: tambah formulir dan panduan GitHub Discussions (general.yml)
+af5f882c878c84b230b75a0f64d4a557720e3e94,2026-10-29T09:12:12+07:00,MANUSIA,lainnya,community,57,1,False,,community: tambah formulir dan panduan GitHub Discussions (ideas.yml)
+d9754214524977bd3fefbce6c5ebc30d5bfe355f,2026-10-29T09:12:15+07:00,MANUSIA,lainnya,community,50,1,False,,community: tambah formulir dan panduan GitHub Discussions (q-a.yml)
+7fc94beed9903ed51914c6c38d84a3ce04284bfa,2026-10-29T09:12:17+07:00,MANUSIA,lainnya,community,41,1,False,,community: tambah formulir dan panduan GitHub Discussions (show-and-tell.yml)
+b8f971415661fab670095c3d02d776b1f9e385fa,2026-10-29T09:12:21+07:00,MANUSIA,lainnya,community,47,1,False,,community: tambah formulir dan panduan GitHub Discussions (announcements.yml)
+bf0a374e03e5e48c583d1d4639abf2b14f8b6111,2026-10-29T09:12:23+07:00,MANUSIA,lainnya,community,77,1,False,,community: tambah formulir dan panduan GitHub Discussions (PANDUAN_DISKUSI_GITHUB.md)
+06525eac8867c89b5deaec7c786eab02624fa754,2026-10-29T09:14:07+07:00,MANUSIA,lainnya,community,14,1,False,,community: siapkan konfigurasi dan pedoman sponsorship Indonesiaku
+c6e5c053d676db65e6ca692d543b724690ce7c86,2026-10-29T09:14:10+07:00,MANUSIA,lainnya,community,55,1,False,,community: siapkan konfigurasi dan pedoman sponsorship Indonesiaku
+43d5d0f5595df3086134ce52e964826d7ecdf1d9,2026-10-29T09:29:09+07:00,MANUSIA,lainnya,community,19,1,False,,community: hubungkan tombol Sponsor Indonesiaku ke GitHub Sponsors teguh02
+bfae4f57cb9c35498a9dd9fd2e5b0114c4a785c5,2026-10-29T09:33:14+07:00,MANUSIA,dokumentasi,docs,41,1,False,,docs: rincikan boilerplate library dan plugin Indonesiaku pada fase 14
+c1d119493ac47b3765dac86264b628735f640924,2026-10-29T09:40:31+07:00,MANUSIA,dokumentasi,docs,70,1,False,,"docs: tambah fase 20-22 async, realtime, observability dan kebijakan rilis"
+26ed7a92602f55d6231716968f6911c4e968715a,2026-10-29T09:51:46+07:00,MANUSIA,dokumentasi,docs,91,1,False,,docs: rencanakan fase 23-25 dan milestone validasi aplikasi nyata
+64471c0546041e3c0d08f9760a9cea6d19cd9403,2026-10-29T06:05:44Z,CAMPURAN,fitur,feat,233,13,True,True,feat(db): tambah db_batas_tunggu() untuk SQLite busy timeout
+5add7ce25d5c6bb9435bec2b9ad79aea7e35e148,2026-10-29T06:18:18Z,CAMPURAN,fitur,feat,519,11,True,,feat(http): http_ambil() mengikuti pengalihan 301/302/303/307/308
+702535efdb7002f53c6be7dc5c1aa1accdf17afd,2026-10-29T14:29:10+07:00,MANUSIA,dokumentasi,docs,87,1,False,,"Docs: tetapkan standar branch, commit, dan PR untuk kontributor dan AI agent"
+968a8d024f66767f71ed504d9f8c902a1113bb72,2026-10-29T14:29:32+07:00,MANUSIA,dokumentasi,docs,8,1,False,,Docs: rujuk standar branch untuk kontribusi manusia dan AI
+3cd4d19925bd4be1a212add0508ddbb3580d8054,2026-10-29T14:29:36+07:00,MANUSIA,dokumentasi,docs,4,1,False,,Docs: rujuk standar branch untuk kontribusi manusia dan AI
+7cbb34dbe7fd83dae3e33fe243fc209f3f48370c,2026-10-29T14:29:42+07:00,MANUSIA,dokumentasi,docs,4,1,False,,Docs: rujuk standar branch untuk kontribusi manusia dan AI
+9900938e994a9f7a507643f0077567528c24ecf7,2026-10-29T07:29:53Z,CAMPURAN,fitur,feat,273,7,True,False,feat(db): dukungan BLOB masuk-keluar untuk SQLite
+5dfdbaac17c2a2068a7a51c2d599de27a05562ae,2026-10-29T14:30:23+07:00,MANUSIA,fitur,tambah,1364,15,False,,Tambah: LSP VS Code untuk diagnostics dan navigasi kode
+43aba5f8a627e9330f7cdf43d9bb9479f689d4af,2026-10-29T14:37:20+07:00,MANUSIA,dokumentasi,docs,30,1,False,,Docs: konsolidasikan pedoman dokumentasi dan playground ke AGENTS.md
+16cbccaacd2d31f2caf32fdbfc572e37a9bbc4f2,2026-10-29T14:37:28+07:00,MANUSIA,dokumentasi,docs,155,1,False,,Docs: hapus dokumen lama setelah konsolidasi ke AGENTS.md
+21336ca73bb3957a1d16e3ea7dc9af66909b2b8e,2026-10-29T14:37:32+07:00,MANUSIA,dokumentasi,docs,258,1,False,,Docs: hapus dokumen lama setelah konsolidasi ke AGENTS.md
+4feb0cfa58416da278578e36525b93620b0ebbdd,2026-10-29T14:38:08+07:00,MANUSIA,dokumentasi,docs,33,1,False,,Docs: hapus CLAUDE.md dan gunakan AGENTS.md sebagai panduan utama
+504e05e7ed5ede0bccf7d454777a3dee93abb840,2026-10-29T07:50:40Z,CAMPURAN,fitur,feat,777,12,True,,feat(web): modul server HTTP dengan routing dan middleware
+10988fecec49c675b5cc65b9bf4ab8bc7eec0f60,2026-10-29T08:00:55Z,CAMPURAN,perbaikan,fix,77,4,True,True,fix(compiler): 'jika' di awal pernyataan tidak lagi dibaca sebagai ternary
+994918d83e6f4632379e70f56d718353ff8d979e,2026-10-29T10:00:03Z,CAMPURAN,fitur,feat,692,12,True,,"feat(web): parsing badan request (JSON, form, multipart) dan batas ukuran"
+f17876b2645343099cd550b449628b508939f231,2026-10-29T17:03:30+07:00,MANUSIA,perbaikan,perbaiki,45,2,False,,Perbaiki: rapikan rentang diagnostic dan resolusi definisi LSP
+7ecc42f9899c520715a774b39b505cdc1ef6818c,2026-10-29T10:27:08Z,CAMPURAN,fitur,feat,894,14,True,True,"feat(rilis): paket .deb + installer Windows, dan indk --periksa-pembaruan"
+df6fc911c012f3f37c27b9adf8572f36b569492b,2026-10-29T18:01:53+07:00,MANUSIA,dokumentasi,docs,16,1,False,,Docs: wajibkan identitas Indonesiaku dan rencanakan diagnostik unused ala Go
+92011ef7b4880374377dd528dac3d3be2b3df3b0,2026-10-29T18:01:56+07:00,MANUSIA,dokumentasi,docs,24,1,False,,Docs: wajibkan identitas Indonesiaku dan rencanakan diagnostik unused ala Go
+445bd5e4d5570a1484b0450ba0668de8db9545ee,2026-10-29T18:02:01+07:00,MANUSIA,dokumentasi,docs,16,1,False,,Docs: wajibkan identitas Indonesiaku dan rencanakan diagnostik unused ala Go
+ea1c6244f7ac45a2ac0b0b7de31b9cb86dedc8f2,2026-10-29T11:23:37Z,CAMPURAN,perbaikan,fix,51,3,True,,"fix(web): hitung Content-Length dalam byte, bukan karakter"
+2015635ae70870bc328dcf4b08e2260fbe0e65cf,2026-10-29T11:32:59Z,CAMPURAN,perbaikan,fix,11,1,True,,fix(tes): timeout(1) tidak ada di macOS
+24bb5a179868ff002c951dbe99b120840012e865,2026-10-29T11:42:39Z,CAMPURAN,perbaikan,fix,20,1,True,,fix(tes): 413 boleh dilaporkan curl sebagai 000
+d5d24f788311c0b430614a7eeb5a467ab49be651,2026-10-29T11:56:16Z,CAMPURAN,lainnya,chore,112,9,False,True,chore(rilis): naikkan versi ke 1.4.0
+ce1e53ffea0c16202f26946b4ae18b8e7bc8fae5,2026-10-29T12:22:30Z,CAMPURAN,dokumentasi,docs,45,3,False,,docs: selaraskan status roadmap dengan v1.4.0
+62972eabc3853d2334ca545f0260aaac845d9533,2026-10-29T12:32:29Z,CAMPURAN,perbaikan,fix,71,4,True,,fix(playground): naikkan image ke 1.4.0 + tes konsistensi tag
+0e92e14ac0756c8a4c87d904854c49d0b3923d2d,2026-10-29T12:37:07Z,CAMPURAN,perbaikan,fix,17,1,False,,fix(website): /panduan/ 403 -> alihkan ke docs.html
+70007862862226c5c973d603cf0924a61d930cb9,2026-11-01T13:39:33Z,CAMPURAN,dokumentasi,docs,10,1,False,,"Docs: catat penarikan paket Linux v1.2.0, v1.3.0, v1.3.1"
+558dab6f8c5923e14d877c286f69f150379c9810,2026-11-01T14:08:41Z,CAMPURAN,perbaikan,perbaiki,82,10,True,True,Perbaiki: Content-Length salah untuk badan biner
+79c942ffeebd896c26a69f017d298ce4fe2aa81a,2026-11-01T14:08:55Z,CAMPURAN,fitur,tambah,429,10,True,True,Tambah: penyajian berkas statis pada modul web (Fase 11 langkah 5)
+b40d501c54d2233a43a58b6e26ba27faeb88fc37,2026-11-01T14:09:04Z,CAMPURAN,dokumentasi,docs,271,6,False,,"Docs: panduan berkas statis, panjang_byte dan status Fase 11"
+843c8e007ac449115b6349ec1b47c85a353a8a00,2026-11-01T14:16:48Z,CAMPURAN,perbaikan,perbaiki,18,1,True,,"Perbaiki: tes statis web memakai alat khusus GNU, gagal di macOS"
+8421ed229df14464d3c0da1596071138fa3689a0,2026-11-01T23:47:08Z,CAMPURAN,dokumentasi,docs,194,6,False,,"Docs: batas waktu soket di panduan, editor, roadmap"
+32e3b4ce45e1a97d9debeb5f81488de5a359c21a,2026-11-01T23:47:08Z,CAMPURAN,perbaikan,perbaiki,250,10,True,True,Perbaiki: satu klien yang diam membekukan server HTTP selamanya
+4e3ce4f839dd8f5ab4f7d86763ca7246289a1a2e,2026-11-02T01:00:49Z,CAMPURAN,dokumentasi,docs,241,4,False,,"Docs: app.jalankan() di panduan, changelog, roadmap"
+5aa0c46c22de365ef23a72cd70c911fdc9722ec2,2026-11-02T01:00:49Z,CAMPURAN,perbaikan,perbaiki,69,5,True,,Perbaiki: empat gelung server tanpa batas waktu
+4773a47a874f7272a55d25cd1ab9bcb9f5231d7b,2026-11-02T01:00:49Z,CAMPURAN,fitur,tambah,375,6,True,,Tambah: gelung server app.jalankan() di pustaka web
+871e87db27d98eb430f4a4225158468017c38237,2026-11-02T01:32:05Z,CAMPURAN,dokumentasi,docs,34,3,False,,"Docs: contoh API siswa di panduan, changelog, roadmap"
+4ede3c71f4f600cc3bf10b2e7a6c026672efe02f,2026-11-02T01:32:05Z,CAMPURAN,fitur,tambah,253,3,True,,Tambah: contoh CRUD REST API di atas SQLite
+1f0ad4f5a4cdce1962c2888c37ac59e51bd76ea4,2026-11-02T02:35:23Z,CAMPURAN,perbaikan,perbaiki,64,2,False,True,Perbaiki: indk gagal dibangun di musl/Alpine
+bb0b45c43e724f33d427892a821094fa909a06e9,2026-11-02T02:35:24Z,CAMPURAN,dokumentasi,docs,488,6,False,,Docs: bab 08 Deployment
+56beab4320930c642e35d7504cbcef1eeb8d9beb,2026-11-02T02:35:24Z,CAMPURAN,fitur,tambah,255,5,True,,Tambah: konfigurasi deployment aplikasi di docker/aplikasi
+6c2090944c2c78d4d7e7f7e67539cfdb93c1ce08,2026-11-02T02:35:24Z,CAMPURAN,perbaikan,perbaiki,40,3,True,,Perbaiki: server tidak bisa dipakai di dalam container
+ba419cb5435690f0722cf91290e6e04539065108,2026-11-02T04:41:08Z,CAMPURAN,dokumentasi,docs,183,3,False,,Docs: bahan keputusan TLS untuk HTTPS (Fase 11 langkah 2)
+ebc6f8d418dba770867aa7f648c2172c29c8578e,2026-11-02T14:45:16+07:00,CAMPURAN,fitur,tambah,206377,297,True,True,Tambah: HTTPS untuk klien http_ambil (Fase 11 langkah 2) (#31)
+e7d990f4fd3b88c6bd924dc3f60d14fab9f21b8f,2026-11-02T15:39:36+07:00,CAMPURAN,lainnya,,411,11,True,True,Perbaiki parsing badan kuadratik + uji beban Fase 11 langkah 7 (#32)
+e6f9db576aebb984781ec058919ce1ce6358ecde,2026-11-02T17:13:00+07:00,CAMPURAN,lainnya,,254,7,True,,Perbaiki akumulasi string kuadratik di pustaka jalur input luar (#33)
+55248ca57f9650ae8be0ffdaa426ec784f114d0a,2026-11-02T17:56:43+07:00,CAMPURAN,lainnya,,4,1,False,,Perbaiki tabel ringkasan status fase yang usang (#34)
+865b7fe781ea78dc69b10f345f751173283af8df,2026-11-02T18:26:19+07:00,CAMPURAN,lainnya,,1396,13,True,True,Driver PostgreSQL (Fase 10) + REST API CRUD di atasnya (Fase 11 langkah 7) (#35)
+ea7c87f640b643a0ed8a5338bd03d6c1149bb6b1,2026-11-02T19:01:20+07:00,CAMPURAN,lainnya,,1051,6,True,,Driver MySQL/MariaDB lewat prepared statement (Fase 10 WDB-02) (#36)
+daddbfd936764b27bbaae522c277bd37ea9e9132,2026-11-03T09:46:13Z,MANUSIA,perbaikan,perbaiki,195,1,False,,Perbaiki: hapus sisa draf COM_QUERY di pustaka/my.idk
+0e6da1604f947ddb07c100fc221a871cebc5d2e7,2026-11-03T09:46:24Z,MANUSIA,perbaikan,perbaiki,184,5,True,,Perbaiki: selaraskan daftar builtin ekstensi VS Code dengan VM
+d1718aaf4cecee964cc26c53001fa0aafa233935,2026-11-03T09:46:28Z,MANUSIA,dokumentasi,docs,10,1,False,,Docs: catat pembersihan my.idk dan daftar builtin ekstensi di CHANGELOG
+be6f702ef621263fef140edbb61d769389d56d16,2026-11-03T16:55:03+07:00,AI,dokumentasi,docs,3268,6,False,,"Docs: rencana uji lintas OS (Windows, macOS, Linux) + hasil uji Windows 1.4.0"
+86d351238388201fa0716b60943cdfc0fb76562e,2026-11-03T17:17:07+07:00,AI,dokumentasi,docs,186,4,False,,"Docs: Unicode di Windows (rencana selesai, CHANGELOG, AGENTS, panduan)"
+4be6a47192033b57f9906920d35fc1e10b90f4e5,2026-11-03T17:17:07+07:00,AI,perbaikan,perbaiki,443,18,True,True,"Perbaiki: jalur Unicode, BOM, dan konsol UTF-8 di Windows"
+cdd8ff8f2279f2ad5ade3b09203cd28cf6561558,2026-11-03T10:20:53Z,MANUSIA,lainnya,,654,11,True,,WDB-04: API basis data bersama lewat pustaka/db.idk
+25132b00fe5ebc52d3ad4c63c220d105be9a195a,2026-11-03T17:55:03+07:00,AI,dokumentasi,docs,3013,5,False,,Docs: hasil uji ekstensif Windows 1.4.0 (multi-agen)
+5ea95fc9b3d475aab1332126f6cf1da991af8bb1,2026-11-03T18:07:00+07:00,AI,perbaikan,perbaiki,83,3,True,True,Perbaiki: argumen bernama di dalam fungsi mengosongkan argumen posisi (T-U3)
+03d5b93abd68c8cfdd2811353aa2e9d0693b39cb,2026-11-03T18:07:01+07:00,AI,dokumentasi,docs,69,2,False,,Docs: rencana dan changelog perbaikan argumen bernama (T-U3)
+3512074348318265f75960b3d909494041904054,2026-11-03T18:12:24+07:00,AI,dokumentasi,docs,58,2,False,,Docs: rencana dan changelog perbaikan kondisional assignment (T-U2)
+512080395c19a8810075053b70e2a2a1211dfe88,2026-11-03T18:12:24+07:00,AI,perbaikan,perbaiki,66,3,True,True,Perbaiki: x = a jika c selain b melewatkan assignment (T-U2)
+58ab309e89fc097967dcb7db86b1683b590939cd,2026-11-03T18:12:25+07:00,AI,dokumentasi,docs,70,3,False,,Docs: pastikan dengan kurung ditolak saat kompilasi (T-U5)
+0e07151a51538fc2fc1860958222914e508f88b3,2026-11-03T18:12:25+07:00,AI,perbaikan,perbaiki,63,3,True,True,Perbaiki: subkelas galat bawaan kehilangan leluhur (T-U6)
+1b7bd1cb0372057175d12c6e63377971d28431fe,2026-11-03T18:12:25+07:00,AI,perbaikan,perbaiki,34,5,True,True,"Perbaiki: pastikan(kondisi, pesan) selalu lolos (T-U5)"
+283026962f553b2f4d5cabcb962343110e0bf2ac,2026-11-03T18:12:26+07:00,AI,dokumentasi,docs,62,2,False,,Docs: rencana dan changelog perbaikan MRO galat turunan (T-U6)
+9e7f7bf14841faac720422a1531601be833b1ce7,2026-11-03T18:34:59+07:00,AI,dokumentasi,docs,53,2,False,,Docs: rencana dan changelog perbaikan baris panjang (T-U10)
+1783a5f5795fa3b9ac2803172841365e11d9210c,2026-11-03T18:34:59+07:00,AI,perbaikan,perbaiki,170,5,True,True,Perbaiki: input() dan REPL memotong baris pada 1023 bita (T-U10)
+d27dcdd6cc620e1d1e8a45d91464b065f8a88f33,2026-11-03T18:35:00+07:00,AI,dokumentasi,docs,78,3,False,,"Docs: rencana, changelog dan AGENTS untuk galat ajaib tertunda (T-U7)"
+30513a67d085631d0cbc1903a120ccba52f9104b,2026-11-03T18:35:00+07:00,AI,perbaikan,perbaiki,184,7,True,True,Perbaiki: galat dari _logika_/_sama_ tertunda (T-U7)
+cf4edd6d9105e2e3b1d1f3d8e6564acc1e7aa587,2026-11-03T18:35:04+07:00,AI,perbaikan,perbaiki,41,9,True,True,Perbaiki: comprehension mengabaikan token setelah syarat (T-U9)
+2b988e78e67747ea9dd8cdff0ffbcc49ffdf0727,2026-11-03T18:35:05+07:00,AI,dokumentasi,docs,69,3,False,,Docs: rencana dan changelog comprehension token sisa (T-U9)
+394244bf5fb649b1d85db5010a504713f06e4f1e,2026-11-03T18:35:24+07:00,AI,lainnya,chore,1,1,True,,Chore: hapus berkas sisa tests/web_statis_server.sh yang ikut ter-commit
+bc4709bd45144e9de590d637f992e114e035567e,2026-11-03T18:36:37+07:00,AI,dokumentasi,docs,105,4,False,,"Docs: panduan, AGENTS, rencana dan changelog impor berkas (T-U8)"
+b2883da6112905bc53e3886eba3df76aa370718b,2026-11-03T18:36:37+07:00,AI,perbaikan,perbaiki,84,6,True,True,"Perbaiki: impor ""berkas.idk"" menulis ke tabel builtin bersama (T-U8)"
+2ee25ef23e4de6be704cf49bcfaee517e690c143,2026-11-03T18:41:40+07:00,AI,perbaikan,perbaiki,107,3,True,True,Perbaiki: nan menjadi INT64_MIN di bulat/lantai/atap/bulatkan (T-U12)
+c7a8357fcdc2831e478ebd772cac362991df9818,2026-11-03T18:41:41+07:00,AI,dokumentasi,docs,71,3,False,,"Docs: pustaka standar, rencana dan changelog nan ke bulat (T-U12)"
+a6ded4fe094e44e7a0edbc00607cc871a8d70a16,2026-11-03T18:44:14+07:00,AI,perbaikan,perbaiki,94,7,True,True,"Perbaiki: == dan hash pada struktur dalam salah diam-diam atau crash (T-U13, T-U14)"
+0690315c5fb5ea1bdeb07cb5873e3f277cfd0a9f,2026-11-03T18:44:15+07:00,AI,dokumentasi,docs,83,4,False,,"Docs: panduan, AGENTS, rencana dan changelog kedalaman == dan hash (T-U13, T-U14)"
+db60110cc852dfadba0d07fb129eff94850959a7,2026-11-03T18:45:25+07:00,AI,dokumentasi,docs,63,3,False,,"Docs: pustaka standar, rencana dan changelog bita UTF-8 ketat (T-U16)"
+bdb792c779986719e0599d94a0b025d335934a2a,2026-11-03T18:45:25+07:00,AI,perbaikan,perbaiki,106,3,True,,Perbaiki: bita.ke_teks menerima UTF-8 overlong dan tidak sah (T-U16)
+0223e596df9280c44e3c65311a97c5118019f660,2026-11-03T18:48:06+07:00,AI,dokumentasi,docs,92,3,False,,"Docs: pustaka standar, rencana dan changelog JSON ketat (T-U15)"
+ba58246e06c42f3999dd63b993e6740a3cfc1a1d,2026-11-03T18:48:06+07:00,AI,perbaikan,perbaiki,213,3,True,,Perbaiki: json_urai/json_teks menerima dan menghasilkan JSON tidak sah (T-U15)
+adaf9f95873354231a85d0e0d2dd5c4594650f0d,2026-11-03T18:50:51+07:00,AI,dokumentasi,docs,67,2,False,,Docs: rencana dan changelog sumber ber-NUL (T-U11)
+8751f51f7498eef6d442bc44e8ecd02af466e615,2026-11-03T18:50:51+07:00,AI,perbaikan,perbaiki,54,7,True,True,Perbaiki: bita NUL di sumber memotong program dan berkas rapikan --tulis (T-U11)
+84c90f7bed35ea94c140537321c36937ed560386,2026-11-03T18:51:15+07:00,AI,uji,test,2,1,True,,Test: nomor baris ke_teks di bita_utf8_salah.err mengikuti validasi baru (T-U16)
+b9b97cc885c5ae3a153263cca3e881e81c07021a,2026-11-03T19:19:03+07:00,AI,dokumentasi,docs,138,6,False,,"Docs: K21, spesifikasi, panduan, AGENTS dan changelog lingkup variabel untuk (T-U4)"
+21d1d6c4207e934d0ed0f9569ca5771369e1de49,2026-11-03T19:19:03+07:00,AI,perbaikan,perbaiki,91,3,True,True,"Perbaiki: variabel untuk berlingkup blok, tidak seperti Python (T-U4, K21)"
+434b4bbe3aab2ae13f4a6f183b8e8f95b6de4735,2026-11-03T19:38:11+07:00,AI,dokumentasi,docs,28,7,False,,Docs: ganti nama folder docs/testing menjadi docs/TESTING
+321005d41365f35115e4c5e9a7b733329ad50c53,2026-11-03T19:39:21+07:00,AI,dokumentasi,docs,40,2,False,,"Docs: satu temuan, satu branch, satu PR untuk perbaikan bertahap"
+5e5eb3c283efe1bd07fef2a83cf206ed7c6423dc,2026-11-03T20:48:40+07:00,AI,lainnya,,10,2,True,,Merge main ke perbaikan/input-baris-tanpa-batas (selesaikan konflik CHANGELOG dan test_all.sh)
+11a4132425f6382a6e97cce2f0feaa765404b2a7,2026-11-03T22:20:46Z,MANUSIA,perbaikan,perbaiki,61,4,True,True,Perbaiki: nama tak terdefinisi menaikkan GalatNama
+8b7a8c80d8faa5e05fc9e4a7e18887e6103a4312,2026-11-03T23:33:10Z,MANUSIA,perbaikan,perbaiki,255,9,True,True,Perbaiki: kecuali X tanpa sebagai menjadi bertipe
+cace80eef89ebabcb1a7fe3306f2059d8bdd7b06,2026-11-04T10:46:52Z,CAMPURAN,perbaikan,perbaiki,742,10,True,True,Perbaiki: kompilator mati tanpa pesan pada kode sangat bersarang (T-W8)
+e35d9a5ea27fac615985bfbc008333a1d26f191c,2026-11-04T11:04:07Z,CAMPURAN,lainnya,,359,8,True,,Uji Windows setara Linux di CI + golden fitur bahasa menyeluruh
+74ba653e490e37bcce844ac51f1970922861a0d1,2026-11-04T11:18:57Z,CAMPURAN,lainnya,,6,1,False,,CI Windows: keluarkan test_baca_sumber.sh (POSIX /proc/self/fd/0)
+a8a89bba91e691074d4a560e72d091523b7423b2,2026-11-04T12:58:26Z,CAMPURAN,perbaikan,perbaiki,161,16,True,True,Perbaiki: kelas galat bawaan menerima pesan konstruktor (GALAT-19)
+cc0e8e304c307fa66fd3a20038887d22fe61305c,2026-11-04T13:43:18Z,CAMPURAN,lainnya,,309,10,True,True,Tambah `indk profil`: histogram opcode + hitung panggilan
+8bf98604d7d9c973c95b11fa816ea1b62fe66b40,2026-11-04T14:32:49Z,CAMPURAN,lainnya,,340,10,True,,"Benchmark mengukur beban nyata, bukan placeholder"
+a2aedd63b9924780a597c2ca08a5b9ab2a85bccc,2026-11-04T15:04:35Z,CAMPURAN,lainnya,,437,8,True,True,Tambah `indk awakutu`: debugger CLI
+ec611f66052dbde16c6df7f82469781b546f113c,2026-11-04T22:08:51Z,CAMPURAN,perbaikan,perbaiki,208,8,True,False,Perbaiki: blok `coba` dalam fungsi rekursif berhenti di kedalaman 64
+30f3d79335f4682d6ddf7c4851ab595f6eeaa923,2026-11-04T23:58:50Z,CAMPURAN,lainnya,ubah,316,7,True,False,"Ubah: tabel hash pakai mask, bukan modulo"
+998b135b6b6ddf6b6ec320d8f0eaba8bcc817b4f,2026-11-05T00:31:16Z,CAMPURAN,perbaikan,perbaiki,14,1,True,,Perbaiki: tes tabel mask gagal di Windows karena CRLF
+3a27d19bb843247c2f313f25b3db44552dbbb683,2026-11-05T00:54:44Z,CAMPURAN,dokumentasi,docs,28,1,False,,Docs: tandai status Fase 7 di ROADMAP
+e641be7e016cea165de2794720793a551b3ab404,2026-11-05T20:43:47+07:00,MANUSIA,fitur,tambah,699,16,True,,Tambah: lapisan migrasi skema (WDB-05) (#69)
+d45dcb59cc397806eed27ce07d73723c9975dd76,2026-11-05T21:43:16+07:00,MANUSIA,dokumentasi,docs,38,1,False,,Docs: tandai T-U2-T-U16 selesai beserta berkas regresinya (#70)
+3e76f9f0c860d4e1b628a64646291c2616db0501,2026-11-05T21:43:22+07:00,MANUSIA,fitur,tambah,1037,11,True,,"Tambah: mesin templat HTML server-side (SSR-01..04, SSR-06) (#71)"
+11805e1f34f4f5edd5013bea0695a5f6895b9347,2026-11-05T23:57:23+07:00,MANUSIA,lainnya,ci,35,4,False,,Ci: jalankan tes contoh panduan di Windows (#72)
+ef3357672b6657a1177c9479ba0f29b933f06b14,2026-11-06T05:37:55+07:00,MANUSIA,dokumentasi,docs,148,6,False,,Docs: lengkapi checklist rilis mesin templat (#73)
+f1baaa3e6a5238890bda7bcf21aa54c86ef7b7a9,2026-11-06T06:18:29+07:00,MANUSIA,perbaikan,perbaiki,84,6,True,True,Perbaiki: kompilasi menggantung pada sarang dalam + fungsi anonim (#74)
+316e3b3b5ac8459af45f77efd3201651f941f460,2026-11-06T06:57:22+07:00,MANUSIA,fitur,tambah,837,26,True,,Tambah: include komponen dan pewarisan templat (SSR-05) (#75)
+594fcc53f6ca2e133acc5ca26bc3450190af4112,2026-11-06T19:58:26+07:00,MANUSIA,lainnya,perf,395,6,True,,"perf(templat): cache node terurai — parsing 73,7% biaya tiap render (#76)"
+5fd639c819c5e2c1a953ded2fe35689dfc35cfa2,2026-11-06T20:51:34+07:00,MANUSIA,perbaikan,fix,372,9,True,,"fix(web): HEAD pada rute ber-GET dibalas 405, bukan 200 (#77)"
+91c1d819e7e4fcb035117a2b3a1fa1071bbed161,2026-11-06T21:43:30+07:00,MANUSIA,perbaikan,fix,500,7,True,,"fix(templat): galat menyebut berkas, dan parsing tidak lagi kuadratik (#78)"
+e6f70ccd23ddd4517413fe38e16c76ce82790ca0,2026-11-06T22:25:30+07:00,MANUSIA,dokumentasi,docs,65,3,True,,"docs: contoh multikondisi memakai jika_lain, bukan jika bertumpuk (#79)"
+61bb78d8805960ded21f5569b2706189d1c983a4,2026-11-06T23:18:00+07:00,MANUSIA,dokumentasi,docs,347,6,True,,docs: contoh website dinamis SQLite + deployment aplikasi templat (#80)
+66dc678b65ee12491b51f448633df9c93f254caa,2026-11-07T05:09:22+07:00,MANUSIA,perbaikan,perbaiki,291,11,True,True,Perbaiki: soket_dengar() lolos dari mode --sandbox + audit status Fase 8 (#81)
+310554fd5845618dea0b766aea614e38148eda09,2026-11-07T09:45:42+07:00,MANUSIA,fitur,tambah,854,19,True,True,Tambah: API embedding C (libindk.a) — Fase 8 (#82)
+65f1d62458ad8320112339188291830dfe912268,2026-11-07T09:45:52+07:00,MANUSIA,perbaikan,perbaiki,246,9,True,,Perbaiki: BLOB/bytea tersimpan sebagai teks di driver PostgreSQL & MySQL (#83)
+b64b288148eb8661f2309c7a5d28ae827bdba7a6,2026-11-07T11:56:33+07:00,MANUSIA,fitur,tambah,376,14,True,False,Tambah: uji kegagalan TLS dan timeout di driver DB — Fase 10 butir 7 selesai (#84)
+8f54bffc13372a410e1ee26b82f5c66c462fdd95,2026-11-07T15:20:51+07:00,MANUSIA,fitur,tambah,440,13,True,True,Tambah: acak_bita() sumber acak kriptografis — prasyarat Fase 13 (#85)
+c3c3c6bc8d2494e2211680cc32d09d2a8f1473d7,2026-11-07T16:14:32+07:00,MANUSIA,lainnya,,180,15,False,False,"Rilis v1.5.0 — Fase 10, 11 dan 12 terbit bersama (#86)"
+fdf927282c55faf6cbf2d048937443617ada2012,2026-11-07T17:38:54+07:00,MANUSIA,lainnya,,300,3,False,,Perbaiki status roadmap yang basi dan tambahkan panduan upgrade di README (#87)
+2974fefbbc8f51899860a7f2627025c57733e2ad,2026-11-07T17:53:12+07:00,MANUSIA,lainnya,,0,1,False,,Berhenti melacak libindk.a — artefak build yang lolos .gitignore (#88)
+bc14293893b1832580cc921c314561e592d749a8,2026-11-07T22:23:24+07:00,CAMPURAN,fitur,fitur,755,15,True,,fitur(web): kuki dan sesi untuk aplikasi web (WEB-04) (#89)
+0cc3ab40fdc16c994e2ae535ed0c43a2bd4f0224,2026-11-08T05:10:11+07:00,CAMPURAN,fitur,fitur,629,14,True,,fitur(web): proteksi CSRF (WEB-05) (#90)
+a07e0fa24e6710a036263305e638dba483fe6392,2026-11-08T05:25:04+07:00,CAMPURAN,fitur,fitur,817,15,True,,"fitur(web): autentikasi, hashing sandi, dan peran (WEB-06) (#91)"
+27c425361a6553e66cbd9f96de1d84ce1ab17254,2026-11-08T07:03:03+07:00,CAMPURAN,fitur,fitur,841,19,True,True,fitur(web): CORS dan trusted-proxy (WEB-05) (#92)
+f34aca357ccd5fe5d2f5c8c95baeb5e51fffe5b3,2026-11-08T07:30:04+07:00,CAMPURAN,fitur,fitur,651,13,True,,fitur(web): contoh CRUD berlogin dan regresi keamanan (Fase 13 tuntas) (#93)
+fb0ffc2c0942682beb40fee5e5c5c4629ab1438c,2026-11-08T09:26:39+07:00,CAMPURAN,lainnya,,129,14,True,False,Rilis v1.6.0-rc.1 — kandidat rilis Fase 13 (keamanan web) (#94)
+164d6241db9e710ee7bd6bc0a352185dbc75e41e,2026-11-08T09:44:55+07:00,CAMPURAN,perbaikan,perbaiki,6,1,False,,Perbaiki: tag prarilis terbit sebagai rilis stabil (#95)
+1ef4c9e8387c910869a8e83abcc5340dcfa208fe,2026-11-08T13:47:05+07:00,CAMPURAN,uji,test,299,8,True,,test: penjaga cakupan lintas-OS + daftarkan dua tes portabel ke Windows (#96)
+8a84b419fd286140ec66640e8fcc9cd6e3d1f2a7,2026-11-08T17:47:25+07:00,CAMPURAN,perbaikan,perbaiki,219,9,True,True,Perbaiki: indk periksa buta terhadap lokal implisit (T-U1) (#97)
+72fa1ccd3a071850865ebcb0d7bf1292d2511369,2026-11-08T21:41:48+07:00,AI,perbaikan,perbaiki,9,1,True,,Perbaiki: uji badan UTF-8 web_badan_server.sh gagal di Windows (OTO-08) (#100)
+d743a227d5200d945986289b2653f7bbd27f6b13,2026-11-08T21:41:52+07:00,LAIN,perbaikan,perbaiki,357,13,True,True,Perbaiki: ada_berkas() untuk berkas yang dikunci proses lain (T-W9) (#98)
+53746db6b547149872207d7ce536e2243cea636b,2026-11-08T21:42:06+07:00,LAIN,dokumentasi,docs,2,1,False,,Docs: tandai T-W5 selesai -- sudah tertutup perbaikan T-W1 (1.5.0) (#101)
+dd986d33e158f28b57f1c4d9861326865c86678e,2026-11-08T21:42:58+07:00,AI,uji,test,111,1,False,,Test: hasil uji Windows untuk v1.6.0-rc.1 (#99)
+6da30d0ea485963ebd460c598d5a9e8216c6ede7,2026-11-08T22:04:20+07:00,LAIN,perbaikan,perbaiki,317,7,True,True,Perbaiki: jalur lebih dari 260 karakter di Windows (T-W10) (#102)
+253300debe940da7c113f1b7642d63f8ecc51a1a,2026-11-08T22:19:59+07:00,CAMPURAN,dokumentasi,docs,13,1,False,,"Docs: tandai T-W1, T-W2, T-W3 selesai di tabel temuan (#103)"
+0dc46f6b886631c7b8d03d8fbfa9fe83d7bda46a,2026-11-08T22:23:55+07:00,LAIN,perbaikan,perbaiki,251,8,True,False,Perbaiki: REPL menolak kode dari pipa PowerShell yang diawali BOM (T-W12) (#104)
+727de26ad5b4951323663066e8b7d037779c50e4,2026-11-09T05:27:49+07:00,CAMPURAN,lainnya,rilis,114,13,False,False,Rilis: naikkan versi ke 1.6.0 stabil (#105)
+88d374d5f343d9a8459417951dfd83a8a539e2ea,2026-11-09T06:01:52+07:00,CAMPURAN,uji,test,93,2,False,,Test: hasil uji paket rilis Linux untuk 1.6.0 (#106)
+85fdc886eb2ccf71aeb4f4a49aedd55fc366761b,2026-11-10T05:30:19+07:00,CAMPURAN,lainnya,ubah,41,3,True,,Ubah: bahasa saran pemutakhiran agar baku dan netral (#107)
+37d403820011940fe99fd8df2729f1fe9d77e311,2026-11-10T06:14:43+07:00,CAMPURAN,fitur,tambah,274,13,True,,Tambah: ikon Indonesiaku untuk pemasang Windows (#108)
+5dd713a2991a059ff1a40c5b091f2f85a0cd021b,2026-11-10T06:45:07+07:00,CAMPURAN,dokumentasi,docs,292,5,False,,Docs: rencana uji skenario aplikasi web utuh (#110)
+b9cba2d1a7b0bb016f7f316cc398886950f8e1dd,2026-11-10T07:10:51+07:00,CAMPURAN,lainnya,ubah,10,3,True,,Ubah: samakan versi ekstensi VS Code dengan INDK_VERSION (#111)
+168a66c017759e9cf8a48c6ce2c2e6a4fbb7d7d1,2026-11-10T07:19:41+07:00,CAMPURAN,perbaikan,perbaiki,171,5,True,False,"Perbaiki: pengenal berawalan ""dan"" ditolak kompiler (#112)"
+ecd66a762734515edde44b1b4651789565c60950,2026-11-10T21:17:54+07:00,CAMPURAN,fitur,tambah,2,2,False,,Tambah: ikon ekstensi VS Code untuk Marketplace (#114)
+2cd7ec2b30725e4a86e5072865a631c82b7cde26,2026-11-10T21:28:35+07:00,CAMPURAN,perbaikan,perbaiki,41,4,True,False,"Perbaiki: block() tidak maju di batas sarang, kompiler OOM (#109) (#113)"
+5ada5e58a474769617be3b31f44d9591b15f74bf,2026-11-10T22:44:23+07:00,CAMPURAN,lainnya,rilis,118,14,False,False,Rilis: naikkan versi ke 1.6.1 (#115)
+e5e1666b7b0692ae0b8613a2a36f7513fba324b4,2026-11-11T08:32:09+07:00,CAMPURAN,dokumentasi,docs,96,3,False,,Docs: hasil uji Linux untuk rilis 1.6.1 (#116)
+f8bf44ebc9a18f2e66fb273d2d09088e975149cd,2026-11-11T12:14:55+07:00,AI,dokumentasi,docs,146,1,False,,Docs: hasil uji Windows untuk rilis 1.6.1 (#117)
+57ad66a5ca70b5336f5eac576c6ad0926d466b51,2026-11-11T12:15:05+07:00,AI,perbaikan,perbaiki,323,7,True,,Perbaiki: uninstaller Windows meninggalkan entri PATH (T-W13) (#118)
+b91c5482b9a65d2f98663eac31652118b0782c28,2026-11-11T12:16:55+07:00,AI,lainnya,keamanan,230,8,True,True,Keamanan: argumen proses.jalankan ke berkas .bat/.cmd di Windows (T-W6) (#119)
+df33f951cf726ca0be33a116194147c7e598f1b7,2026-11-11T12:17:57+07:00,AI,perbaikan,perbaiki,83,8,True,True,"Perbaiki: jam() mengukur waktu dinding di Windows, bukan waktu CPU (T-W11) (#120)"
+fbf10f4def37f63a3b730f9d01430f43913573a4,2026-11-11T12:18:42+07:00,AI,lainnya,keamanan,89,6,True,True,Keamanan: soket_dengar kedua pada port yang sama berhasil di Windows (T-W7) (#121)
+99932dc4ff85bd103b32684ddf8cf74d94bf41ce,2026-11-11T13:07:11+07:00,AI,lainnya,rilis,113,17,False,False,Rilis: naikkan versi ke 1.6.2 (#122)
+94504ac0d816d071b6d2e54a72aa700657e5985a,2026-11-11T13:50:42+07:00,AI,lainnya,templat,1599,48,True,,"Templat: filter, isi induk, sertakan berparameter, dan makro (#124)"
+c27288280c99d49c6e7fca68b32072433437397f,2026-11-11T13:53:04+07:00,AI,dokumentasi,docs,102,1,False,,Docs: hasil uji Windows paket rilis 1.6.2 (#123)
+71b5ac6c76c793c8d64e91e7e92c99b5933e76d8,2026-11-11T14:01:49+07:00,AI,lainnya,rilis,122,17,False,False,Rilis: naikkan versi ke 1.7.0 (#125)
+b945e934d7270c03a9ff00da0467f7aa0d5bc6e7,2026-11-11T19:35:40+07:00,CAMPURAN,perbaikan,perbaiki,112,5,True,,Perbaiki: badge versi footer tidak sinkron antar halaman (#126)
+c6e9180d7af927804bbfd306dd8b6f2716651d3e,2026-11-11T19:35:45+07:00,CAMPURAN,dokumentasi,docs,148,3,True,,Docs: ekstensi VS Code resmi di Marketplace (#127)
+bb5bd7f6b0ddeed7abcb0f631316c54bfb4a45be,2026-11-11T20:04:13+07:00,CAMPURAN,dokumentasi,docs,202,2,True,,Docs: perbarui Fitur Utama perkenalan dari v1.0.0 ke keadaan nyata (#128)
+227a9c2180ab03bf03453b527a329aef916f0929,2026-11-11T20:04:18+07:00,CAMPURAN,fitur,fitur,271,2,True,,Fitur: halaman Riwayat Rilis otomatis dari GitHub Releases API (#129)
+50c44a916ce02ec700b7171984ff260b54b0ff49,2026-11-11T20:26:03+07:00,CAMPURAN,perbaikan,perbaiki,113,2,True,,Perbaiki: panduan .md tersangkut cache browser setelah situs diperbarui (#130)
+5a2c792787219c1863f2fb8a34311cbc3e7e7e7d,2026-11-11T20:26:08+07:00,CAMPURAN,fitur,fitur,207,3,True,,Fitur: sematkan video YouTube di dokumentasi + video pengenalan di Ikhtisar (#131)
+f244186ff4e9c71789df2ba569249d0092ef5140,2026-11-11T20:27:20+07:00,CAMPURAN,dokumentasi,docs,51,2,True,,Docs: sematkan video panduan instalasi di bab Instalasi (#132)
+8a3da11eaf053d16a914b63548f24c79d04acdee,2026-11-11T21:37:51+07:00,CAMPURAN,fitur,fitur,230,3,True,,Fitur: tombol Salin sebagai Markdown di dokumentasi (#133)
+7547a1e9b5de1b6794c1513c4a7eb26bc5021ba9,2026-11-11T22:02:53+07:00,CAMPURAN,perbaikan,perbaiki,186,3,True,,Perbaiki: tombol template playground hilang karena kamus i18n basi (#134)
+2457a1a0e88056b46fa28206743dec11fc322788,2026-11-15T18:40:52+07:00,CAMPURAN,perbaikan,perbaikan,89,7,True,True,perbaikan: indeks di luar jangkauan selalu menaikkan GalatIndeks (#135)
+55f8acd6370348af27fb928c24078c8f12e7203c,2026-11-15T19:33:38+07:00,CAMPURAN,perbaikan,perbaikan,234,7,True,True,"perbaikan: jumlah argumen salah menaikkan GalatTipe, bukan Galat polos (#136)"
+fbe1e40e867d922d87952914a480b221af170a33,2026-11-15T19:43:50+07:00,CAMPURAN,perbaikan,perbaikan,115,5,True,True,"perbaikan: galat sistem menaikkan GalatOS, bukan Galat polos (#137)"
+53466a1e29f125767e4a70cf8a9d647489f01847,2026-11-15T19:54:27+07:00,CAMPURAN,fitur,tambah,435,15,True,True,"Tambah: ambil(kamus, kunci[, bawaan]) — membaca kamus dengan nilai bawaan (#138)"
+e67540df4b5a9ad18250bf74fefa636205e5a50d,2026-11-16T20:24:40+07:00,CAMPURAN,perbaikan,perbaikan,38,4,True,False,perbaikan: panjang() pada nilai tanpa panjang menaikkan GalatTipe (#139)
+eca092ae89d0add88a1357e9b1f79c062391214c,2026-11-17T11:15:29Z,CAMPURAN,dokumentasi,docs,144,2,False,,docs: rencana fitur observability & kesiapan produksi (Fase 22 item 1)
+a89bb50623bb51b3bfeb2cb3e4d0e687f282b032,2026-11-17T18:28:56+07:00,CAMPURAN,fitur,feat,228,5,False,,feat(vscode): panel Activity Bar + ikon Explorer untuk .idk (#140)
+31b4ead664898531ae47702898cbd66c67925b4d,2026-11-17T11:44:19Z,CAMPURAN,perbaikan,fix,4,2,False,,fix(vscode): label tombol panel jadi 'Debugger (Awakutu)'
+1678c1069509d2ed6ede35c6d568eeb1d7f7124c,2026-11-17T15:00:12Z,CAMPURAN,dokumentasi,docs,13,1,False,,docs: hasil audit indk awakutu untuk rencana DAP adapter
+a5160db5387fca78cd0d7e0cb03c839eb02621aa,2026-11-17T15:17:16Z,CAMPURAN,dokumentasi,docs,2,1,False,,"docs: perbaiki status Fase 13 -- sudah selesai (v1.6.0), bukan belum"
+48581e30e45b9c8d723dbd645fbfa99cc227a4e9,2026-11-17T15:23:35Z,CAMPURAN,dokumentasi,docs,148,2,False,,docs: rencana fitur manajer paket Fase 14 item 1
+4100ce47013b586efa6638329ca63fcf91aa7143,2026-11-18T09:16:00+07:00,CAMPURAN,dokumentasi,docs,168,3,False,,"docs: rencana AOT (konkret) + GUI (blocked, butuh keputusan arsitektur) (#141)"
+531748afe2d800b1b3b50e544c0ae2c095d68552,2026-11-18T09:30:58+07:00,CAMPURAN,fitur,feat,244,7,True,False,feat: bundel executable AOT V1 (Fase 8) (#142)
+c6d99875eaed7808d9bab2d6594c6a411475f2df,2026-11-18T23:42:55Z,CAMPURAN,dokumentasi,docs,137,2,False,,"docs: tutup GUI di luar ruang lingkup (fokus web/server-side), Fase 8 selesai"
+c73384097a248706d86215f396cfa9c211b9da63,2026-11-18T23:56:32Z,CAMPURAN,dokumentasi,docs,12,1,False,,docs: tegaskan ruang lingkup web/server-side di AGENTS.md (non-negotiable)
+e718dc304a9ecad4d211cd161c2ed086b1447a55,2026-11-18T23:57:54Z,CAMPURAN,dokumentasi,docs,13,2,False,,docs: sinkronkan sisa klaim GUI/AOT yang stale di README dan website panduan

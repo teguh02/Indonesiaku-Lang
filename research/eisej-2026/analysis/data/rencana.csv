@@ -1,0 +1,117 @@
+file,name,status,target_versi,keputusan,created,done,n_commit_menyentuh
+docs/RENCANA_FITUR/aot_bundel_executable.md,aot_bundel_executable.md,"✅ selesai (V1: skrip tunggal, tanpa `impor` lintas-berkas)",belum dirilis (menunggu minor berikutnya),,2026-11-18T09:16:00+07:00,,2
+docs/RENCANA_FITUR/database_multi_driver.md,database_multi_driver.md,sedang dikerjakan,1.6.0,,2026-11-02T18:26:19+07:00,,1
+docs/RENCANA_FITUR/gui.md,gui.md,**DITOLAK — di luar ruang lingkup proyek secara permanen**,,,2026-11-18T09:16:00+07:00,,2
+docs/RENCANA_FITUR/manajer_paket.md,manajer_paket.md,usulan,"v1.8.0 (lockfile+CLI lokal), registry publik ditunda",,2026-11-17T15:23:35Z,,1
+docs/RENCANA_FITUR/observability_production.md,observability_production.md,usulan,"v1.17.0 (Fase 22, lihat `docs/ROADMAP.md`)",,2026-11-17T11:15:29Z,,1
+docs/RENCANA_FITUR/pengembangan_ekstensi_vscode.md,pengembangan_ekstensi_vscode.md,dikerjakan (sebagian — lihat §1 untuk status per-item),"1.8.0 (panel + ikon, selesai), sisanya bertahap",,2026-11-17T18:28:56+07:00,,2
+docs/RENCANA_FITUR/selesai/acak_aman.md,acak_aman.md,selesai,1.7.0,,2026-11-07T15:20:51+07:00,2026-11-07T15:20:51+07:00,1
+docs/RENCANA_FITUR/selesai/ada_berkas_terkunci.md,ada_berkas_terkunci.md,selesai,1.6.0,,2026-11-08T21:41:52+07:00,2026-11-08T21:41:52+07:00,1
+docs/RENCANA_FITUR/selesai/akhir_baris.md,akhir_baris.md,selesai,0.6.0 (Fase 1),B16,2026-10-24T22:48:37Z,2026-10-24T22:48:37Z,1
+docs/RENCANA_FITUR/selesai/ambil_kamus_bawaan.md,ambil_kamus_bawaan.md,selesai,1.8.0,,2026-11-15T19:54:27+07:00,2026-11-15T19:54:27+07:00,1
+docs/RENCANA_FITUR/selesai/anotasi_tipe.md,anotasi_tipe.md,selesai (dirilis sebagai anotasi yang di-parse lalu dibuang),1.3.0,,2026-10-28T13:31:39Z,2026-10-28T13:53:29Z,2
+docs/RENCANA_FITUR/selesai/argumen_bawaan.md,argumen_bawaan.md,selesai,0.6.0 (Fase 1),"K12, calon K15",2026-10-25T00:12:59Z,2026-10-25T00:12:59Z,2
+docs/RENCANA_FITUR/selesai/argumen_bernama.md,argumen_bernama.md,selesai,0.6.0 (Fase 1),"K12, K15, calon K16",2026-10-25T00:33:23Z,2026-10-25T00:33:23Z,2
+docs/RENCANA_FITUR/selesai/atribut_kelas.md,atribut_kelas.md,selesai,1.1.0,,2026-10-27T07:04:24Z,2026-10-27T07:04:24Z,1
+docs/RENCANA_FITUR/selesai/basis_data_sqlite.md,basis_data_sqlite.md,selesai,0.9.0 (Fase 3) — **dimajukan dari Fase 8**,K18,2026-10-25T05:41:59Z,2026-10-25T07:50:02Z,6
+docs/RENCANA_FITUR/selesai/batas_waktu_soket.md,batas_waktu_soket.md,selesai,1.5.0,,2026-11-01T23:47:08Z,2026-11-01T23:47:08Z,1
+docs/RENCANA_FITUR/selesai/blob_pg_my.md,blob_pg_my.md,selesai,,,2026-11-07T09:45:52+07:00,2026-11-07T09:45:52+07:00,1
+docs/RENCANA_FITUR/selesai/buang.md,buang.md,selesai,0.8.0,,2026-10-25T16:51:29+07:00,2026-10-25T16:51:29+07:00,1
+docs/RENCANA_FITUR/selesai/builtin_inti.md,builtin_inti.md,selesai (sebagian — sisa menunggu tipe baru di Fase 2),0.7.0 (Fase 1–2),"02 §D, K10, calon K17",2026-10-25T05:41:59Z,2026-10-25T06:15:58Z,2
+docs/RENCANA_FITUR/selesai/cakupan_lintas_os.md,cakupan_lintas_os.md,selesai,1.6.0,,2026-11-08T13:47:05+07:00,2026-11-08T13:47:05+07:00,1
+docs/RENCANA_FITUR/selesai/cerminan_aritmetika.md,cerminan_aritmetika.md,selesai,1.1.0,,2026-10-27T06:14:19Z,2026-10-27T06:14:19Z,1
+docs/RENCANA_FITUR/selesai/cetak_fungsi.md,cetak_fungsi.md,selesai,0.7.0 (Fase 1),K12,2026-10-25T10:07:02Z,2026-10-25T10:07:02Z,1
+docs/RENCANA_FITUR/selesai/db_api_bersama.md,db_api_bersama.md,selesai,,,2026-11-03T10:20:53Z,2026-11-03T10:20:53Z,1
+docs/RENCANA_FITUR/selesai/db_blob.md,db_blob.md,selesai,1.4.0,,2026-10-29T07:29:53Z,2026-10-29T07:29:53Z,1
+docs/RENCANA_FITUR/selesai/dekorator.md,dekorator.md,selesai,1.1.0,,2026-10-27T07:36:47Z,2026-10-27T07:52:49Z,2
+docs/RENCANA_FITUR/selesai/dengan_sebagai.md,dengan_sebagai.md,selesai,1.1.0,,2026-10-27T07:14:57Z,2026-10-27T07:14:57Z,1
+docs/RENCANA_FITUR/selesai/deteksi_tidak_terpakai.md,deteksi_tidak_terpakai.md,selesai (tingkat 2 dirilis; tingkat 1 dan 3 sengaja tidak dikerjakan),Fase 7 (perkakas) — dikerjakan setelah Fase 1 tuntas,"K3 (lingkup assignment), calon K15",2026-10-24T23:59:06Z,2026-10-28T10:32:26Z,3
+docs/RENCANA_FITUR/selesai/dokumentasi_deployment.md,dokumentasi_deployment.md,selesai,1.5.0,,2026-11-02T02:35:24Z,2026-11-02T02:35:24Z,1
+docs/RENCANA_FITUR/selesai/embedding_c.md,embedding_c.md,selesai,,,2026-11-07T09:45:42+07:00,2026-11-07T09:45:42+07:00,1
+docs/RENCANA_FITUR/selesai/enumerasi_kamus.md,enumerasi_kamus.md,selesai,0.6.0 (Fase 1),"K9 (protokol iterasi), disetujui",2026-10-24T22:27:05Z,2026-10-24T22:27:05Z,1
+docs/RENCANA_FITUR/selesai/fungsi_anonim_kondisional.md,fungsi_anonim_kondisional.md,selesai,0.7.0 (Fase 1),,2026-10-25T09:17:33Z,2026-10-25T09:17:33Z,1
+docs/RENCANA_FITUR/selesai/gabung_sama.md,gabung_sama.md,selesai,0.6.0 (Fase 1),K7,2026-10-24T23:44:15Z,2026-10-24T23:44:15Z,1
+docs/RENCANA_FITUR/selesai/gelung_server.md,gelung_server.md,selesai,1.5.0,,2026-11-02T01:00:49Z,2026-11-02T01:00:49Z,1
+docs/RENCANA_FITUR/selesai/hierarki_galat.md,hierarki_galat.md,selesai,0.6.0 (Fase 1),K5,2026-10-24T22:41:37Z,2026-10-24T22:41:37Z,1
+docs/RENCANA_FITUR/selesai/himpunan.md,himpunan.md,selesai,Fase 2,"K17 (hanya lewat konstruktor, tanpa literal — disetujui 2026-10-25), K8 (aturan hash), K7 (`==` struktural)",2026-10-25T20:44:30+07:00,2026-10-25T20:44:30+07:00,1
+docs/RENCANA_FITUR/selesai/http_pengalihan.md,http_pengalihan.md,selesai,1.4.0,,2026-10-29T06:18:18Z,2026-10-29T06:18:18Z,1
+docs/RENCANA_FITUR/selesai/http_web_server.md,http_web_server.md,selesai,1.4.0,,2026-10-29T07:50:40Z,2026-10-29T07:50:40Z,1
+docs/RENCANA_FITUR/selesai/https_tls.md,https_tls.md,selesai,1.5.0,,2026-11-02T14:45:16+07:00,2026-11-02T14:45:16+07:00,1
+docs/RENCANA_FITUR/selesai/iter_panggil.md,iter_panggil.md,selesai,1.1.0,,2026-10-27T06:56:03Z,2026-10-27T06:56:03Z,1
+docs/RENCANA_FITUR/selesai/iterator_malas.md,iterator_malas.md,selesai,1.3.0,,2026-10-27T11:30:04Z,2026-10-27T11:38:21Z,4
+docs/RENCANA_FITUR/selesai/jalur_panjang_windows.md,jalur_panjang_windows.md,selesai,1.6.0,,2026-11-08T22:04:20+07:00,2026-11-08T22:04:20+07:00,1
+docs/RENCANA_FITUR/selesai/jam_waktu_cpu_windows.md,jam_waktu_cpu_windows.md,selesai,1.6.2,,2026-11-11T12:17:57+07:00,2026-11-11T12:17:57+07:00,1
+docs/RENCANA_FITUR/selesai/kamus_irisan.md,kamus_irisan.md,selesai,0.6.0 (Fase 1),"K4 (kurung kurawal), 02 §B",2026-10-24T23:31:21Z,2026-10-24T23:31:21Z,1
+docs/RENCANA_FITUR/selesai/kamus_kunci_hash.md,kamus_kunci_hash.md,selesai,0.8.0,,2026-10-25T17:43:55+07:00,2026-10-25T17:43:55+07:00,1
+docs/RENCANA_FITUR/selesai/kebenaran_python.md,kebenaran_python.md,selesai (2026-10-24),0.6.0 (Fase 1),K1 di [`ANALISIS/03_KEPUTUSAN_DESAIN.md`](../../ANALISIS/03_KEPUTUSAN_DESAIN.md) (disetujui),2026-10-24T23:19:41+07:00,2026-10-24T23:19:41+07:00,1
+docs/RENCANA_FITUR/selesai/kecuali_bertipe_tanpa_sebagai.md,kecuali_bertipe_tanpa_sebagai.md,selesai,1.5.0,,2026-11-03T23:33:10Z,2026-11-03T23:33:10Z,1
+docs/RENCANA_FITUR/selesai/kelas_abstrak.md,kelas_abstrak.md,selesai,1.1.0,,2026-10-27T08:48:43Z,2026-10-27T08:48:43Z,1
+docs/RENCANA_FITUR/selesai/kolom_runtime.md,kolom_runtime.md,selesai,0.7.0 (sisa Fase 1),04 §5,2026-10-25T11:02:07Z,2026-10-25T11:02:07Z,1
+docs/RENCANA_FITUR/selesai/komentar_dan_rapikan.md,komentar_dan_rapikan.md,selesai (tahap 1-4; penulisan ulang/wrapping sengaja tidak dikerjakan),Fase 7 (perkakas),"K4 (tanpa aturan indentasi), K14 (kompatibilitas)",2026-10-27T14:28:12Z,2026-10-28T10:32:26Z,4
+docs/RENCANA_FITUR/selesai/kompilator-stack-overflow-bersarang.md,kompilator-stack-overflow-bersarang.md,selesai,1.4.1,,2026-11-04T10:46:52Z,2026-11-04T10:46:52Z,1
+docs/RENCANA_FITUR/selesai/komprehensi_daftar.md,komprehensi_daftar.md,selesai,0.8.0,,2026-10-25T16:51:29+07:00,2026-10-25T16:51:29+07:00,1
+docs/RENCANA_FITUR/selesai/lint_lokal_implisit.md,lint_lokal_implisit.md,selesai,1.6.0,,2026-11-08T17:47:25+07:00,2026-11-08T17:47:25+07:00,1
+docs/RENCANA_FITUR/selesai/literal_fstring.md,literal_fstring.md,selesai,0.7.0 (Fase 1),,2026-10-25T09:30:53Z,2026-10-25T09:30:53Z,1
+docs/RENCANA_FITUR/selesai/lsp.md,lsp.md,selesai,1.4.0,,2026-10-29T14:30:23+07:00,2026-10-29T14:30:23+07:00,1
+docs/RENCANA_FITUR/selesai/mask_tabel_hash.md,mask_tabel_hash.md,,,,2026-11-04T23:58:50Z,2026-11-04T23:58:50Z,1
+docs/RENCANA_FITUR/selesai/metode_ajaib.md,metode_ajaib.md,selesai (disetujui dan dikerjakan 2026-10-25),"Fase 4 (1.1), butir pertama","K19 (nama & aturan metode ajaib — disetujui), K7",2026-10-25T22:12:51+07:00,2026-10-25T22:48:46+07:00,3
+docs/RENCANA_FITUR/selesai/metode_tipe.md,metode_tipe.md,selesai,0.7.0 (Fase 1),K10 (sudah menetapkan desainnya),2026-10-25T09:52:29Z,2026-10-25T09:52:29Z,1
+docs/RENCANA_FITUR/selesai/migrasi_skema.md,migrasi_skema.md,selesai,1.5.0,,2026-11-05T20:43:47+07:00,2026-11-05T20:43:47+07:00,1
+docs/RENCANA_FITUR/selesai/modul_namespace.md,modul_namespace.md,selesai,0.9 (menutup Fase 3),"K3 (lingkup), K14 (stabilitas)",2026-10-25T15:47:59Z,2026-10-25T15:47:59Z,1
+docs/RENCANA_FITUR/selesai/operator_bitwise.md,operator_bitwise.md,selesai (2026-10-25),Fase 2,K2 (bulat int64) — bitwise baru bermakna setelah ada bilangan bulat sungguhan,2026-10-25T19:39:03+07:00,2026-10-25T19:39:03+07:00,1
+docs/RENCANA_FITUR/selesai/operator_dalam.md,operator_dalam.md,selesai (2026-10-24),0.6.0 (Fase 1),,2026-10-24T23:19:41+07:00,2026-10-24T23:19:41+07:00,1
+docs/RENCANA_FITUR/selesai/paket_native_dan_pembaruan.md,paket_native_dan_pembaruan.md,selesai,1.4.0,,2026-10-29T10:27:08Z,2026-10-29T10:27:08Z,1
+docs/RENCANA_FITUR/selesai/pastikan.md,pastikan.md,selesai,0.7.0 (Fase 1),K5 (hierarki galat),2026-10-25T09:03:56Z,2026-10-25T09:03:56Z,1
+docs/RENCANA_FITUR/selesai/pemasang_hapus_path.md,pemasang_hapus_path.md,selesai,1.6.2,,2026-11-11T12:15:05+07:00,2026-11-11T12:15:05+07:00,1
+docs/RENCANA_FITUR/selesai/pengenal_awalan_katakunci.md,pengenal_awalan_katakunci.md,selesai,1.6.1,,2026-11-10T07:19:41+07:00,2026-11-10T07:19:41+07:00,1
+docs/RENCANA_FITUR/selesai/penugasan_berganda.md,penugasan_berganda.md,selesai,0.8.0,,2026-10-25T16:51:29+07:00,2026-10-25T16:51:29+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_argumen_bernama_prescan.md,perbaikan_argumen_bernama_prescan.md,selesai,1.4.1,,2026-11-03T18:07:01+07:00,2026-11-03T18:07:01+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_bita_utf8_ketat.md,perbaikan_bita_utf8_ketat.md,selesai,1.4.1,,2026-11-03T18:45:25+07:00,2026-11-03T18:45:25+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_galat_ajaib_tertunda.md,perbaikan_galat_ajaib_tertunda.md,selesai,1.4.1,,2026-11-03T18:35:00+07:00,2026-11-03T18:35:00+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_galat_turunan_mro.md,perbaikan_galat_turunan_mro.md,selesai,1.4.1,,2026-11-03T18:12:26+07:00,2026-11-03T18:12:26+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_impor_berkas_namespace.md,perbaikan_impor_berkas_namespace.md,selesai,1.4.1,,2026-11-03T18:36:37+07:00,2026-11-03T18:36:37+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_input_baris_panjang.md,perbaikan_input_baris_panjang.md,selesai,1.4.1,,2026-11-03T18:34:59+07:00,2026-11-03T18:34:59+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_json_ketat.md,perbaikan_json_ketat.md,selesai,1.4.1,,2026-11-03T18:48:06+07:00,2026-11-03T18:48:06+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_kedalaman_sama_hash.md,perbaikan_kedalaman_sama_hash.md,selesai,1.4.1,,2026-11-03T18:44:15+07:00,2026-11-03T18:44:15+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_komprehensi_token_sisa.md,perbaikan_komprehensi_token_sisa.md,selesai,1.4.1,,2026-11-03T18:35:05+07:00,2026-11-03T18:35:05+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_kondisional_assignment.md,perbaikan_kondisional_assignment.md,selesai,1.4.1,,2026-11-03T18:12:24+07:00,2026-11-03T18:12:24+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_lingkup_variabel_untuk.md,perbaikan_lingkup_variabel_untuk.md,selesai,1.4.1,,2026-11-03T19:19:03+07:00,2026-11-03T19:19:03+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_nan_ke_bulat.md,perbaikan_nan_ke_bulat.md,selesai,1.4.1,,2026-11-03T18:41:41+07:00,2026-11-03T18:41:41+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_pastikan_tupel.md,perbaikan_pastikan_tupel.md,selesai,1.4.1,,2026-11-03T18:12:25+07:00,2026-11-03T18:12:25+07:00,1
+docs/RENCANA_FITUR/selesai/perbaikan_sumber_nul.md,perbaikan_sumber_nul.md,selesai,1.4.1,,2026-11-03T18:50:51+07:00,2026-11-03T18:50:51+07:00,1
+docs/RENCANA_FITUR/selesai/pewarisan_berganda.md,pewarisan_berganda.md,selesai,1.1.0,,2026-10-27T08:40:09Z,2026-10-27T08:40:09Z,1
+docs/RENCANA_FITUR/selesai/proses_argumen_batch.md,proses_argumen_batch.md,selesai,1.6.2,,2026-11-11T12:16:55+07:00,2026-11-11T12:16:55+07:00,1
+docs/RENCANA_FITUR/selesai/protokol_objek.md,protokol_objek.md,selesai,1.1.0,,2026-10-27T05:29:11Z,2026-10-27T05:29:11Z,1
+docs/RENCANA_FITUR/selesai/pustaka_fase6_batch_b.md,pustaka_fase6_batch_b.md,"selesai (kode, tes, dan panduan 07 §1.12, §2.18–2.20)",1.2.0 (lanjutan Fase 6),,2026-10-27T19:22:22+07:00,2026-10-27T22:58:13+07:00,4
+docs/RENCANA_FITUR/selesai/pustaka_fase6_gelombang_c.md,pustaka_fase6_gelombang_c.md,"selesai — C1 `jalur`, C2 (`src/sistem.c`, `--sandbox`, `opsi`, `log`, `proses`), C3 `pola`, dan C4 klien HTTP",1.x (lanjutan Fase 6),,2026-10-27T21:09:23+07:00,2026-10-27T22:58:13+07:00,4
+docs/RENCANA_FITUR/selesai/pustaka_fase6_modul_dasar.md,pustaka_fase6_modul_dasar.md,selesai,1.2.0 (menutup bagian Fase 6),,2026-10-27T18:34:54+07:00,2026-10-27T19:12:59+07:00,2
+docs/RENCANA_FITUR/selesai/pustaka_kura.md,pustaka_kura.md,selesai,1.2.0 (Fase 6),,2026-10-27T22:58:13+07:00,2026-10-27T22:58:13+07:00,1
+docs/RENCANA_FITUR/selesai/pustaka_lokasi_interpreter.md,pustaka_lokasi_interpreter.md,selesai,1.x (bersama Fase 6),"Fase 3 (sistem modul), Fase 6 (modul pustaka bernamespace)",2026-10-27T22:26:29+07:00,2026-10-27T22:26:29+07:00,1
+docs/RENCANA_FITUR/selesai/rantai_perbandingan_identitas.md,rantai_perbandingan_identitas.md,selesai,0.6.0 (Fase 1),"K7 (identitas), disetujui",2026-10-24T22:27:05Z,2026-10-24T22:27:05Z,1
+docs/RENCANA_FITUR/selesai/rentang.md,rentang.md,selesai (2026-10-24),0.6.0 (Fase 1),"K9 (protokol iterasi), disetujui",2026-10-24T23:19:41+07:00,2026-10-24T23:19:41+07:00,1
+docs/RENCANA_FITUR/selesai/repl_stdin_bom.md,repl_stdin_bom.md,selesai,1.6.0,,2026-11-08T22:23:55+07:00,2026-11-08T22:23:55+07:00,1
+docs/RENCANA_FITUR/selesai/repr_koleksi.md,repr_koleksi.md,selesai,0.7.0 (sisa Fase 1),K12 (sisa),2026-10-25T10:37:00Z,2026-10-25T10:37:00Z,1
+docs/RENCANA_FITUR/selesai/scope_assignment.md,scope_assignment.md,selesai,0.6.0 (Fase 1),K3,2026-10-24T23:15:19Z,2026-10-24T23:15:19Z,1
+docs/RENCANA_FITUR/selesai/sisa_fase2.md,sisa_fase2.md,selesai,0.8 (menutup Fase 2),"K2, K8, K17",2026-10-25T15:13:18Z,2026-10-25T15:13:18Z,1
+docs/RENCANA_FITUR/selesai/soket_dengar_port_eksklusif.md,soket_dengar_port_eksklusif.md,selesai,1.6.2,,2026-11-11T12:18:42+07:00,2026-11-11T12:18:42+07:00,1
+docs/RENCANA_FITUR/selesai/sqlite_batas_tunggu.md,sqlite_batas_tunggu.md,selesai,1.4.0,,2026-10-29T06:05:44Z,2026-10-29T06:05:44Z,1
+docs/RENCANA_FITUR/selesai/ssr_cache_templat.md,ssr_cache_templat.md,selesai,1.7.0,,2026-11-06T19:58:26+07:00,2026-11-07T05:09:22+07:00,2
+docs/RENCANA_FITUR/selesai/ssr_contoh_dokumentasi.md,ssr_contoh_dokumentasi.md,selesai,1.7.0,,2026-11-06T23:18:00+07:00,2026-11-07T05:09:22+07:00,2
+docs/RENCANA_FITUR/selesai/ssr_diagnosis_templat.md,ssr_diagnosis_templat.md,selesai,1.7.0,,2026-11-06T21:43:30+07:00,2026-11-07T05:09:22+07:00,2
+docs/RENCANA_FITUR/selesai/ssr_include_inheritance.md,ssr_include_inheritance.md,selesai (SSR-05),1.7.0,,2026-11-06T06:57:22+07:00,2026-11-06T06:57:22+07:00,1
+docs/RENCANA_FITUR/selesai/ssr_respons_web.md,ssr_respons_web.md,selesai,1.7.0,,2026-11-06T20:51:34+07:00,2026-11-07T05:09:22+07:00,2
+docs/RENCANA_FITUR/selesai/ssr_template_engine.md,ssr_template_engine.md,"selesai (SSR-01…04 + SSR-06; SSR-05, 07–10 di luar lingkup rencana ini)",1.7.0,,2026-11-05T21:43:22+07:00,2026-11-06T05:37:55+07:00,2
+docs/RENCANA_FITUR/selesai/statis_web.md,statis_web.md,selesai,1.5.0,,2026-11-01T14:09:04Z,2026-11-01T14:09:04Z,1
+docs/RENCANA_FITUR/selesai/templat_lanjutan.md,templat_lanjutan.md,selesai,1.7.0,,2026-11-11T13:50:42+07:00,2026-11-11T13:50:42+07:00,1
+docs/RENCANA_FITUR/selesai/tipe_angka_bulat.md,tipe_angka_bulat.md,selesai,0.8.0,,2026-10-25T16:30:40+07:00,2026-10-25T16:30:40+07:00,1
+docs/RENCANA_FITUR/selesai/tls_timeout_driver.md,tls_timeout_driver.md,selesai,,,2026-11-07T11:56:33+07:00,2026-11-07T11:56:33+07:00,1
+docs/RENCANA_FITUR/selesai/traceback_kolom.md,traceback_kolom.md,selesai (bagian A dan B; C ditunda sebagai butir tersendiri),0.7.0 (Fase 1),"04 §5, 05 §5",2026-10-25T10:17:17Z,2026-10-25T10:17:17Z,1
+docs/RENCANA_FITUR/selesai/tupel.md,tupel.md,selesai (2026-10-25),Fase 2,"K17 (sintaks, disetujui 2026-10-25), K8 (kunci kamus hashable), K7 (`==` struktural)",2026-10-25T20:24:04+07:00,2026-10-25T20:24:04+07:00,1
+docs/RENCANA_FITUR/selesai/unicode_windows.md,unicode_windows.md,selesai,1.4.1,,2026-11-03T17:17:07+07:00,2026-11-03T17:17:07+07:00,1
+docs/RENCANA_FITUR/selesai/urut_objek.md,urut_objek.md,selesai,1.1.0,,2026-10-27T06:29:40Z,2026-10-27T06:29:40Z,1
+docs/RENCANA_FITUR/selesai/web_auth.md,web_auth.md,selesai,1.6.0,,2026-11-08T05:25:04+07:00,2026-11-08T05:25:04+07:00,1
+docs/RENCANA_FITUR/selesai/web_cors_proxy.md,web_cors_proxy.md,selesai,1.6.0,,2026-11-08T07:03:03+07:00,2026-11-08T07:03:03+07:00,1
+docs/RENCANA_FITUR/selesai/web_csrf.md,web_csrf.md,selesai,1.6.0,,2026-11-08T05:10:11+07:00,2026-11-08T05:10:11+07:00,2
+docs/RENCANA_FITUR/selesai/web_kuki_sesi.md,web_kuki_sesi.md,selesai,1.6.0,,2026-11-07T22:23:24+07:00,2026-11-07T22:23:24+07:00,1
+docs/RENCANA_FITUR/selesai/web_parsing_badan.md,web_parsing_badan.md,selesai,1.4.0,,2026-10-29T10:00:03Z,2026-10-29T10:00:03Z,1
+docs/RENCANA_FITUR/selesai/web_security_auth.md,web_security_auth.md,selesai,1.6.0,,2026-11-08T07:30:04+07:00,2026-11-08T07:30:04+07:00,1

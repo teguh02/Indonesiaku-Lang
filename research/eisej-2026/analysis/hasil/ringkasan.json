@@ -1,0 +1,484 @@
+{
+ "RQ1": {
+  "snapshot": {
+   "repo": "teguh02/Indonesiaku-Lang",
+   "ref": "origin/main",
+   "hash": "e718dc304a9ecad4d211cd161c2ed086b1447a55",
+   "commit_date": "2026-11-18T23:57:54Z",
+   "diekstrak": "2026-11-20T10:03:50+00:00"
+  },
+  "periode": [
+   "2025-10-28",
+   "2026-11-18",
+   386
+  ],
+  "commit_per_bulan": {
+   "2025-10": 31,
+   "2026-08": 14,
+   "2026-10": 222,
+   "2026-11": 158
+  },
+  "jenis_commit": {
+   "lainnya": 84,
+   "dokumentasi": 133,
+   "fitur": 104,
+   "perbaikan": 98,
+   "uji": 6
+  },
+  "rencana": {
+   "total": 116,
+   "selesai": 110,
+   "belum_selesai": 6,
+   "lead_time_hari": {
+    "n": 110,
+    "median": 0.0,
+    "q1": 0.0,
+    "q3": 0.0,
+    "min": 0.0,
+    "max": 3.439814814814815
+   },
+   "dibuat_dan_selesai_hari_sama": 103,
+   "dengan_kode_keputusan": 28
+  },
+  "pr": {
+   "total": 139,
+   "merged": 137,
+   "ditutup_tanpa_merge": 2,
+   "lead_time_jam": {
+    "n": 137,
+    "median": 0.3636111111111111,
+    "q1": 0.1736111111111111,
+    "q3": 1.5716666666666668,
+    "min": 0.0008333333333333334,
+    "max": 35.92388888888889
+   },
+   "merujuk_rencana_atau_kode_keputusan": 56,
+   "commit_menyentuh_dokumen_rencana": 36,
+   "commit_per_pr": {
+    "n": 137,
+    "median": 1.0,
+    "q1": 1.0,
+    "q3": 3.0,
+    "min": 1.0,
+    "max": 23.0
+   },
+   "baris_berubah_per_pr": {
+    "n": 137,
+    "median": 230.0,
+    "q1": 112.0,
+    "q3": 437.0,
+    "min": 0.0,
+    "max": 206377.0
+   }
+  },
+  "commit_lewat_pr": "228/425",
+  "ci": {
+   "run_total": 917,
+   "selesai": 917,
+   "kesimpulan": {
+    "success": 755,
+    "failure": 120,
+    "cancelled": 42
+   },
+   "per_workflow": {
+    "Automated Tests": 375,
+    "Push on main": 275,
+    "Scheduled": 34,
+    "Build & Release": 17,
+    "PR #84": 9,
+    "PR #3": 7,
+    "PR #31": 5,
+    "PR #21": 5,
+    "Security Audit": 4,
+    "Github Actions Security": 4,
+    "PR #137": 3,
+    "PR #119": 3,
+    "PR #97": 3,
+    "PR #38": 3,
+    "PR #6": 3
+   },
+   "event": {
+    "dynamic": 517,
+    "push": 192,
+    "pull_request": 206,
+    "workflow_dispatch": 2
+   },
+   "pr_merged_dengan_run_ci": 137,
+   "pr_pernah_gagal_ci_sebelum_merge": 38
+  }
+ },
+ "RQ2": {
+  "distribusi_kategori": {
+   "MANUSIA": 130,
+   "AI": 81,
+   "CAMPURAN": 210,
+   "LAIN": 4
+  },
+  "kategori_per_bulan": {
+   "2025-10": {
+    "MANUSIA": 31
+   },
+   "2026-08": {
+    "MANUSIA": 14
+   },
+   "2026-10": {
+    "MANUSIA": 59,
+    "AI": 33,
+    "CAMPURAN": 130
+   },
+   "2026-11": {
+    "CAMPURAN": 80,
+    "MANUSIA": 26,
+    "AI": 48,
+    "LAIN": 4
+   }
+  },
+  "jenis_per_kategori": {
+   "AI": {
+    "dokumentasi": 37,
+    "perbaikan": 25,
+    "fitur": 10,
+    "lainnya": 7,
+    "uji": 2
+   },
+   "MANUSIA": {
+    "lainnya": 37,
+    "dokumentasi": 41,
+    "fitur": 28,
+    "perbaikan": 23,
+    "uji": 1
+   },
+   "CAMPURAN": {
+    "perbaikan": 47,
+    "lainnya": 40,
+    "fitur": 66,
+    "dokumentasi": 54,
+    "uji": 3
+   },
+   "LAIN": {
+    "perbaikan": 3,
+    "dokumentasi": 1
+   }
+  },
+  "laju_dasar_disusul_perbaikan_per_bulan": {
+   "2025-10": "2/8",
+   "2026-08": "1/9",
+   "2026-10": "71/73",
+   "2026-11": "41/55"
+  },
+  "perbandingan_commit_kode": {
+   "AI_vs_MANUSIA": {
+    "n_commit_kode": [
+     33,
+     29
+    ],
+    "churn": {
+     "AI": {
+      "n": 33,
+      "median": 170.0,
+      "q1": 84.0,
+      "q3": 454.0,
+      "min": 34.0,
+      "max": 2100.0
+     },
+     "MANUSIA": {
+      "n": 29,
+      "median": 291.0,
+      "q1": 61.0,
+      "q3": 721.0,
+      "min": 6.0,
+      "max": 12849.0
+     },
+     "uji": {
+      "U": 456.0,
+      "p": 0.7562518500663552,
+      "cliffs_delta": -0.047021943573667714,
+      "besaran": "dapat diabaikan",
+      "selisih_median": -121.0,
+      "ci95_selisih_median": [
+       -372.0,
+       122.0
+      ]
+     }
+    },
+    "jumlah_berkas": {
+     "AI": {
+      "n": 33,
+      "median": 8.0,
+      "q1": 5.0,
+      "q3": 16.0,
+      "min": 3.0,
+      "max": 67.0
+     },
+     "MANUSIA": {
+      "n": 29,
+      "median": 11.0,
+      "q1": 4.0,
+      "q3": 19.0,
+      "min": 1.0,
+      "max": 77.0
+     },
+     "uji": {
+      "U": 430.5,
+      "p": 0.5020699372782096,
+      "cliffs_delta": -0.10031347962382445,
+      "besaran": "dapat diabaikan",
+      "selisih_median": -3.0,
+      "ci95_selisih_median": [
+       -10.0,
+       3.0
+      ]
+     }
+    },
+    "ikut_menyentuh_uji": {
+     "a": "30/33",
+     "b": "19/29",
+     "pa": 0.9090909090909091,
+     "pb": 0.6551724137931034,
+     "selisih": 0.25391849529780564,
+     "p_fisher": 0.02633159664380294
+    },
+    "disusul_perbaikan_7hari": {
+     "a": "31/33",
+     "b": "13/29",
+     "pa": 0.9393939393939394,
+     "pb": 0.4482758620689655,
+     "selisih": 0.4911180773249739,
+     "p_fisher": 3.9183652344407e-05
+    },
+    "strata_fitur": {
+     "n": [
+      9,
+      13
+     ],
+     "churn": {
+      "U": 60.5,
+      "p": 0.9201892167338644,
+      "cliffs_delta": 0.03418803418803419,
+      "besaran": "dapat diabaikan",
+      "selisih_median": -193.0,
+      "ci95_selisih_median": [
+       -374.0,
+       1133.349999999995
+      ]
+     },
+     "disusul_perbaikan_7hari": {
+      "a": "9/9",
+      "b": "6/13",
+      "pa": 1.0,
+      "pb": 0.46153846153846156,
+      "selisih": 0.5384615384615384,
+      "p_fisher": 0.01667604840979454
+     }
+    }
+   },
+   "AI_vs_CAMPURAN": {
+    "n_commit_kode": [
+     33,
+     80
+    ],
+    "churn": {
+     "AI": {
+      "n": 33,
+      "median": 170.0,
+      "q1": 84.0,
+      "q3": 454.0,
+      "min": 34.0,
+      "max": 2100.0
+     },
+     "CAMPURAN": {
+      "n": 80,
+      "median": 354.0,
+      "q1": 150.75,
+      "q3": 461.75,
+      "min": 38.0,
+      "max": 277045.0
+     },
+     "uji": {
+      "U": 1019.5,
+      "p": 0.05817544768384034,
+      "cliffs_delta": -0.22765151515151516,
+      "besaran": "kecil",
+      "selisih_median": -184.0,
+      "ci95_selisih_median": [
+       -309.0,
+       -9.5
+      ]
+     }
+    },
+    "jumlah_berkas": {
+     "AI": {
+      "n": 33,
+      "median": 8.0,
+      "q1": 5.0,
+      "q3": 16.0,
+      "min": 3.0,
+      "max": 67.0
+     },
+     "CAMPURAN": {
+      "n": 80,
+      "median": 13.0,
+      "q1": 8.75,
+      "q3": 18.0,
+      "min": 2.0,
+      "max": 297.0
+     },
+     "uji": {
+      "U": 955.0,
+      "p": 0.02114922425613178,
+      "cliffs_delta": -0.2765151515151515,
+      "besaran": "kecil",
+      "selisih_median": -5.0,
+      "ci95_selisih_median": [
+       -7.0,
+       0.0
+      ]
+     }
+    },
+    "ikut_menyentuh_uji": {
+     "a": "30/33",
+     "b": "70/80",
+     "pa": 0.9090909090909091,
+     "pb": 0.875,
+     "selisih": 0.03409090909090906,
+     "p_fisher": 0.7528367987434905
+    },
+    "disusul_perbaikan_7hari": {
+     "a": "31/33",
+     "b": "69/80",
+     "pa": 0.9393939393939394,
+     "pb": 0.8625,
+     "selisih": 0.0768939393939394,
+     "p_fisher": 0.33966231397635904
+    },
+    "strata_fitur": {
+     "n": [
+      9,
+      47
+     ],
+     "churn": {
+      "U": 300.5,
+      "p": 0.048333187741931974,
+      "cliffs_delta": 0.42080378250591016,
+      "besaran": "sedang",
+      "selisih_median": 85.0,
+      "ci95_selisih_median": [
+       -51.0,
+       1466.0
+      ]
+     },
+     "disusul_perbaikan_7hari": {
+      "a": "9/9",
+      "b": "44/47",
+      "pa": 1.0,
+      "pb": 0.9361702127659575,
+      "selisih": 0.06382978723404253,
+      "p_fisher": 1.0
+     }
+    }
+   },
+   "AI_vs_MANUSIA_periode_Okt_Nov_2026": {
+    "n_commit_kode": [
+     33,
+     12
+    ],
+    "churn": {
+     "U": 153.5,
+     "p": 0.25873174388090037,
+     "cliffs_delta": -0.22474747474747475,
+     "besaran": "kecil",
+     "selisih_median": -163.5,
+     "ci95_selisih_median": [
+      -448.07499999999993,
+      51.0
+     ]
+    },
+    "median_churn": [
+     170.0,
+     333.5
+    ],
+    "ikut_menyentuh_uji": {
+     "a": "30/33",
+     "b": "10/12",
+     "pa": 0.9090909090909091,
+     "pb": 0.8333333333333334,
+     "selisih": 0.07575757575757569,
+     "p_fisher": 0.5980876752289117
+    },
+    "disusul_perbaikan_7hari": {
+     "a": "31/33",
+     "b": "10/12",
+     "pa": 0.9393939393939394,
+     "pb": 0.8333333333333334,
+     "selisih": 0.10606060606060608,
+     "p_fisher": 0.2859357696566999
+    }
+   }
+  },
+  "pr_per_grup": {
+   "CAMPURAN": 79,
+   "AI": 31,
+   "MANUSIA": 27
+  },
+  "pr_AI_vs_MANUSIA": {
+   "lead_jam": {
+    "AI": {
+     "n": 31,
+     "median": 1.6644444444444444,
+     "q1": 1.4291666666666667,
+     "q3": 2.308472222222222,
+     "min": 0.03166666666666667,
+     "max": 35.92388888888889
+    },
+    "MANUSIA": {
+     "n": 27,
+     "median": 0.2336111111111111,
+     "q1": 0.19583333333333333,
+     "q3": 0.6068055555555556,
+     "min": 0.13027777777777777,
+     "max": 11.953888888888889
+    },
+    "uji": {
+     "U": 643.0,
+     "p": 0.0004797694631220956,
+     "cliffs_delta": 0.5364396654719236,
+     "besaran": "besar",
+     "selisih_median": 1.4308333333333332,
+     "ci95_selisih_median": [
+      1.0366666666666666,
+      1.8283333333333336
+     ]
+    }
+   },
+   "baris": {
+    "AI": {
+     "n": 31,
+     "median": 171.0,
+     "q1": 112.0,
+     "q3": 283.0,
+     "min": 9.0,
+     "max": 10045.0
+    },
+    "MANUSIA": {
+     "n": 27,
+     "median": 347.0,
+     "q1": 116.0,
+     "q3": 470.0,
+     "min": 0.0,
+     "max": 1385.0
+    },
+    "uji": {
+     "U": 350.0,
+     "p": 0.289139118845104,
+     "cliffs_delta": -0.16367980884109917,
+     "besaran": "kecil",
+     "selisih_median": -176.0,
+     "ci95_selisih_median": [
+      -259.04999999999995,
+      -16.975000000000364
+     ]
+    }
+   }
+  }
+ }
+}

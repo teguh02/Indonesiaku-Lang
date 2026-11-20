@@ -1,0 +1,213 @@
+{
+  "lingkungan": {
+    "python": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
+    "implementasi": "CPython",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "runs": 100,
+    "warmup": 5,
+    "urutan": "round-robin"
+  },
+  "K12-indk": {
+    "exit_codes": [
+      0
+    ],
+    "keluaran_konsisten": true,
+    "cocok_golden": true,
+    "waktu_ms": {
+      "median": 9.954899999999999,
+      "mean": 10.449166,
+      "sd": 4.446486849238226,
+      "min": 5.6222,
+      "max": 35.9915
+    },
+    "peak_working_set_MB": {
+      "median": 4.78515625,
+      "mean": 4.7860546875,
+      "sd": 0.004036458333333334,
+      "min": 4.77734375,
+      "max": 4.796875
+    },
+    "peak_private_MB": {
+      "median": 4.76953125,
+      "mean": 4.7687109375,
+      "sd": 0.006761151841416942,
+      "min": 4.75390625,
+      "max": 4.79296875
+    },
+    "keluaran": "satu\n1 2 3\ncampur 42 benar kosong 3.5\n\na-b-c\ntanpaspasi\ntanpa newline <- lanjut di baris yang sama\nx+y (selesai)\ndipanggil lewat variabel\nbenar\nfungsi\ndioper sebagai argumen\nhalo budi\nbaris 0\nbaris 1\nbaris 2\ngalat: cetak(): 'pisah' harus teks\ngalat: cetak() tidak punya parameter bernama 'tak_dikenal'\ngalat: Fungsi bawaan belum menerima argumen bernama.\n"
+  },
+  "K12-python": {
+    "exit_codes": [
+      0
+    ],
+    "keluaran_konsisten": true,
+    "cocok_golden": null,
+    "waktu_ms": {
+      "median": 37.788399999999996,
+      "mean": 41.019499,
+      "sd": 9.459927205450539,
+      "min": 29.917,
+      "max": 71.0807
+    },
+    "peak_working_set_MB": {
+      "median": 11.5390625,
+      "mean": 11.5441796875,
+      "sd": 0.11013430156681005,
+      "min": 11.37890625,
+      "max": 11.76171875
+    },
+    "peak_private_MB": {
+      "median": 6.076171875,
+      "mean": 6.1058203125,
+      "sd": 0.0804845983063346,
+      "min": 5.984375,
+      "max": 6.3046875
+    },
+    "keluaran": "satu\n1 2 3\ncampur 42 True None 3.5\n\na-b-c\ntanpaspasi\ntanpa newline <- lanjut di baris yang sama\nx+y (selesai)\ndipanggil lewat variabel\nTrue\n<class 'builtin_function_or_method'>\ndioper sebagai argumen\nhalo budi\nbaris 0\nbaris 1\nbaris 2\ngalat: sep must be None or a string, not int\ngalat: print() got an unexpected keyword argument 'tak_dikenal'\ngalat: len() takes no keyword arguments\n"
+  },
+  "K21-indk": {
+    "exit_codes": [
+      0
+    ],
+    "keluaran_konsisten": true,
+    "cocok_golden": true,
+    "waktu_ms": {
+      "median": 15.08075,
+      "mean": 15.390781,
+      "sd": 5.625404905107101,
+      "min": 9.0657,
+      "max": 42.2384
+    },
+    "peak_working_set_MB": {
+      "median": 7.365234375,
+      "mean": 7.3760546875,
+      "sd": 0.023646056256041034,
+      "min": 7.33984375,
+      "max": 7.421875
+    },
+    "peak_private_MB": {
+      "median": 5.392578125,
+      "mean": 5.3947265625,
+      "sd": 0.013352487850526331,
+      "min": 5.3515625,
+      "max": 5.421875
+    },
+    "keluaran": "2\n2\n2\n[1, 2] global\n1 global\ndari h\n6\nkosong\n"
+  },
+  "K21-python": {
+    "exit_codes": [
+      0
+    ],
+    "keluaran_konsisten": true,
+    "cocok_golden": null,
+    "waktu_ms": {
+      "median": 37.3262,
+      "mean": 40.386028,
+      "sd": 10.532833224377068,
+      "min": 30.4043,
+      "max": 105.848
+    },
+    "peak_working_set_MB": {
+      "median": 11.392578125,
+      "mean": 11.428828125,
+      "sd": 0.09048662453608108,
+      "min": 11.3203125,
+      "max": 11.63671875
+    },
+    "peak_private_MB": {
+      "median": 6.0546875,
+      "mean": 6.0687890625,
+      "sd": 0.054639270647753,
+      "min": 5.97265625,
+      "max": 6.23046875
+    },
+    "keluaran": "2\n2\n2\n[1, 2] global\n1 global\ndari h\n6\ngalat: cannot access local variable 'w' where it is not associated with a value\n"
+  },
+  "baseline-indk-K12": {
+    "exit_codes": [
+      0
+    ],
+    "keluaran_konsisten": true,
+    "cocok_golden": null,
+    "waktu_ms": {
+      "median": 9.6214,
+      "mean": 10.181773,
+      "sd": 3.6568038299695265,
+      "min": 5.6861,
+      "max": 23.5811
+    },
+    "peak_working_set_MB": {
+      "median": 4.54296875,
+      "mean": 4.542578125,
+      "sd": 0.004210089783091558,
+      "min": 4.53125,
+      "max": 4.5546875
+    },
+    "peak_private_MB": {
+      "median": 4.70703125,
+      "mean": 4.7097265625,
+      "sd": 0.007826199321101195,
+      "min": 4.6953125,
+      "max": 4.74609375
+    },
+    "keluaran": ""
+  },
+  "baseline-indk-K21": {
+    "exit_codes": [
+      0
+    ],
+    "keluaran_konsisten": true,
+    "cocok_golden": null,
+    "waktu_ms": {
+      "median": 14.56915,
+      "mean": 15.321667,
+      "sd": 4.573592460015884,
+      "min": 8.3831,
+      "max": 29.5419
+    },
+    "peak_working_set_MB": {
+      "median": 7.125,
+      "mean": 7.1266796875,
+      "sd": 0.003153232240070008,
+      "min": 7.12109375,
+      "max": 7.13671875
+    },
+    "peak_private_MB": {
+      "median": 5.2578125,
+      "mean": 5.2584375,
+      "sd": 0.004669050392280701,
+      "min": 5.24609375,
+      "max": 5.26953125
+    },
+    "keluaran": ""
+  },
+  "baseline-python": {
+    "exit_codes": [
+      0
+    ],
+    "keluaran_konsisten": true,
+    "cocok_golden": null,
+    "waktu_ms": {
+      "median": 36.933949999999996,
+      "mean": 40.841719,
+      "sd": 10.880629439101835,
+      "min": 29.2213,
+      "max": 78.5203
+    },
+    "peak_working_set_MB": {
+      "median": 11.328125,
+      "mean": 11.3683203125,
+      "sd": 0.07652096822096514,
+      "min": 11.2890625,
+      "max": 11.6015625
+    },
+    "peak_private_MB": {
+      "median": 6.0546875,
+      "mean": 6.077890625,
+      "sd": 0.0731400039509938,
+      "min": 5.9765625,
+      "max": 6.3046875
+    },
+    "keluaran": ""
+  }
+}
