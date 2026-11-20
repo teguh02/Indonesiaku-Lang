@@ -7,6 +7,8 @@
 
 # 🇮🇩 Bahasa Pemrograman Indonesiaku
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24394984.svg)](https://doi.org/10.5281/zenodo.24394984)
+
 **Indonesiaku** adalah bahasa pemrograman dengan sintaks Bahasa Indonesia yang
 terinspirasi dari Python, dijalankan oleh *virtual machine* bytecode yang
 ditulis dalam C.
