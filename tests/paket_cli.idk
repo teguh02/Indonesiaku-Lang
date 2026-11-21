@@ -1,0 +1,424 @@
+# Uji integrasi `indk paket` (Fase 14). Dijalankan oleh tests/test_paket.sh
+# dan tests/test_paket.ps1 dengan satu argumen: direktori kerja kosong yang
+# dibuat dan dihapus oleh pembungkusnya (git di Windows menulis objek
+# read-only, jadi pembersihannya lebih aman diserahkan ke rm -rf/Remove-Item).
+#
+# Semua sumber paket adalah repositori git LOKAL yang dibuat di sini, jadi
+# uji ini tidak butuh jaringan dan tidak bergantung pada GitHub.
+
+impor jalur
+impor proses
+impor paket
+
+jika panjang(argumen) != 1 {
+    tulis_galat("penggunaan: indk tests/paket_cli.idk <direktori_kerja_kosong>\n")
+    keluar(64)
+}
+variabel KERJA = jalur.absolut(argumen[0])
+variabel INDK = jalur_indk()
+variabel gagal = 0
+
+fungsi lapor(ok, nama, rincian = "") {
+    global gagal
+    jika ok {
+        cetak("ok   " + nama)
+    } selain {
+        gagal = gagal + 1
+        cetak("GAGAL " + nama + "  " + rincian)
+    }
+}
+
+fungsi git(dir, argumen_git) {
+    variabel cmd = ["git", "-C", dir, "-c", "user.name=uji", "-c", "user.email=uji@contoh.invalid",
+                    "-c", "commit.gpgsign=false", "-c", "tag.gpgsign=false", "-c", "core.autocrlf=false"]
+    untuk a dalam argumen_git { cmd.tambah(a) }
+    kembalikan proses.jalankan(cmd, "", benar).keluaran
+}
+
+fungsi pkt(proyek, argumen_paket) {
+    variabel cmd = [INDK, "paket", "-C", proyek]
+    untuk a dalam argumen_paket { cmd.tambah(a) }
+    kembalikan proses.jalankan(cmd)
+}
+
+fungsi jalankan_skrip(berkas) {
+    kembalikan proses.jalankan([INDK, berkas])
+}
+
+fungsi buat_dir_induk(d) {
+    jika d == "" atau jalur.ada(d) { kembalikan }
+    buat_dir_induk(jalur.nama_direktori(d))
+    buat_direktori(d)
+}
+
+fungsi tulis(p, isi) {
+    buat_dir_induk(jalur.nama_direktori(p))
+    tulis_semua(p, isi)
+}
+
+# Repositori paket: nama.idk + berkas tambahan, commit, tag opsional.
+fungsi buat_repo(nama, berkas, tag = kosong) {
+    variabel d = jalur.gabung(KERJA, "repo_" + nama)
+    buat_direktori(d)
+    git(d, ["init", "--quiet"])
+    untuk k dalam kunci(berkas) { tulis(jalur.gabung(d, k), berkas[k]) }
+    git(d, ["add", "-A"])
+    git(d, ["commit", "--quiet", "-m", "awal"])
+    jika tag != kosong { git(d, ["tag", tag]) }
+    kembalikan d
+}
+
+fungsi commit_baru(d, berkas, tag = kosong) {
+    untuk k dalam kunci(berkas) { tulis(jalur.gabung(d, k), berkas[k]) }
+    git(d, ["add", "-A"])
+    git(d, ["commit", "--quiet", "-m", "ubah"])
+    jika tag != kosong { git(d, ["tag", "-f", tag]) }
+    kembalikan _rapikan(git(d, ["rev-parse", "HEAD"]))
+}
+
+fungsi _rapikan(t) {
+    kembalikan ganti(ganti(t, "\n", ""), "\r", "")
+}
+
+fungsi proyek_baru(nama) {
+    variabel d = jalur.gabung(KERJA, nama)
+    buat_direktori(d)
+    variabel h = pkt(d, ["mulai", nama])
+    jika h.kode_keluar != 0 { lapor(salah, "mulai " + nama, h.galat) }
+    kembalikan d
+}
+
+fungsi berisi(teks, bagian) {
+    kembalikan bagian dalam teks
+}
+
+fungsi baca_kunci(d) {
+    kembalikan paket.urai_toml(baca_semua(jalur.gabung(d, "indonesiaku.lock")))
+}
+
+fungsi entri_kunci(d, nama) {
+    untuk e dalam ambil(baca_kunci(d), "paket", []) {
+        jika e["nama"] == nama { kembalikan e }
+    }
+    kembalikan kosong
+}
+
+
+# --- 1. mulai, tambah git, impor -------------------------------------------------
+
+fungsi uji_dasar() {
+    variabel repo = buat_repo("kalk", {
+        "kalk.idk": "impor bantu\nfungsi tambah2(a, b) {\n    kembalikan bantu.jumlahkan(a, b)\n}\n",
+        "bantu.idk": "fungsi jumlahkan(a, b) {\n    kembalikan a + b\n}\n",
+        "indonesiaku.toml": "[paket]\nnama = \"kalk\"\nversi = \"1.0.0\"\n"}, "v1.0.0")
+    variabel app = proyek_baru("app")
+    lapor(jalur.adalah_berkas(jalur.gabung(app, "indonesiaku.toml")), "mulai membuat manifest")
+    variabel h = pkt(app, ["mulai"])
+    lapor(h.kode_keluar == 1 dan berisi(h.galat, "sudah ada"), "mulai kedua ditolak", h.galat)
+
+    h = pkt(app, ["tambah", "kalk", "--git", repo, "--tag", "v1.0.0"])
+    lapor(h.kode_keluar == 0, "tambah git --tag", h.galat)
+    variabel sha_tag = _rapikan(git(repo, ["rev-parse", "v1.0.0^{commit}"]))
+    variabel e = entri_kunci(app, "kalk")
+    lapor(e != kosong dan e["rev"] == sha_tag, "kunci menyimpan SHA commit persis")
+    lapor(e != kosong dan paket.checksum(jalur.gabung(app, ".indk_paket", "kalk")) == e["checksum"],
+          "checksum kunci = isi terpasang")
+
+    tulis(jalur.gabung(app, "main.idk"), "impor kalk\ndari kalk impor tambah2\ncetak(kalk.tambah2(2, 3), tambah2(1, 1))\n")
+    h = jalankan_skrip(jalur.gabung(app, "main.idk"))
+    lapor(_rapikan(h.keluaran) == "5 2" dan h.galat == "", "impor paket + impor internal relatif", h.galat)
+
+    tulis(jalur.gabung(app, "sub", "dalam_sub.idk"), "impor kalk\ncetak(kalk.tambah2(1, 2))\n")
+    h = jalankan_skrip(jalur.gabung(app, "sub", "dalam_sub.idk"))
+    lapor(_rapikan(h.keluaran) == "3", "impor dari subdirektori mencari .indk_paket ke atas", h.galat)
+
+    h = pkt(app, ["tambah", "kalk", "--git", repo])
+    lapor(h.kode_keluar == 1 dan berisi(h.galat, "sudah ada"), "tambah nama ganda ditolak", h.galat)
+    kembalikan [repo, app]
+}
+
+
+# --- 2. reproducible, kunci menahan tag yang bergeser, perbarui, cache -----------------
+
+fungsi uji_kunci(repo, app) {
+    variabel dir_kalk = jalur.gabung(app, ".indk_paket", "kalk")
+    variabel isi_awal = baca_semua(jalur.gabung(dir_kalk, "kalk.idk"))
+    variabel cek_awal = entri_kunci(app, "kalk")["checksum"]
+
+    # Tag dipindah diam-diam ke commit lain di remote.
+    variabel sha_baru = commit_baru(repo, {"kalk.idk": "fungsi tambah2(a, b) {\n    kembalikan 99\n}\n"}, "v1.0.0")
+    variabel h = pkt(app, ["pasang"])
+    lapor(h.kode_keluar == 0 dan baca_semua(jalur.gabung(dir_kalk, "kalk.idk")) == isi_awal
+          dan entri_kunci(app, "kalk")["checksum"] == cek_awal,
+          "pasang mengikuti kunci walau tag remote bergeser", h.galat)
+
+    # Terhapus lalu dipasang ulang dari kunci: byte identik.
+    paket.hapus_pohon(dir_kalk)
+    h = pkt(app, ["pasang"])
+    lapor(h.kode_keluar == 0 dan baca_semua(jalur.gabung(dir_kalk, "kalk.idk")) == isi_awal,
+          "pasang ulang dari kunci byte-identik", h.galat)
+
+    h = pkt(app, ["perbarui", "kalk"])
+    lapor(h.kode_keluar == 0 dan entri_kunci(app, "kalk")["rev"] == sha_baru,
+          "perbarui mengambil commit baru dari tag", h.galat)
+    h = jalankan_skrip(jalur.gabung(app, "main.idk"))
+    lapor(berisi(h.keluaran, "99"), "isi baru terpasang sesudah perbarui", h.galat)
+
+    lanjut_offline(repo, app)
+}
+
+variabel WINDOWS = jalur.ekstensi(jalur.dari_windows(INDK)) == ".exe"
+
+fungsi pindahkan(a, b) {
+    # Tidak ada rename di pustaka standar, dan direktori .git berisi berkas
+    # read-only di Windows, jadi dipindahkan oleh perintah OS.
+    jika WINDOWS {
+        proses.jalankan(["cmd", "/c", "move", ganti(a, "/", "\\"), ganti(b, "/", "\\")], "", benar)
+    } selain {
+        proses.jalankan(["mv", a, b], "", benar)
+    }
+}
+
+fungsi lanjut_offline(repo, app) {
+    # Sumber dipindahkan sehingga tidak bisa dihubungi: pemasangan harus tetap
+    # berhasil karena commit yang dikunci sudah ada di cache dan fetch tidak
+    # pernah dipanggil.
+    pindahkan(repo, repo + "_pergi")
+    paket.hapus_pohon(jalur.gabung(app, ".indk_paket", "kalk"))
+    variabel h = pkt(app, ["pasang"])
+    lapor(h.kode_keluar == 0 dan jalur.ada(jalur.gabung(app, ".indk_paket", "kalk", "kalk.idk")),
+          "pasang tanpa jaringan dari cache", h.galat)
+    h = pkt(app, ["perbarui"])
+    lapor(h.kode_keluar == 1 dan berisi(h.galat, "memperbarui"), "perbarui tanpa jaringan gagal jelas", h.galat)
+    lapor(jalur.ada(jalur.gabung(app, ".indk_paket", "kalk", "kalk.idk")),
+          "kegagalan perbarui tidak merusak paket terpasang")
+    pindahkan(repo + "_pergi", repo)
+}
+
+
+# --- 2b. hasil review keamanan -------------------------------------------------
+
+fungsi uji_keamanan() {
+    # (a) Proyek tidak bisa membajak `indk paket` atau modul standar.
+    variabel jahat = jalur.gabung(KERJA, "jahat")
+    tulis(jalur.gabung(jahat, "indonesiaku.toml"), "[paket]\nnama = \"jahat\"\n")
+    tulis(jalur.gabung(jahat, ".indk_paket", "paket", "paket.idk"), "cetak(\"DIBAJAK\")\n")
+    tulis(jalur.gabung(jahat, ".indk_paket", "json", "json.idk"), "cetak(\"DIBAJAK\")\n")
+    tulis(jalur.gabung(jahat, "paket.idk"), "cetak(\"DIBAJAK\")\n")
+    variabel h = pkt(jahat, ["daftar"])
+    lapor(!berisi(h.keluaran, "DIBAJAK") dan berisi(h.keluaran, "tidak ada dependensi"),
+          "indk paket tidak bisa dibajak dari proyek", h.keluaran + h.galat)
+    tulis(jalur.gabung(jahat, "m.idk"), "impor json\ncetak(json.json_teks([1]))\n")
+    h = jalankan_skrip(jalur.gabung(jahat, "m.idk"))
+    lapor(!berisi(h.keluaran, "DIBAJAK"), "paket tidak membayangi modul standar", h.keluaran + h.galat)
+
+}
+
+fungsi uji_keamanan_liar() {
+    # (b) .indk_paket di luar proyek (tanpa indonesiaku.toml) tidak dipakai.
+    variabel liar = jalur.gabung(KERJA, "liar")
+    tulis(jalur.gabung(liar, ".indk_paket", "sisipan", "sisipan.idk"), "cetak(\"DIBAJAK\")\n")
+    tulis(jalur.gabung(liar, "skrip", "m.idk"), "impor sisipan\n")
+    variabel h = jalankan_skrip(jalur.gabung(liar, "skrip", "m.idk"))
+    lapor(h.kode_keluar != 0 dan berisi(h.galat, "tidak ditemukan"), ".indk_paket tanpa manifest diabaikan", h.galat)
+
+}
+
+fungsi uji_keamanan_cache() {
+    # (c) Cache git yang dirusak tidak bisa menjalankan perintah saat checkout.
+    variabel repo = buat_repo("cache_jahat", {"cache_jahat.idk": "variabel X = 1\n"}, "v1")
+    variabel app = proyek_baru("app_cache")
+    pkt(app, ["tambah", "cache_jahat", "--git", repo, "--tag", "v1"])
+    variabel penanda = ganti(jalur.gabung(KERJA, "DIJALANKAN"), "\\", "/")
+    variabel dir_cache = jalur.gabung(app, ".indk_paket", ".cache")
+    untuk n dalam isi_direktori(dir_cache) {
+        variabel c = jalur.gabung(dir_cache, n)
+        tambah_berkas(jalur.gabung(c, "config"), "[core]\n\tfsmonitor = touch " + penanda + "\n\thooksPath = hooks\n")
+        tulis_semua(jalur.gabung(c, "hooks", "post-checkout"), "#!/bin/sh\ntouch " + penanda + "\n")
+        jika !WINDOWS { proses.jalankan(["chmod", "+x", jalur.gabung(c, "hooks", "post-checkout")]) }
+    }
+    paket.hapus_pohon(jalur.gabung(app, ".indk_paket", "cache_jahat"))
+    variabel h = pkt(app, ["pasang"])
+    lapor(h.kode_keluar == 0 dan !jalur.ada(penanda), "config/hook cache yang dirusak tidak dijalankan", h.galat)
+
+    kembalikan app
+}
+
+fungsi uji_keamanan_tautan() {
+    # (d) Tautan simbolik di sumber path ditolak, tidak diikuti.
+    variabel rahasia = jalur.gabung(KERJA, "rahasia")
+    tulis(jalur.gabung(rahasia, "kunci.txt"), "RAHASIA\n")
+    variabel src = jalur.gabung(KERJA, "bertautan")
+    tulis(jalur.gabung(src, "bertautan.idk"), "variabel X = 1\n")
+    variabel tautan = jalur.gabung(src, "ke_rahasia")
+    variabel buat = kosong
+    jika WINDOWS {
+        buat = proses.jalankan(["cmd", "/c", "mklink", "/J", ganti(tautan, "/", "\\"), ganti(rahasia, "/", "\\")])
+    } selain {
+        buat = proses.jalankan(["ln", "-s", rahasia, tautan])
+    }
+    jika buat.kode_keluar == 0 {
+        variabel app2 = proyek_baru("app_tautan")
+        variabel h = pkt(app2, ["tambah", "bertautan", "--path", "../bertautan"])
+        lapor(h.kode_keluar == 1 dan berisi(h.galat, "tautan simbolik"), "tautan di sumber path ditolak", h.galat)
+        lapor(!jalur.ada(jalur.gabung(app2, ".indk_paket", "bertautan")), "isi lewat tautan tidak tersalin")
+        lapor(jalur.ada(jalur.gabung(rahasia, "kunci.txt")), "target tautan tidak tersentuh")
+    } selain {
+        cetak("lewat tautan simbolik tidak bisa dibuat di sini: " + buat.galat)
+    }
+
+}
+
+fungsi uji_keamanan_kunci(app) {
+    # (e) Direktori di .indk_paket yang bukan milik manajer paket dibiarkan.
+    tulis(jalur.gabung(app, ".indk_paket", "milik_saya", "catatan.txt"), "jangan dihapus\n")
+    variabel h = pkt(app, ["pasang"])
+    lapor(jalur.ada(jalur.gabung(app, ".indk_paket", "milik_saya", "catatan.txt")),
+          "pasang tidak menghapus direktori yang bukan paket", h.galat)
+
+    # (f) rev di kunci harus SHA penuh.
+    variabel pk = jalur.gabung(app, "indonesiaku.lock")
+    variabel asli = baca_semua(pk)
+    variabel e = entri_kunci(app, "cache_jahat")
+    tulis_semua(pk, ganti(asli, e["rev"], "HEAD"))
+    h = pkt(app, ["pasang"])
+    lapor(h.kode_keluar == 1 dan berisi(h.galat, "bukan SHA commit 40 karakter"), "rev kunci yang bukan SHA ditolak", h.galat)
+    tulis_semua(pk, asli)
+}
+
+
+# --- 3. checksum dirusak ----------------------------------------------------------
+
+fungsi uji_checksum() {
+    variabel repo = buat_repo("cek", {"cek.idk": "variabel X = 1\n"}, "v1")
+    variabel app = proyek_baru("app_cek")
+    pkt(app, ["tambah", "cek", "--git", repo, "--tag", "v1"])
+    variabel p_kunci = jalur.gabung(app, "indonesiaku.lock")
+    variabel kunci_asli = baca_semua(p_kunci)
+    variabel e = entri_kunci(app, "cek")
+    tulis_semua(p_kunci, ganti(kunci_asli, e["checksum"], "sha256:" + ("0" * 64)))
+    paket.hapus_pohon(jalur.gabung(app, ".indk_paket", "cek"))
+    variabel h = pkt(app, ["pasang"])
+    lapor(h.kode_keluar == 1 dan berisi(h.galat, "tidak cocok"), "checksum tidak cocok ditolak", h.galat)
+    lapor(!jalur.ada(jalur.gabung(app, ".indk_paket", "cek")), "paket tidak dipasang bila checksum salah")
+    lapor(!jalur.ada(jalur.gabung(app, ".indk_paket", ".unduh")), "staging dibersihkan sesudah gagal")
+}
+
+
+# --- 4. path lokal, transitif, konflik --------------------------------------------
+
+fungsi uji_path_transitif() {
+    variabel util = jalur.gabung(KERJA, "util")
+    tulis(jalur.gabung(util, "util.idk"), "fungsi dua_kali(x) {\n    kembalikan x * 2\n}\n")
+    variabel app = proyek_baru("app_path")
+    variabel h = pkt(app, ["tambah", "util", "--path", "../util"])
+    lapor(h.kode_keluar == 0 dan entri_kunci(app, "util")["path"] == "../util", "tambah --path", h.galat)
+    tulis(jalur.gabung(app, "m.idk"), "impor util\ncetak(util.dua_kali(21))\n")
+    lapor(_rapikan(jalankan_skrip(jalur.gabung(app, "m.idk")).keluaran) == "42", "impor paket path")
+
+    variabel dasar = buat_repo("dasar", {"dasar.idk": "fungsi nilai() {\n    kembalikan \"dasar-1\"\n}\n"}, "v1")
+    commit_baru(dasar, {"dasar.idk": "fungsi nilai() {\n    kembalikan \"dasar-2\"\n}\n"}, "v2")
+    variabel atas = buat_repo("atas", {
+        "atas.idk": "impor dasar\nfungsi sapa() {\n    kembalikan \"atas+\" + dasar.nilai()\n}\n",
+        "indonesiaku.toml": "[paket]\nnama = \"atas\"\n\n[dependensi]\ndasar = { git = \"" + ganti(dasar, "\\", "/") + "\", tag = \"v1\" }\n"}, "v1")
+    variabel app2 = proyek_baru("app_trans")
+    h = pkt(app2, ["tambah", "atas", "--git", atas, "--tag", "v1"])
+    lapor(h.kode_keluar == 0 dan entri_kunci(app2, "dasar") != kosong, "dependensi transitif dipasang", h.galat)
+    tulis(jalur.gabung(app2, "m.idk"), "impor atas\ncetak(atas.sapa())\n")
+    lapor(_rapikan(jalankan_skrip(jalur.gabung(app2, "m.idk")).keluaran) == "atas+dasar-1", "paket mengimpor dependensinya")
+    h = pkt(app2, ["daftar"])
+    lapor(berisi(h.keluaran, "dasar  (dependensi tidak langsung)"), "daftar menandai dependensi tidak langsung", h.keluaran)
+
+    h = pkt(app2, ["tambah", "dasar", "--git", dasar, "--tag", "v2"])
+    lapor(h.kode_keluar == 1 dan berisi(h.galat, "konflik dependensi 'dasar'"), "konflik versi ditolak", h.galat)
+    lapor(!berisi(baca_semua(jalur.gabung(app2, "indonesiaku.toml")), "v2"), "manifest dikembalikan sesudah gagal")
+
+    variabel nakal = buat_repo("nakal", {
+        "nakal.idk": "variabel X = 1\n",
+        "indonesiaku.toml": "[dependensi]\nlokal = { path = \"../apa_saja\" }\n"}, "v1")
+    h = pkt(app2, ["tambah", "nakal", "--git", nakal, "--tag", "v1"])
+    lapor(h.kode_keluar == 1 dan berisi(h.galat, "tidak boleh bergantung pada path lokal"), "paket git ber-dependensi path ditolak", h.galat)
+
+    h = pkt(app2, ["hapus", "atas"])
+    lapor(h.kode_keluar == 0 dan !jalur.ada(jalur.gabung(app2, ".indk_paket", "atas"))
+          dan !jalur.ada(jalur.gabung(app2, ".indk_paket", "dasar")) dan entri_kunci(app2, "dasar") == kosong,
+          "hapus membuang paket dan dependensi transitifnya", h.galat)
+}
+
+
+# --- 5. validasi masukan -----------------------------------------------------------
+
+fungsi uji_penolakan() {
+    variabel app = proyek_baru("app_tolak")
+    variabel repo = buat_repo("tanpa_masuk", {"lain.idk": "variabel X = 1\n"}, "v1")
+    variabel semua_kasus = [
+        [["tambah", "Kalk", "--path", "../util"], "huruf kecil", "nama berhuruf besar"],
+        [["tambah", "json", "--path", "../util"], "pustaka standar", "nama modul standar"],
+        [["tambah", "a-b", "--path", "../util"], "hanya boleh", "nama dengan '-'"],
+        [["tambah", "con", "--path", "../util"], "nama perangkat Windows", "nama perangkat Windows"],
+        [["tambah", "x", "--git", "--upload-pack=touch /tmp/x"], "ditolak", "url diawali '-'"],
+        [["tambah", "x", "--git", "ext::sh -c touch% /tmp/x"], "ditolak", "transport ext::"],
+        [["tambah", "x", "--git", repo, "--tag", "--force"], "ditolak", "tag diawali '-'"],
+        [["tambah", "x", "--git", repo, "--rev", "zzzzzzz"], "heksadesimal", "rev bukan heksa"],
+        [["tambah", "x", "--git", repo, "--tag", "v1", "--rev", "abcdef1"], "salah satu", "tag dan rev sekaligus"],
+        [["tambah", "tanpa_masuk", "--git", repo, "--tag", "v1"], "berkas masuk", "paket tanpa berkas masuk"],
+        [["tambah", "salah_nama", "--git", repo, "--tag", "v9"], "tidak ditemukan", "tag tidak ada"],
+        [["hapus", "tidak_ada"], "tidak ada di", "hapus dependensi yang tidak ada"],
+        [["entah"], "tidak dikenal", "perintah tidak dikenal"]]
+    untuk k dalam semua_kasus {
+        variabel hk = pkt(app, k[0])
+        lapor(hk.kode_keluar != 0 dan berisi(hk.galat, k[1]), "tolak: " + k[2], hk.galat)
+    }
+    variabel m = paket.urai_toml(baca_semua(jalur.gabung(app, "indonesiaku.toml")))
+    lapor(panjang(m["dependensi"]) == 0, "manifest bersih sesudah semua penolakan", repr(m["dependensi"]))
+    lapor(!jalur.ada("/tmp/x"), "tidak ada perintah yang dijalankan lewat url/tag")
+
+    variabel beda = buat_repo("beda", {"beda.idk": "variabel X = 1\n",
+                                       "indonesiaku.toml": "[paket]\nnama = \"lain\"\n"}, "v1")
+    variabel h = pkt(app, ["tambah", "beda", "--git", beda, "--tag", "v1"])
+    lapor(h.kode_keluar == 1 dan berisi(h.galat, "manifestnya bernama 'lain'"), "nama manifest paket harus cocok", h.galat)
+    variabel baru = buat_repo("baru", {"baru.idk": "variabel X = 1\n",
+                                       "indonesiaku.toml": "[paket]\ninterpreter_minimum = \"99.0.0\"\n"}, "v1")
+    h = pkt(app, ["tambah", "baru", "--git", baru, "--tag", "v1"])
+    lapor(h.kode_keluar == 1 dan berisi(h.galat, "butuh Indonesiaku 99.0.0"), "interpreter_minimum diperiksa", h.galat)
+}
+
+
+# --- 6. pengurai TOML --------------------------------------------------------------
+
+fungsi uji_toml() {
+    variabel t = paket.urai_toml("# komentar\n[paket]\nnama = \"a # bukan komentar\"  # komentar\nangka = -12\nya = true\n\n[dependensi]\nx = { git = \"u\", tag = \"v\\\"1\" }\n\n[[paket2]]\nn = 1\n[[paket2]]\nn = 2\n")
+    lapor(t["paket"]["nama"] == "a # bukan komentar" dan t["paket"]["angka"] == -12 dan t["paket"]["ya"] == benar,
+          "toml: teks, bulat, logika, komentar")
+    lapor(t["dependensi"]["x"]["tag"] == "v\"1" dan panjang(t["paket2"]) == 2, "toml: tabel sebaris, escape, larik tabel")
+    variabel salah_toml = [["a = 'x'", "uji.toml:1:"], ["[p]\nb = x", "teks harus berkutip"],
+                           ["[p]\n[p]", "dua kali"], ["a = \"x", "tanpa kutip penutup"],
+                           ["a = 1\na = 2", "ganda"], ["a = \"\\q\"", "escape"], ["a = { b = 1", "harapkan"]]
+    untuk s dalam salah_toml {
+        variabel pesan = ""
+        coba {
+            paket.urai_toml(s[0], "uji.toml")
+        } kecuali Galat sebagai e {
+            pesan = e.pesan
+        }
+        lapor(berisi(pesan, s[1]) dan berisi(pesan, "uji.toml:"), "toml ditolak: " + repr(s[0]), pesan)
+    }
+}
+
+
+variabel dasar = uji_dasar()
+uji_kunci(dasar[0], dasar[1])
+uji_keamanan()
+uji_keamanan_liar()
+uji_keamanan_kunci(uji_keamanan_cache())
+uji_keamanan_tautan()
+uji_checksum()
+uji_path_transitif()
+uji_penolakan()
+uji_toml()
+
+jika gagal > 0 {
+    cetak(ke_teks(gagal) + " uji paket GAGAL")
+    keluar(1)
+}
+cetak("PAKET: semua lulus")

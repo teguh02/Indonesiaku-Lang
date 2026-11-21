@@ -65,3 +65,6 @@ data_catatan_app.db
 
 # Pustaka statis API embedding C (dibangun lewat `make libindk.a`)
 libindk.a
+
+# Paket terpasang `indk paket` (dipulihkan dengan `indk paket pasang`)
+.indk_paket/
