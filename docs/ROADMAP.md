@@ -577,7 +577,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 | 20 — Async/concurrency | `v1.13.0-rc.1` | `v1.13.0` | Event loop/cancellation/GC dan regresi I/O lulus |
 | 21 — Realtime, cache dan jobs | `v1.14.0-rc.1` | `v1.14.0` | WebSocket, Redis, SMTP, queue dan scheduler diuji |
 | 22 — Observability dan kesiapan produksi | `v1.15.0-rc.1` | `v1.15.0` | Logging/metrics/profiler, keamanan dan release policy teruji |
-| 23 — Data biner/arsip | `v1.16.0-rc.1` | `v1.16.0` | Binary/streaming dan ekstraksi arsip aman teruji |
+| 23 — Data biner/arsip | `v1.16.0-rc.1` | 🟨 V1 (`kompres`, `arsip`) di `[Belum dirilis]` | Binary/streaming dan ekstraksi arsip aman teruji |
 | 24 — Unicode/i18n/konfigurasi | `v1.17.0-rc.1` | 🟨 V1 (`konfigurasi`, `unicode`) di `[Belum dirilis]` | Unicode/locale/serialisasi dan parser aman lulus |
 | 25 — CLI, API testing, broker | `v1.18.0-rc.1` | `v1.18.0` | CLI/test client dan protokol broker opsional teruji |
 
