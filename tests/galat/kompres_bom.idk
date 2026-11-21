@@ -1,0 +1,5 @@
+# Bom dekompresi: 64 KB nol dikompresi menjadi beberapa ratus bita, dan
+# membukanya dengan batas 1000 bita berhenti dengan GalatKompres.
+impor kompres
+variabel bom = kompres.gzip([0] * 65535, 9)
+kompres.buka_gzip(bom, 1000)

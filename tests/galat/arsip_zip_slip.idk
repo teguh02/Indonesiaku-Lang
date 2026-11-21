@@ -1,0 +1,12 @@
+# Zip slip: entri '../../luar.txt' menghentikan program dengan GalatArsip
+# yang tidak ditangkap; tidak ada berkas yang ditulis. (tar.gz dari tarfile
+# Python, disimpan sebagai heksa.)
+impor arsip
+impor bita
+variabel j = "_galat_arsip_zip_slip.tar.gz"
+bita.tulis_berkas(j, bita.dari_heksa("1f8b08000000000002ffedd43d0ac3300c86611da52770ec54aecfa3adf42781c4861ebf225bbb7472a0e47d107ca045d3277bda14eaab4a47d15d54b774dfe946499a472d25eab62f9a554e5176d0d66a8b9f94639aef82030b61f079345bfa7d81dffdcf9ffd4f319de9ff2e6e76b54a0d000000000000000000000000fed61baee2ca8500280000"))
+coba {
+    arsip.ekstrak(j, "_galat_arsip_zip_slip")
+} akhirnya {
+    hapus_berkas(j)
+}

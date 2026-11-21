@@ -16,3 +16,7 @@ tests/data/templat/**/*.html text eol=lf
 *.ico -text
 *.bmp -text
 *.png -text
+
+# miniz yang di-vendor: byte harus persis sama dengan arsip rilis resmi supaya
+# SHA-256 di src/vendor/miniz/PROVENANCE.md bisa dicek ulang (LICENSE-nya CRLF).
+src/vendor/miniz/* -text

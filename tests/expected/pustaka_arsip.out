@@ -1,0 +1,67 @@
+== buat, daftar, ekstrak ==
+.tar 6 entri
+    sumber/ direktori 0
+    sumber/catatan.txt berkas 11
+    sumber/sub/ direktori 0
+    sumber/sub/data.bin berkas 1004
+    info/versi.txt berkas 4
+    nol.bin berkas 3
+   ditulis: 6
+   sama: benar benar [0, 0, 0]
+.tar.gz 6 entri
+    sumber/ direktori 0
+    sumber/catatan.txt berkas 11
+    sumber/sub/ direktori 0
+    sumber/sub/data.bin berkas 1004
+    info/versi.txt berkas 4
+    nol.bin berkas 3
+   ditulis: 6
+   sama: benar benar [0, 0, 0]
+.zip 6 entri
+    sumber/ direktori 0
+    sumber/catatan.txt berkas 11
+    sumber/sub/ direktori 0
+    sumber/sub/data.bin berkas 1004
+    info/versi.txt berkas 4
+    nol.bin berkas 3
+   ditulis: 6
+   sama: benar benar [0, 0, 0]
+ditimpa: "1.0\n"
+== arsip dari Python (PAX, nama panjang, biner) ==
+    proyek/ direktori 0
+    proyek/README.txt berkas 18
+    proyek/sangat_panjang_sangat_panjang_san berkas 26
+    proyek/biner.bin berkas 4
+4 "Halo dari tarfile\n"
+[0, 255, 0, 128]
+== ekstraksi yang ditolak ==
+TGZ_SLIP -> arsip.ekstrak(): entri '../../luar.txt' ditolak: memuat komponen '..' | tujuan ada: salah
+TGZ_ABS -> arsip.ekstrak(): entri '/tmp/jahat.txt' ditolak: jalur absolut | tujuan ada: salah
+TGZ_SYMLINK -> arsip.ekstrak(): entri 'tautan' adalah tautan simbolik dan ditolak (pakai lewati_tautan=benar untuk melewatinya) | tujuan ada: salah
+TGZ_HARDLINK -> arsip.ekstrak(): entri 'keras' adalah tautan keras dan ditolak (pakai lewati_tautan=benar untuk melewatinya) | tujuan ada: salah
+ZIP_SLIP -> arsip.ekstrak(): entri 'a/../../jahat.txt' ditolak: memuat komponen '..' | tujuan ada: salah
+ZIP_GARIS -> arsip.ekstrak(): entri 'a\jahat.txt' ditolak: memuat garis miring terbalik '\' | tujuan ada: salah
+ZIP_DRIVE -> arsip.ekstrak(): entri 'C:/jahat.txt' ditolak: memuat ':' (huruf drive / aliran data) | tujuan ada: salah
+ZIP_SYMLINK -> arsip.ekstrak(): entri 'tautan' adalah tautan simbolik dan ditolak (pakai lewati_tautan=benar untuk melewatinya) | tujuan ada: salah
+ZIP_RUSAK -> arsip: entri ZIP 'isi.txt' rusak (CRC atau ukuran tidak cocok) | tujuan ada: salah
+    aman.txt berkas
+    ../../luar.txt berkas
+["aman.txt"]
+== batas: bom dekompresi, ukuran, jumlah entri ==
+.zip -> arsip.ekstrak(): rasio kompresi 'nol.txt' melebihi batas 200 (kemungkinan bom dekompresi)
+.zip dengan batas_rasio=100000: ["nol.txt"]
+.tar.gz -> arsip.ekstrak(): rasio kompresi 'nol.txt' melebihi batas 200 (kemungkinan bom dekompresi)
+.tar.gz dengan batas_rasio=100000: ["nol.txt"]
+arsip.ekstrak(): ukuran total melebihi batas 10 bita
+arsip: jumlah entri melebihi batas 3
+arsip: jumlah entri melebihi batas 2
+== galat lain ==
+arsip: '_contoh_arsip/bukan.zip' bukan arsip TAR, TAR.GZ, atau ZIP yang dikenali
+arsip: arsip TAR terpotong
+arsip.buat(): nama '../luar.txt' ditolak: memuat komponen '..'
+arsip.buat(): nama '/abs.txt' ditolak: jalur absolut
+arsip.buat: format tidak dapat ditebak dari '_contoh_arsip/x.rar' (pakai format="tar", "tar.gz" atau "zip")
+arsip.buat: '_contoh_arsip/tidak_ada' tidak ada
+x.tar tertinggal: salah
+GalatOS: arsip: gagal membuka '_contoh_arsip/tidak_ada.zip'
+bersih: benar

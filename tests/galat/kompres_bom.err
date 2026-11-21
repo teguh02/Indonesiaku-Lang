@@ -1,0 +1,7 @@
+kompres: hasil melebihi batas 1000 bita
+[baris 50, kolom 37] dalam _lindungi()
+            naikkan GalatKompres(e.pesan)
+                                        ^
+[baris 61, kolom 81] dalam _buka_dari()
+[baris 73, kolom 67] dalam buka_gzip()
+[baris 5, kolom 28] dalam skrip
