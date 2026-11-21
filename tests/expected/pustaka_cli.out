@@ -1,0 +1,92 @@
+$ siswa -h
+pemakaian: siswa [-h] [--versi] [-r] <perintah> ...
+
+Mengelola data siswa.
+
+opsi:
+  -h, --bantuan         tampilkan bantuan ini lalu keluar
+  --versi               tampilkan versi lalu keluar
+  -r, --rinci           keluaran rinci
+
+perintah:
+  tambah                tambahkan siswa
+  daftar                tampilkan semua siswa
+  hapus                 hapus siswa
+  ekspor                ekspor data
+-> kode keluar 0
+$ siswa --versi
+siswa 1.2.0
+-> kode keluar 0
+$ siswa tambah Siti -n 92
+ditambahkan: Siti
+-> kode keluar 0
+$ siswa -r tambah Andi --nilai=70
+[tambah] Andi = 70
+-> kode keluar 0
+$ siswa tambah -h
+pemakaian: siswa tambah [-h] [-n NILAI] nama
+
+tambahkan siswa
+
+argumen posisi:
+  nama                  nama siswa
+
+opsi:
+  -h, --bantuan         tampilkan bantuan ini lalu keluar
+  -n, --nilai NILAI     nilai 0..100
+-> kode keluar 0
+$ siswa daftar
+  Andi: 70
+  Budi: 85
+  Siti: 92
+-> kode keluar 0
+$ siswa hapus Joko
+[galat] siswa hapus: galat: siswa "Joko" tidak ada
+-> kode keluar 1
+$ siswa hapus Andi
+-> kode keluar 0
+$ siswa ekspor csv
+nama,nilai
+Budi,85
+Siti,92
+-> kode keluar 3
+$ siswa tambah Rina --nilai 150
+[galat] pemakaian: siswa tambah [-h] [-n NILAI] nama
+[galat] siswa tambah: galat: argumen --nilai: harus 0..100
+-> kode keluar 2
+$ siswa tambah
+[galat] pemakaian: siswa tambah [-h] [-n NILAI] nama
+[galat] siswa tambah: galat: argumen berikut wajib diisi: nama
+-> kode keluar 2
+$ siswa pindah
+[galat] pemakaian: siswa [-h] [--versi] [-r] <perintah> ...
+[galat] siswa: galat: perintah tidak dikenal: "pindah" (pilih dari tambah, daftar, hapus, ekspor)
+-> kode keluar 2
+$ siswa
+[galat] pemakaian: siswa [-h] [--versi] [-r] <perintah> ...
+[galat] siswa: galat: sub-perintah wajib diberikan (pilih dari tambah, daftar, hapus, ekspor)
+-> kode keluar 2
+--- autocomplete bash ---
+# autocomplete bash untuk siswa (dibuat oleh pustaka cli Indonesiaku)
+_siswa_lengkapi() {
+    local kini="${COMP_WORDS[COMP_CWORD]}"
+    local jalur=""
+    local i
+    for ((i = 1; i < COMP_CWORD; i++)); do
+        case "${COMP_WORDS[i]}" in
+            -*) ;;
+            *) jalur="$jalur ${COMP_WORDS[i]}" ;;
+        esac
+    done
+    local kata=""
+    case "$jalur" in
+        " ekspor csv"|" ekspor csv "*) kata="-h --bantuan" ;;
+        " tambah"|" tambah "*) kata="-h --bantuan -n --nilai" ;;
+        " daftar"|" daftar "*) kata="-h --bantuan" ;;
+        " ekspor"|" ekspor "*) kata="-h --bantuan csv" ;;
+        " hapus"|" hapus "*) kata="-h --bantuan" ;;
+        *) kata="-h --bantuan --versi -r --rinci tambah daftar hapus ekspor" ;;
+    esac
+    COMPREPLY=($(compgen -W "$kata" -- "$kini"))
+}
+complete -F _siswa_lengkapi siswa

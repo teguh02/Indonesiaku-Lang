@@ -1,0 +1,55 @@
+# Uji integrasi REST CRUD untuk examples/api_siswa.idk, tanpa membuka port.
+#
+# Jalankan:  indk uji examples/uji_api_siswa.idk
+#
+# `impor api_siswa` memuat aplikasinya (rute + SQLite :memory:) tanpa
+# menjalankan server, karena api_siswa.idk hanya memanggil app.jalankan()
+# bila __nama__ == "__utama__". Klien uji_http lalu memanggil app.tangani()
+# langsung. Fungsi uji_* berjalan urut abjad dan berbagi satu database,
+# jadi setiap uji menyiapkan datanya sendiri.
+
+impor api_siswa
+impor uji_http
+
+fungsi _klien() {
+    kembalikan uji_http.klien(api_siswa.app)
+}
+
+fungsi uji_daftar_awal() {
+    variabel r = _klien().ambil("/siswa")
+    r.pastikan_status(200).pastikan_kepala("Content-Type", "application/json")
+    pastikan panjang(r.json()) >= 2
+    pastikan r.json()[0]["nama"] == "Budi"
+}
+
+fungsi uji_buat_lalu_ambil() {
+    variabel k = _klien()
+    variabel r = k.kirim("/siswa", json = {"nama": "Rina", "nilai": 77})
+    r.pastikan_status(201).pastikan_json_berisi({"nama": "Rina", "nilai": 77})
+    variabel id = r.json()["id"]
+    k.ambil(f"/siswa/{id}").pastikan_status(200).pastikan_json_berisi({"id": id, "nama": "Rina"})
+}
+
+fungsi uji_buat_ditolak_tanpa_nilai() {
+    variabel r = _klien().kirim("/siswa", json = {"nama": "Tono"})
+    r.pastikan_status(400).pastikan_json({"galat": "butuh nama (teks) dan nilai (angka)"})
+}
+
+fungsi uji_json_rusak_400() {
+    _klien().kirim("/siswa", badan = "{bukan json",
+                   kepala = {"Content-Type": "application/json"}).pastikan_status(400)
+}
+
+fungsi uji_perbarui_dan_hapus() {
+    variabel k = _klien()
+    variabel id = k.kirim("/siswa", json = {"nama": "Dewi", "nilai": 60}).json()["id"]
+    variabel r = k.perbarui(f"/siswa/{id}", json = {"nama": "Dewi", "nilai": 95})
+    r.pastikan_status(200).pastikan_json({"id": id, "nama": "Dewi", "nilai": 95})
+    k.hapus(f"/siswa/{id}").pastikan_status(200).pastikan_json({"dihapus": benar})
+    k.ambil(f"/siswa/{id}").pastikan_status(404)
+    k.hapus(f"/siswa/{id}").pastikan_status(404)
+}
+
+fungsi uji_perbarui_id_tidak_ada() {
+    _klien().perbarui("/siswa/99999", json = {"nama": "X", "nilai": 1}).pastikan_status(404)
+}

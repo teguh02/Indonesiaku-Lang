@@ -1,0 +1,462 @@
+# pustaka/cli.idk - Kerangka aplikasi baris perintah (modul `cli`).
+#
+# Dibangun DI ATAS pustaka/opsi.idk: setiap tingkat perintah memakai satu
+# opsi.PenguraiArgumen, jadi jenis nilai, pilihan, wajib, bawaan, bendera
+# gabungan (-vq) dan teks bantuan sama persis dengan `opsi`. Yang ditambahkan
+# di sini: sub-perintah bertingkat, bantuan otomatis per tingkat, --versi,
+# validasi khusus, kode keluar yang terdokumentasi, dan autocomplete Bash.
+#
+# Pemakaian:
+#     impor cli
+#     variabel app = cli.Perintah("alat", "Mengelola data siswa.", versi = "1.0")
+#     variabel tambah = app.sub("tambah", "tambahkan siswa")
+#     tambah.argumen("nama", bantuan = "nama siswa")
+#     tambah.argumen("--nilai", bawaan = 0, jenis_nilai = "bulat")
+#     tambah.tangani(fungsi(a) {
+#         cetak(f"{a.nama}: {a.nilai}")
+#     })
+#     app.utama()                  # urai `argumen`, lalu keluar(kode)
+#
+# Kode keluar (dikembalikan jalankan(), dipakai utama()):
+#     0  sukses, termasuk -h/--bantuan dan --versi
+#     1  perintah gagal: penangan menaikkan GalatCli (kode bisa diganti)
+#     2  pemakaian salah: argumen salah/kurang, sub-perintah tidak dikenal
+#        atau tidak diberikan (sama dengan argparse)
+#     n  bilangan bulat 0..255 yang dikembalikan penangan
+#
+# jalankan() TIDAK PERNAH memanggil keluar(), jadi alur perintah bisa diuji
+# dalam satu proses. Hanya utama() yang keluar.
+
+dari opsi impor PenguraiArgumen, GalatOpsi, Hasil
+
+SUKSES = 0
+GAGAL = 1
+PEMAKAIAN = 2
+
+# GalatCli(pesan, kode=1): naikkan dari penangan untuk kegagalan yang wajar
+# (berkas tidak ada, data tidak valid). Pesannya dicetak ke galat sebagai
+# "<program>: galat: <pesan>" dan jalankan() mengembalikan `kode`.
+kelas GalatCli < Galat {
+    init(pesan, kode = 1) {
+        diri.pesan = pesan
+        diri.kode = kode
+    }
+}
+
+fungsi _gabung(bagian, perekat) {
+    variabel hasil = ""
+    untuk i dalam rentang(panjang(bagian)) {
+        jika i > 0 {
+            hasil = hasil + perekat
+        }
+        hasil = hasil + bagian[i]
+    }
+    kembalikan hasil
+}
+
+# _kolom(kiri, kanan) -> baris bantuan rata kolom 24, gaya opsi/argparse.
+fungsi _kolom(kiri, kanan) {
+    variabel awal = "  " + kiri
+    jika kanan == "" {
+        kembalikan awal
+    }
+    jika panjang(awal) <= 21 {
+        kembalikan awal + " " * (24 - panjang(awal)) + kanan
+    }
+    kembalikan awal + "\n" + " " * 24 + kanan
+}
+
+# _bentuk_opsi(t) -> benar bila token berbentuk opsi ("-x", "--nama"),
+# bukan angka negatif ("-5") yang merupakan nilai.
+fungsi _bentuk_opsi(t) {
+    jika panjang(t) < 2 atau t[0] != "-" {
+        kembalikan salah
+    }
+    kembalikan tidak (t[1] >= "0" dan t[1] <= "9")
+}
+
+fungsi _sah_nama(nama) {
+    jika jenis(nama) != "teks" atau nama == "" {
+        kembalikan salah
+    }
+    untuk c dalam nama {
+        variabel huruf = (c >= "a" dan c <= "z") atau (c >= "A" dan c <= "Z")
+        variabel angka = c >= "0" dan c <= "9"
+        jika tidak (huruf atau angka atau c == "-" atau c == "_") {
+            kembalikan salah
+        }
+    }
+    kembalikan nama[0] != "-"
+}
+
+kelas Perintah {
+    # Perintah(nama, deskripsi, versi, penangan, keluaran, galat).
+    # keluaran(teks) dan galat(teks) menerima satu baris tanpa "\n" penutup;
+    # bawaannya cetak() dan tulis_galat(). Sub-perintah memakai milik akarnya.
+    init(nama, deskripsi = "", versi = kosong, penangan = kosong,
+         keluaran = kosong, galat = kosong) {
+        jika tidak _sah_nama(nama) {
+            naikkan GalatCli(f"nama perintah tidak sah: {repr(nama)}")
+        }
+        jika penangan bukan adalah kosong dan tidak bisa_dipanggil(penangan) {
+            naikkan GalatCli("penangan harus bisa dipanggil")
+        }
+        diri.nama = nama
+        diri.deskripsi = deskripsi
+        diri.versi = versi
+        diri.penangan = penangan
+        diri.keluaran = keluaran
+        diri.galat = galat
+        diri._induk = kosong
+        diri._subs = []
+        diri._validasi = []          # [tujuan, fungsi, nama argumen]
+        diri._perlu_nilai = []       # nama/pendek opsi yang menelan token berikut
+        diri._tujuan = []            # nama atribut milik tingkat ini
+        diri._p = PenguraiArgumen(nama, deskripsi, keluar_saat_galat = salah)
+        jika versi bukan adalah kosong {
+            diri._p.tambah_argumen("--versi", aksi = "benar",
+                                   bantuan = "tampilkan versi lalu keluar")
+        }
+    }
+
+    # argumen(nama, pendek=, bawaan=, jenis_nilai=, bantuan=, wajib=, aksi=,
+    # pilihan=, metavar=, validasi=) -> diri (bisa dirantai).
+    # Semua parameter selain `validasi` diteruskan apa adanya ke
+    # opsi.PenguraiArgumen.tambah_argumen(). validasi(nilai) dipanggil setelah
+    # penguraian bila nilainya bukan kosong: kembalikan kosong/benar bila
+    # sah, teks pesan galat, atau salah untuk pesan umum.
+    argumen(nama, pendek = kosong, bawaan = kosong, jenis_nilai = "teks", bantuan = "",
+            wajib = salah, aksi = "simpan", pilihan = kosong, metavar = kosong,
+            validasi = kosong) {
+        jika validasi bukan adalah kosong dan tidak bisa_dipanggil(validasi) {
+            naikkan GalatCli("validasi harus bisa dipanggil")
+        }
+        variabel arg = kosong
+        coba {
+            arg = diri._p.tambah_argumen(nama, pendek = pendek, bawaan = bawaan,
+                                         jenis_nilai = jenis_nilai, bantuan = bantuan,
+                                         wajib = wajib, aksi = aksi, pilihan = pilihan,
+                                         metavar = metavar)
+        } kecuali GalatOpsi sebagai e {
+            naikkan GalatCli(e.pesan)
+        }
+        jika arg.tujuan == "perintah" {
+            naikkan GalatCli("'perintah' dipakai cli untuk jalur sub-perintah; pilih nama lain")
+        }
+        jika tidak arg.posisi dan arg.perlu_nilai() {
+            diri._perlu_nilai.tambah(arg.nama)
+            jika arg.pendek bukan adalah kosong {
+                diri._perlu_nilai.tambah(arg.pendek)
+            }
+        }
+        jika validasi bukan adalah kosong {
+            diri._validasi.tambah([arg.tujuan, validasi, arg.nama])
+        }
+        diri._tujuan.tambah(arg.tujuan)
+        kembalikan diri
+    }
+
+    # sub(nama, deskripsi, penangan) -> Perintah baru, anak perintah ini.
+    sub(nama, deskripsi = "", penangan = kosong) {
+        untuk s dalam diri._subs {
+            jika s.nama == nama {
+                naikkan GalatCli(f"sub-perintah didaftarkan dua kali: {nama}")
+            }
+        }
+        variabel anak = Perintah(nama, deskripsi, kosong, penangan)
+        anak._induk = diri
+        diri._subs.tambah(anak)
+        kembalikan anak
+    }
+
+    # tangani(f) -> diri. f(a) menerima opsi.Hasil berisi argumen semua
+    # tingkat ditambah a.perintah (mis. "data tambah").
+    tangani(f) {
+        jika tidak bisa_dipanggil(f) {
+            naikkan GalatCli("penangan harus bisa dipanggil")
+        }
+        diri.penangan = f
+        kembalikan diri
+    }
+
+    _akar() {
+        variabel p = diri
+        selagi p._induk bukan adalah kosong {
+            p = p._induk
+        }
+        kembalikan p
+    }
+
+    nama_lengkap() {
+        jika diri._induk adalah kosong {
+            kembalikan diri.nama
+        }
+        kembalikan diri._induk.nama_lengkap() + " " + diri.nama
+    }
+
+    _tulis(t) {
+        variabel f = diri._akar().keluaran
+        jika f adalah kosong {
+            cetak(t)
+        } selain {
+            f(t)
+        }
+    }
+
+    _tulis_galat(t) {
+        variabel f = diri._akar().galat
+        jika f adalah kosong {
+            tulis_galat(t + "\n")
+        } selain {
+            f(t)
+        }
+    }
+
+    # pemakaian() -> baris "pemakaian: ...", dengan "<perintah> ..." bila
+    # perintah ini punya sub-perintah.
+    pemakaian() {
+        diri._p.nama_program = diri.nama_lengkap()
+        variabel pem = diri._p.pemakaian()
+        jika panjang(diri._subs) > 0 {
+            pem = pem + " <perintah> ..."
+        }
+        kembalikan pem
+    }
+
+    # bantuan() -> teks yang dicetak -h: bantuan opsi ditambah daftar
+    # sub-perintah.
+    bantuan() {
+        diri._p.nama_program = diri.nama_lengkap()
+        variabel asli = diri._p.bantuan()
+        variabel teks = diri.pemakaian() + asli[panjang(diri._p.pemakaian()):]
+        jika panjang(diri._subs) > 0 {
+            variabel baris = ["", "perintah:"]
+            untuk s dalam diri._subs {
+                baris.tambah(_kolom(s.nama, s.deskripsi))
+            }
+            teks = teks + "\n" + _gabung(baris, "\n")
+        }
+        kembalikan teks
+    }
+
+    _salah_pakai(pesan) {
+        diri._tulis_galat(diri.pemakaian())
+        diri._tulis_galat(f"{diri.nama_lengkap()}: galat: {pesan}")
+        kembalikan PEMAKAIAN
+    }
+
+    # _cegat(token) -> kode bila token adalah -h/--bantuan/--versi (sudah
+    # dilayani), atau kosong.
+    _cegat(token) {
+        jika token == "-h" atau token == "--bantuan" {
+            diri._tulis(diri.bantuan())
+            kembalikan SUKSES
+        }
+        jika token == "--versi" dan diri.versi bukan adalah kosong {
+            diri._tulis(f"{diri.nama_lengkap()} {diri.versi}")
+            kembalikan SUKSES
+        }
+        kembalikan kosong
+    }
+
+    # _urai(token, nilai, urutan) -> kosong bila sukses (nilai/urutan diisi),
+    # atau kode keluar bila gagal.
+    _urai(token, nilai, urutan) {
+        diri._p.nama_program = diri.nama_lengkap()
+        variabel hasil = kosong
+        coba {
+            hasil = diri._p.urai(token)
+        } kecuali GalatOpsi sebagai e {
+            kembalikan diri._salah_pakai(e.pesan)
+        }
+        untuk v dalam diri._validasi {
+            variabel x = ambil_atribut(hasil, v[0])
+            jika x bukan adalah kosong {
+                variabel jawab = v[1](x)
+                jika jenis(jawab) == "teks" {
+                    kembalikan diri._salah_pakai(f"argumen {v[2]}: {jawab}")
+                }
+                jika jawab adalah salah {
+                    kembalikan diri._salah_pakai(f"argumen {v[2]}: nilai tidak sah: {repr(x)}")
+                }
+            }
+        }
+        untuk t dalam diri._tujuan {
+            nilai[t] = ambil_atribut(hasil, t)
+            urutan.tambah(t)
+        }
+        kembalikan kosong
+    }
+
+    # jalankan(daftar = kosong) -> kode keluar. Tanpa argumen: `argumen`.
+    jalankan(daftar = kosong) {
+        jika daftar adalah kosong {
+            daftar = argumen
+        }
+        kembalikan diri._jalankan(daftar, kamus(), [])
+    }
+
+    _jalankan(daftar, nilai, urutan) {
+        # -h/--versi dicegat sebelum opsi.urai(): bantuan harus tetap muncul
+        # walau argumen wajib belum diisi, dan opsi.urai() akan keluar().
+        variabel i = 0
+        variabel titik_sub = 0 - 1
+        selagi i < panjang(daftar) {
+            variabel t = daftar[i]
+            jika t == "--" {
+                hentikan
+            }
+            variabel kode = diri._cegat(t)
+            jika kode bukan adalah kosong {
+                kembalikan kode
+            }
+            jika _bentuk_opsi(t) {
+                # Opsi yang butuh nilai menelan token berikut, kecuali
+                # nilainya melekat (--nama=x atau -nX).
+                variabel kunci_opsi = t
+                variabel melekat = salah
+                jika t[1] == "-" dan "=" dalam t {
+                    melekat = benar
+                } jika_lain t[1] != "-" dan panjang(t) > 2 {
+                    kunci_opsi = t[:2]
+                    melekat = benar
+                }
+                jika tidak melekat dan kunci_opsi dalam diri._perlu_nilai {
+                    i += 1
+                }
+            } jika_lain panjang(diri._subs) > 0 {
+                titik_sub = i
+                hentikan
+            }
+            i += 1
+        }
+
+        jika panjang(diri._subs) == 0 {
+            variabel gagal = diri._urai(daftar, nilai, urutan)
+            jika gagal bukan adalah kosong {
+                kembalikan gagal
+            }
+            kembalikan diri._panggil(nilai, urutan)
+        }
+
+        variabel milik_sendiri = daftar[:titik_sub] jika titik_sub >= 0 selain daftar
+        variabel gagal = diri._urai(milik_sendiri, nilai, urutan)
+        jika gagal bukan adalah kosong {
+            kembalikan gagal
+        }
+        jika titik_sub < 0 {
+            jika diri.penangan bukan adalah kosong {
+                kembalikan diri._panggil(nilai, urutan)
+            }
+            kembalikan diri._salah_pakai("sub-perintah wajib diberikan (pilih dari "
+                                         + _gabung([s.nama untuk s dalam diri._subs], ", ") + ")")
+        }
+        variabel nama_sub = daftar[titik_sub]
+        untuk s dalam diri._subs {
+            jika s.nama == nama_sub {
+                kembalikan s._jalankan(daftar[titik_sub + 1:], nilai, urutan)
+            }
+        }
+        kembalikan diri._salah_pakai(f"perintah tidak dikenal: {repr(nama_sub)} (pilih dari "
+                                     + _gabung([s.nama untuk s dalam diri._subs], ", ") + ")")
+    }
+
+    _panggil(nilai, urutan) {
+        jika diri.penangan adalah kosong {
+            naikkan GalatCli(f"perintah '{diri.nama_lengkap()}' tidak punya penangan")
+        }
+        variabel jalur = diri.nama_lengkap()
+        variabel akar = diri._akar().nama
+        jalur = jalur[panjang(akar) + 1:] jika panjang(jalur) > panjang(akar) selain ""
+        variabel hasil = Hasil(urutan + ["perintah"])
+        untuk t dalam urutan {
+            atur_atribut(hasil, t, nilai[t])
+        }
+        atur_atribut(hasil, "perintah", jalur)
+        variabel balas = kosong
+        coba {
+            balas = diri.penangan(hasil)
+        } kecuali GalatCli sebagai e {
+            diri._tulis_galat(f"{diri.nama_lengkap()}: galat: {e.pesan}")
+            kembalikan e.kode
+        }
+        jika balas adalah kosong {
+            kembalikan SUKSES
+        }
+        jika jenis(balas) != "angka" atau ke_bulat(balas) bukan adalah balas atau balas < 0 atau balas > 255 {
+            naikkan GalatCli(f"penangan '{diri.nama_lengkap()}' harus mengembalikan kosong atau bulat 0..255, bukan {repr(balas)}")
+        }
+        kembalikan balas
+    }
+
+    # utama(daftar = kosong): jalankan lalu keluar(kode). Untuk akhir skrip.
+    utama(daftar = kosong) {
+        keluar(diri.jalankan(daftar))
+    }
+
+    # skrip_lengkapi_bash() -> teks skrip autocomplete Bash. Simpan lalu
+    # `source` dari ~/.bashrc. Melengkapi nama sub-perintah dan opsi per
+    # tingkat; nilai opsi dan argumen posisi tidak dilengkapi.
+    skrip_lengkapi_bash() {
+        variabel nama_fn = "_" + ganti(diri.nama, "-", "_") + "_lengkapi"
+        variabel kasus_daftar = []
+        diri._kumpulkan_lengkapi("", kasus_daftar)
+        # Jalur terpanjang dulu: "data tambah" harus menang atas "data".
+        variabel urut = []
+        untuk k dalam kasus_daftar {
+            variabel posisi = 0
+            selagi posisi < panjang(urut) dan panjang(urut[posisi][0]) >= panjang(k[0]) {
+                posisi += 1
+            }
+            urut = urut[:posisi] + [k] + urut[posisi:]
+        }
+        variabel baris = [
+            f"# autocomplete bash untuk {diri.nama} (dibuat oleh pustaka cli Indonesiaku)",
+            nama_fn + "() {",
+            "    local kini=\"${COMP_WORDS[COMP_CWORD]}\"",
+            "    local jalur=\"\"",
+            "    local i",
+            "    for ((i = 1; i < COMP_CWORD; i++)); do",
+            "        case \"${COMP_WORDS[i]}\" in",
+            "            -*) ;;",
+            "            *) jalur=\"$jalur ${COMP_WORDS[i]}\" ;;",
+            "        esac",
+            "    done",
+            "    local kata=\"\"",
+            "    case \"$jalur\" in"
+        ]
+        untuk k dalam urut {
+            jika k[0] == "" {
+                baris.tambah("        *) kata=\"" + k[1] + "\" ;;")
+            } selain {
+                baris.tambah("        \"" + k[0] + "\"|\"" + k[0] + " \"*) kata=\"" + k[1] + "\" ;;")
+            }
+        }
+        baris = baris + [
+            "    esac",
+            "    COMPREPLY=($(compgen -W \"$kata\" -- \"$kini\"))",
+            "}",
+            "complete -F " + nama_fn + " " + diri.nama
+        ]
+        kembalikan _gabung(baris, "\n")
+    }
+
+    _kumpulkan_lengkapi(jalur, keluaran) {
+        variabel kata = ["-h", "--bantuan"]
+        untuk a dalam diri._p._argumen {
+            jika tidak a.posisi {
+                jika a.pendek bukan adalah kosong {
+                    kata.tambah(a.pendek)
+                }
+                kata.tambah(a.nama)
+            }
+        }
+        untuk s dalam diri._subs {
+            kata.tambah(s.nama)
+        }
+        keluaran.tambah([jalur, _gabung(kata, " ")])
+        untuk s dalam diri._subs {
+            s._kumpulkan_lengkapi(jalur + " " + s.nama, keluaran)
+        }
+    }
+}
