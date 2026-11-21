@@ -2,7 +2,7 @@
   "name": "indonesiaku",
   "displayName": "Indonesiaku",
   "description": "Language support for Indonesiaku (.idk): syntax highlighting, LSP diagnostics, completion, hover, go-to-definition, snippets, formatting, and a debugger (indk awakutu).",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "publisher": "teguh02",
   "license": "MIT",
   "icon": "icon.png",

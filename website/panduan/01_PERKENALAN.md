@@ -21,7 +21,7 @@ Menjadi bahasa pemrograman pertama yang fully mendukung pemrograman dalam Bahasa
 
 ## Fitur Utama
 
-### ✅ Tersedia saat ini (v1.7.0)
+### ✅ Tersedia saat ini (v1.8.0)
 
 **Tipe Data**
 - ✅ Angka (integer & float, direpresentasikan sebagai `double`)
@@ -51,15 +51,16 @@ Menjadi bahasa pemrograman pertama yang fully mendukung pemrograman dalam Bahasa
 - ✅ Perbandingan: `==`, `!=`, `<`, `>`, `<=`, `>=` (juga membandingkan string)
 - ✅ Logika: `dan`, `atau`, `tidak`; keanggotaan: **`dalam`**
 
-**Pustaka Standar** (27 modul, lengkap di [07_PUSTAKA_STANDAR.md](07_PUSTAKA_STANDAR.md))
+**Pustaka Standar** (40 modul, lengkap di [07_PUSTAKA_STANDAR.md](07_PUSTAKA_STANDAR.md))
 - ✅ Dasar: `teks`, `daftar`, `kamus`, `matematika`, `statistik`, `iterasi`, `fungsional`
-- ✅ Data: `json`, `csv`, `base64`, `bita`, `pola` (regex), `koleksi`
-- ✅ Sistem: `jalur`, `proses`, `log`, `salin`, `opsi`
-- ✅ Web: `http` (klien), `web` (server HTTP, routing, kuki, sesi, CSRF, CORS, auth), `templat` (mesin templat HTML)
+- ✅ Data: `json`, `csv`, `xml` (aman), `base64`, `bita`, `pola` (regex), `koleksi`, `unicode`, `validasi`, `tanggal_waktu`
+- ✅ Sistem: `jalur`, `berkas`, `proses`, `log`, `salin`, `opsi`, `cli`, `konfigurasi`, `kompres`, `arsip` (TAR/ZIP)
+- ✅ Web: `http` (klien), `jaringan` (unduhan), `web` (server HTTP, routing, kuki, sesi, CSRF, CORS, auth, health/metrics), `templat` (mesin templat HTML), `uji_http`
+- ✅ Keamanan: `kripto` (AEAD, HKDF, CSPRNG, hash sandi)
 - ✅ Database: `db` (SQLite), `pg` (PostgreSQL), `my` (MySQL), `migrasi`
 
 **Perkakas**
-- ✅ `indk periksa` (linter), `indk rapikan` (formatter), `indk uji` (test runner), `indk --dis` (disassembler)
+- ✅ `indk periksa` (linter), `indk rapikan` (formatter), `indk uji` (test runner), `indk --dis` (disassembler), `indk paket` (manajer paket)
 - ✅ **Ekstensi VS Code resmi** dengan LSP: diagnostics, completion, hover, go-to-definition, serta debugger (F5)
 - ✅ Mode `--sandbox` dan `indk --periksa-pembaruan`
 
