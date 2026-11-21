@@ -127,6 +127,44 @@ if (Test-Path $errorDir) {
     }
 }
 
+# indk uji: tests/uji/<nama>.uji = stdout yang diharapkan dari
+# `indk uji <sumber>`; sumbernya tests/uji/<nama>.idk atau examples/<nama>.idk.
+# Kode keluar 1 bila .uji memuat GAGAL, selain itu 0 (sama dengan test_uji.sh).
+$ujiDir = Join-Path $repo "tests\uji"
+if (Test-Path $ujiDir) {
+    Write-Host ""
+    Write-Host "  -- indk uji (tests/uji) --" -ForegroundColor Cyan
+    foreach ($exp in Get-ChildItem -Path $ujiDir -Filter *.uji | Sort-Object Name) {
+        $name = $exp.BaseName
+        $total++
+        $src = Join-Path $ujiDir "$name.idk"
+        if (-Not (Test-Path $src)) { $src = Join-Path $repo "examples\$name.idk" }
+        if (-Not (Test-Path $src)) {
+            Write-Host "  x uji/$name  (sumber tidak ada)" -ForegroundColor Red
+            $failed++; $failures += "uji/$name"; continue
+        }
+        $outFile = [System.IO.Path]::GetTempFileName()
+        $errFile = [System.IO.Path]::GetTempFileName()
+        $proc = Start-Process -FilePath $exe -ArgumentList "uji", $src -NoNewWindow -Wait -PassThru `
+            -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+        $actual = Get-Content -Raw -Path $outFile -ErrorAction SilentlyContinue
+        Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
+        if ($null -eq $actual) { $actual = "" }
+        $expectedText = Get-Content -Raw -Path $exp.FullName
+        if ($null -eq $expectedText) { $expectedText = "" }
+        $a = ($actual -replace "`r`n", "`n").TrimEnd("`n")
+        $e = ($expectedText -replace "`r`n", "`n").TrimEnd("`n")
+        $wantCode = if ($e -match "GAGAL") { 1 } else { 0 }
+        if ($a -eq $e -and $proc.ExitCode -eq $wantCode) {
+            Write-Host "  + uji/$name" -ForegroundColor Green
+            $passed++
+        } else {
+            Write-Host "  x uji/$name  (exit=$($proc.ExitCode), diharapkan $wantCode)" -ForegroundColor Red
+            $failed++; $failures += "uji/$name"
+        }
+    }
+}
+
 # pustaka/ harus ditemukan dari lokasi interpreter, dari direktori kerja mana pun.
 $lokasi = Join-Path $PSScriptRoot "test_impor_lokasi.ps1"
 if (Test-Path $lokasi) {

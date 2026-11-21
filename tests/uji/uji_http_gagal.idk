@@ -1,0 +1,18 @@
+# Asersi uji_http yang gagal tampil di laporan `indk uji` lewat .pesan.
+impor web
+impor uji_http
+
+variabel app = web.Aplikasi()
+app.rute("GET", "/ok", fungsi(req) { kembalikan web.teks(200, "ok") })
+
+fungsi uji_lulus() {
+    uji_http.klien(app).ambil("/ok").pastikan_status(200).pastikan_badan_berisi("ok")
+}
+
+fungsi uji_status_salah() {
+    uji_http.klien(app).ambil("/ok").pastikan_status(201)
+}
+
+fungsi uji_header_tidak_ada() {
+    uji_http.klien(app).ambil("/ok").pastikan_kepala("X-Tidak-Ada")
+}

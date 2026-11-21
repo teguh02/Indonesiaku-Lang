@@ -1,0 +1,8 @@
+  LULUS  uji_buat_ditolak_tanpa_nilai
+  LULUS  uji_buat_lalu_ambil
+  LULUS  uji_daftar_awal
+  LULUS  uji_json_rusak_400
+  LULUS  uji_perbarui_dan_hapus
+  LULUS  uji_perbarui_id_tidak_ada
+
+6/6 uji lulus

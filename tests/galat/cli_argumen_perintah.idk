@@ -1,0 +1,5 @@
+# Nama argumen 'perintah' dipakai cli untuk jalur sub-perintah.
+impor cli
+
+variabel app = cli.Perintah("alat")
+app.argumen("--perintah")

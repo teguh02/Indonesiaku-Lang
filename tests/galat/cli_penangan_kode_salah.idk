@@ -1,0 +1,5 @@
+# Penangan harus mengembalikan kosong atau bulat 0..255.
+impor cli
+
+variabel app = cli.Perintah("alat", penangan = fungsi(a) { kembalikan "ok" })
+app.jalankan([])

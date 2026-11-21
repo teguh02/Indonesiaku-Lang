@@ -1,0 +1,396 @@
+# pustaka/uji_http.idk - Klien uji HTTP untuk aplikasi web.idk (modul `uji_http`).
+#
+# Memanggil app.tangani() LANGSUNG, di dalam proses yang sama: tidak ada
+# port yang dibuka, tidak ada soket, tidak ada gelung server. app.tangani()
+# memang bekerja pada teks request dan mengembalikan teks respons (lihat
+# kepala pustaka/web.idk), jadi tes berjalan cepat, deterministik, dan juga
+# di bawah `indk --sandbox`.
+#
+# Pemakaian (bersama `indk uji`):
+#     impor web
+#     impor uji_http
+#     variabel app = web.Aplikasi()
+#     app.rute("GET", "/halo", fungsi(req) { kembalikan web.json(200, "{\"pesan\":\"halo\"}") })
+#
+#     fungsi uji_halo() {
+#         variabel k = uji_http.klien(app)
+#         k.ambil("/halo").pastikan_status(200).pastikan_json({"pesan": "halo"})
+#     }
+#
+# Asersi yang gagal menaikkan GalatUjiHttp (turunan GalatPenegasan); `indk
+# uji` mencetak pesannya di baris "GAGAL uji_x: ...". Kesalahan pemakaian
+# klien (jalur tanpa "/", header berisi baris baru) adalah GalatUji.
+
+impor "pustaka/teks.idk"
+impor "pustaka/json.idk"
+
+HOST_UJI = "uji.lokal"
+_POTONG_BADAN = 120
+
+kelas GalatUjiHttp < GalatPenegasan {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+kelas GalatUji < Galat {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+fungsi _aman(t, apa) {
+    jika "\r" dalam t atau "\n" dalam t {
+        naikkan GalatUji(f"{apa} tidak boleh berisi baris baru: {repr(t)}")
+    }
+    kembalikan t
+}
+
+_HEKS = "0123456789ABCDEF"
+
+fungsi _persen_bita(b) {
+    kembalikan "%" + _HEKS[b // 16] + _HEKS[b % 16]
+}
+
+# _kode_persen(t) -> t dengan percent-encoding application/x-www-form-urlencoded:
+# huruf, angka dan "-._~" apa adanya, spasi menjadi "+", sisanya %XX per
+# byte UTF-8.
+fungsi _kode_persen(t) {
+    variabel bagian = []
+    untuk c dalam ke_teks(t) {
+        variabel k = ord(c)
+        variabel polos = ((c >= "a" dan c <= "z") atau (c >= "A" dan c <= "Z") atau
+                          (c >= "0" dan c <= "9") atau c == "-" atau c == "." atau
+                          c == "_" atau c == "~")
+        jika polos {
+            bagian.tambah(c)
+        } jika_lain c == " " {
+            bagian.tambah("+")
+        } jika_lain k < 128 {
+            bagian.tambah(_persen_bita(k))
+        } jika_lain k < 2048 {
+            bagian.tambah(_persen_bita(192 + k // 64) + _persen_bita(128 + k % 64))
+        } jika_lain k < 65536 {
+            bagian.tambah(_persen_bita(224 + k // 4096) + _persen_bita(128 + (k // 64) % 64)
+                          + _persen_bita(128 + k % 64))
+        } selain {
+            bagian.tambah(_persen_bita(240 + k // 262144) + _persen_bita(128 + (k // 4096) % 64)
+                          + _persen_bita(128 + (k // 64) % 64) + _persen_bita(128 + k % 64))
+        }
+    }
+    kembalikan teks_gabung(bagian, "")
+}
+
+fungsi _kode_form(form) {
+    variabel bagian = []
+    untuk nama dalam form {
+        bagian.tambah(_kode_persen(nama) + "=" + _kode_persen(form[nama]))
+    }
+    kembalikan teks_gabung(bagian, "&")
+}
+
+# permintaan_mentah(metode, jalur, json, form, badan, kepala) -> teks request
+# HTTP/1.1 lengkap, siap diberikan ke app.tangani(). Content-Length dihitung
+# dalam byte. json= (nilai apa pun yang bisa di-json_teks) mengisi badan dan
+# Content-Type application/json; form= (kamus) mengisi badan urlencoded.
+fungsi permintaan_mentah(metode, jalur, json = kosong, form = kosong, badan = "", kepala = kosong) {
+    jika jenis(metode) != "teks" atau metode == "" atau " " dalam metode {
+        naikkan GalatUji(f"metode tidak sah: {repr(metode)}")
+    }
+    jika jenis(jalur) != "teks" atau jalur == "" atau jalur[0] != "/" atau " " dalam jalur {
+        naikkan GalatUji(f"jalur harus diawali '/' dan tanpa spasi: {repr(jalur)}")
+    }
+    _aman(metode, "metode")
+    _aman(jalur, "jalur")
+    jika json bukan adalah kosong dan form bukan adalah kosong {
+        naikkan GalatUji("json= dan form= tidak boleh dipakai bersamaan")
+    }
+    variabel tipe = kosong
+    jika json bukan adalah kosong {
+        badan = json_teks(json)
+        tipe = "application/json"
+    } jika_lain form bukan adalah kosong {
+        jika jenis(form) != "kamus" {
+            naikkan GalatUji("form= harus kamus")
+        }
+        badan = _kode_form(form)
+        tipe = "application/x-www-form-urlencoded"
+    }
+    jika jenis(badan) != "teks" {
+        naikkan GalatUji("badan= harus teks")
+    }
+    variabel baris = [metode + " " + jalur + " HTTP/1.1"]
+    variabel ada = himpunan()
+    jika kepala bukan adalah kosong {
+        untuk nama dalam kepala {
+            variabel n = _aman(ke_teks(nama), "nama header")
+            baris.tambah(n + ": " + _aman(ke_teks(kepala[nama]), "nilai header"))
+            ada.tambah(huruf_kecil(n))
+        }
+    }
+    jika tidak "host" dalam ada {
+        baris = [baris[0], "Host: " + HOST_UJI] + baris[1:]
+    }
+    jika tipe bukan adalah kosong dan tidak "content-type" dalam ada {
+        baris.tambah("Content-Type: " + tipe)
+    }
+    jika tidak "content-length" dalam ada dan (badan != "" atau metode == "POST" atau
+                                                 metode == "PUT" atau metode == "PATCH") {
+        baris.tambah("Content-Length: " + ke_teks(panjang_byte(badan)))
+    }
+    kembalikan teks_gabung(baris, "\r\n") + "\r\n\r\n" + badan
+}
+
+# _urai_set_kuki(nilai) -> [nama, nilai, dihapus]. Path/Domain/Expires
+# diabaikan: toples ini satu-domain. Max-Age <= 0 berarti hapus.
+fungsi _urai_set_kuki(baris) {
+    variabel bagian = teks_pisah(baris, ";")
+    variabel pertama = teks_pangkas(bagian[0])
+    variabel sama = teks_cari(pertama, "=")
+    jika sama <= 0 {
+        kembalikan kosong
+    }
+    variabel nama = teks_pangkas(pertama[:sama])
+    variabel nilai = teks_pangkas(pertama[sama + 1:])
+    variabel dihapus = salah
+    untuk atribut dalam bagian[1:] {
+        variabel a = teks_pangkas(atribut)
+        jika teks_mulai_dengan(huruf_kecil(a), "max-age=") {
+            variabel angka = teks_pangkas(a[8:])
+            jika angka != "" dan (angka[0] == "-" atau angka == "0") {
+                dihapus = benar
+            }
+        }
+    }
+    kembalikan [nama, nilai, dihapus]
+}
+
+kelas ResponsUji {
+    init(metode, jalur, mentah) {
+        diri.metode = metode
+        diri.jalur = jalur
+        diri.mentah = mentah
+        variabel pisah = teks_cari(mentah, "\r\n\r\n")
+        jika pisah == 0 - 1 {
+            naikkan GalatUjiHttp(f"{metode} {jalur}: respons tanpa pemisah header: {repr(mentah[:_POTONG_BADAN])}")
+        }
+        variabel baris = teks_pisah(mentah[:pisah], "\r\n")
+        variabel status = teks_pisah(baris[0], " ")
+        jika panjang(status) < 2 atau tidak teks_mulai_dengan(status[0], "HTTP/") {
+            naikkan GalatUjiHttp(f"{metode} {jalur}: baris status tidak sah: {repr(baris[0])}")
+        }
+        diri.status = ke_bulat(status[1])
+        diri.alasan = teks_gabung(status[2:], " ")
+        diri.kepala = kamus()          # nama huruf kecil -> nilai (yang terakhir)
+        diri.kepala_semua = []         # [Nama, nilai] sesuai urutan, termasuk ganda
+        diri.kuki = kamus()            # dari Set-Cookie respons ini
+        diri._kuki_baris = []
+        untuk b dalam baris[1:] {
+            variabel titik = teks_cari(b, ":")
+            jika titik > 0 {
+                variabel nama = teks_pangkas(b[:titik])
+                variabel nilai = teks_pangkas(b[titik + 1:])
+                diri.kepala_semua.tambah([nama, nilai])
+                diri.kepala[huruf_kecil(nama)] = nilai
+                jika huruf_kecil(nama) == "set-cookie" {
+                    variabel k = _urai_set_kuki(nilai)
+                    jika k bukan adalah kosong {
+                        diri._kuki_baris.tambah(k)
+                        diri.kuki[k[0]] = k[1]
+                    }
+                }
+            }
+        }
+        diri.badan = mentah[pisah + 4:]
+        diri._json_siap = salah
+        diri._json = kosong
+    }
+
+    # json() -> badan terurai sebagai JSON (di-cache).
+    json() {
+        jika tidak diri._json_siap {
+            coba {
+                diri._json = json_urai(diri.badan)
+            } kecuali e {
+                diri._gagal(f"badan bukan JSON sah ({e})")
+            }
+            diri._json_siap = benar
+        }
+        kembalikan diri._json
+    }
+
+    _ringkas() {
+        variabel b = diri.badan
+        jika panjang(b) > _POTONG_BADAN {
+            b = b[:_POTONG_BADAN] + "..."
+        }
+        kembalikan f"{diri.metode} {diri.jalur} -> {diri.status}; badan: {repr(b)}"
+    }
+
+    _gagal(pesan) {
+        naikkan GalatUjiHttp(pesan + " [" + diri._ringkas() + "]")
+    }
+
+    pastikan_status(kode) {
+        jika diri.status != kode {
+            diri._gagal(f"status diharapkan {kode}, didapat {diri.status}")
+        }
+        kembalikan diri
+    }
+
+    # pastikan_kepala(nama, nilai=kosong): header ada; bila nilai diberikan,
+    # nilainya sama persis. Nama tidak peka huruf besar/kecil.
+    pastikan_kepala(nama, nilai = kosong) {
+        variabel n = huruf_kecil(nama)
+        jika tidak n dalam diri.kepala {
+            diri._gagal(f"header {nama} tidak ada")
+        }
+        jika nilai bukan adalah kosong dan diri.kepala[n] != nilai {
+            diri._gagal(f"header {nama} diharapkan {repr(nilai)}, didapat {repr(diri.kepala[n])}")
+        }
+        kembalikan diri
+    }
+
+    pastikan_kepala_berisi(nama, potongan) {
+        diri.pastikan_kepala(nama)
+        jika teks_cari(diri.kepala[huruf_kecil(nama)], potongan) == 0 - 1 {
+            diri._gagal(f"header {nama} tidak berisi {repr(potongan)}: {repr(diri.kepala[huruf_kecil(nama)])}")
+        }
+        kembalikan diri
+    }
+
+    pastikan_tanpa_kepala(nama) {
+        jika huruf_kecil(nama) dalam diri.kepala {
+            diri._gagal(f"header {nama} seharusnya tidak ada")
+        }
+        kembalikan diri
+    }
+
+    # pastikan_json(harapan): seluruh badan JSON sama (== struktural).
+    pastikan_json(harapan) {
+        variabel isi = diri.json()
+        jika isi != harapan {
+            diri._gagal(f"JSON diharapkan {repr(harapan)}, didapat {repr(isi)}")
+        }
+        kembalikan diri
+    }
+
+    # pastikan_json_berisi(sebagian): badan JSON adalah objek yang memuat
+    # setiap kunci `sebagian` dengan nilai yang sama; kunci lain bebas.
+    pastikan_json_berisi(sebagian) {
+        variabel isi = diri.json()
+        jika jenis(isi) != "kamus" {
+            diri._gagal(f"JSON bukan objek: {repr(isi)}")
+        }
+        untuk k dalam sebagian {
+            jika tidak k dalam isi {
+                diri._gagal(f"JSON tidak punya kunci {repr(k)}")
+            }
+            jika isi[k] != sebagian[k] {
+                diri._gagal(f"JSON[{repr(k)}] diharapkan {repr(sebagian[k])}, didapat {repr(isi[k])}")
+            }
+        }
+        kembalikan diri
+    }
+
+    # pastikan_kuki(nama, nilai=kosong): respons ini memasang kuki `nama`.
+    pastikan_kuki(nama, nilai = kosong) {
+        jika tidak nama dalam diri.kuki {
+            diri._gagal(f"respons tidak memasang kuki {repr(nama)}")
+        }
+        jika nilai bukan adalah kosong dan diri.kuki[nama] != nilai {
+            diri._gagal(f"kuki {nama} diharapkan {repr(nilai)}, didapat {repr(diri.kuki[nama])}")
+        }
+        kembalikan diri
+    }
+
+    pastikan_badan_berisi(potongan) {
+        jika teks_cari(diri.badan, potongan) == 0 - 1 {
+            diri._gagal(f"badan tidak berisi {repr(potongan)}")
+        }
+        kembalikan diri
+    }
+
+    _teks_() {
+        kembalikan f"<ResponsUji {diri.status} {diri.alasan}>"
+    }
+}
+
+kelas KlienUji {
+    init(app, peer = kosong) {
+        jika tidak punya_atribut(app, "tangani") {
+            naikkan GalatUji("klien(app): app harus punya metode tangani() (web.Aplikasi)")
+        }
+        diri.app = app
+        diri.peer = peer
+        diri.kuki = kamus()        # toples kuki: dikirim balik otomatis
+        diri.kepala = kamus()      # header bawaan setiap permintaan
+    }
+
+    # minta(metode, jalur, json, form, badan, kepala, kuki) -> ResponsUji.
+    minta(metode, jalur, json = kosong, form = kosong, badan = "", kepala = kosong, kuki = kosong) {
+        variabel h = kamus()
+        untuk n dalam diri.kepala {
+            h[n] = diri.kepala[n]
+        }
+        jika kepala bukan adalah kosong {
+            untuk n dalam kepala {
+                h[n] = kepala[n]
+            }
+        }
+        variabel toples = kamus()
+        untuk n dalam diri.kuki {
+            toples[n] = diri.kuki[n]
+        }
+        jika kuki bukan adalah kosong {
+            untuk n dalam kuki {
+                toples[n] = kuki[n]
+            }
+        }
+        jika panjang(toples) > 0 {
+            h["Cookie"] = teks_gabung([n + "=" + toples[n] untuk n dalam toples], "; ")
+        }
+        variabel mentah = permintaan_mentah(metode, jalur, json, form, badan, h)
+        variabel balasan = diri.app.tangani(mentah, diri.peer)
+        variabel r = ResponsUji(metode, jalur, balasan)
+        untuk k dalam r._kuki_baris {
+            jika k[2] {
+                # hapus_kunci, bukan `buang diri.kuki[...]`: bentuk itu saat ini
+                # menghapus atribut `kuki` itu sendiri (bug kompilator).
+                jika k[0] dalam diri.kuki {
+                    hapus_kunci(diri.kuki, k[0])
+                }
+            } selain {
+                diri.kuki[k[0]] = k[1]
+            }
+        }
+        kembalikan r
+    }
+
+    ambil(jalur, kepala = kosong) {
+        kembalikan diri.minta("GET", jalur, kepala = kepala)
+    }
+
+    kirim(jalur, json = kosong, form = kosong, badan = "", kepala = kosong) {
+        kembalikan diri.minta("POST", jalur, json, form, badan, kepala)
+    }
+
+    perbarui(jalur, json = kosong, form = kosong, badan = "", kepala = kosong) {
+        kembalikan diri.minta("PUT", jalur, json, form, badan, kepala)
+    }
+
+    tambal(jalur, json = kosong, form = kosong, badan = "", kepala = kosong) {
+        kembalikan diri.minta("PATCH", jalur, json, form, badan, kepala)
+    }
+
+    hapus(jalur, kepala = kosong) {
+        kembalikan diri.minta("DELETE", jalur, kepala = kepala)
+    }
+}
+
+# klien(app, peer=kosong) -> KlienUji untuk aplikasi web.Aplikasi (atau
+# objek apa pun dengan tangani(mentah, peer)). peer = alamat klien palsu,
+# mis. "10.0.0.5", untuk menguji proxy_tepercaya().
+fungsi klien(app, peer = kosong) {
+    kembalikan KlienUji(app, peer)
+}
