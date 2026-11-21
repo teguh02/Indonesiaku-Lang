@@ -830,6 +830,7 @@ void initVM() {
     defineNative("jalur_indk", nativeFnJalurIndk);
     defineNative("_info_jalur", nativeFnInfoJalur);
     defineNative("_jalur_nyata", nativeFnJalurNyata);
+    defineNative("_adalah_tautan", nativeFnAdalahTautan);
     defineNative("_jalankan_proses", nativeFnJalankanProses);
 
     // Atribut dinamis (setattr/getattr/hasattr).
@@ -1709,6 +1710,93 @@ static bool findInSearchPath(const char* rel, char* out, size_t outSize) {
     return found;
 }
 
+// Packages installed by `indk paket` (Fase 14) live in `.indk_paket/<nama>/`
+// at the project root. `impor nama` loads `.indk_paket/nama/nama.idk` and
+// `impor nama.sub` loads `.indk_paket/nama/sub.idk`. The project root is the
+// nearest directory, from the importer upward, that holds indonesiaku.toml;
+// only ITS .indk_paket counts. Outside a project packages are never used, so
+// a stray /tmp/.indk_paket planted by another user is not picked up by a
+// script that merely runs under /tmp. Walking up with "../" instead of
+// realpath keeps it free of platform calls: past the filesystem root ".."
+// stays at the root, so the extra levels only repeat the last candidate.
+#define PAKET_DIR ".indk_paket"
+#define PAKET_MANIFEST "indonesiaku.toml"
+#define PAKET_MAX_NAIK 32
+
+static bool findInPackages(const char* name, const char* rel, const char* importerDir,
+                           char* out, size_t outSize) {
+    const char* dot = strchr(name, '.');
+    size_t pkgLen = dot != NULL ? (size_t)(dot - name) : strlen(name);
+    if (pkgLen == 0 || pkgLen >= 128) return false;
+    char pkg[128];
+    memcpy(pkg, name, pkgLen);
+    pkg[pkgLen] = '\0';
+
+    // Path inside .indk_paket: "nama/nama.idk" for a bare name, otherwise
+    // `rel` itself ("nama/sub.idk") because its first component is the package.
+    char inside[600];
+    if (dot == NULL) {
+        if (snprintf(inside, sizeof inside, "%s%c%s.idk", pkg, INDK_DIR_SEP, pkg) >= (int)sizeof inside) {
+            return false;
+        }
+    } else if (snprintf(inside, sizeof inside, "%s", rel) >= (int)sizeof inside) {
+        return false;
+    }
+
+    const char s = INDK_DIR_SEP;
+    const bool adaImporter = importerDir != NULL && importerDir[0] != '\0';
+
+    // Code INSIDE an installed package (.../proyek/.indk_paket/a/a.idk doing
+    // `impor b`) belongs to the project that installed it: dependencies are
+    // installed flat next to it. The package's own indonesiaku.toml must not
+    // make its directory look like a project root.
+    if (adaImporter) {
+        const char* akhir = NULL;
+        size_t panjangDir = strlen(PAKET_DIR);
+        for (const char* p = importerDir; *p != '\0'; p++) {
+            bool awalKomponen = p == importerDir || p[-1] == '/' || p[-1] == '\\';
+            // strncmp first: it stops at a NUL, so p[panjangDir] is only read
+            // once the whole name is known to be there.
+            if (awalKomponen && strncmp(p, PAKET_DIR, panjangDir) == 0) {
+                char sesudah = p[panjangDir];
+                if (sesudah == '\0' || sesudah == '/' || sesudah == '\\') akhir = p;
+            }
+        }
+        if (akhir != NULL) {
+            int akar = (int)(akhir - importerDir);   // includes the trailing separator
+            int n = snprintf(out, outSize, "%.*s%s%c%s", akar, importerDir, PAKET_DIR, s, inside);
+            return n > 0 && n < (int)outSize && fileExists(out);
+        }
+    }
+
+    char naik[3 * PAKET_MAX_NAIK + 1] = "";
+    for (int level = 0; level <= PAKET_MAX_NAIK; level++) {
+        int n;
+        if (adaImporter) {
+            n = snprintf(out, outSize, "%s%c%s%s", importerDir, s, naik, PAKET_MANIFEST);
+        } else {
+            n = snprintf(out, outSize, "%s%s", naik, PAKET_MANIFEST);
+        }
+        if (n > 0 && n < (int)outSize && fileExists(out)) {
+            // Project root found: its .indk_paket is the only candidate.
+            if (adaImporter) {
+                n = snprintf(out, outSize, "%s%c%s%s%c%s", importerDir, s, naik, PAKET_DIR, s, inside);
+            } else {
+                n = snprintf(out, outSize, "%s%s%c%s", naik, PAKET_DIR, s, inside);
+            }
+            return n > 0 && n < (int)outSize && fileExists(out);
+        }
+        if (level < PAKET_MAX_NAIK) {
+            size_t len = strlen(naik);
+            naik[len] = '.';
+            naik[len + 1] = '.';
+            naik[len + 2] = s;
+            naik[len + 3] = '\0';
+        }
+    }
+    return false;
+}
+
 // Standard-library directories located from the RUNNING INTERPRETER, so an
 // installed indk finds pustaka/ whatever the working directory is:
 //   <exe dir>/pustaka                        indk built in the repo root
@@ -1749,6 +1837,7 @@ static bool findInInterpreterRoots(const char* rel, char* out, size_t outSize) {
 // "pustaka/" relative to the working directory, then the standard library
 // next to the interpreter (findInInterpreterRoots). The first three are the
 // original order, so only imports that used to FAIL can resolve differently.
+// Installed packages (.indk_paket/, see findInPackages) are the last step.
 static bool resolveModulePath(const char* name, const char* importerDir,
                               char* out, size_t outSize) {
     char rel[512];
@@ -1769,6 +1858,16 @@ static bool resolveModulePath(const char* name, const char* importerDir,
         fileExists(out)) {
         return true;
     }
+    if (findInInterpreterRoots(rel, out, outSize)) return true;
+
+    // Installed packages come LAST: a package can never shadow a standard
+    // module (not even one added to the stdlib after the package was
+    // installed), and a project shipping .indk_paket/<stdlib name>/ cannot
+    // hijack `impor json` or the `indk paket` tool itself.
+    return findInPackages(name, rel, importerDir, out, outSize);
+}
+
+bool vmCariPustakaInterpreter(const char* rel, char* out, size_t outSize) {
     return findInInterpreterRoots(rel, out, outSize);
 }
 

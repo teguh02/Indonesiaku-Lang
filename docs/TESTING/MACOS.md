@@ -105,6 +105,8 @@ Siapkan berkas pendukungnya lebih dulu (isi ada di kolom "Persiapan").
 | CLI-12 | `rp.idk`: `fungsi  f( a,b ){` / `kembalikan a+b` / `}` | `indk rapikan --periksa rp.idk`, `indk rapikan --tulis rp.idk`, lalu `--periksa` lagi | `rp.idk belum rapi` (kode 1); berkas menjadi `fungsi f(a, b) {` + `    kembalikan a + b` + `}`; pemeriksaan kedua kode 0 |
 | CLI-13 | butuh internet | `indk --periksa-pembaruan` | `Versi terpasang : <versi>`, `Versi terbaru   : v<versi>`; pada rilis terbaru: `Versi Anda sudah yang terbaru.` |
 | CLI-14 | `impor_lokasi.idk`: `impor pola`, `impor "pustaka/json.idk"`, `cetak(pola.cocok("a+", "aaa").grup(), json_teks([1]))` | `indk impor_lokasi.idk` dari folder tanpa `pustaka/` | `aaa [1]` |
+| CLI-15 | folder `kalkulator/` berisi `kalkulator.idk`: `fungsi tambah(a, b) {` / `    kembalikan a + b` / `}`; folder kosong `toko/` di sebelahnya | di `toko/`: `indk paket mulai`, `indk paket tambah kalkulator --path ../kalkulator`, lalu `main.idk` berisi `impor kalkulator` / `cetak(kalkulator.tambah(2, 3))` dijalankan dengan `indk main.idk` | `dibuat indonesiaku.toml untuk proyek 'toko'`; `  kalkulator  path ../kalkulator` + `1 paket terpasang di .indk_paket/`; lalu `5`; ketiganya kode keluar 0, dan `indonesiaku.lock` berisi `checksum = "sha256:..."` |
+| CLI-16 | proyek CLI-15 | `indk paket tambah json --path ../kalkulator` | stderr `galat: nama paket 'json' sudah dipakai modul pustaka standar`, kode keluar 1; `indonesiaku.toml` tidak berubah |
 
 ## 4. Katalog kasus bahasa
 
@@ -1478,6 +1480,7 @@ menguji biner rilis jalankan bagian golden-nya dengan biner yang disalin
 | OTO-12 | `web_auth.sh` | Semua baris `ok`, termasuk `budi ditolak /admin` (403), `tanpa sesi -> 401` dan `terkunci -> 429` |
 | OTO-13 | `web_cors.sh` | Semua baris `ok`, termasuk `tidak pernah '*'`, `preflight -> 204` dan `rantai: ambil paling kanan` |
 | OTO-14 | `keamanan_app.sh` | Semua baris `ok` — `ID sesi diputar saat login`, `muatan XSS ter-escape`, `budi hapus catatan admin -> 403`, `sandi benar saat terkunci -> 429` |
+| OTO-15 | `test_paket.sh` | `PAKET: semua lulus` — git lokal dengan tag, kunci menahan tag yang bergeser, pasang ulang byte-identik, pasang tanpa jaringan dari cache, checksum rusak ditolak, transitif, konflik, dan penolakan url/nama |
 
 ## 6. Uji khusus macOS
 

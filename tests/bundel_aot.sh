@@ -35,7 +35,10 @@ echo "$HASIL" | grep -q -- "--nama=Budi" && ok "argumen bundel diteruskan apa ad
 VERSI="$("$INDK" -v)"
 [ -n "$VERSI" ] && ok "indk -v masih normal setelah fitur bundel ditambah" \
     || fail "indk -v rusak"
-echo 'cetak("repl ok")' | timeout 2 "$INDK" > "$TMP/repl.out" 2>&1
+# macOS tidak punya `timeout` bawaan; pola yang sama dengan test_all.sh.
+BATAS=""
+command -v timeout >/dev/null 2>&1 && BATAS="timeout 2"
+echo 'cetak("repl ok")' | $BATAS "$INDK" > "$TMP/repl.out" 2>&1
 grep -q "repl ok" "$TMP/repl.out" && ok "REPL biasa (argc==1, tanpa bundel) masih jalan" \
     || fail "REPL rusak: $(cat "$TMP/repl.out")"
 

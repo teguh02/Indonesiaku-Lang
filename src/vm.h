@@ -167,6 +167,10 @@ void mulaiProfil(void);
 void mulaiAwakutu(void);
 void cetakProfil(double detik);
 InterpretResult interpret(const char* source);
+// Path of `rel` (e.g. "paket.idk") in the standard library installed next
+// to the interpreter, skipping the working directory and .indk_paket. Used
+// by CLI subcommands written in Indonesiaku so a project cannot replace them.
+bool vmCariPustakaInterpreter(const char* rel, char* out, size_t outSize);
 
 // Mendaftarkan builtin dari C. Dipakai initVM() sendiri dan API embedding
 // (src/indk_api.c); lihat src/indk.h.

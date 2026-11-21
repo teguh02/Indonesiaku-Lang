@@ -349,6 +349,35 @@ static int runFile(const char* path) {
     return 0;
 }
 
+// Run `panggilan` after loading pustaka/<modul>.idk from the interpreter's own
+// standard library. A plain `impor <modul>` would look in the working
+// directory first, so a project that happens to contain paket.idk (or ships
+// one on purpose) would replace `indk paket` with its own code. The string
+// form `impor "<jalur>"` loads exactly that file into this script's globals.
+static int jalankanPustakaCli(const char* modul, const char* panggilan) {
+    char rel[64];
+    char jalur[600];
+    snprintf(rel, sizeof rel, "%s.idk", modul);
+    if (!vmCariPustakaInterpreter(rel, jalur, sizeof jalur)) {
+        fprintf(stderr, "Pustaka standar '%s' tidak ditemukan di sebelah interpreter.\n", rel);
+        return 70;
+    }
+    for (char* c = jalur; *c != '\0'; c++) {
+        if (*c == '\\') *c = '/';
+        if (*c == '"' || *c == '\n') {
+            fprintf(stderr, "Jalur pustaka standar tidak didukung: %s\n", jalur);
+            return 70;
+        }
+    }
+    size_t ukuran = strlen(jalur) + strlen(panggilan) + 32;
+    char* sumber = (char*)malloc(ukuran);
+    if (sumber == NULL) return 70;
+    snprintf(sumber, ukuran, "impor \"%s\"\n%s\n", jalur, panggilan);
+    InterpretResult hasil = interpret(sumber);
+    free(sumber);
+    return hasil == INTERPRET_OK ? 0 : 70;
+}
+
 int main(int argc, const char* argv[]) {
     sistemSiapkanProses(&argc, &argv);   // Windows: UTF-8 argv + console
     sistemAturArgv0(argv[0]);
@@ -454,6 +483,18 @@ int main(int argc, const char* argv[]) {
             freeVM();
             return code;
         }
+        if (strcmp(argv[1], "paket") == 0) {
+            // Manajer paket (Fase 14). Seluruh logikanya ada di
+            // pustaka/paket.idk -- di sini hanya meneruskan argumen, pola
+            // yang sama dengan --periksa-pembaruan.
+            initVM();
+            defineArgs(argc, argv, 2);
+            char panggilan[128];
+            snprintf(panggilan, sizeof panggilan, "keluar(utama(argumen, \"%s\"))", INDK_VERSION);
+            int kode = jalankanPustakaCli("paket", panggilan);
+            freeVM();
+            return kode;
+        }
         if (strcmp(argv[1], "--dis") == 0) {
             if (argc < 3) {
                 fprintf(stderr, "Penggunaan: indk --dis <skrip.idk>\n");
@@ -478,15 +519,13 @@ int main(int argc, const char* argv[]) {
 #else
             const char* osNama = "linux";
 #endif
-            char sumber[256];
-            snprintf(sumber, sizeof sumber,
-                     "impor pembaruan\n"
-                     "cetak(pembaruan.periksa(\"%s\", \"%s\"))\n",
+            char panggilan[256];
+            snprintf(panggilan, sizeof panggilan, "cetak(periksa(\"%s\", \"%s\"))",
                      osNama, INDK_VERSION);
             initVM();
-            InterpretResult hasil = interpret(sumber);
+            int kode = jalankanPustakaCli("pembaruan", panggilan);
             freeVM();
-            return hasil == INTERPRET_OK ? 0 : 70;
+            return kode;
         }
         if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
             printf("Indonesiaku %s\n", INDK_VERSION);
@@ -503,6 +542,7 @@ int main(int argc, const char* argv[]) {
             printf("  rapikan <skrip> Rapikan format kode (--tulis, --periksa)\n");
             printf("  profil <skrip>  Hitung opcode dan panggilan (laporan ke stderr)\n");
             printf("  awakutu <skrip> Debugger: breakpoint, langkah, lihat variabel\n");
+            printf("  paket <perintah> Kelola dependensi proyek (indk paket bantuan)\n");
             return 0;
         }
     }

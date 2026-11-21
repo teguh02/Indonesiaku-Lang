@@ -140,6 +140,19 @@ if (Test-Path $lokasi) {
     }
 }
 
+# Manajer paket `indk paket` (Fase 14): git lokal, kunci, checksum, impor.
+$paket = Join-Path $PSScriptRoot "test_paket.ps1"
+if (Test-Path $paket) {
+    Write-Host ""
+    $total++
+    & powershell -ExecutionPolicy Bypass -File $paket
+    if ($LASTEXITCODE -eq 0) {
+        $passed++
+    } else {
+        $failed++; $failures += "paket"
+    }
+}
+
 # Jalur lebih dari 260 karakter: skrip, impor, dan operasi berkas (T-W10).
 $panjang = Join-Path $PSScriptRoot "test_jalur_panjang.ps1"
 if (Test-Path $panjang) {
