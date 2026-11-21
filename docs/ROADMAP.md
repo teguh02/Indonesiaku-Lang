@@ -568,7 +568,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 | 11 — HTTP/HTTPS | — | `v1.5.0` ✅ terbit | Validasi TLS dan uji keamanan/protokol server lulus |
 | 12 — HTML SSR | — | `v1.5.0` ✅ terbit | Templating aman dan contoh SSR lengkap |
 | 13 — Web security | `v1.6.0-rc.1` ✅ terbit | `v1.6.0` ✅ terbit | Audit dan tes auth/session/CSRF lulus |
-| 14 — Package manager | — | 🟡 V1 lokal di `[Belum dirilis]` (`v1.7.0` terpakai untuk templat Fase 12) | Resolusi dependensi dan supply-chain checks lulus |
+| 14 — Package manager | — | 🟨 V1 lokal di `[Belum dirilis]` (`v1.7.0` terpakai untuk templat Fase 12) | Resolusi dependensi dan supply-chain checks lulus |
 | 15 — Debugger & FFI | `v1.8.0-rc.1` | `v1.8.0` | API native/GC dan debug tests lulus |
 | 16 — WASM & performa | `v1.9.0-rc.1` | `v1.9.0` | Uji browser/WASM dan benchmark yang relevan lulus |
 | 17 — Transfer file & SSH/SFTP/FTP | `v1.10.0-rc.1` | `v1.10.0` | Protokol aman, uji transfer, host key dan TLS lulus |
@@ -836,7 +836,7 @@ menghasilkan fitur yang tampak benar dan sepenuhnya tidak aman. Rencananya di
 
 ### Fase 14 — Package manager, perkakas proyek dan integrasi library
 
-**Tujuan:** developer dapat memulai dan membagikan proyek backend tanpa menyalin modul secara manual. **Status:** 🟡 sebagian — manajer paket V1 lokal (`indk paket`, butir 1–2) selesai; registri, scaffolding, dan boilerplate library belum. **Pemetaan:** P3, DX-01, DX-02.
+**Tujuan:** developer dapat memulai dan membagikan proyek backend tanpa menyalin modul secara manual. **Status:** 🟨 sebagian — manajer paket V1 lokal (`indk paket`, butir 1–2) selesai; registri, scaffolding, dan boilerplate library belum. **Pemetaan:** P3, DX-01, DX-02.
 
 **Rekomendasi rilis fase: `v1.8.0` (minor), kandidat `v1.8.0-rc.1`; patch `v1.8.1` dan seterusnya jika hanya perbaikan kompatibel.** (`v1.7.0` sudah dipakai untuk templat lanjutan Fase 12.) Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.
 
