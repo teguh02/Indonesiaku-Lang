@@ -1,0 +1,892 @@
+# pustaka/xml.idk - XML aman (modul `xml`, Fase 19).
+# Pemakaian:
+#     impor xml
+#     akar = xml.urai("<buku judul=\"Laskar\"><bab>Satu</bab></buku>")
+#     cetak(akar.ambil("judul"), akar.cari("bab").teks())
+#     cetak(xml.bentuk(xml.buat("pesan", {"id": "1"}, "Halo & selamat")))
+#
+# Isi:
+#   - urai(teks, batas_...)  -> Elemen akar (elemen, atribut, teks, CDATA,
+#                               namespace). Komentar dan instruksi pemrosesan
+#                               dibuang.
+#   - buat(nama, atribut, teks) -> Elemen baru untuk membangun dokumen.
+#   - bentuk(elemen, deklarasi, indentasi) -> teks XML dengan escaping.
+#   - lolos(teks), lolos_atribut(teks) -> escaping manual.
+#
+# Keamanan (default dan TIDAK dapat dimatikan pada V1):
+#   - <!DOCTYPE ...> SELALU ditolak. Tanpa DTD tidak ada entitas eksternal
+#     (XXE: membaca berkas/URL lokal) maupun entitas bersarang
+#     ("billion laughs").
+#   - Hanya lima entitas bawaan (&lt; &gt; &amp; &apos; &quot;) dan rujukan
+#     karakter (&#65; &#x41;) yang dikenali; entitas lain ditolak.
+#   - Ukuran masukan, kedalaman, jumlah elemen dan jumlah atribut per elemen
+#     dibatasi (BATAS_*), dan parser iteratif sehingga dokumen dalam tidak
+#     menghabiskan tumpukan panggilan.
+#   - Hanya UTF-8: deklarasi encoding lain ditolak, tidak ditebak.
+# Galat selalu GalatXML dengan `.baris` dan `.kolom` (bisa kosong).
+
+BATAS_UKURAN = 1048576
+BATAS_KEDALAMAN = 256
+BATAS_ELEMEN = 100000
+BATAS_ATRIBUT = 256
+NS_XML = "http://www.w3.org/XML/1998/namespace"
+NS_XMLNS = "http://www.w3.org/2000/xmlns/"
+_FFFE = chr(65534)
+_FFFF = chr(65535)
+
+kelas GalatXML < Galat {
+    init(pesan, baris = kosong, kolom = kosong) {
+        diri.baris = baris
+        diri.kolom = kolom
+        jika baris != kosong {
+            diri.pesan = f"baris {baris}, kolom {kolom}: {pesan}"
+        } selain {
+            diri.pesan = pesan
+        }
+    }
+}
+
+# ---------------------------------------------------------------- nama
+
+# _awal_nama(c) / _isi_nama(c): NameStartChar / NameChar XML 1.0 edisi 5.
+fungsi _awal_nama(c) {
+    jika (c >= "a" dan c <= "z") atau (c >= "A" dan c <= "Z") atau c == "_" atau c == ":" {
+        kembalikan benar
+    }
+    variabel o = ord(c)
+    jika o < 192 {
+        kembalikan salah
+    }
+    kembalikan (o <= 214) atau (o >= 216 dan o <= 246) atau (o >= 248 dan o <= 767) atau (o >= 880 dan o <= 893) atau (o >= 895 dan o <= 8191) atau o == 8204 atau o == 8205 atau (o >= 8304 dan o <= 8591) atau (o >= 11264 dan o <= 12271) atau (o >= 12289 dan o <= 55295) atau (o >= 63744 dan o <= 64975) atau (o >= 65008 dan o <= 65533) atau (o >= 65536 dan o <= 983039)
+}
+
+fungsi _isi_nama(c) {
+    jika (c >= "a" dan c <= "z") atau (c >= "A" dan c <= "Z") atau (c >= "0" dan c <= "9") atau c == "_" atau c == ":" atau c == "-" atau c == "." {
+        kembalikan benar
+    }
+    variabel o = ord(c)
+    jika o < 183 {
+        kembalikan salah
+    }
+    kembalikan o == 183 atau (o >= 768 dan o <= 879) atau o == 8255 atau o == 8256 atau _awal_nama(c)
+}
+
+# nama_sah(t) -> benar bila t nama XML (QName: paling banyak satu ':' yang
+# tidak di awal/akhir).
+fungsi nama_sah(t) {
+    jika jenis(t) != "teks" atau panjang(t) == 0 atau tidak _awal_nama(t[0]) {
+        kembalikan salah
+    }
+    variabel titik_dua = 0
+    untuk c dalam t {
+        jika tidak _isi_nama(c) {
+            kembalikan salah
+        }
+        jika c == ":" {
+            titik_dua += 1
+        }
+    }
+    jika titik_dua == 0 {
+        kembalikan benar
+    }
+    kembalikan titik_dua == 1 dan t[0] != ":" dan t[panjang(t) - 1] != ":"
+}
+
+fungsi _pisah_qname(nama) {
+    variabel i = 0
+    selagi i < panjang(nama) {
+        jika nama[i] == ":" {
+            kembalikan [nama[0:i], nama[i + 1:panjang(nama)]]
+        }
+        i += 1
+    }
+    kembalikan ["", nama]
+}
+
+# ---------------------------------------------------------------- Elemen
+
+# Satu elemen. Bidang: nama (QName seperti ditulis), atribut (kamus
+# QName -> teks, tanpa deklarasi xmlns), anak (daftar Elemen dan teks),
+# ns (URI namespace elemen atau kosong), ns_dekl (kamus awalan -> URI yang
+# dideklarasikan di elemen ini; "" = namespace bawaan).
+kelas Elemen {
+    init(nama, atribut = kosong, anak = kosong) {
+        jika tidak nama_sah(nama) {
+            naikkan GalatXML("nama elemen tidak sah: " + repr(nama))
+        }
+        diri.nama = nama
+        diri.atribut = {}
+        diri.ns_dekl = {}
+        diri.ns = kosong
+        diri.anak = []
+        jika atribut != kosong {
+            untuk k dalam kunci(atribut) {
+                diri.atur(k, atribut[k])
+            }
+        }
+        jika anak != kosong {
+            untuk a dalam anak {
+                diri.tambah(a)
+            }
+        }
+    }
+
+    lokal() {
+        kembalikan _pisah_qname(diri.nama)[1]
+    }
+
+    awalan() {
+        kembalikan _pisah_qname(diri.nama)[0]
+    }
+
+    # atur(nama, nilai) -> diri. "xmlns"/"xmlns:p" menjadi deklarasi namespace.
+    atur(nama, nilai) {
+        jika tidak nama_sah(nama) {
+            naikkan GalatXML("nama atribut tidak sah: " + repr(nama))
+        }
+        variabel v = nilai jika jenis(nilai) == "teks" selain ke_teks(nilai)
+        jika nama == "xmlns" {
+            diri.ns_dekl[""] = v
+        } jika_lain _pisah_qname(nama)[0] == "xmlns" {
+            diri.ns_dekl[_pisah_qname(nama)[1]] = v
+        } selain {
+            diri.atribut[nama] = v
+        }
+        kembalikan diri
+    }
+
+    ambil(nama, bawaan = kosong) {
+        kembalikan ambil(diri.atribut, nama, bawaan)
+    }
+
+    # tambah(anak) -> diri. Anak berupa Elemen atau teks (nilai lain diubah
+    # dengan ke_teks).
+    tambah(x) {
+        jika adalah_instansi(x, Elemen) {
+            tambah(diri.anak, x)
+        } selain {
+            variabel t = x jika jenis(x) == "teks" selain ke_teks(x)
+            variabel n = panjang(diri.anak)
+            jika n > 0 dan jenis(diri.anak[n - 1]) == "teks" {
+                diri.anak[n - 1] = diri.anak[n - 1] + t
+            } selain {
+                tambah(diri.anak, t)
+            }
+        }
+        kembalikan diri
+    }
+
+    # elemen() -> daftar anak yang berupa Elemen.
+    elemen() {
+        variabel hasil = []
+        untuk a dalam diri.anak {
+            jika jenis(a) != "teks" {
+                tambah(hasil, a)
+            }
+        }
+        kembalikan hasil
+    }
+
+    _cocok(a, nama, ns) {
+        jika jenis(a) == "teks" {
+            kembalikan salah
+        }
+        jika ns != kosong {
+            kembalikan a.ns == ns dan a.lokal() == nama
+        }
+        kembalikan a.nama == nama
+    }
+
+    # cari(nama, ns=kosong) -> anak Elemen pertama bernama `nama` (QName),
+    # atau bernama lokal `nama` dalam namespace `ns`; kosong bila tidak ada.
+    cari(nama, ns = kosong) {
+        untuk a dalam diri.anak {
+            jika diri._cocok(a, nama, ns) {
+                kembalikan a
+            }
+        }
+        kembalikan kosong
+    }
+
+    cari_semua(nama, ns = kosong) {
+        variabel hasil = []
+        untuk a dalam diri.anak {
+            jika diri._cocok(a, nama, ns) {
+                tambah(hasil, a)
+            }
+        }
+        kembalikan hasil
+    }
+
+    # teks() -> gabungan seluruh teks keturunan (tanpa tag).
+    teks() {
+        variabel potongan = []
+        variabel tumpukan = [diri]
+        # Urutan dokumen tanpa rekursi: tumpukan berisi item yang belum dikunjungi.
+        selagi panjang(tumpukan) > 0 {
+            variabel x = tumpukan[panjang(tumpukan) - 1]
+            hapus_pada(tumpukan, panjang(tumpukan) - 1)
+            jika jenis(x) == "teks" {
+                tambah(potongan, x)
+            } selain {
+                variabel j = panjang(x.anak) - 1
+                selagi j >= 0 {
+                    tambah(tumpukan, x.anak[j])
+                    j -= 1
+                }
+            }
+        }
+        kembalikan teks_gabung(potongan, "")
+    }
+
+    _teks_() {
+        kembalikan bentuk(diri)
+    }
+
+    _repr_() {
+        kembalikan "<Elemen " + diri.nama + ">"
+    }
+}
+
+# buat(nama, atribut=kosong, teks=kosong) -> Elemen baru.
+fungsi buat(nama, atribut = kosong, teks = kosong) {
+    variabel e = Elemen(nama, atribut)
+    jika teks != kosong {
+        e.tambah(teks)
+    }
+    kembalikan e
+}
+
+# ---------------------------------------------------------------- escaping
+
+# _periksa_karakter(t) -> galat bila t memuat karakter kendali yang tidak
+# boleh ada di XML 1.0 (selain tab, baris baru, carriage return).
+fungsi _periksa_karakter(t) {
+    untuk c dalam t {
+        jika (c < " " dan c != "\t" dan c != "\n" dan c != "\r") atau c == _FFFE atau c == _FFFF {
+            naikkan GalatXML(f"karakter U+{_heks4(ord(c))} tidak boleh ada di XML")
+        }
+    }
+}
+
+fungsi _heks4(n) {
+    variabel t = huruf_besar(heksa(n)[2:])
+    selagi panjang(t) < 4 {
+        t = "0" + t
+    }
+    kembalikan t
+}
+
+# lolos(t) -> teks aman untuk isi elemen: & < > dan CR di-escape.
+fungsi lolos(t) {
+    _periksa_karakter(t)
+    kembalikan ganti(ganti(ganti(ganti(t, "&", "&amp;"), "<", "&lt;"), ">", "&gt;"), "\r", "&#13;")
+}
+
+# lolos_atribut(t) -> teks aman untuk nilai atribut berkutip ganda.
+fungsi lolos_atribut(t) {
+    variabel h = lolos(t)
+    h = ganti(h, "\"", "&quot;")
+    h = ganti(h, "\t", "&#9;")
+    kembalikan ganti(h, "\n", "&#10;")
+}
+
+# ---------------------------------------------------------------- bentuk
+
+fungsi _nama_wajib(nama, apa) {
+    jika tidak nama_sah(nama) {
+        naikkan GalatXML("nama " + apa + " tidak sah: " + repr(nama))
+    }
+}
+
+# Nama diperiksa ulang di sini karena bidang Elemen bisa diubah langsung
+# (e.atribut["x onload=..."] = ...); tanpa ini bentuk() bisa menyuntik markup.
+fungsi _tag_buka(e, keluar) {
+    _nama_wajib(e.nama, "elemen")
+    tambah(keluar, "<" + e.nama)
+    untuk p dalam kunci(e.ns_dekl) {
+        variabel k = "xmlns" jika p == "" selain "xmlns:" + p
+        _nama_wajib(k, "atribut")
+        tambah(keluar, " " + k + "=\"" + lolos_atribut(e.ns_dekl[p]) + "\"")
+    }
+    untuk k dalam kunci(e.atribut) {
+        _nama_wajib(k, "atribut")
+        tambah(keluar, " " + k + "=\"" + lolos_atribut(ke_teks(e.atribut[k])) + "\"")
+    }
+}
+
+fungsi _hanya_elemen(e) {
+    untuk a dalam e.anak {
+        jika jenis(a) == "teks" {
+            kembalikan salah
+        }
+    }
+    kembalikan benar
+}
+
+fungsi _tulis(e, keluar, indent, tingkat) {
+    jika tidak adalah_instansi(e, Elemen) {
+        naikkan GalatXML("bentuk() memerlukan Elemen, bukan " + jenis(e))
+    }
+    jika tingkat > 900 {
+        naikkan GalatXML("pohon terlalu dalam untuk dibentuk")
+    }
+    _tag_buka(e, keluar)
+    jika panjang(e.anak) == 0 {
+        tambah(keluar, "/>")
+        kembalikan kosong
+    }
+    tambah(keluar, ">")
+    variabel rapi = indent != kosong dan _hanya_elemen(e)
+    untuk a dalam e.anak {
+        jika rapi {
+            tambah(keluar, "\n" + indent * (tingkat + 1))
+        }
+        jika jenis(a) == "teks" {
+            tambah(keluar, lolos(a))
+        } selain {
+            _tulis(a, keluar, indent jika rapi selain kosong, tingkat + 1)
+        }
+    }
+    jika rapi {
+        tambah(keluar, "\n" + indent * tingkat)
+    }
+    tambah(keluar, "</" + e.nama + ">")
+}
+
+# bentuk(elemen, deklarasi=salah, indentasi=kosong) -> teks XML.
+# `indentasi` (mis. "  ") merapikan elemen yang anaknya hanya elemen; isi
+# campuran teks/elemen ditulis apa adanya agar teksnya tidak berubah.
+fungsi bentuk(elemen, deklarasi = salah, indentasi = kosong) {
+    variabel keluar = []
+    jika deklarasi {
+        tambah(keluar, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+    }
+    _tulis(elemen, keluar, indentasi, 0)
+    kembalikan teks_gabung(keluar, "")
+}
+
+# ---------------------------------------------------------------- urai
+
+_ENTITAS = {"lt": "<", "gt": ">", "amp": "&", "apos": "'", "quot": "\""}
+
+fungsi _spasi(c) {
+    kembalikan c == " " atau c == "\t" atau c == "\n" atau c == "\r"
+}
+
+fungsi _karakter_sah(o) {
+    kembalikan o == 9 atau o == 10 atau o == 13 atau (o >= 32 dan o <= 55295) atau (o >= 57344 dan o <= 65533) atau (o >= 65536 dan o <= 1114111)
+}
+
+# _kode_rujukan("x41" | "65") -> titik kode, atau -1 bila tidak sah.
+# Dibatasi 7 digit agar angka raksasa tidak meluap.
+fungsi _kode_rujukan(angka) {
+    variabel basis = 10
+    variabel digit = "0123456789"
+    jika panjang(angka) > 0 dan angka[0] == "x" {
+        basis = 16
+        digit = "0123456789abcdef"
+        angka = huruf_kecil(angka[1:panjang(angka)])
+    }
+    jika panjang(angka) == 0 {
+        kembalikan -1
+    }
+    # Nol di depan boleh berapa pun (XML 1.0); sisanya dibatasi 7 digit
+    # agar angka raksasa tidak meluap.
+    variabel nol = 0
+    selagi nol < panjang(angka) - 1 dan angka[nol] == "0" {
+        nol += 1
+    }
+    angka = angka[nol:panjang(angka)]
+    jika panjang(angka) > 7 {
+        kembalikan -1
+    }
+    variabel kode = 0
+    untuk c dalam angka {
+        variabel nilai = -1
+        variabel k = 0
+        selagi k < basis {
+            jika digit[k] == c {
+                nilai = k
+                hentikan
+            }
+            k += 1
+        }
+        jika nilai < 0 {
+            kembalikan -1
+        }
+        kode = kode * basis + nilai
+    }
+    kembalikan kode
+}
+
+# _siram(e, potongan) -> pindahkan potongan teks tertunda ke e sebagai satu
+# simpul teks, lalu kosongkan daftar potongan.
+fungsi _siram(e, potongan) {
+    jika panjang(potongan) > 0 {
+        e.tambah(teks_gabung(potongan, ""))
+        selagi panjang(potongan) > 0 {
+            hapus_pada(potongan, panjang(potongan) - 1)
+        }
+    }
+}
+
+kelas _Pengurai {
+    init(cs, kedalaman, elemen, atribut) {
+        diri.cs = cs
+        diri.n = panjang(cs)
+        diri.i = 0
+        diri.batas_kedalaman = kedalaman
+        diri.batas_elemen = elemen
+        diri.batas_atribut = atribut
+        diri.jumlah_elemen = 0
+    }
+
+    galat(pesan, pos = kosong) {
+        variabel p = diri.i jika pos == kosong selain pos
+        variabel baris = 1
+        variabel kolom = 1
+        variabel j = 0
+        selagi j < p dan j < diri.n {
+            jika diri.cs[j] == "\n" {
+                baris += 1
+                kolom = 1
+            } selain {
+                kolom += 1
+            }
+            j += 1
+        }
+        naikkan GalatXML(pesan, baris, kolom)
+    }
+
+    mulai(s) {
+        variabel k = 0
+        selagi k < panjang(s) {
+            jika diri.i + k >= diri.n atau diri.cs[diri.i + k] != s[k] {
+                kembalikan salah
+            }
+            k += 1
+        }
+        kembalikan benar
+    }
+
+    lewat_spasi() {
+        selagi diri.i < diri.n dan _spasi(diri.cs[diri.i]) {
+            diri.i = diri.i + 1
+        }
+    }
+
+    harap(s) {
+        jika tidak diri.mulai(s) {
+            diri.galat("harapkan '" + s + "'")
+        }
+        diri.i = diri.i + panjang(s)
+    }
+
+    # cari_hingga(s) -> posisi awal s berikutnya dari diri.i, atau -1.
+    cari_hingga(s) {
+        variabel j = diri.i
+        variabel c0 = s[0]
+        selagi j < diri.n {
+            jika diri.cs[j] == c0 {
+                variabel k = 1
+                selagi k < panjang(s) dan j + k < diri.n dan diri.cs[j + k] == s[k] {
+                    k += 1
+                }
+                jika k == panjang(s) {
+                    kembalikan j
+                }
+            }
+            j += 1
+        }
+        kembalikan -1
+    }
+
+    nama() {
+        variabel a = diri.i
+        jika a >= diri.n atau tidak _awal_nama(diri.cs[a]) {
+            diri.galat("harapkan nama")
+        }
+        variabel j = a + 1
+        selagi j < diri.n dan _isi_nama(diri.cs[j]) {
+            j += 1
+        }
+        diri.i = j
+        variabel t = teks_gabung(diri.cs[a:j], "")
+        jika tidak nama_sah(t) {
+            diri.galat("nama tidak sah menurut namespace XML: " + repr(t), a)
+        }
+        kembalikan t
+    }
+
+    # rujukan() -> karakter dari &...; pada diri.i (menunjuk '&').
+    rujukan() {
+        variabel a = diri.i
+        variabel j = a + 1
+        selagi j < diri.n dan diri.cs[j] != ";" dan j - a < 40 {
+            j += 1
+        }
+        jika j >= diri.n atau diri.cs[j] != ";" {
+            diri.galat("'&' harus ditulis sebagai '&amp;'", a)
+        }
+        variabel isi = teks_gabung(diri.cs[a + 1:j], "")
+        diri.i = j + 1
+        jika punya(_ENTITAS, isi) {
+            kembalikan _ENTITAS[isi]
+        }
+        jika panjang(isi) > 1 dan isi[0] == "#" {
+            variabel kode = _kode_rujukan(isi[1:panjang(isi)])
+            jika kode < 0 atau tidak _karakter_sah(kode) {
+                diri.galat("rujukan karakter tidak sah: &" + isi + ";", a)
+            }
+            kembalikan chr(kode)
+        }
+        diri.galat("entitas '&" + isi + ";' tidak dikenal (DTD dan entitas kustom tidak didukung)", a)
+    }
+
+    periksa_kendali(a, b) {
+        variabel j = a
+        selagi j < b {
+            variabel c = diri.cs[j]
+            jika (c < " " dan c != "\t" dan c != "\n") atau c == _FFFE atau c == _FFFF {
+                diri.galat(f"karakter U+{_heks4(ord(c))} tidak boleh ada di XML", j)
+            }
+            j += 1
+        }
+    }
+
+    # teks_isi() -> teks hingga '<' berikutnya, dengan rujukan terurai.
+    teks_isi() {
+        variabel potongan = []
+        variabel a = diri.i
+        selagi diri.i < diri.n {
+            variabel c = diri.cs[diri.i]
+            jika c == "<" {
+                hentikan
+            }
+            jika c == "&" {
+                diri.periksa_kendali(a, diri.i)
+                tambah(potongan, teks_gabung(diri.cs[a:diri.i], ""))
+                tambah(potongan, diri.rujukan())
+                a = diri.i
+            } jika_lain c == ">" dan diri.i >= 2 dan diri.cs[diri.i - 1] == "]" dan diri.cs[diri.i - 2] == "]" {
+                diri.galat("']]>' tidak boleh muncul di teks")
+            } selain {
+                diri.i = diri.i + 1
+            }
+        }
+        diri.periksa_kendali(a, diri.i)
+        tambah(potongan, teks_gabung(diri.cs[a:diri.i], ""))
+        kembalikan teks_gabung(potongan, "")
+    }
+
+    nilai_atribut() {
+        jika diri.i >= diri.n atau (diri.cs[diri.i] != "\"" dan diri.cs[diri.i] != "'") {
+            diri.galat("nilai atribut harus diapit tanda kutip")
+        }
+        variabel kutip = diri.cs[diri.i]
+        diri.i = diri.i + 1
+        variabel potongan = []
+        selagi benar {
+            jika diri.i >= diri.n {
+                diri.galat("nilai atribut tidak ditutup")
+            }
+            variabel c = diri.cs[diri.i]
+            jika c == kutip {
+                diri.i = diri.i + 1
+                hentikan
+            }
+            jika c == "<" {
+                diri.galat("'<' tidak boleh ada di nilai atribut")
+            }
+            jika c == "&" {
+                tambah(potongan, diri.rujukan())
+            } jika_lain c == "\t" atau c == "\n" {
+                # Normalisasi nilai atribut XML 1.0 §3.3.3.
+                tambah(potongan, " ")
+                diri.i = diri.i + 1
+            } selain {
+                jika c < " " atau c == _FFFE atau c == _FFFF {
+                    diri.galat(f"karakter U+{_heks4(ord(c))} tidak boleh ada di XML")
+                }
+                tambah(potongan, c)
+                diri.i = diri.i + 1
+            }
+        }
+        kembalikan teks_gabung(potongan, "")
+    }
+
+    komentar() {
+        diri.i = diri.i + 4
+        variabel akhir = diri.cari_hingga("--")
+        jika akhir < 0 {
+            diri.galat("komentar tidak ditutup")
+        }
+        diri.periksa_kendali(diri.i, akhir)
+        diri.i = akhir
+        jika tidak diri.mulai("-->") {
+            diri.galat("'--' tidak boleh ada di dalam komentar")
+        }
+        diri.i = diri.i + 3
+    }
+
+    instruksi() {
+        variabel a = diri.i
+        diri.i = diri.i + 2
+        variabel target = diri.nama()
+        jika huruf_kecil(target) == "xml" {
+            diri.galat("deklarasi XML hanya boleh di awal dokumen", a)
+        }
+        jika diri.i < diri.n dan tidak _spasi(diri.cs[diri.i]) dan tidak diri.mulai("?>") {
+            diri.galat("harapkan spasi setelah target instruksi pemrosesan")
+        }
+        variabel akhir = diri.cari_hingga("?>")
+        jika akhir < 0 {
+            diri.galat("instruksi pemrosesan tidak ditutup", a)
+        }
+        diri.periksa_kendali(diri.i, akhir)
+        diri.i = akhir + 2
+    }
+
+    deklarasi() {
+        diri.i = diri.i + 5
+        variabel attr = {}
+        selagi benar {
+            diri.lewat_spasi()
+            jika diri.mulai("?>") {
+                diri.i = diri.i + 2
+                hentikan
+            }
+            variabel k = diri.nama()
+            diri.lewat_spasi()
+            diri.harap("=")
+            diri.lewat_spasi()
+            attr[k] = diri.nilai_atribut()
+        }
+        variabel versi = ambil(attr, "version", "")
+        jika panjang(versi) < 3 atau versi[0:2] != "1." {
+            diri.galat("versi XML tidak didukung: " + repr(versi), 0)
+        }
+        variabel enc = huruf_kecil(ambil(attr, "encoding", "utf-8"))
+        jika enc != "utf-8" dan enc != "utf8" {
+            diri.galat("hanya encoding UTF-8 yang didukung, bukan " + repr(attr["encoding"]), 0)
+        }
+    }
+
+    # misc(boleh_akar) -> benar bila berhenti di '<' awal elemen.
+    misc() {
+        selagi benar {
+            diri.lewat_spasi()
+            jika diri.i >= diri.n {
+                kembalikan salah
+            }
+            jika diri.mulai("<!--") {
+                diri.komentar()
+            } jika_lain diri.mulai("<!DOCTYPE") atau diri.mulai("<!doctype") {
+                diri.galat("DTD (<!DOCTYPE>) tidak diizinkan: ditolak untuk mencegah XXE dan entity expansion")
+            } jika_lain diri.mulai("<?") {
+                diri.instruksi()
+            } jika_lain diri.cs[diri.i] == "<" {
+                kembalikan benar
+            } selain {
+                diri.galat("teks tidak boleh berada di luar elemen akar")
+            }
+        }
+    }
+
+    # cari_ns(tumpukan, e, awalan) -> URI, kosong (tak ada bawaan), atau galat.
+    cari_ns(tumpukan, e, awalan, pos) {
+        jika awalan == "xml" {
+            kembalikan NS_XML
+        }
+        jika punya(e.ns_dekl, awalan) {
+            kembalikan e.ns_dekl[awalan]
+        }
+        variabel j = panjang(tumpukan) - 1
+        selagi j >= 0 {
+            jika punya(tumpukan[j].ns_dekl, awalan) {
+                kembalikan tumpukan[j].ns_dekl[awalan]
+            }
+            j -= 1
+        }
+        jika awalan == "" {
+            kembalikan kosong
+        }
+        diri.galat("awalan namespace '" + awalan + "' belum dideklarasikan", pos)
+    }
+
+    # tag_buka(tumpukan) -> [Elemen, kosong_kah]. diri.i menunjuk '<'.
+    tag_buka(tumpukan) {
+        variabel pos = diri.i
+        diri.i = diri.i + 1
+        variabel e = Elemen(diri.nama())
+        diri.jumlah_elemen = diri.jumlah_elemen + 1
+        jika diri.jumlah_elemen > diri.batas_elemen {
+            diri.galat(f"jumlah elemen melebihi batas {diri.batas_elemen}", pos)
+        }
+        jika panjang(tumpukan) + 1 > diri.batas_kedalaman {
+            diri.galat(f"kedalaman elemen melebihi batas {diri.batas_kedalaman}", pos)
+        }
+        variabel jumlah = 0
+        variabel tunda = []
+        selagi benar {
+            variabel ada_spasi = diri.i < diri.n dan _spasi(diri.cs[diri.i])
+            diri.lewat_spasi()
+            jika diri.i >= diri.n {
+                diri.galat("tag <" + e.nama + "> tidak ditutup", pos)
+            }
+            jika diri.mulai("/>") {
+                diri.i = diri.i + 2
+                hentikan
+            }
+            jika diri.cs[diri.i] == ">" {
+                diri.i = diri.i + 1
+                hentikan
+            }
+            jika tidak ada_spasi {
+                diri.galat("harapkan spasi sebelum atribut")
+            }
+            variabel apos = diri.i
+            variabel k = diri.nama()
+            diri.lewat_spasi()
+            diri.harap("=")
+            diri.lewat_spasi()
+            variabel v = diri.nilai_atribut()
+            jumlah += 1
+            jika jumlah > diri.batas_atribut {
+                diri.galat(f"jumlah atribut melebihi batas {diri.batas_atribut}", apos)
+            }
+            jika punya(e.atribut, k) atau (k == "xmlns" dan punya(e.ns_dekl, "")) atau (_pisah_qname(k)[0] == "xmlns" dan punya(e.ns_dekl, _pisah_qname(k)[1])) {
+                diri.galat("atribut '" + k + "' ganda", apos)
+            }
+            jika _pisah_qname(k)[0] == "xmlns" dan v == "" {
+                diri.galat("awalan namespace tidak boleh dibatalkan dengan URI kosong", apos)
+            }
+            e.atur(k, v)
+            tambah(tunda, [k, apos])
+        }
+        variabel kosong_kah = diri.cs[diri.i - 2] == "/"
+        untuk p dalam kunci(e.ns_dekl) {
+            variabel uri_dekl = e.ns_dekl[p]
+            jika p == "xmlns" atau uri_dekl == NS_XMLNS atau (p == "xml") != (uri_dekl == NS_XML) {
+                diri.galat("deklarasi namespace terlarang: awalan '" + p + "' dengan URI " + repr(uri_dekl), pos)
+            }
+        }
+        variabel bagian = _pisah_qname(e.nama)
+        jika bagian[0] == "xmlns" {
+            diri.galat("awalan 'xmlns' tidak boleh dipakai untuk elemen", pos)
+        }
+        e.ns = diri.cari_ns(tumpukan, e, bagian[0], pos)
+        # Atribut berawalan harus terikat, dan nama diperluasnya unik.
+        variabel dilihat = {}
+        untuk ka dalam tunda {
+            variabel b = _pisah_qname(ka[0])
+            jika b[0] != "" dan b[0] != "xmlns" {
+                variabel uri = diri.cari_ns(tumpukan, e, b[0], ka[1])
+                variabel kunci_ns = uri + " " + b[1]
+                jika punya(dilihat, kunci_ns) {
+                    diri.galat("atribut '" + ka[0] + "' ganda setelah namespace diuraikan", ka[1])
+                }
+                dilihat[kunci_ns] = benar
+            }
+        }
+        kembalikan [e, kosong_kah]
+    }
+
+    tag_tutup(tumpukan) {
+        variabel pos = diri.i
+        diri.i = diri.i + 2
+        variabel nm = diri.nama()
+        diri.lewat_spasi()
+        diri.harap(">")
+        variabel atas = tumpukan[panjang(tumpukan) - 1]
+        jika nm != atas.nama {
+            diri.galat("tag penutup </" + nm + "> tidak cocok dengan <" + atas.nama + ">", pos)
+        }
+        hapus_pada(tumpukan, panjang(tumpukan) - 1)
+    }
+
+    # elemen_akar() -> Elemen. Iteratif: kedalaman tidak memakai frame.
+    elemen_akar() {
+        variabel tumpukan = []
+        variabel hasil = diri.tag_buka(tumpukan)
+        jika hasil[1] {
+            kembalikan hasil[0]
+        }
+        variabel akar = hasil[0]
+        tambah(tumpukan, akar)
+        # Potongan teks per elemen terbuka, disatukan sekali saat elemen
+        # anak muncul atau elemen ditutup: menggabung teks setiap kali
+        # (teks + CDATA + teks ...) menyalin ulang seluruh teks -> O(n^2).
+        variabel tunda = [[]]
+        selagi panjang(tumpukan) > 0 {
+            jika diri.i >= diri.n {
+                diri.galat("dokumen berakhir sebelum </" + tumpukan[panjang(tumpukan) - 1].nama + ">")
+            }
+            variabel atas = tumpukan[panjang(tumpukan) - 1]
+            variabel potongan = tunda[panjang(tunda) - 1]
+            jika diri.cs[diri.i] != "<" {
+                tambah(potongan, diri.teks_isi())
+            } jika_lain diri.mulai("</") {
+                _siram(atas, potongan)
+                diri.tag_tutup(tumpukan)
+                hapus_pada(tunda, panjang(tunda) - 1)
+            } jika_lain diri.mulai("<!--") {
+                diri.komentar()
+            } jika_lain diri.mulai("<![CDATA[") {
+                diri.i = diri.i + 9
+                variabel akhir = diri.cari_hingga("]]>")
+                jika akhir < 0 {
+                    diri.galat("bagian CDATA tidak ditutup")
+                }
+                diri.periksa_kendali(diri.i, akhir)
+                tambah(potongan, teks_gabung(diri.cs[diri.i:akhir], ""))
+                diri.i = akhir + 3
+            } jika_lain diri.mulai("<!") {
+                diri.galat("deklarasi markup tidak diizinkan di dalam elemen")
+            } jika_lain diri.mulai("<?") {
+                diri.instruksi()
+            } selain {
+                variabel h = diri.tag_buka(tumpukan)
+                _siram(atas, potongan)
+                tambah(atas.anak, h[0])
+                jika tidak h[1] {
+                    tambah(tumpukan, h[0])
+                    tambah(tunda, [])
+                }
+            }
+        }
+        kembalikan akar
+    }
+
+    dokumen() {
+        jika diri.mulai("<?xml") dan diri.i + 5 < diri.n dan _spasi(diri.cs[5]) {
+            diri.deklarasi()
+        }
+        jika tidak diri.misc() {
+            diri.galat("dokumen tidak memiliki elemen akar")
+        }
+        variabel akar = diri.elemen_akar()
+        jika diri.misc() {
+            diri.galat("hanya boleh ada satu elemen akar")
+        }
+        kembalikan akar
+    }
+}
+
+# urai(teks, ...) -> Elemen akar. Melempar GalatXML untuk dokumen yang tidak
+# well-formed, DTD/entitas kustom, atau batas yang terlampaui.
+fungsi urai(teks, batas_ukuran = BATAS_UKURAN, batas_kedalaman = BATAS_KEDALAMAN, batas_elemen = BATAS_ELEMEN, batas_atribut = BATAS_ATRIBUT) {
+    jika jenis(teks) != "teks" {
+        naikkan GalatXML("urai() memerlukan teks, bukan " + jenis(teks))
+    }
+    jika panjang_byte(teks) > batas_ukuran {
+        naikkan GalatXML(f"dokumen {panjang_byte(teks)} bita melebihi batas {batas_ukuran} bita")
+    }
+    jika panjang(teks) > 0 dan teks[0] == chr(65279) {
+        teks = teks[1:panjang(teks)]
+    }
+    teks = ganti(ganti(teks, "\r\n", "\n"), "\r", "\n")
+    variabel p = _Pengurai(daftar(teks), batas_kedalaman, batas_elemen, batas_atribut)
+    kembalikan p.dokumen()
+}

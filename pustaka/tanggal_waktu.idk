@@ -1,0 +1,578 @@
+# pustaka/tanggal_waktu.idk - Tanggal & waktu ISO 8601 (modul `tanggal_waktu`, Fase 19).
+# Pemakaian:
+#     impor tanggal_waktu
+#     dari tanggal_waktu impor dari_iso, buat, sekarang, TanggalWaktu, GalatTanggal
+#
+# Isi:
+#   - dari_iso(teks)          : urai "2024-03-10", "2024-03-10T12:30:00Z",
+#                               "2024-03-10 12:30:00.250+07:00", ...
+#   - buat(tahun, bulan, hari, jam, menit, detik, mikrodetik, offset)
+#   - dari_unix(detik, offset), sekarang(), sekarang_lokal(), offset_lokal()
+#   - TanggalWaktu: iso(), format(pola), tambah(...), tambah_bulan(n),
+#     selisih(lain), ke_utc(), ke_offset(o), beri_offset(o), unix(), ...
+#
+# Model waktu:
+#   - Kalender Gregorian proleptik, tahun 1..9999, presisi mikrodetik.
+#   - Offset TETAP dalam menit dari UTC (+07:00 = 420). Objek tanpa offset
+#     ("naif") mewakili jam dinding tanpa zona; ia tidak boleh dibandingkan
+#     atau dikurangkan dengan objek ber-offset, karena hasilnya akan menebak.
+#   - Zona waktu IANA ("Asia/Jakarta") dan aturan DST BELUM didukung: butuh
+#     data tzdb yang terawat. Untuk Indonesia (WIB +07:00, WITA +08:00,
+#     WIT +09:00, tanpa DST) offset tetap sudah tepat. Lihat
+#     docs/RENCANA_FITUR/validasi_tanggal_xml.md.
+#   - Detik kabisat (detik 60) ditolak, seperti datetime Python.
+#
+# Semua bilangan internal adalah bulat (int64), jadi tidak ada galat
+# pembulatan desimal pada aritmetika tanggal.
+
+kelas GalatTanggal < Galat {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+TAHUN_MIN = 1
+TAHUN_MAKS = 9999
+UTC = 0
+WIB = 420
+WITA = 480
+WIT = 540
+
+_HARI = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
+_BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli",
+          "Agustus", "September", "Oktober", "November", "Desember"]
+_HARI_SINGKAT = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
+_BULAN_SINGKAT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu",
+                  "Sep", "Okt", "Nov", "Des"]
+_DETIK_HARI = 86400
+_MIKRO = 1000000
+
+# ---------------------------------------------------------------- kalender
+
+# adalah_kabisat(tahun) -> benar untuk tahun kabisat Gregorian.
+fungsi adalah_kabisat(tahun) {
+    kembalikan (tahun % 4 == 0 dan tahun % 100 != 0) atau tahun % 400 == 0
+}
+
+# hari_dalam_bulan(tahun, bulan) -> 28..31.
+fungsi hari_dalam_bulan(tahun, bulan) {
+    jika bulan == 2 {
+        kembalikan 29 jika adalah_kabisat(tahun) selain 28
+    }
+    kembalikan 30 jika bulan dalam [4, 6, 9, 11] selain 31
+}
+
+# _hari_dari_sipil -> jumlah hari sejak 1970-01-01 (algoritme H. Hinnant).
+fungsi _hari_dari_sipil(y, m, d) {
+    jika m <= 2 {
+        y -= 1
+    }
+    variabel era = y // 400
+    variabel yoe = y - era * 400
+    variabel mp = m - 3 jika m > 2 selain m + 9
+    variabel doy = (153 * mp + 2) // 5 + d - 1
+    variabel doe = yoe * 365 + yoe // 4 - yoe // 100 + doy
+    kembalikan era * 146097 + doe - 719468
+}
+
+# _sipil_dari_hari(z) -> [tahun, bulan, hari].
+fungsi _sipil_dari_hari(z) {
+    z += 719468
+    variabel era = z // 146097
+    variabel doe = z - era * 146097
+    variabel yoe = (doe - doe // 1460 + doe // 36524 - doe // 146096) // 365
+    variabel y = yoe + era * 400
+    variabel doy = doe - (365 * yoe + yoe // 4 - yoe // 100)
+    variabel mp = (5 * doy + 2) // 153
+    variabel d = doy - (153 * mp + 2) // 5 + 1
+    variabel m = mp + 3 jika mp < 10 selain mp - 9
+    jika m <= 2 {
+        y += 1
+    }
+    kembalikan [y, m, d]
+}
+
+fungsi _dua(n) {
+    kembalikan ("0" + ke_teks(n)) jika n < 10 selain ke_teks(n)
+}
+
+fungsi _nol_kiri(n, lebar) {
+    variabel t = ke_teks(n)
+    selagi panjang(t) < lebar {
+        t = "0" + t
+    }
+    kembalikan t
+}
+
+fungsi _wajib_bulat(nama, v) {
+    # v - v != 0 menyaring nan/takhingga sebelum ke_bulat() sempat melempar.
+    jika jenis(v) != "angka" atau v - v != 0 atau tidak (ke_bulat(v) adalah v) {
+        naikkan GalatTanggal(nama + " harus bilangan bulat, bukan " + repr(v))
+    }
+}
+
+fungsi _geser_sah(v, maks) {
+    _wajib_bulat("pergeseran", v)
+    jika abs(v) > maks {
+        naikkan GalatTanggal("hasil di luar rentang tahun 1-9999")
+    }
+}
+
+fungsi _rentang(nama, v, lo, hi) {
+    _wajib_bulat(nama, v)
+    jika v < lo atau v > hi {
+        naikkan GalatTanggal(f"{nama} {v} di luar rentang {lo}-{hi}")
+    }
+}
+
+# ---------------------------------------------------------------- offset
+
+# teks_offset(menit) -> "+07:00" (0 -> "+00:00").
+fungsi teks_offset(menit) {
+    variabel tanda = "-" jika menit < 0 selain "+"
+    variabel m = abs(menit)
+    kembalikan tanda + _dua(m // 60) + ":" + _dua(m % 60)
+}
+
+fungsi _digit_semua(t) {
+    jika panjang(t) == 0 {
+        kembalikan salah
+    }
+    untuk c dalam t {
+        jika c < "0" atau c > "9" {
+            kembalikan salah
+        }
+    }
+    kembalikan benar
+}
+
+# urai_offset(o) -> menit dari UTC. Menerima bulat (menit), kosong, atau teks
+# "Z", "+07:00", "+0700", "+07", "-05:30".
+fungsi urai_offset(o) {
+    jika o == kosong {
+        kembalikan kosong
+    }
+    jika jenis(o) == "angka" {
+        _rentang("offset", o, -1439, 1439)
+        kembalikan o
+    }
+    jika jenis(o) != "teks" {
+        naikkan GalatTanggal("offset harus bulat (menit) atau teks seperti \"+07:00\"")
+    }
+    jika o == "Z" atau o == "z" {
+        kembalikan 0
+    }
+    variabel salah_bentuk = "offset tidak sah: " + repr(o)
+    jika panjang(o) < 3 atau (o[0] != "+" dan o[0] != "-") {
+        naikkan GalatTanggal(salah_bentuk)
+    }
+    variabel badan = o[1:panjang(o)]
+    jika panjang(badan) == 5 dan badan[2] == ":" {
+        badan = badan[0:2] + badan[3:5]
+    }
+    jika tidak _digit_semua(badan) atau (panjang(badan) != 2 dan panjang(badan) != 4) {
+        naikkan GalatTanggal(salah_bentuk)
+    }
+    variabel j = ke_bulat(badan[0:2])
+    variabel m = ke_bulat(badan[2:4]) jika panjang(badan) == 4 selain 0
+    jika j > 23 atau m > 59 {
+        naikkan GalatTanggal("offset di luar rentang -23:59..+23:59: " + repr(o))
+    }
+    variabel total = j * 60 + m
+    kembalikan -total jika o[0] == "-" selain total
+}
+
+# ---------------------------------------------------------------- kelas
+
+# Satu titik waktu. Bidang bacaan: tahun, bulan, hari, jam, menit, detik,
+# mikrodetik, offset (menit atau kosong). Objek tidak diubah setelah dibuat;
+# semua operasi mengembalikan objek baru.
+kelas TanggalWaktu {
+    init(tahun, bulan, hari, jam = 0, menit = 0, detik = 0, mikrodetik = 0, offset = kosong) {
+        _rentang("tahun", tahun, TAHUN_MIN, TAHUN_MAKS)
+        _rentang("bulan", bulan, 1, 12)
+        _wajib_bulat("hari", hari)
+        jika hari < 1 atau hari > hari_dalam_bulan(tahun, bulan) {
+            naikkan GalatTanggal(f"tanggal {hari} tidak ada pada bulan {bulan} tahun {tahun}")
+        }
+        _rentang("jam", jam, 0, 23)
+        _rentang("menit", menit, 0, 59)
+        _wajib_bulat("detik", detik)
+        jika detik == 60 {
+            naikkan GalatTanggal("detik kabisat (60) tidak didukung")
+        }
+        _rentang("detik", detik, 0, 59)
+        _rentang("mikrodetik", mikrodetik, 0, 999999)
+        diri.tahun = tahun
+        diri.bulan = bulan
+        diri.hari = hari
+        diri.jam = jam
+        diri.menit = menit
+        diri.detik = detik
+        diri.mikrodetik = mikrodetik
+        diri.offset = urai_offset(offset)
+        # Detik jam-dinding sejak 1970-01-01T00:00:00 (tanpa offset).
+        diri._dinding = _hari_dari_sipil(tahun, bulan, hari) * _DETIK_HARI + jam * 3600 + menit * 60 + detik
+    }
+
+    punya_offset() {
+        kembalikan diri.offset != kosong
+    }
+
+    _wajib_offset(op) {
+        jika diri.offset == kosong {
+            naikkan GalatTanggal(op + "() memerlukan waktu ber-offset; pakai beri_offset() dulu")
+        }
+    }
+
+    # unix() -> detik sejak epoch UTC (bulat; mikrodetik diabaikan).
+    unix() {
+        diri._wajib_offset("unix")
+        kembalikan diri._dinding - diri.offset * 60
+    }
+
+    # ke_offset(o) -> titik waktu yang SAMA dinyatakan dengan offset o.
+    ke_offset(o) {
+        diri._wajib_offset("ke_offset")
+        variabel menit = urai_offset(o)
+        jika menit == kosong {
+            naikkan GalatTanggal("ke_offset() memerlukan offset")
+        }
+        kembalikan _dari_dinding(diri._dinding + (menit - diri.offset) * 60, diri.mikrodetik, menit)
+    }
+
+    ke_utc() {
+        kembalikan diri.ke_offset(0)
+    }
+
+    # beri_offset(o) -> jam dinding yang SAMA dengan offset o (kosong = naif).
+    beri_offset(o) {
+        kembalikan TanggalWaktu(diri.tahun, diri.bulan, diri.hari, diri.jam, diri.menit,
+                                diri.detik, diri.mikrodetik, o)
+    }
+
+    # tambah(...) -> waktu baru; nilai negatif mundur.
+    tambah(hari = 0, jam = 0, menit = 0, detik = 0, mikrodetik = 0) {
+        # Batas tiap satuan ~ rentang 10.000 tahun: hasil yang lebih jauh
+        # pasti di luar tahun 1-9999, dan batas ini mencegah luapan int64.
+        _geser_sah(hari, 3700000)
+        _geser_sah(jam, 88800000)
+        _geser_sah(menit, 5328000000)
+        _geser_sah(detik, 319680000000)
+        _geser_sah(mikrodetik, 319680000000000000)
+        variabel mikro = diri.mikrodetik + mikrodetik
+        variabel total = diri._dinding + hari * _DETIK_HARI + jam * 3600 + menit * 60 + detik + mikro // _MIKRO
+        kembalikan _dari_dinding(total, mikro % _MIKRO, diri.offset)
+    }
+
+    # tambah_bulan(n) -> bulan bergeser n; tanggal dijepit ke akhir bulan
+    # (31 Jan + 1 bulan = 29 Feb pada tahun kabisat).
+    tambah_bulan(n) {
+        _geser_sah(n, 120000)
+        variabel indeks = diri.tahun * 12 + diri.bulan - 1 + n
+        variabel t = indeks // 12
+        variabel b = indeks % 12 + 1
+        jika t < TAHUN_MIN atau t > TAHUN_MAKS {
+            naikkan GalatTanggal("hasil di luar rentang tahun 1-9999")
+        }
+        variabel h = min(diri.hari, hari_dalam_bulan(t, b))
+        kembalikan TanggalWaktu(t, b, h, diri.jam, diri.menit, diri.detik, diri.mikrodetik, diri.offset)
+    }
+
+    tambah_tahun(n) {
+        _geser_sah(n, 10000)
+        kembalikan diri.tambah_bulan(n * 12)
+    }
+
+    # _mikro_mutlak() -> mikrodetik dari epoch (UTC bila ber-offset).
+    _mikro_mutlak() {
+        variabel d = diri._dinding
+        jika diri.offset != kosong {
+            d -= diri.offset * 60
+        }
+        kembalikan d * _MIKRO + diri.mikrodetik
+    }
+
+    _cocok(lain, op) {
+        jika tidak adalah_instansi(lain, TanggalWaktu) {
+            naikkan GalatTanggal(op + ": lawan harus TanggalWaktu")
+        }
+        jika diri.punya_offset() != lain.punya_offset() {
+            naikkan GalatTanggal(op + ": tidak dapat mencampur waktu naif dan waktu ber-offset")
+        }
+    }
+
+    # selisih(lain) -> detik (diri - lain): bulat, atau desimal bila ada
+    # mikrodetik.
+    selisih(lain) {
+        diri._cocok(lain, "selisih()")
+        variabel m = diri._mikro_mutlak() - lain._mikro_mutlak()
+        jika m % _MIKRO == 0 {
+            kembalikan m // _MIKRO
+        }
+        kembalikan m / _MIKRO
+    }
+
+    # hari_minggu() -> 1 (Senin) .. 7 (Minggu), seperti ISO 8601.
+    hari_minggu() {
+        kembalikan (diri._dinding // _DETIK_HARI + 3) % 7 + 1
+    }
+
+    hari_tahun() {
+        kembalikan _hari_dari_sipil(diri.tahun, diri.bulan, diri.hari) - _hari_dari_sipil(diri.tahun, 1, 1) + 1
+    }
+
+    tanggal_iso() {
+        kembalikan _nol_kiri(diri.tahun, 4) + "-" + _dua(diri.bulan) + "-" + _dua(diri.hari)
+    }
+
+    waktu_iso() {
+        variabel t = _dua(diri.jam) + ":" + _dua(diri.menit) + ":" + _dua(diri.detik)
+        jika diri.mikrodetik != 0 {
+            t += "." + _nol_kiri(diri.mikrodetik, 6)
+        }
+        kembalikan t
+    }
+
+    # iso(pemisah="T") -> "2024-03-10T12:30:00+07:00"; UTC ditulis "Z",
+    # waktu naif tanpa akhiran offset.
+    iso(pemisah = "T") {
+        variabel t = diri.tanggal_iso() + pemisah + diri.waktu_iso()
+        jika diri.offset == 0 {
+            kembalikan t + "Z"
+        }
+        jika diri.offset != kosong {
+            kembalikan t + teks_offset(diri.offset)
+        }
+        kembalikan t
+    }
+
+    # format(pola) -> teks. Direktif: %Y %m %d %H %M %S %f %z %j %u
+    # %A %a %B %b (nama hari/bulan bahasa Indonesia) dan %%.
+    format(pola) {
+        kembalikan _format(diri, pola)
+    }
+
+    _sama_(lain) {
+        jika tidak adalah_instansi(lain, TanggalWaktu) atau diri.punya_offset() != lain.punya_offset() {
+            kembalikan salah
+        }
+        kembalikan diri._mikro_mutlak() == lain._mikro_mutlak()
+    }
+
+    _kurang_dari_(lain) {
+        diri._cocok(lain, "<")
+        kembalikan diri._mikro_mutlak() < lain._mikro_mutlak()
+    }
+
+    _kurang_sama_(lain) {
+        diri._cocok(lain, "<=")
+        kembalikan diri._mikro_mutlak() <= lain._mikro_mutlak()
+    }
+
+    _lebih_dari_(lain) {
+        diri._cocok(lain, ">")
+        kembalikan diri._mikro_mutlak() > lain._mikro_mutlak()
+    }
+
+    _lebih_sama_(lain) {
+        diri._cocok(lain, ">=")
+        kembalikan diri._mikro_mutlak() >= lain._mikro_mutlak()
+    }
+
+    _teks_() {
+        kembalikan diri.iso()
+    }
+
+    _repr_() {
+        kembalikan "TanggalWaktu(\"" + diri.iso() + "\")"
+    }
+}
+
+# _dari_dinding(detik, mikro, offset) -> TanggalWaktu dari detik jam-dinding.
+fungsi _dari_dinding(detik, mikro, offset) {
+    variabel hari = detik // _DETIK_HARI
+    variabel sisa = detik % _DETIK_HARI
+    variabel ymd = _sipil_dari_hari(hari)
+    jika ymd[0] < TAHUN_MIN atau ymd[0] > TAHUN_MAKS {
+        naikkan GalatTanggal("hasil di luar rentang tahun 1-9999")
+    }
+    kembalikan TanggalWaktu(ymd[0], ymd[1], ymd[2], sisa // 3600, (sisa % 3600) // 60,
+                            sisa % 60, mikro, offset)
+}
+
+fungsi _format(w, p) {
+    variabel keluar = []
+    variabel i = 0
+    selagi i < panjang(p) {
+        variabel c = p[i]
+        jika c != "%" {
+            tambah(keluar, c)
+            i += 1
+            lanjut
+        }
+        jika i + 1 >= panjang(p) {
+            naikkan GalatTanggal("pola format berakhir dengan '%'")
+        }
+        variabel d = p[i + 1]
+        i += 2
+        jika d == "Y" {
+            tambah(keluar, _nol_kiri(w.tahun, 4))
+        } jika_lain d == "m" {
+            tambah(keluar, _dua(w.bulan))
+        } jika_lain d == "d" {
+            tambah(keluar, _dua(w.hari))
+        } jika_lain d == "H" {
+            tambah(keluar, _dua(w.jam))
+        } jika_lain d == "M" {
+            tambah(keluar, _dua(w.menit))
+        } jika_lain d == "S" {
+            tambah(keluar, _dua(w.detik))
+        } jika_lain d == "f" {
+            tambah(keluar, _nol_kiri(w.mikrodetik, 6))
+        } jika_lain d == "z" {
+            tambah(keluar, ganti(teks_offset(w.offset), ":", "") jika w.offset != kosong selain "")
+        } jika_lain d == "j" {
+            tambah(keluar, _nol_kiri(w.hari_tahun(), 3))
+        } jika_lain d == "u" {
+            tambah(keluar, ke_teks(w.hari_minggu()))
+        } jika_lain d == "A" {
+            tambah(keluar, _HARI[w.hari_minggu() - 1])
+        } jika_lain d == "a" {
+            tambah(keluar, _HARI_SINGKAT[w.hari_minggu() - 1])
+        } jika_lain d == "B" {
+            tambah(keluar, _BULAN[w.bulan - 1])
+        } jika_lain d == "b" {
+            tambah(keluar, _BULAN_SINGKAT[w.bulan - 1])
+        } jika_lain d == "%" {
+            tambah(keluar, "%")
+        } selain {
+            naikkan GalatTanggal("direktif format tidak dikenal: %" + d)
+        }
+    }
+    kembalikan teks_gabung(keluar, "")
+}
+
+# ---------------------------------------------------------------- pembuat
+
+# buat(...) -> TanggalWaktu; sama dengan memanggil kelasnya.
+fungsi buat(tahun, bulan, hari, jam = 0, menit = 0, detik = 0, mikrodetik = 0, offset = kosong) {
+    kembalikan TanggalWaktu(tahun, bulan, hari, jam, menit, detik, mikrodetik, offset)
+}
+
+# dari_unix(detik, offset = 0) -> TanggalWaktu ber-offset. `detik` boleh
+# desimal; pecahannya dibulatkan ke mikrodetik terdekat.
+fungsi dari_unix(detik, offset = 0) {
+    jika jenis(detik) != "angka" atau detik - detik != 0 {
+        naikkan GalatTanggal("dari_unix() memerlukan bilangan berhingga")
+    }
+    # Detik di luar tahun 1-9999 (+ satu hari untuk offset) ditolak sebelum
+    # dikalikan ke mikrodetik agar tidak meluap.
+    jika detik < -62135683200 atau detik > 253402387200 {
+        naikkan GalatTanggal("hasil di luar rentang tahun 1-9999")
+    }
+    variabel menit = urai_offset(offset)
+    jika menit == kosong {
+        naikkan GalatTanggal("dari_unix() memerlukan offset")
+    }
+    variabel mikro = detik * _MIKRO jika ke_bulat(detik) adalah detik selain ke_bulat(bulatkan(detik * _MIKRO))
+    variabel dinding = mikro // _MIKRO + menit * 60
+    kembalikan _dari_dinding(dinding, mikro % _MIKRO, menit)
+}
+
+# sekarang() -> waktu saat ini dalam UTC (presisi detik).
+fungsi sekarang() {
+    kembalikan dari_unix(ke_bulat(waktu()), 0)
+}
+
+# offset_lokal() -> offset zona sistem SAAT INI dalam menit. Hanya berlaku
+# untuk saat ini: di zona ber-DST offset tanggal lain bisa berbeda.
+fungsi offset_lokal() {
+    variabel t = ke_bulat(waktu())
+    variabel d = tanggal()
+    variabel dinding = _hari_dari_sipil(d["tahun"], d["bulan"], d["hari"]) * _DETIK_HARI + d["jam"] * 3600 + d["menit"] * 60 + d["detik"]
+    # tanggal() dan waktu() dibaca pada detik yang bisa berbeda; bulatkan
+    # ke menit terdekat.
+    kembalikan ke_bulat((dinding - t + 30) // 60)
+}
+
+# sekarang_lokal() -> waktu saat ini dengan offset lokal sistem.
+fungsi sekarang_lokal() {
+    kembalikan sekarang().ke_offset(offset_lokal())
+}
+
+# ---------------------------------------------------------------- ISO 8601
+
+fungsi _galat_iso(t, alasan) {
+    variabel tampil = t jika panjang(t) <= 64 selain t[0:64] + "…"
+    naikkan GalatTanggal("bukan tanggal ISO 8601 yang sah: " + repr(tampil) + " (" + alasan + ")")
+}
+
+fungsi _angka_tetap(t, a, n, alasan) {
+    variabel bagian = t[a:a + n]
+    jika panjang(bagian) != n atau tidak _digit_semua(bagian) {
+        _galat_iso(t, alasan)
+    }
+    kembalikan ke_bulat(bagian)
+}
+
+# dari_iso(teks) -> TanggalWaktu. Bentuk yang diterima (ISO 8601 / RFC 3339
+# bentuk diperluas):
+#     YYYY-MM-DD
+#     YYYY-MM-DD[T| ]HH:MM[:SS[.f]] [Z | ±HH:MM | ±HHMM | ±HH]
+# Pecahan detik 1-9 digit (dipotong ke mikrodetik). Tanpa offset -> naif.
+# Bentuk dasar (20240310T1230), minggu (2024-W10) dan ordinal (2024-070)
+# belum didukung.
+fungsi dari_iso(t) {
+    jika jenis(t) != "teks" {
+        naikkan GalatTanggal("dari_iso() memerlukan teks")
+    }
+    variabel y = _angka_tetap(t, 0, 4, "tahun harus 4 digit")
+    jika panjang(t) < 10 atau t[4] != "-" atau t[7] != "-" {
+        _galat_iso(t, "tanggal harus berbentuk YYYY-MM-DD")
+    }
+    variabel mo = _angka_tetap(t, 5, 2, "bulan harus 2 digit")
+    variabel d = _angka_tetap(t, 8, 2, "hari harus 2 digit")
+    jika panjang(t) == 10 {
+        kembalikan TanggalWaktu(y, mo, d)
+    }
+    jika t[10] tidak dalam ["T", "t", " "] {
+        _galat_iso(t, "pemisah tanggal dan jam harus 'T' atau spasi")
+    }
+    jika panjang(t) < 16 atau t[13] != ":" {
+        _galat_iso(t, "jam harus berbentuk HH:MM")
+    }
+    variabel h = _angka_tetap(t, 11, 2, "jam harus 2 digit")
+    variabel mi = _angka_tetap(t, 14, 2, "menit harus 2 digit")
+    variabel s = 0
+    variabel mikro = 0
+    variabel i = 16
+    jika i < panjang(t) dan t[i] == ":" {
+        s = _angka_tetap(t, 17, 2, "detik harus 2 digit")
+        i = 19
+        jika i < panjang(t) dan (t[i] == "." atau t[i] == ",") {
+            variabel a = i + 1
+            i = a
+            selagi i < panjang(t) dan t[i] >= "0" dan t[i] <= "9" {
+                i += 1
+            }
+            jika i == a atau i - a > 9 {
+                _galat_iso(t, "pecahan detik harus 1-9 digit")
+            }
+            variabel pecahan = t[a:i]
+            selagi panjang(pecahan) < 6 {
+                pecahan += "0"
+            }
+            mikro = ke_bulat(pecahan[0:6])
+        }
+    }
+    variabel offset = kosong
+    jika i < panjang(t) {
+        coba {
+            offset = urai_offset(t[i:panjang(t)])
+        } kecuali GalatTanggal sebagai e {
+            _galat_iso(t, "offset tidak sah")
+        }
+    }
+    kembalikan TanggalWaktu(y, mo, d, h, mi, s, mikro, offset)
+}

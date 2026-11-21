@@ -1,0 +1,8 @@
+baris 1, kolom 1: DTD (<!DOCTYPE>) tidak diizinkan: ditolak untuk mencegah XXE dan entity expansion
+[baris 459, kolom 45] dalam galat()
+    …    naikkan GalatXML(pesan, baris, kolom)
+                                             ^
+[baris 686, kolom 111] dalam misc()
+[baris 866, kolom 30] dalam dokumen()
+[baris 891, kolom 26] dalam urai()
+[baris 4, kolom 86] dalam skrip

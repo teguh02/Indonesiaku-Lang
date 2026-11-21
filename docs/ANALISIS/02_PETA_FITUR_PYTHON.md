@@ -248,7 +248,7 @@ Prioritas berdasarkan "apa yang dibutuhkan pemula dan aplikasi umum".
 | `secrets` / `hmac.compare_digest` | `kripto` | ✅ `kripto.acak_aman`/`token_heksa`/`token_url`/`bulat_acak_aman`/`sama_aman` (Fase 18 V1) | 18 |
 | `string` | `teks` | 🟡 | 3 |
 | `json` | `json` | ✅ | — |
-| `time` / `datetime` | `waktu` / `tanggal_waktu` | 🟡 | 3 |
+| `time` / `datetime` | `waktu` / `tanggal_waktu` | 🟡 builtin `waktu`/`tanggal`/`format_tanggal` + `pustaka/tanggal_waktu.idk` (`TanggalWaktu`, ISO 8601, offset tetap; zona IANA/DST belum — Fase 19 V1) | 19 |
 | `os` / `os.path` / `pathlib` / `glob` | `os` / `jalur` | 🟡 `jalur` (persis `posixpath`, plus `ada`/`ukuran`/`absolut`), builtin `direktori_kini`/`isi_direktori`/`buat_direktori`/`lingkungan`; `pathlib`/`glob` belum | 6 |
 | `shutil` / `tempfile` / `os.walk` / `os.rename` | `berkas` | ✅ `salin_berkas`/`salin_direktori`/`pindahkan`/`ganti_nama`/`hapus_direktori_bertingkat`/`jelajahi_direktori`/`berkas_sementara`/`direktori_sementara`/`info`/`sha256`, tanpa mengikuti tautan; `chmod`/`chown`/`symlink` belum (Fase 17 V1) | 17 |
 | `sys` | `sistem` (`argumen`, `keluar`, `versi`) | 🟡 `argumen`, `keluar`, `tulis_galat`, `jalur_indk` (builtin) | 3 |

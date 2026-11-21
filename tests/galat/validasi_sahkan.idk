@@ -1,0 +1,4 @@
+# sahkan() yang gagal dan tidak ditangkap melaporkan semua field yang salah.
+impor validasi
+skema = {"surel": {"tipe": "email", "wajib": benar}, "umur": {"tipe": "bulat", "min": 17}}
+cetak(validasi.sahkan({"surel": "bukan surel", "umur": "12"}, skema))

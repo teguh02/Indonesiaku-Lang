@@ -1,0 +1,3 @@
+# Offset di luar -23:59..+23:59 ditolak dengan GalatTanggal.
+impor tanggal_waktu
+cetak(tanggal_waktu.dari_iso("2024-01-01T10:00:00+25:00"))

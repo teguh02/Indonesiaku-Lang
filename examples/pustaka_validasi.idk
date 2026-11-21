@@ -1,0 +1,112 @@
+# pustaka/validasi.idk: pemeriksaan satu nilai dan skema formulir.
+impor validasi
+dari validasi impor periksa, sahkan, GalatValidasi
+
+fungsi uji_email() {
+    cetak("== email")
+    untuk e dalam ["budi@contoh.id", "siti.aminah+toko@mail.co.id", "andré@exämple.de",
+                   "pengguna@例え.jp", "x@localhost", ".a@b.co", "a..b@c.id",
+                   "a@b@c.id", "a b@c.id", "a@-b.id", "a@b.123", ""] {
+        cetak(repr(e), validasi.adalah_email(e))
+    }
+    cetak(validasi.adalah_email(42))
+}
+
+fungsi uji_url() {
+    cetak("== url")
+    untuk u dalam ["https://contoh.id/a?b=1#c", "http://127.0.0.1:8080/", "https://[::1]:443/",
+                   "HTTPS://Contoh.ID", "https://токен.рф/путь", "javascript:alert(1)",
+                   "data:text/html,x", "https://user:sandi@jahat.com", "https://contoh.id:0",
+                   "https://contoh.id:99999", "https:/contoh.id", "https://contoh .id",
+                   "https://contoh.id\\jalur", "ftp://berkas.id"] {
+        cetak(repr(u), validasi.adalah_url(u))
+    }
+    cetak("ftp diizinkan:", validasi.adalah_url("ftp://berkas.id", ["ftp"]))
+}
+
+fungsi uji_angka() {
+    cetak("== angka")
+    cetak(validasi.adalah_bulat("-12"), validasi.adalah_bulat(" 7 "), validasi.adalah_bulat("1.5"),
+          validasi.adalah_bulat(3), validasi.adalah_bulat(3.0), validasi.adalah_bulat("+"))
+    cetak(validasi.adalah_desimal("3.25"), validasi.adalah_desimal("1e3"), validasi.adalah_desimal("nan"),
+          validasi.adalah_desimal("inf"), validasi.adalah_desimal(""), validasi.adalah_desimal("12abc"))
+}
+
+SKEMA = {
+    "nama": {"tipe": "teks", "wajib": benar, "panjang_min": 2, "panjang_maks": 20},
+    "umur": {"tipe": "bulat", "min": 17, "maks": 120},
+    "surel": {"tipe": "email", "wajib": benar},
+    "situs": {"tipe": "url", "skema_url": ["https"]},
+    "kota": {"pilihan": ["Bandung", "Medan", "Makassar"]},
+    "setuju": {"tipe": "logika", "bawaan": salah},
+    "kode_pos": {"pola": "[0-9]{5}"},
+    "tinggi": "desimal"
+}
+
+fungsi uji_skema() {
+    cetak("== skema")
+    variabel buruk = {"nama": " A ", "umur": "15", "surel": "bukan-surel", "situs": "http://contoh.id",
+                      "kota": "Paris", "kode_pos": "40l15", "tinggi": "tinggi", "admin": "1"}
+    variabel h = periksa(buruk, SKEMA)
+    cetak(h.sah)
+    untuk k dalam terurut(kunci(h.galat)) {
+        cetak(" ", k, "->", h.galat[k])
+    }
+    cetak("pertama umur:", h.pesan_pertama("umur"), "| pertama nama:", h.pesan_pertama("nama"))
+    variabel baik = {"nama": "  Ñoño Ünal ", "umur": "30", "surel": "nono@contoh.id",
+                     "situs": "https://contoh.id", "setuju": "on", "kode_pos": "40115",
+                     "tinggi": "170.5", "admin": "1"}
+    h = periksa(baik, SKEMA)
+    cetak(h.sah, h.nilai)
+    cetak("admin tidak ikut:", punya(h.nilai, "admin"))
+    cetak(periksa({"umur": 200, "nama": "Budi", "surel": "b@c.id"}, SKEMA).galat)
+}
+
+fungsi uji_sahkan() {
+    cetak("== sahkan")
+    cetak(sahkan({"nama": "Ayu", "surel": "ayu@contoh.id"}, {"nama": "teks", "surel": "email"}))
+    coba {
+        sahkan({"nama": ""}, {"nama": {"wajib": benar}, "surel": {"tipe": "email", "wajib": benar}})
+    } kecuali GalatValidasi sebagai e {
+        cetak(e.pesan)
+        cetak(e.galat)
+    }
+    coba {
+        periksa({}, {"x": {"tipe": "tanggal"}})
+    } kecuali GalatValidasi sebagai e {
+        cetak(e.pesan)
+    }
+    coba {
+        periksa({}, {"x": {"panjang": 3}})
+    } kecuali GalatValidasi sebagai e {
+        cetak(e.pesan)
+    }
+}
+
+# Regresi tinjauan: masukan penyerang tidak boleh melempar galat mentah,
+# dan karakter Unicode tak terlihat tidak boleh lolos di alamat.
+fungsi uji_regresi() {
+    cetak("== regresi")
+    cetak(periksa({"n": "99999999999999999999"}, {"n": {"tipe": "bulat"}}).galat)
+    cetak(periksa({"n": 1e999}, {"n": {"tipe": "bulat"}}).galat)
+    cetak(validasi.adalah_bulat("9223372036854775807"), validasi.adalah_bulat("9223372036854775808"))
+    cetak(validasi.adalah_url("http://a.com:99999999999999999999/"))
+    untuk u dalam ["http://exa" + chr(8232) + "mple.com/", "http://exa" + chr(160) + "mple.com/",
+                   "http://exa" + chr(8203) + "mple.com/", "http://a" + chr(65295) + "evil.com/",
+                   "http://0x7f.0x0.0x0.0x1/", "http://0x7f000001/", "http://01.01.01.01/",
+                   "http://[:::]/", "http://[1:2]/", "http://[::1.2.3.4.5.6]/",
+                   "http://[2001:db8::8a2e:370:7334]/", "http://[::ffff:192.0.2.1]/",
+                   "http://[1:2:3:4:5:6:7:8]/", "http://[1:2:3:4:5:6:7:8:9]/", "http://localhost/"] {
+        cetak(repr(u), validasi.adalah_url(u))
+    }
+    untuk e dalam ["a" + chr(8203) + "@b.com", "a@b" + chr(160) + ".com", "a@b.com" + chr(133)] {
+        cetak(repr(e), validasi.adalah_email(e))
+    }
+}
+
+uji_email()
+uji_url()
+uji_angka()
+uji_skema()
+uji_sahkan()
+uji_regresi()
