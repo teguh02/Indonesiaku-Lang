@@ -128,6 +128,49 @@ function toVscodeRange(vscodeApi, range) {
   );
 }
 
+// Debugger (F5) di atas `indk awakutu`. Adapter DAP berjalan di dalam proses
+// extension host (DebugAdapterInlineImplementation), jadi tidak butuh `node`
+// di PATH; debug-adapter.js tetap bisa dijalankan sendiri lewat stdio.
+function daftarDebugger(context) {
+  const { SesiAwakutu } = require("./debug-adapter.js");
+
+  class AdapterInline {
+    constructor() {
+      this.emitter = new vscode.EventEmitter();
+      this.onDidSendMessage = this.emitter.event;
+      this.sesi = new SesiAwakutu(pesan => this.emitter.fire(pesan));
+    }
+    handleMessage(pesan) { this.sesi.handleMessage(pesan); }
+    dispose() { this.sesi.dispose(); this.emitter.dispose(); }
+  }
+
+  const penyedia = {
+    // F5 tanpa launch.json: debug berkas .idk yang sedang terbuka.
+    resolveDebugConfiguration(folder, config) {
+      if (!config.type && !config.request && !config.name) {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor || editor.document.languageId !== "indonesiaku") return config;
+        config = { type: "indonesiaku", request: "launch", name: "Debug berkas Indonesiaku", program: "${file}" };
+      }
+      if (!config.program) {
+        vscode.window.showErrorMessage("Indonesiaku: atribut 'program' (berkas .idk) wajib diisi.");
+        return undefined;
+      }
+      if (!config.jalurIndk) {
+        config.jalurIndk = vscode.workspace.getConfiguration("indonesiaku").get("jalurIndk") || "indk";
+      }
+      return config;
+    }
+  };
+
+  context.subscriptions.push(
+    vscode.debug.registerDebugConfigurationProvider("indonesiaku", penyedia),
+    vscode.debug.registerDebugAdapterDescriptorFactory("indonesiaku", {
+      createDebugAdapterDescriptor: () => new vscode.DebugAdapterInlineImplementation(new AdapterInline())
+    })
+  );
+}
+
 async function activate(context) {
   const { spawnSync } = require("child_process");
 
@@ -192,6 +235,8 @@ async function activate(context) {
     if (!berkasAktif()) return;
     vscode.commands.executeCommand("editor.action.formatDocument");
   }));
+
+  daftarDebugger(context);
 
   // Tawarkan sekali saja (globalState) supaya tidak mengganti File Icon
   // Theme pengguna diam-diam -- ini pilihan global yang memengaruhi SEMUA
