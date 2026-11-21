@@ -5,7 +5,7 @@ Semua perubahan penting pada proyek ini akan didokumentasikan dalam file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Belum dirilis]
+## [1.8.0] - 2026-11-21
 
 ### Ditambahkan
 
@@ -47,7 +47,6 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   ditolak, ukuran/kedalaman/jumlah elemen/atribut dibatasi, parser iteratif.
   Audit gap API web ada di `docs/ANALISIS/KATALOG_API_DAN_GAP_WEB.md`.
   Panduan: `07_PUSTAKA_STANDAR.md` §2.30–2.32.
-
 - **Kerangka CLI dan klien uji HTTP (Fase 25 V1)**: modul baru `cli`
   (`pustaka/cli.idk`) di atas `opsi`: `cli.Perintah` dengan sub-perintah
   bertingkat, bantuan otomatis per tingkat, `--versi`, `validasi=` khusus,
@@ -64,7 +63,6 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   oleh `examples/uji_api_siswa.idk`. `tests/test_uji.sh` menerima sumber di
   `examples/`, dan `tests/test_all.ps1` kini ikut menjalankan `indk uji`.
   Konektor MQTT/AMQP ditunda.
-
 - **Observability V1 untuk server web (Fase 22)**: `app.pantau()` di
   `pustaka/web.idk` mendaftarkan `GET /health` (liveness), `GET /ready`
   (readiness lewat `periksa_siap()`, 503 bila gagal) dan `GET /metrics`
@@ -130,13 +128,6 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   dibatasi (`batas`, bawaan 64 MiB). `bita.baca_berkas`/`bita.tulis_berkas`
   membaca dan menulis bita mentah. Tipe `bita` dan API stream masih
   direncanakan.
-
-### Keamanan
-
-- **`indk --periksa-pembaruan` (dan `indk paket`) dimuat dari pustaka standar
-  interpreter**, bukan lewat `impor` biasa yang lebih dulu memeriksa direktori
-  kerja: sebelumnya `pembaruan.idk` di direktori kerja menggantikan perintah
-  itu dengan kodenya sendiri.
 - **Debugger VS Code (F5)** di atas `indk awakutu`: adapter Debug Adapter
   Protocol tanpa dependensi (`editors/vscode-indonesiaku/debug-adapter.js`)
   dengan breakpoint di gutter, step over/into/out, call stack, Variables
@@ -186,6 +177,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   program biasa. `GalatIzin` tetap turunan `GalatOS`, dan `GalatOS` tetap
   turunan `Galat`. Galat yang bukan urusan sistem — misalnya `ke_angka()`
   pada teks yang bukan angka — sengaja tidak ikut berubah.
+
+### Keamanan
+
+- **`indk --periksa-pembaruan` (dan `indk paket`) dimuat dari pustaka standar
+  interpreter**, bukan lewat `impor` biasa yang lebih dulu memeriksa direktori
+  kerja: sebelumnya `pembaruan.idk` di direktori kerja menggantikan perintah
+  itu dengan kodenya sendiri.
 
 ## [1.7.0] - 2026-11-11
 

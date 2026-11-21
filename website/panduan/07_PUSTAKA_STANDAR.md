@@ -2755,7 +2755,7 @@ NFC/NFD dan kategori Unicode **belum tersedia**.
 
 Enkripsi terautentikasi, penurunan kunci, hash kata sandi, dan bilangan acak
 aman, semuanya dari mbedTLS yang sama dengan HTTPS — **tidak ada algoritme
-yang ditulis sendiri**. Tersedia sejak versi setelah 1.7.0 (Fase 18 V1).
+yang ditulis sendiri**. Tersedia sejak 1.8.0 (Fase 18 V1).
 Bita adalah daftar bulat `0..255`; setiap masukan data juga menerima teks
 (dienkode UTF-8).
 
@@ -3125,8 +3125,7 @@ mock/fake untuk database, SMTP, waktu, atau filesystem.
 
 Memeriksa data dari formulir (`req["form"]`), query, atau JSON terhadap
 skema sederhana dan **mengumpulkan semua galat per field**, jadi formulir
-bisa menampilkan setiap kesalahan sekaligus. Tersedia sejak versi setelah
-1.7.0 (Fase 19 V1). Atribut `tipe`, `wajib`, `bawaan` dan `pilihan` sama
+bisa menampilkan setiap kesalahan sekaligus. Tersedia sejak 1.8.0 (Fase 19 V1). Atribut `tipe`, `wajib`, `bawaan` dan `pilihan` sama
 dengan skema `konfigurasi.muat()`.
 
 ```indonesiaku
@@ -3186,7 +3185,7 @@ coba {
 
 Mengurai dan menulis ISO 8601/RFC 3339, mengubah offset UTC, aritmetika
 tanggal, dan format dengan nama hari/bulan bahasa Indonesia. Tersedia
-sejak versi setelah 1.7.0 (Fase 19 V1). Semua hitungan memakai bilangan
+sejak 1.8.0 (Fase 19 V1). Semua hitungan memakai bilangan
 bulat, kalender Gregorian, tahun 1–9999, presisi mikrodetik.
 
 ```indonesiaku
@@ -3251,7 +3250,7 @@ tidak untuk menghitung jam lokal kota ber-DST di tanggal lain;
 ### 2.32 `pustaka/xml.idk` — XML aman
 
 Mengurai dan membuat XML: elemen, atribut, teks, CDATA, rujukan karakter
-dan namespace. Tersedia sejak versi setelah 1.7.0 (Fase 19 V1).
+dan namespace. Tersedia sejak 1.8.0 (Fase 19 V1).
 
 ```indonesiaku
 impor xml
@@ -3328,7 +3327,7 @@ mis. `b.ambil("dc:bahasa")`).
 ### 2.33 `pustaka/berkas.idk` — salin, pindah, hapus pohon, berkas sementara
 
 Operasi berkas dan direktori ala `shutil`/`tempfile` Python. Tersedia sejak
-versi setelah 1.7.0 (Fase 17 V1). Menghapus **satu** berkas tetap memakai
+1.8.0 (Fase 17 V1). Menghapus **satu** berkas tetap memakai
 builtin `hapus_berkas`.
 
 ```indonesiaku
@@ -3406,7 +3405,7 @@ Aturan yang sama untuk semua fungsi:
 ### 2.34 `pustaka/jaringan.idk` — unduh berkas HTTP/HTTPS
 
 `unduh()` menyimpan respons HTTP/HTTPS langsung ke disk **tanpa menampung
-seluruh badan di memori**. Tersedia sejak versi setelah 1.7.0 (Fase 17 V1).
+seluruh badan di memori**. Tersedia sejak 1.8.0 (Fase 17 V1).
 
 ```indonesiaku-takjalan
 impor jaringan

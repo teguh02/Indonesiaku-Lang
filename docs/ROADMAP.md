@@ -1,6 +1,6 @@
 # Roadmap — Bahasa Indonesiaku
 
-**Satu-satunya sumber kebenaran untuk roadmap.** Versi rilis terbaru: `1.7.0`
+**Satu-satunya sumber kebenaran untuk roadmap.** Versi rilis terbaru: `1.8.0`
 (`INDK_VERSION` di `src/common.h`). Riwayat detail per rilis ada di
 [`CHANGELOG.md`](../CHANGELOG.md).
 
@@ -568,7 +568,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 | 11 — HTTP/HTTPS | — | `v1.5.0` ✅ terbit | Validasi TLS dan uji keamanan/protokol server lulus |
 | 12 — HTML SSR | — | `v1.5.0` ✅ terbit | Templating aman dan contoh SSR lengkap |
 | 13 — Web security | `v1.6.0-rc.1` ✅ terbit | `v1.6.0` ✅ terbit | Audit dan tes auth/session/CSRF lulus |
-| 14 — Package manager | — | 🟨 V1 lokal di `[Belum dirilis]` (`v1.7.0` terpakai untuk templat Fase 12) | Resolusi dependensi dan supply-chain checks lulus |
+| 14 — Package manager | — | 🟨 V1 lokal terbit di `v1.8.0` (`v1.7.0` terpakai untuk templat Fase 12) | Resolusi dependensi dan supply-chain checks lulus |
 | 15 — Debugger & FFI | `v1.8.0-rc.1` | `v1.8.0` | API native/GC dan debug tests lulus |
 | 16 — WASM & performa | `v1.9.0-rc.1` | `v1.9.0` | Uji browser/WASM dan benchmark yang relevan lulus |
 | 17 — Transfer file & SSH/SFTP/FTP | `v1.10.0-rc.1` | 🟨 V1 (`berkas`, `jaringan.unduh`) di `[Belum dirilis]` | Protokol aman, uji transfer, host key dan TLS lulus |
