@@ -569,17 +569,17 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 | 12 — HTML SSR | — | `v1.5.0` ✅ terbit | Templating aman dan contoh SSR lengkap |
 | 13 — Web security | `v1.6.0-rc.1` ✅ terbit | `v1.6.0` ✅ terbit | Audit dan tes auth/session/CSRF lulus |
 | 14 — Package manager | — | 🟨 V1 lokal terbit di `v1.8.0` (`v1.7.0` terpakai untuk templat Fase 12) | Resolusi dependensi dan supply-chain checks lulus |
-| 15 — Debugger & FFI | `v1.8.0-rc.1` | `v1.8.0` | API native/GC dan debug tests lulus |
+| 15 — Debugger & FFI | `v1.8.0-rc.1` | 🟨 V1 (adapter DAP VS Code) terbit di `v1.8.0`; lengkap (embedding/FFI) belum | API native/GC dan debug tests lulus |
 | 16 — WASM & performa | `v1.9.0-rc.1` | `v1.9.0` | Uji browser/WASM dan benchmark yang relevan lulus |
-| 17 — Transfer file & SSH/SFTP/FTP | `v1.10.0-rc.1` | 🟨 V1 (`berkas`, `jaringan.unduh`) di `[Belum dirilis]` | Protokol aman, uji transfer, host key dan TLS lulus |
-| 18 — Kriptografi & keamanan runtime | `v1.11.0-rc.1` | `v1.11.0` | Crypto KAT, fuzz/sanitizer, sandbox dan audit keamanan lulus |
-| 19 — Paritas kemampuan & referensi API | `v1.12.0-rc.1` | 🟨 V1 (`validasi`, `tanggal_waktu`, `xml`) di `[Belum dirilis]` | Katalog terverifikasi, XML/validasi aman, dokumentasi dan tes kategori lulus |
+| 17 — Transfer file & SSH/SFTP/FTP | `v1.10.0-rc.1` | 🟨 V1 (`berkas`, `jaringan.unduh`) terbit di `v1.8.0` | Protokol aman, uji transfer, host key dan TLS lulus |
+| 18 — Kriptografi & keamanan runtime | `v1.11.0-rc.1` | 🟨 V1 (`kripto`) terbit di `v1.8.0`; lengkap `v1.11.0` | Crypto KAT, fuzz/sanitizer, sandbox dan audit keamanan lulus |
+| 19 — Paritas kemampuan & referensi API | `v1.12.0-rc.1` | 🟨 V1 (`validasi`, `tanggal_waktu`, `xml`) terbit di `v1.8.0` | Katalog terverifikasi, XML/validasi aman, dokumentasi dan tes kategori lulus |
 | 20 — Async/concurrency | `v1.13.0-rc.1` | `v1.13.0` | Event loop/cancellation/GC dan regresi I/O lulus |
 | 21 — Realtime, cache dan jobs | `v1.14.0-rc.1` | `v1.14.0` | WebSocket, Redis, SMTP, queue dan scheduler diuji |
-| 22 — Observability dan kesiapan produksi | `v1.15.0-rc.1` | `v1.15.0` | Logging/metrics/profiler, keamanan dan release policy teruji |
-| 23 — Data biner/arsip | `v1.16.0-rc.1` | 🟨 V1 (`kompres`, `arsip`) di `[Belum dirilis]` | Binary/streaming dan ekstraksi arsip aman teruji |
-| 24 — Unicode/i18n/konfigurasi | `v1.17.0-rc.1` | 🟨 V1 (`konfigurasi`, `unicode`) di `[Belum dirilis]` | Unicode/locale/serialisasi dan parser aman lulus |
-| 25 — CLI, API testing, broker | `v1.18.0-rc.1` | `v1.18.0` | CLI/test client dan protokol broker opsional teruji |
+| 22 — Observability dan kesiapan produksi | `v1.15.0-rc.1` | 🟨 V1 (health/ready/metrics, log JSON) terbit di `v1.8.0`; lengkap `v1.15.0` | Logging/metrics/profiler, keamanan dan release policy teruji |
+| 23 — Data biner/arsip | `v1.16.0-rc.1` | 🟨 V1 (`kompres`, `arsip`) terbit di `v1.8.0` | Binary/streaming dan ekstraksi arsip aman teruji |
+| 24 — Unicode/i18n/konfigurasi | `v1.17.0-rc.1` | 🟨 V1 (`konfigurasi`, `unicode`) terbit di `v1.8.0` | Unicode/locale/serialisasi dan parser aman lulus |
+| 25 — CLI, API testing, broker | `v1.18.0-rc.1` | 🟨 V1 (`cli`, `uji_http`) terbit di `v1.8.0`; lengkap `v1.18.0` | CLI/test client dan protokol broker opsional teruji |
 
 **Tahapan rilis di dalam tiap fase:**
 
