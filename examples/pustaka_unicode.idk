@@ -1,0 +1,40 @@
+# unicode: huruf besar/kecil, case folding dan spasi yang sadar Unicode.
+# Builtin huruf_besar()/huruf_kecil() tetap ASCII saja (tidak diubah).
+
+impor unicode
+dari unicode impor lipat_huruf, pangkas
+
+cetak("builtin :", huruf_besar("straße ärger"))
+cetak("unicode :", unicode.huruf_besar("straße ärger"))
+cetak("kecil   :", unicode.huruf_kecil("ÇA VA? ПРИВЕТ МИР"))
+
+# Sigma akhir Yunani mengikuti Python: Σ di akhir kata menjadi ς.
+cetak("Yunani  :", unicode.huruf_kecil("ΟΔΥΣΣΕΥΣ"), unicode.huruf_besar("οδυσσεύς"))
+
+# Pemetaan yang mengubah panjang teks.
+cetak("ß       :", unicode.huruf_besar("ß"), panjang(unicode.huruf_besar("ß")))
+cetak("İ       :", panjang(unicode.huruf_kecil("İ")), "karakter (i + titik kombinasi)")
+
+# lipat_huruf untuk membandingkan tanpa memedulikan huruf besar/kecil.
+cetak("lipat   :", lipat_huruf("Straße"), lipat_huruf("STRASSE"))
+cetak("sama?   :", unicode.sama_tanpa_huruf("Ελληνικά", "ΕΛΛΗΝΙΚΆ"))
+
+# Digraf Latin dan aksara tanpa huruf besar/kecil (CJK, emoji).
+cetak("lainnya :", unicode.huruf_besar("ǆ é"), unicode.huruf_besar("日本語 😀"))
+
+# BATASAN: di luar U+0000-U+052F teks dibiarkan, walau Python mengubahnya.
+# Contoh: Yunani politonik U+1F40 "ὀ" (Python: "Ὀ") tetap "ὀ".
+cetak("batasan :", unicode.huruf_besar("ὀ") == "ὀ")
+cetak("panjang tetap per karakter:", panjang("é"), panjang("e" + chr(769)))
+
+# Spasi Unicode: NBSP (U+00A0) dan spasi ideografis (U+3000).
+t = chr(12288) + " Halo" + chr(160) + "dunia " + chr(160)
+cetak("pangkas :", "[" + pangkas(t) + "]")
+cetak("pisah   :", unicode.pisah_spasi(t))
+cetak("spasi?  :", unicode.adalah_spasi(chr(8203)), unicode.adalah_spasi(chr(8232)))
+
+coba {
+    unicode.huruf_besar(5)
+} kecuali GalatTipe sebagai e {
+    cetak("galat   :", e.pesan)
+}

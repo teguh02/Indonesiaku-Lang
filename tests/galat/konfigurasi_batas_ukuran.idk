@@ -1,0 +1,4 @@
+# Sumber yang melebihi batas ukuran ditolak sebelum diurai.
+impor konfigurasi
+konfigurasi.urai_ini("[a]\nk = " + "x" * 64 + "\n", "besar.ini", 32)
+cetak("tidak tercapai")

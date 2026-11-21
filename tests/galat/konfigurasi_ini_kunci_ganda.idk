@@ -1,0 +1,4 @@
+# INI dengan kunci ganda dalam satu bagian (seperti configparser ketat).
+impor konfigurasi
+konfigurasi.urai_ini("[db]\nhost = a\nport = 1\nhost = b\n", "aplikasi.ini")
+cetak("tidak tercapai")

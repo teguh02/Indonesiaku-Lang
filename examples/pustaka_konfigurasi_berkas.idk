@@ -1,0 +1,53 @@
+# konfigurasi.muat() dari berkas sungguhan: .env dan INI yang ditulis dengan
+# BOM UTF-8 dan akhir baris CRLF (seperti hasil Notepad di Windows), lalu
+# ditimpa oleh lingkungan. Berkas dihapus lagi di akhir.
+
+impor konfigurasi
+dari konfigurasi impor GalatKonfigurasi
+
+BOM = chr(65279)
+ENV = "_contoh_konfigurasi.env"
+INI = "_contoh_konfigurasi.ini"
+
+tulis_semua(ENV, BOM + "PORT=8080\r\nNAMA=\"Kafe ☕ Ünïcödé\"\r\nKUNCI_API=abc123\r\n")
+tulis_semua(INI, BOM + "[db]\r\nhost = localhost\r\nport = 5432\r\n[fitur]\r\nbeta = on\r\n")
+
+konf = konfigurasi.muat(
+    berkas = [ENV, INI, "_tidak_ada.env"],
+    berkas_opsional = benar,
+    awalan_lingkungan = "APP_",
+    isi_lingkungan = {"APP_DB_PORT": "6543"},
+    skema = {"PORT": "bulat", "db.port": "bulat", "fitur.beta": "logika"}
+)
+untuk k dalam terurut(konf.kunci()) {
+    cetak(k, "=", repr(konf[k]), "<-", konf.sumber(k))
+}
+cetak(konf)
+
+# Batas ukuran diperiksa sebelum berkas dibaca.
+coba {
+    konfigurasi.baca_env(ENV, 10)
+} kecuali GalatKonfigurasi sebagai e {
+    cetak(e.pesan)
+}
+
+# Galat format menunjuk baris sungguhan walau berkasnya CRLF + BOM.
+tulis_semua(ENV, BOM + "A=1\r\n\r\nB='belum ditutup\r\n")
+coba {
+    konfigurasi.baca_env(ENV)
+} kecuali GalatKonfigurasi sebagai e {
+    cetak(e.pesan, "| sumber", e.sumber, "| baris", e.baris)
+}
+
+# Berkas wajib yang tidak ada, dan format yang belum didukung.
+untuk j dalam ["_tidak_ada.env", "aplikasi.toml"] {
+    coba {
+        konfigurasi.muat(berkas = j)
+    } kecuali GalatKonfigurasi sebagai e {
+        cetak(e.pesan)
+    }
+}
+
+hapus_berkas(ENV)
+hapus_berkas(INI)
+cetak("bersih:", ada_berkas(ENV), ada_berkas(INI))

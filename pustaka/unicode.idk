@@ -1,0 +1,270 @@
+# pustaka/unicode.idk - Operasi teks yang sadar Unicode (modul `unicode`).
+# Pemakaian:
+#     impor unicode
+#     dari unicode impor huruf_besar, lipat_huruf, pangkas
+#
+# Builtin huruf_besar()/huruf_kecil() hanya mengubah ASCII dan sengaja TIDAK
+# diubah (program lama tetap menghasilkan keluaran yang sama). Modul ini
+# memberi versi Unicode yang hasilnya sama dengan str.upper(), str.lower()
+# dan str.casefold() Python (data Unicode 16.0) untuk code point
+# U+0000-U+052F: Latin (termasuk Latin Extended-A/B dan IPA), Yunani/Koptik
+# dan Sirilik. Karakter di luar rentang itu (CJK, emoji, Armenia, ...)
+# dikembalikan apa adanya. Aturan khusus locale (huruf i Turki) tidak
+# diterapkan, sama seperti Python.
+#
+# Spasi mengikuti str.isspace() Python untuk SELURUH Unicode (29 code point).
+#
+# Normalisasi NFC/NFD dan kategori Unicode belum tersedia; alasannya ada di
+# docs/RENCANA_FITUR/ (unicode_i18n_konfigurasi.md).
+#
+# Tabel di bawah DIBANGKITKAN dari unicodedata Python 3.14 (Unicode 16.0)
+# oleh tools/unicode_tabel.py: setiap teks berisi pasangan "asal, hasil"
+# berurutan. Jangan disunting tangan. `python tools/unicode_tabel.py --periksa`
+# membandingkan modul ini dengan Python untuk setiap code point di rentang.
+
+# --- TABEL MULAI (dibangkitkan tools/unicode_tabel.py) ---
+_PASANGAN_BESAR = (
+    "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZµΜàÀáÁâÂ" +
+    "ãÃäÄåÅæÆçÇèÈéÉêÊëËìÌíÍîÎïÏðÐñÑòÒóÓôÔõÕöÖøØùÙúÚûÛüÜýÝþÞÿŸāĀăĂ" +
+    "ąĄćĆĉĈċĊčČďĎđĐēĒĕĔėĖęĘěĚĝĜğĞġĠģĢĥĤħĦĩĨīĪĭĬįĮıIĳĲĵĴķĶĺĹļĻľĽŀĿ" +
+    "łŁńŃņŅňŇŋŊōŌŏŎőŐœŒŕŔŗŖřŘśŚŝŜşŞšŠţŢťŤŧŦũŨūŪŭŬůŮűŰųŲŵŴŷŶźŹżŻžŽ" +
+    "ſSƀɃƃƂƅƄƈƇƌƋƒƑƕǶƙƘƚȽƛꟜƞȠơƠƣƢƥƤƨƧƭƬưƯƴƳƶƵƹƸƽƼƿǷǅǄǆǄǈǇǉǇǋǊǌǊǎǍ" +
+    "ǐǏǒǑǔǓǖǕǘǗǚǙǜǛǝƎǟǞǡǠǣǢǥǤǧǦǩǨǫǪǭǬǯǮǲǱǳǱǵǴǹǸǻǺǽǼǿǾȁȀȃȂȅȄȇȆȉȈȋȊ" +
+    "ȍȌȏȎȑȐȓȒȕȔȗȖșȘțȚȝȜȟȞȣȢȥȤȧȦȩȨȫȪȭȬȯȮȱȰȳȲȼȻȿⱾɀⱿɂɁɇɆɉɈɋɊɍɌɏɎɐⱯɑⱭ" +
+    "ɒⱰɓƁɔƆɖƉɗƊəƏɛƐɜꞫɠƓɡꞬɣƔɤꟋɥꞍɦꞪɨƗɩƖɪꞮɫⱢɬꞭɯƜɱⱮɲƝɵƟɽⱤʀƦʂꟅʃƩʇꞱʈƮʉɄ" +
+    "ʊƱʋƲʌɅʒƷʝꞲʞꞰͅΙͱͰͳͲͷͶͻϽͼϾͽϿάΆέΈήΉίΊαΑβΒγΓδΔεΕζΖηΗθΘιΙκΚλΛμΜνΝ" +
+    "ξΞοΟπΠρΡςΣσΣτΤυΥφΦχΧψΨωΩϊΪϋΫόΌύΎώΏϐΒϑΘϕΦϖΠϗϏϙϘϛϚϝϜϟϞϡϠϣϢϥϤϧϦ" +
+    "ϩϨϫϪϭϬϯϮϰΚϱΡϲϹϳͿϵΕϸϷϻϺаАбБвВгГдДеЕжЖзЗиИйЙкКлЛмМнНоОпПрРсСтТ" +
+    "уУфФхХцЦчЧшШщЩъЪыЫьЬэЭюЮяЯѐЀёЁђЂѓЃєЄѕЅіІїЇјЈљЉњЊћЋќЌѝЍўЎџЏѡѠ" +
+    "ѣѢѥѤѧѦѩѨѫѪѭѬѯѮѱѰѳѲѵѴѷѶѹѸѻѺѽѼѿѾҁҀҋҊҍҌҏҎґҐғҒҕҔҗҖҙҘқҚҝҜҟҞҡҠңҢҥҤ" +
+    "ҧҦҩҨҫҪҭҬүҮұҰҳҲҵҴҷҶҹҸһҺҽҼҿҾӂӁӄӃӆӅӈӇӊӉӌӋӎӍӏӀӑӐӓӒӕӔӗӖәӘӛӚӝӜӟӞӡӠ" +
+    "ӣӢӥӤӧӦөӨӫӪӭӬӯӮӱӰӳӲӵӴӷӶӹӸӻӺӽӼӿӾԁԀԃԂԅԄԇԆԉԈԋԊԍԌԏԎԑԐԓԒԕԔԗԖԙԘԛԚԝԜ" +
+    "ԟԞԡԠԣԢԥԤԧԦԩԨԫԪԭԬԯԮ"
+)
+_BESAR_KHUSUS_KODE = {223: [83, 83], 329: [700, 78], 496: [74, 780], 912: [921, 776, 769], 944: [933, 776, 769]}
+_PASANGAN_KECIL = (
+    "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZzÀàÁáÂâÃã" +
+    "ÄäÅåÆæÇçÈèÉéÊêËëÌìÍíÎîÏïÐðÑñÒòÓóÔôÕõÖöØøÙùÚúÛûÜüÝýÞþĀāĂăĄąĆć" +
+    "ĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįĲĳĴĵĶķĹĺĻļĽľĿŀŁłŃńŅņ" +
+    "ŇňŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸÿŹźŻżŽžƁɓƂƃ" +
+    "ƄƅƆɔƇƈƉɖƊɗƋƌƎǝƏəƐɛƑƒƓɠƔɣƖɩƗɨƘƙƜɯƝɲƟɵƠơƢƣƤƥƦʀƧƨƩʃƬƭƮʈƯưƱʊƲʋƳƴ" +
+    "ƵƶƷʒƸƹƼƽǄǆǅǆǇǉǈǉǊǌǋǌǍǎǏǐǑǒǓǔǕǖǗǘǙǚǛǜǞǟǠǡǢǣǤǥǦǧǨǩǪǫǬǭǮǯǱǳǲǳǴǵ" +
+    "ǶƕǷƿǸǹǺǻǼǽǾǿȀȁȂȃȄȅȆȇȈȉȊȋȌȍȎȏȐȑȒȓȔȕȖȗȘșȚțȜȝȞȟȠƞȢȣȤȥȦȧȨȩȪȫȬȭȮȯ" +
+    "ȰȱȲȳȺⱥȻȼȽƚȾⱦɁɂɃƀɄʉɅʌɆɇɈɉɊɋɌɍɎɏͰͱͲͳͶͷͿϳΆάΈέΉήΊίΌόΎύΏώΑαΒβΓγΔδ" +
+    "ΕεΖζΗηΘθΙιΚκΛλΜμΝνΞξΟοΠπΡρΣσΤτΥυΦφΧχΨψΩωΪϊΫϋϏϗϘϙϚϛϜϝϞϟϠϡϢϣϤϥ" +
+    "ϦϧϨϩϪϫϬϭϮϯϴθϷϸϹϲϺϻϽͻϾͼϿͽЀѐЁёЂђЃѓЄєЅѕІіЇїЈјЉљЊњЋћЌќЍѝЎўЏџАаБб" +
+    "ВвГгДдЕеЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя" +
+    "ѠѡѢѣѤѥѦѧѨѩѪѫѬѭѮѯѰѱѲѳѴѵѶѷѸѹѺѻѼѽѾѿҀҁҊҋҌҍҎҏҐґҒғҔҕҖҗҘҙҚқҜҝҞҟҠҡҢң" +
+    "ҤҥҦҧҨҩҪҫҬҭҮүҰұҲҳҴҵҶҷҸҹҺһҼҽҾҿӀӏӁӂӃӄӅӆӇӈӉӊӋӌӍӎӐӑӒӓӔӕӖӗӘәӚӛӜӝӞӟ" +
+    "ӠӡӢӣӤӥӦӧӨөӪӫӬӭӮӯӰӱӲӳӴӵӶӷӸӹӺӻӼӽӾӿԀԁԂԃԄԅԆԇԈԉԊԋԌԍԎԏԐԑԒԓԔԕԖԗԘԙԚԛ" +
+    "ԜԝԞԟԠԡԢԣԤԥԦԧԨԩԪԫԬԭԮԯ"
+)
+_KECIL_KHUSUS_KODE = {304: [105, 775]}
+_PASANGAN_LIPAT = (
+    "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZzµμÀàÁáÂâ" +
+    "ÃãÄäÅåÆæÇçÈèÉéÊêËëÌìÍíÎîÏïÐðÑñÒòÓóÔôÕõÖöØøÙùÚúÛûÜüÝýÞþĀāĂăĄą" +
+    "ĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįĲĳĴĵĶķĹĺĻļĽľĿŀŁłŃń" +
+    "ŅņŇňŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸÿŹźŻżŽžſs" +
+    "ƁɓƂƃƄƅƆɔƇƈƉɖƊɗƋƌƎǝƏəƐɛƑƒƓɠƔɣƖɩƗɨƘƙƜɯƝɲƟɵƠơƢƣƤƥƦʀƧƨƩʃƬƭƮʈƯưƱʊ" +
+    "ƲʋƳƴƵƶƷʒƸƹƼƽǄǆǅǆǇǉǈǉǊǌǋǌǍǎǏǐǑǒǓǔǕǖǗǘǙǚǛǜǞǟǠǡǢǣǤǥǦǧǨǩǪǫǬǭǮǯǱǳ" +
+    "ǲǳǴǵǶƕǷƿǸǹǺǻǼǽǾǿȀȁȂȃȄȅȆȇȈȉȊȋȌȍȎȏȐȑȒȓȔȕȖȗȘșȚțȜȝȞȟȠƞȢȣȤȥȦȧȨȩȪȫ" +
+    "ȬȭȮȯȰȱȲȳȺⱥȻȼȽƚȾⱦɁɂɃƀɄʉɅʌɆɇɈɉɊɋɌɍɎɏͅιͰͱͲͳͶͷͿϳΆάΈέΉήΊίΌόΎύΏώΑα" +
+    "ΒβΓγΔδΕεΖζΗηΘθΙιΚκΛλΜμΝνΞξΟοΠπΡρΣσΤτΥυΦφΧχΨψΩωΪϊΫϋςσϏϗϐβϑθϕφ" +
+    "ϖπϘϙϚϛϜϝϞϟϠϡϢϣϤϥϦϧϨϩϪϫϬϭϮϯϰκϱρϴθϵεϷϸϹϲϺϻϽͻϾͼϿͽЀѐЁёЂђЃѓЄєЅѕІі" +
+    "ЇїЈјЉљЊњЋћЌќЍѝЎўЏџАаБбВвГгДдЕеЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФф" +
+    "ХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯяѠѡѢѣѤѥѦѧѨѩѪѫѬѭѮѯѰѱѲѳѴѵѶѷѸѹѺѻѼѽѾѿҀҁҊҋҌҍ" +
+    "ҎҏҐґҒғҔҕҖҗҘҙҚқҜҝҞҟҠҡҢңҤҥҦҧҨҩҪҫҬҭҮүҰұҲҳҴҵҶҷҸҹҺһҼҽҾҿӀӏӁӂӃӄӅӆӇӈ" +
+    "ӉӊӋӌӍӎӐӑӒӓӔӕӖӗӘәӚӛӜӝӞӟӠӡӢӣӤӥӦӧӨөӪӫӬӭӮӯӰӱӲӳӴӵӶӷӸӹӺӻӼӽӾӿԀԁԂԃԄԅ" +
+    "ԆԇԈԉԊԋԌԍԎԏԐԑԒԓԔԕԖԗԘԙԚԛԜԝԞԟԠԡԢԣԤԥԦԧԨԩԪԫԬԭԮԯ"
+)
+_LIPAT_KHUSUS_KODE = {223: [115, 115], 304: [105, 775], 329: [700, 110], 496: [106, 780], 912: [953, 776, 769], 944: [965, 776, 769]}
+_BERHURUF = (
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzªµºÀÁÂÃÄ" +
+    "ÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿĀāĂ" +
+    "ăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľ" +
+    "ĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹź" +
+    "ŻżŽžſƀƁƂƃƄƅƆƇƈƉƊƋƌƍƎƏƐƑƒƓƔƕƖƗƘƙƚƛƜƝƞƟƠơƢƣƤƥƦƧƨƩƪƫƬƭƮƯưƱƲƳƴƵƶ" +
+    "ƷƸƹƺƼƽƾƿǄǅǆǇǈǉǊǋǌǍǎǏǐǑǒǓǔǕǖǗǘǙǚǛǜǝǞǟǠǡǢǣǤǥǦǧǨǩǪǫǬǭǮǯǰǱǲǳǴǵǶǷ" +
+    "ǸǹǺǻǼǽǾǿȀȁȂȃȄȅȆȇȈȉȊȋȌȍȎȏȐȑȒȓȔȕȖȗȘșȚțȜȝȞȟȠȡȢȣȤȥȦȧȨȩȪȫȬȭȮȯȰȱȲȳ" +
+    "ȴȵȶȷȸȹȺȻȼȽȾȿɀɁɂɃɄɅɆɇɈɉɊɋɌɍɎɏɐɑɒɓɔɕɖɗɘəɚɛɜɝɞɟɠɡɢɣɤɥɦɧɨɩɪɫɬɭɮɯ" +
+    "ɰɱɲɳɴɵɶɷɸɹɺɻɼɽɾɿʀʁʂʃʄʅʆʇʈʉʊʋʌʍʎʏʐʑʒʓʕʖʗʘʙʚʛʜʝʞʟʠʡʢʣʤʥʦʧʨʩʪʫʬ" +
+    "ʭʮʯʰʱʲʳʴʵʶʷʸˀˁˠˡˢˣˤͅͰͱͲͳͶͷͺͻͼͽͿΆΈΉΊΌΎΏΐΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦ" +
+    "ΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώϏϐϑϒϓϔϕϖϗϘϙϚϛϜϝϞϟϠϡϢ" +
+    "ϣϤϥϦϧϨϩϪϫϬϭϮϯϰϱϲϳϴϵϷϸϹϺϻϼϽϾϿЀЁЂЃЄЅІЇЈЉЊЋЌЍЎЏАБВГДЕЖЗИЙКЛМНОП" +
+    "РСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяѐёђѓєѕіїјљњћ" +
+    "ќѝўџѠѡѢѣѤѥѦѧѨѩѪѫѬѭѮѯѰѱѲѳѴѵѶѷѸѹѺѻѼѽѾѿҀҁҊҋҌҍҎҏҐґҒғҔҕҖҗҘҙҚқҜҝҞҟ" +
+    "ҠҡҢңҤҥҦҧҨҩҪҫҬҭҮүҰұҲҳҴҵҶҷҸҹҺһҼҽҾҿӀӁӂӃӄӅӆӇӈӉӊӋӌӍӎӏӐӑӒӓӔӕӖӗӘәӚӛ" +
+    "ӜӝӞӟӠӡӢӣӤӥӦӧӨөӪӫӬӭӮӯӰӱӲӳӴӵӶӷӸӹӺӻӼӽӾӿԀԁԂԃԄԅԆԇԈԉԊԋԌԍԎԏԐԑԒԓԔԕԖԗ" +
+    "ԘԙԚԛԜԝԞԟԠԡԢԣԤԥԦԧԨԩԪԫԬԭԮԯ"
+)
+_ABAI_HURUF = (
+    "'.:^`¨­¯´·¸ʰʱʲʳʴʵʶʷʸʹʺʻʼʽʾʿˀˁ˂˃˄˅ˆˇˈˉˊˋˌˍˎˏːˑ˒˓˔˕˖˗˘˙˚˛˜˝˞˟ˠ" +
+    "ˡˢˣˤ˥˦˧˨˩˪˫ˬ˭ˮ˯˰˱˲˳˴˵˶˷˸˹˺˻˼˽˾˿̛̖̗̘̙̜̀́̂̃̄̅̆̇̈̉̊̋̌̍̎̏̐̑̒̓̔̕̚" +
+    "̴̵̶̷̸̡̢̧̨̝̞̟̠̣̤̥̦̩̪̫̬̭̮̯̰̱̲̳̹̺̻̼͇͈͉͍͎̽̾̿̀́͂̓̈́͆͊͋͌ͅ͏͓͔͕͖͐͑͒͗͘" +
+    "͙͚͛ͣͤͥͦͧͨͩͪͫͬͭͮͯ͜͟͢͝͞͠͡ʹ͵ͺ΄΅҃҄҅҆҇҈҉"
+)
+# --- TABEL AKHIR ---
+
+# _peta(pasangan, khusus_kode) -> kamus karakter -> teks hasil.
+fungsi _peta(pasangan, khusus_kode) {
+    variabel peta = kamus()
+    variabel i = 0
+    variabel n = panjang(pasangan)
+    selagi i < n {
+        peta[pasangan[i]] = pasangan[i + 1]
+        i = i + 2
+    }
+    untuk kode dalam kunci(khusus_kode) {
+        variabel hasil = ""
+        untuk k dalam khusus_kode[kode] {
+            hasil = hasil + chr(k)
+        }
+        peta[chr(kode)] = hasil
+    }
+    kembalikan peta
+}
+
+# _anggota(teks) -> himpunan karakternya.
+fungsi _anggota(teks) {
+    variabel h = himpunan()
+    untuk c dalam teks {
+        h.tambah(c)
+    }
+    kembalikan h
+}
+
+_BESAR = _peta(_PASANGAN_BESAR, _BESAR_KHUSUS_KODE)
+_KECIL = _peta(_PASANGAN_KECIL, _KECIL_KHUSUS_KODE)
+_LIPAT = _peta(_PASANGAN_LIPAT, _LIPAT_KHUSUS_KODE)
+_SET_BERHURUF = _anggota(_BERHURUF)
+_SET_ABAI = _anggota(_ABAI_HURUF)
+
+_KODE_SPASI = [9, 10, 11, 12, 13, 28, 29, 30, 31, 32, 133, 160, 5760,
+    8192, 8193, 8194, 8195, 8196, 8197, 8198, 8199, 8200, 8201, 8202,
+    8232, 8233, 8239, 8287, 12288]
+_SET_SPASI = himpunan()
+untuk _k dalam _KODE_SPASI {
+    _SET_SPASI.tambah(chr(_k))
+}
+
+_SIGMA = chr(931)
+_SIGMA_AKHIR = chr(962)
+_SIGMA_KECIL = chr(963)
+
+fungsi _wajib_teks(nama, t) {
+    jika jenis(t) != "teks" {
+        naikkan GalatTipe(nama + "() hanya menerima teks")
+    }
+}
+
+fungsi _petakan(t, peta) {
+    variabel bagian = []
+    untuk c dalam t {
+        tambah(bagian, ambil(peta, c, c))
+    }
+    kembalikan teks_gabung(bagian, "")
+}
+
+# huruf_besar(t) -> seperti str.upper(): "straße" -> "STRASSE".
+fungsi huruf_besar(t) {
+    _wajib_teks("huruf_besar", t)
+    kembalikan _petakan(t, _BESAR)
+}
+
+# _sigma_akhir(t, i) -> benar bila Σ di posisi i adalah akhir kata menurut
+# aturan Final_Sigma Unicode: didahului huruf berhuruf-besar/kecil dan tidak
+# diikuti huruf, dengan melompati karakter yang diabaikan (tanda diakritik,
+# apostrof, ...).
+fungsi _sigma_akhir(t, i) {
+    variabel j = i - 1
+    selagi j >= 0 dan t[j] dalam _SET_ABAI {
+        j = j - 1
+    }
+    jika j < 0 atau t[j] tidak dalam _SET_BERHURUF {
+        kembalikan salah
+    }
+    variabel k = i + 1
+    variabel n = panjang(t)
+    selagi k < n dan t[k] dalam _SET_ABAI {
+        k = k + 1
+    }
+    kembalikan k >= n atau t[k] tidak dalam _SET_BERHURUF
+}
+
+# huruf_kecil(t) -> seperti str.lower(), termasuk sigma akhir: "ΣΑΣ" -> "σας".
+fungsi huruf_kecil(t) {
+    _wajib_teks("huruf_kecil", t)
+    jika _SIGMA tidak dalam t {
+        kembalikan _petakan(t, _KECIL)
+    }
+    variabel bagian = []
+    variabel i = 0
+    variabel n = panjang(t)
+    selagi i < n {
+        variabel c = t[i]
+        jika c == _SIGMA {
+            tambah(bagian, _SIGMA_AKHIR jika _sigma_akhir(t, i) selain _SIGMA_KECIL)
+        } selain {
+            tambah(bagian, ambil(_KECIL, c, c))
+        }
+        i = i + 1
+    }
+    kembalikan teks_gabung(bagian, "")
+}
+
+# lipat_huruf(t) -> seperti str.casefold(), untuk membandingkan teks tanpa
+# memedulikan huruf besar/kecil: "Straße" dan "STRASSE" -> "strasse".
+fungsi lipat_huruf(t) {
+    _wajib_teks("lipat_huruf", t)
+    kembalikan _petakan(t, _LIPAT)
+}
+
+# sama_tanpa_huruf(a, b) -> benar bila a dan b sama setelah lipat_huruf.
+fungsi sama_tanpa_huruf(a, b) {
+    kembalikan lipat_huruf(a) == lipat_huruf(b)
+}
+
+# adalah_spasi(c) -> benar bila c (satu karakter) adalah spasi Unicode,
+# seperti str.isspace() untuk satu karakter.
+fungsi adalah_spasi(c) {
+    _wajib_teks("adalah_spasi", c)
+    kembalikan c dalam _SET_SPASI
+}
+
+# pangkas(t) -> t tanpa spasi Unicode di awal dan akhir, seperti str.strip().
+fungsi pangkas(t) {
+    _wajib_teks("pangkas", t)
+    variabel n = panjang(t)
+    variabel awal = 0
+    selagi awal < n dan t[awal] dalam _SET_SPASI {
+        awal = awal + 1
+    }
+    variabel akhir = n
+    selagi akhir > awal dan t[akhir - 1] dalam _SET_SPASI {
+        akhir = akhir - 1
+    }
+    kembalikan t[awal:akhir]
+}
+
+# pisah_spasi(t) -> daftar kata yang dipisah spasi Unicode, seperti
+# str.split() tanpa argumen: spasi berderet dan di tepi tidak menghasilkan
+# kata kosong.
+fungsi pisah_spasi(t) {
+    _wajib_teks("pisah_spasi", t)
+    variabel hasil = []
+    variabel kata = []
+    untuk c dalam t {
+        jika c dalam _SET_SPASI {
+            jika panjang(kata) > 0 {
+                tambah(hasil, teks_gabung(kata, ""))
+                kata = []
+            }
+        } selain {
+            tambah(kata, c)
+        }
+    }
+    jika panjang(kata) > 0 {
+        tambah(hasil, teks_gabung(kata, ""))
+    }
+    kembalikan hasil
+}
