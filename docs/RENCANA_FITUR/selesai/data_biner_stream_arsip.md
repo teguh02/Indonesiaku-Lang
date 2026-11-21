@@ -1,6 +1,6 @@
 # Rencana Fitur: Data biner, kompresi dan arsip (Fase 23, V1)
 
-- **Status:** dikerjakan (V1)
+- **Status:** selesai (V1; sisa Fase 23 tercatat di §7 dan docs/ROADMAP.md)
 - **Target versi:** rilis minor berikutnya (Fase 23 penuh: `v1.18.0`)
 - **Pemilik:** Teguh Rijanandi
 

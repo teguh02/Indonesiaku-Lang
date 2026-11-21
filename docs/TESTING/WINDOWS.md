@@ -1364,6 +1364,119 @@ bernilai `kosong` mengembalikan `kosong` bukan `bawaan`, bentuk metode
 baru (`panjang` tetap 3), dan salah pakai menaikkan `GalatTipe` yang dapat
 ditangkap `coba/kecuali`.
 
+### ARS — Kompresi dan arsip (Fase 23)
+
+#### ARS-01 — `kompres`: gzip/zlib, NUL di tengah data, bom dekompresi dibatasi
+
+Berkas `ARS-01.idk`:
+
+```indonesiaku
+# kompres: gzip/zlib roundtrip, NUL di tengah data, bom dekompresi dibatasi
+impor kompres
+impor bita
+dari kompres impor GalatKompres
+variabel teks = "Indonesiaku ☕ " * 50
+variabel g = kompres.gzip(teks)
+cetak(g[0:3], bita.ke_teks(kompres.buka_gzip(g)) == teks)
+cetak(kompres.buka_zlib(kompres.zlib([0, 1, 0, 255, 0])))
+cetak(kompres.crc32("hello"), kompres.adler32("hello"))
+variabel bom = kompres.gzip([0] * 65535, 9)
+coba {
+    kompres.buka_gzip(bom, 1000)
+} kecuali GalatKompres sebagai e {
+    cetak(e.pesan)
+}
+coba {
+    kompres.buka_gzip(g[0:20])
+} kecuali GalatKompres sebagai e {
+    cetak(e.pesan)
+}
+```
+
+Jalankan `indk ARS-01.idk`. **Kode keluar: `0`.** stderr kosong.
+
+stdout yang diharapkan:
+
+```text
+[31, 139, 8] benar
+[0, 1, 0, 255, 0]
+907060870 103547413
+kompres: hasil melebihi batas 1000 bita
+kompres: data terkompresi terpotong
+```
+
+Yang diperiksa: roundtrip gzip byte-exact untuk teks non-ASCII, NUL dan 255 lolos utuh lewat zlib, checksum sama dengan `zlib.crc32`/`zlib.adler32` Python, keluaran dekompresi dibatasi (`batas`) sehingga bom 64 KB → beberapa ratus bita berhenti dengan `GalatKompres`, dan data terpotong ditolak.
+
+#### ARS-02 — `arsip`: buat, daftar, ekstrak TAR.GZ dan ZIP (folder kerja harus bisa ditulisi)
+
+Berkas `ARS-02.idk`:
+
+```indonesiaku
+# arsip: buat, daftar_isi, ekstrak TAR.GZ dan ZIP (folder kerja harus bisa ditulisi)
+impor arsip
+impor bita
+untuk j dalam ["uji_arsip.tar.gz", "uji_arsip.zip"] {
+    arsip.buat(j, [["dok/catatan.txt", "halo ☕\n"], ["nol.bin", [0, 255, 0]]])
+    cetak([e["nama"] + ":" + ke_teks(e["ukuran"]) untuk e dalam arsip.daftar_isi(j)])
+    cetak(arsip.ekstrak(j, "uji_arsip_hasil"))
+    cetak(repr(baca_semua("uji_arsip_hasil/dok/catatan.txt")), bita.baca_berkas("uji_arsip_hasil/nol.bin"))
+    hapus_berkas("uji_arsip_hasil/dok/catatan.txt")
+    hapus_direktori("uji_arsip_hasil/dok")
+    hapus_berkas("uji_arsip_hasil/nol.bin")
+    hapus_direktori("uji_arsip_hasil")
+    hapus_berkas(j)
+}
+```
+
+Jalankan `indk ARS-02.idk`. **Kode keluar: `0`.** stderr kosong.
+
+stdout yang diharapkan:
+
+```text
+["dok/catatan.txt:9", "nol.bin:3"]
+["dok/catatan.txt", "nol.bin"]
+"halo ☕\n" [0, 255, 0]
+["dok/catatan.txt:9", "nol.bin:3"]
+["dok/catatan.txt", "nol.bin"]
+"halo ☕\n" [0, 255, 0]
+```
+
+Yang diperiksa: arsip yang dibuat bisa didaftar dan diekstrak lagi byte-exact (teks UTF-8 dan bita biner) di kedua format; direktori perantara `dok/` dibuat otomatis.
+
+#### ARS-03 — `arsip`: zip slip ditolak sebelum apa pun ditulis (folder kerja harus bisa ditulisi)
+
+Berkas `ARS-03.idk`:
+
+```indonesiaku
+# arsip: zip slip ditolak sebelum apa pun ditulis (folder kerja harus bisa ditulisi)
+# Heksa = tar.gz buatan tarfile Python berisi aman.txt dan ../../luar.txt.
+impor arsip
+impor bita
+dari arsip impor GalatArsip
+variabel j = "uji_slip.tar.gz"
+bita.tulis_berkas(j, bita.dari_heksa("1f8b08000000000002ffedd43d0ac3300c86611da52770ec54aecfa3adf42781c4861ebf225bbb7472a0e47d107ca045d3277bda14eaab4a47d15d54b774dfe946499a472d25eab62f9a554e5176d0d66a8b9f94639aef82030b61f079345bfa7d81dffdcf9ffd4f319de9ff2e6e76b54a0d000000000000000000000000fed61baee2ca8500280000"))
+cetak([e["nama"] untuk e dalam arsip.daftar_isi(j)])
+coba {
+    arsip.ekstrak(j, "uji_slip_hasil")
+} kecuali GalatArsip sebagai e {
+    cetak(e.pesan)
+}
+cetak(ada_berkas("uji_slip_hasil/aman.txt"), ada_berkas("../luar.txt"))
+hapus_berkas(j)
+```
+
+Jalankan `indk ARS-03.idk`. **Kode keluar: `0`.** stderr kosong.
+
+stdout yang diharapkan:
+
+```text
+["aman.txt", "../../luar.txt"]
+arsip.ekstrak(): entri '../../luar.txt' ditolak: memuat komponen '..'
+salah salah
+```
+
+Yang diperiksa: `daftar_isi()` memperlihatkan nama jahat apa adanya, `ekstrak()` menolaknya dengan `GalatArsip`, dan karena seluruh arsip diperiksa dulu, entri yang aman pun (`aman.txt`) tidak ditulis; tidak ada berkas di luar direktori kerja.
+
 <!-- BERSAMA:AKHIR -->
 
 ## 5. Suite otomatis dari tag rilis

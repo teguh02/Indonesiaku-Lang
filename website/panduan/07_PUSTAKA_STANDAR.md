@@ -2210,6 +2210,8 @@ coba {
 | `ke_teks(data)` | Teks dari daftar byte UTF-8; `GalatBita` bila urutannya tidak sah menurut RFC 3629, seperti `bytes.decode("utf-8")`: byte lanjutan menggantung atau salah, urutan terpotong, bentuk *overlong* (`C0 80`), surrogate `D800..DFFF`, atau kode di atas `U+10FFFF` |
 | `ke_heksa(data)` | Teks heksa huruf kecil (`bytes.hex()`) |
 | `dari_heksa(teks)` | Daftar byte dari teks heksa (panjang harus genap; `bytes.fromhex`) |
+| `baca_berkas(jalur, batas=256 MiB)` | Isi berkas sebagai daftar bita, byte-exact (`open(..., "rb").read()`); `GalatBita` bila lebih dari `batas` |
+| `tulis_berkas(jalur, data)` | Tulis daftar bita (atau teks sebagai UTF-8) apa adanya → jumlah bita. `tulis_semua()` hanya menerima teks, jadi gambar, arsip, dan data terkompresi ditulis lewat fungsi ini |
 
 ### 2.19 `pustaka/base64.idk` — Base64
 
@@ -2546,6 +2548,119 @@ dirangkai), id tak dikenal yang membalas 404, dan nama berisi `<script>`
 yang ter-escape otomatis. Lihat juga
 [§8.8 Aplikasi dengan templat](08_DEPLOYMENT.md) untuk menjalankannya di
 container berikut tabel troubleshooting.
+
+### 2.23 `pustaka/kompres.idk` — gzip, zlib, deflate
+
+Padanan modul `gzip`/`zlib` Python, di atas **miniz** yang di-vendor (bukan
+deflate buatan sendiri). Masukan boleh teks (dikompresi sebagai bita
+UTF-8-nya) atau daftar bita; keluaran selalu daftar bita — kembalikan ke teks
+dengan `bita.ke_teks()`.
+
+```indonesiaku
+impor kompres
+impor bita
+dari kompres impor GalatKompres
+
+variabel teks = "halo dunia " * 100
+variabel padat = kompres.gzip(teks)
+cetak(panjang(padat) < 100)                         # benar
+cetak(bita.ke_teks(kompres.buka_gzip(padat)) == teks)   # benar
+cetak(kompres.crc32("hello"))                       # 907060870 (= zlib.crc32)
+
+# Bom dekompresi: 64 KB nol -> beberapa ratus bita. Membukanya selalu dibatasi.
+variabel bom = kompres.gzip([0] * 65535)
+coba {
+    kompres.buka_gzip(bom, 1000)
+} kecuali GalatKompres sebagai e {
+    cetak(e.pesan)        # kompres: hasil melebihi batas 1000 bita
+}
+```
+
+| Nama | Deskripsi |
+|------|-----------|
+| `gzip(data, tingkat=6)` / `buka_gzip(data, batas=64 MiB)` | Format gzip (RFC 1952). Keluaran deterministik (MTIME 0). `buka_gzip` menerima gzip multi-anggota dan memeriksa CRC-32 serta ukuran tiap anggota |
+| `zlib(data, tingkat=6)` / `buka_zlib(data, batas)` | Format zlib (RFC 1950), Adler-32 diperiksa |
+| `deflate(data, tingkat=6)` / `buka_deflate(data, batas)` | Deflate mentah (RFC 1951) tanpa kepala/ekor |
+| `gzip_berkas(sumber, tujuan, tingkat=6)` | Berkas → `.gz`, per potongan 64 KB (tidak dibaca penuh ke RAM) → ukuran hasil |
+| `buka_gzip_berkas(sumber, tujuan, batas)` | `.gz` → berkas; berkas tujuan **dihapus** bila data rusak atau melewati `batas` |
+| `crc32(data, awal=0)` / `adler32(data, awal=1)` | Checksum, sama dengan `zlib.crc32`/`zlib.adler32`; bisa disambung per potongan |
+| `GalatKompres` | Turunan `GalatNilai`: data rusak/terpotong, data sisa setelah akhir aliran, `batas` terlampaui, tingkat bukan 0..9 |
+
+`tingkat` 0 berarti disimpan tanpa kompresi, 9 paling kecil. **Setiap
+dekompresi punya `batas` keluaran** (bawaan 64 MiB) yang diperiksa *selagi*
+data dibuka: beberapa KB gzip dari pengguna bisa mengembang menjadi
+gigabita. Naikkan `batas` hanya untuk data yang memang Anda percaya. Hasil
+berupa daftar bita dibatasi 256 MiB apa pun `batas`-nya (satu nilai per bita
+memakan memori); data sebesar itu proses lewat `gzip_berkas`/
+`buka_gzip_berkas`.
+
+### 2.24 `pustaka/arsip.idk` — TAR, TAR.GZ dan ZIP
+
+Padanan `tarfile`/`zipfile` Python, dengan **ekstraksi yang aman secara
+bawaan**. Format dikenali dari isinya, bukan dari ekstensi.
+
+```indonesiaku
+impor arsip
+impor bita
+dari arsip impor GalatArsip
+
+# Buat: jalur berkas/direktori (direktori diambil seluruhnya) atau [nama, data].
+arsip.buat("_panduan.tar.gz", [["info/versi.txt", "1.0\n"], ["nol.bin", [0, 0, 255]]])
+
+untuk e dalam arsip.daftar_isi("_panduan.tar.gz") {
+    cetak(e["nama"], e["jenis"], e["ukuran"])
+}
+# info/versi.txt berkas 4
+# nol.bin berkas 3
+
+cetak(arsip.ekstrak("_panduan.tar.gz", "_panduan_hasil"))   # ["info/versi.txt", "nol.bin"]
+cetak(bita.baca_berkas("_panduan_hasil/nol.bin"))           # [0, 0, 255]
+
+# Nama yang keluar dari direktori tujuan tidak bisa dibuat...
+coba {
+    arsip.buat("_panduan_jahat.zip", [["../../luar.txt", "x"]])
+} kecuali GalatArsip sebagai e {
+    cetak(e.pesan)   # arsip.buat(): nama '../../luar.txt' ditolak: memuat komponen '..'
+}
+# ...dan arsip dari luar yang memuatnya ditolak ekstrak() dengan pesan yang sama.
+
+hapus_berkas("_panduan_hasil/info/versi.txt")
+hapus_direktori("_panduan_hasil/info")
+hapus_berkas("_panduan_hasil/nol.bin")
+hapus_direktori("_panduan_hasil")
+hapus_berkas("_panduan.tar.gz")
+```
+
+| Nama | Deskripsi |
+|------|-----------|
+| `daftar_isi(jalur, batas_entri=10000, batas_rasio=200)` | Daftar kamus `{"nama", "jenis", "ukuran", "terkompres"}`; `jenis` = `berkas`, `direktori`, `tautan_simbolik`, `tautan_keras`, `lain`. Nama ditampilkan **apa adanya** — cocok untuk memeriksa arsip mencurigakan. Untuk `.tar.gz` seluruh aliran dibuka, jadi `batas_rasio` tetap berlaku |
+| `ekstrak(jalur, tujuan, batas_ukuran=1 GiB, batas_entri=10000, batas_rasio=200, lewati_tautan=salah)` | Ekstrak ke `tujuan` (dibuat bila belum ada) → daftar nama yang ditulis. Berkas yang sudah ada ditimpa |
+| `buat(jalur, isi, format=kosong, tingkat=6, dasar=kosong)` | Buat arsip → jumlah entri. `isi`: jalur teks atau `[nama, data]`. Format dari ekstensi (`.tar`, `.tar.gz`/`.tgz`, `.zip`) bila `format` kosong. Jalur dibaca relatif terhadap `dasar` bila diberikan. Gagal → berkas setengah jadi dihapus |
+| `GalatArsip` | Turunan `GalatNilai` untuk arsip rusak, entri yang ditolak, dan batas yang terlampaui. Berkas yang tidak bisa dibuka tetap `GalatOS` |
+
+**Yang ditolak `ekstrak()`** — dan karena seluruh arsip diperiksa (termasuk
+didekompresi dan CRC-nya dicek) **sebelum** satu berkas pun ditulis, arsip
+yang ditolak tidak meninggalkan apa pun di tujuan:
+
+- nama absolut (`/etc/passwd`), berisi komponen `..` (*zip slip*), `\`, `:`
+  (`C:/...`, aliran data NTFS), karakter kendali, atau bukan UTF-8 sah; di
+  Windows juga nama perangkat (`CON`, `NUL`, `COM1`, ...) dan akhiran titik/spasi;
+- tautan simbolik dan tautan keras — atau dilewati dengan `lewati_tautan=benar`.
+  Modul ini **tidak pernah membuat tautan**; entri khusus lain (perangkat,
+  FIFO) selalu ditolak;
+- isi total di atas `batas_ukuran`, lebih dari `batas_entri` entri, atau
+  rasio kompresi di atas `batas_rasio` untuk data di atas 1 MiB (tanda *bom
+  dekompresi*). Rasio diperiksa pada data yang benar-benar dibuka, bukan
+  hanya pada ukuran yang diklaim kepala arsip;
+- tautan/junction yang **sudah ada** di bawah direktori tujuan: tidak pernah
+  diikuti (direktori `tujuan` itu sendiri boleh berupa tautan, mis. `/tmp` di
+  macOS).
+
+Batasan V1: hak akses (chmod) dan waktu ubah dari arsip tidak dipulihkan;
+`buat()` tidak menyimpan tautan simbolik (dilewati); ZIP terenkripsi tidak
+didukung. Jangan mengekstrak ke direktori yang pada saat yang sama dapat
+ditulis pihak lain yang tidak tepercaya: pemeriksaan tautan dan pembukaan
+berkas bukan satu operasi atomik di semua OS.
 
 ## 3. Aplikasi Contoh: Todo-list JSON DB
 

@@ -28,6 +28,17 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `indonesiaku.toml`). Langkah ini paling akhir, sesudah pustaka standar, jadi
   impor yang dulu berhasil tidak berubah artinya dan paket tidak pernah
   membayangi modul standar.
+- **Kompresi dan arsip V1 (Fase 23)** — modul `kompres` (gzip/zlib/deflate,
+  `gzip_berkas` berkas→berkas per 64 KB, `crc32`/`adler32`) dan `arsip`
+  (`daftar_isi`, `ekstrak`, `buat` untuk TAR, TAR.GZ, ZIP) di atas miniz 3.1.2
+  yang di-vendor (`src/vendor/miniz`, MIT, SHA-256 di `PROVENANCE.md`).
+  Ekstraksi **aman secara bawaan**: seluruh arsip diperiksa sebelum ada yang
+  ditulis; zip slip, jalur absolut, tautan simbolik/keras, tautan yang sudah
+  ada di tujuan, serta batas ukuran/jumlah entri/rasio kompresi (bom
+  dekompresi) ditolak dengan `GalatArsip`. Dekompresi `kompres` selalu
+  dibatasi (`batas`, bawaan 64 MiB). `bita.baca_berkas`/`bita.tulis_berkas`
+  membaca dan menulis bita mentah. Tipe `bita` dan API stream masih
+  direncanakan.
 
 ### Keamanan
 
