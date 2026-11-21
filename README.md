@@ -9,6 +9,10 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24394984.svg)](https://doi.org/10.5281/zenodo.24394984)
 
+Paket replikasi studi kasus penelitian (EISEJ 2026) disimpan terpisah di branch
+[`research/eisej-2026`](https://github.com/teguh02/Indonesiaku-Lang/tree/research/eisej-2026/research/eisej-2026),
+bukan di `main`.
+
 **Indonesiaku** adalah bahasa pemrograman dengan sintaks Bahasa Indonesia yang
 terinspirasi dari Python, dijalankan oleh *virtual machine* bytecode yang
 ditulis dalam C.
