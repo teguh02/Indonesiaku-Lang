@@ -1,0 +1,673 @@
+# pustaka/konfigurasi.idk - Konfigurasi aplikasi (modul `konfigurasi`).
+# Pemakaian:
+#     impor konfigurasi
+#     dari konfigurasi impor muat, urai_env, urai_ini, GalatKonfigurasi
+#
+# Isi:
+#   - urai_env / baca_env  : berkas `.env` (KUNCI=nilai)
+#   - urai_ini / baca_ini  : berkas INI ([bagian] kunci = nilai)
+#   - muat(...)            : gabungkan bawaan < berkas < lingkungan, lalu
+#                            validasi dengan skema sederhana
+#
+# Prinsip keamanan:
+#   - Pesan galat TIDAK PERNAH memuat nilai kunci rahasia; nilai kunci biasa
+#     hanya muncul pada galat tipe. Nilai rahasia disamarkan `***` saat
+#     objek Konfigurasi dicetak.
+#   - Lingkungan hanya dibaca untuk kunci yang DIKENAL (skema, bawaan, berkas)
+#     dan hanya bila `awalan_lingkungan` diberikan, jadi `muat()` tidak
+#     menyalin seluruh lingkungan proses.
+#   - Tidak ada interpolasi `${VAR}`, eksekusi perintah, atau include.
+#   - Setiap sumber dibatasi BATAS_UKURAN bita (bawaan 1 MiB); berkas yang
+#     lebih besar ditolak sebelum dibaca.
+#
+# TOML dan YAML belum didukung; lihat docs/RENCANA_FITUR/ (Fase 24).
+
+impor jalur
+
+BATAS_UKURAN = 1048576
+
+# Galat format/validasi. `.pesan` sudah memuat lokasi ("sumber:baris: ...");
+# `.sumber` dan `.baris` (bisa kosong) tersedia untuk diproses program.
+kelas GalatKonfigurasi < Galat {
+    init(pesan, sumber = kosong, baris = kosong) {
+        diri.sumber = sumber
+        diri.baris = baris
+        jika sumber != kosong dan baris != kosong {
+            diri.pesan = sumber + ":" + ke_teks(baris) + ": " + pesan
+        } jika_lain sumber != kosong {
+            diri.pesan = sumber + ": " + pesan
+        } selain {
+            diri.pesan = pesan
+        }
+    }
+}
+
+# ---------------------------------------------------------------- utilitas
+
+_BOM = chr(65279)
+
+# _siapkan(teks, sumber, batas) -> teks tanpa BOM dengan baris "\n" saja.
+fungsi _siapkan(teks, sumber, batas) {
+    jika jenis(teks) != "teks" {
+        naikkan GalatTipe("isi konfigurasi harus teks")
+    }
+    jika panjang_byte(teks) > batas {
+        naikkan GalatKonfigurasi("melebihi batas ukuran " + ke_teks(batas) + " bita", sumber)
+    }
+    jika panjang(teks) > 0 dan teks[0] == _BOM {
+        teks = teks[1:]
+    }
+    kembalikan ganti(ganti(teks, "\r\n", "\n"), "\r", "\n")
+}
+
+# _baris(teks) -> daftar baris (tanpa "\n").
+fungsi _baris(teks) {
+    variabel hasil = []
+    variabel kini = []
+    untuk c dalam teks {
+        jika c == "\n" {
+            tambah(hasil, teks_gabung(kini, ""))
+            kini = []
+        } selain {
+            tambah(kini, c)
+        }
+    }
+    tambah(hasil, teks_gabung(kini, ""))
+    kembalikan hasil
+}
+
+fungsi _spasi(c) {
+    kembalikan c == " " atau c == "\t"
+}
+
+# _pangkas(t) -> t tanpa spasi/tab di tepi (spasi Unicode lain dibiarkan:
+# NBSP di dalam nilai adalah data, bukan pemisah).
+fungsi _pangkas(t) {
+    variabel awal = 0
+    variabel akhir = panjang(t)
+    selagi awal < akhir dan _spasi(t[awal]) {
+        awal = awal + 1
+    }
+    selagi akhir > awal dan _spasi(t[akhir - 1]) {
+        akhir = akhir - 1
+    }
+    kembalikan t[awal:akhir]
+}
+
+fungsi _cari(t, c) {
+    variabel i = 0
+    variabel n = panjang(t)
+    selagi i < n {
+        jika t[i] == c {
+            kembalikan i
+        }
+        i = i + 1
+    }
+    kembalikan -1
+}
+
+fungsi _huruf_ascii(c) {
+    kembalikan (c >= "a" dan c <= "z") atau (c >= "A" dan c <= "Z") atau c == "_"
+}
+
+fungsi _digit(c) {
+    kembalikan c >= "0" dan c <= "9"
+}
+
+# _kunci_env_sah(k) -> benar untuk [A-Za-z_][A-Za-z0-9_.-]*.
+fungsi _kunci_env_sah(k) {
+    jika k == "" atau tidak _huruf_ascii(k[0]) {
+        kembalikan salah
+    }
+    untuk c dalam k {
+        jika tidak (_huruf_ascii(c) atau _digit(c) atau c == "." atau c == "-") {
+            kembalikan salah
+        }
+    }
+    kembalikan benar
+}
+
+# ---------------------------------------------------------------- .env
+
+_ESCAPE_ENV = {"n": "\n", "t": "\t", "r": "\r", "\"": "\"", "\\": "\\"}
+
+# _nilai_kutip(sisa, sumber, nomor) -> nilai di dalam kutip pada awal `sisa`.
+fungsi _nilai_kutip(sisa, sumber, nomor) {
+    variabel kutip = sisa[0]
+    variabel bagian = []
+    variabel i = 1
+    variabel n = panjang(sisa)
+    variabel tutup = -1
+    selagi i < n {
+        variabel c = sisa[i]
+        jika c == kutip {
+            tutup = i
+            hentikan
+        }
+        jika c == "\\" dan kutip == "\"" dan i + 1 < n {
+            variabel e = sisa[i + 1]
+            jika punya(_ESCAPE_ENV, e) {
+                tambah(bagian, _ESCAPE_ENV[e])
+            } selain {
+                tambah(bagian, c + e)
+            }
+            i = i + 2
+        } selain {
+            tambah(bagian, c)
+            i = i + 1
+        }
+    }
+    jika tutup < 0 {
+        naikkan GalatKonfigurasi("kutip " + kutip + " tidak ditutup", sumber, nomor)
+    }
+    variabel ekor = _pangkas(sisa[tutup + 1:])
+    jika ekor != "" dan ekor[0] != "#" {
+        naikkan GalatKonfigurasi("ada teks setelah kutip penutup", sumber, nomor)
+    }
+    kembalikan teks_gabung(bagian, "")
+}
+
+# _nilai_polos(sisa) -> nilai tanpa kutip; komentar " #" di belakang dibuang.
+fungsi _nilai_polos(sisa) {
+    variabel i = 0
+    variabel n = panjang(sisa)
+    selagi i < n {
+        jika sisa[i] == "#" dan (i == 0 atau _spasi(sisa[i - 1])) {
+            kembalikan _pangkas(sisa[:i])
+        }
+        i = i + 1
+    }
+    kembalikan _pangkas(sisa)
+}
+
+# urai_env(teks, sumber = "<teks>", batas_ukuran = BATAS_UKURAN) -> kamus
+# kunci -> teks. Format: `KUNCI=nilai`, `export KUNCI=nilai`, `# komentar`,
+# nilai '...' (literal) atau "..." (\n \t \r \" \\). Kunci ganda: yang
+# terakhir menang. Tidak ada interpolasi ${VAR} dan nilai multi-baris.
+fungsi urai_env(teks, sumber = "<teks>", batas_ukuran = BATAS_UKURAN) {
+    variabel hasil = kamus()
+    variabel nomor = 0
+    untuk mentah dalam _baris(_siapkan(teks, sumber, batas_ukuran)) {
+        nomor = nomor + 1
+        variabel l = _pangkas(mentah)
+        jika l == "" atau l[0] == "#" {
+            lanjut
+        }
+        jika l[:7] == "export " atau l[:7] == "export\t" {
+            l = _pangkas(l[7:])
+        }
+        variabel sama = _cari(l, "=")
+        jika sama < 0 {
+            naikkan GalatKonfigurasi("baris tanpa '='", sumber, nomor)
+        }
+        variabel k = _pangkas(l[:sama])
+        jika tidak _kunci_env_sah(k) {
+            naikkan GalatKonfigurasi("nama kunci tidak sah", sumber, nomor)
+        }
+        variabel sisa = _pangkas(l[sama + 1:])
+        jika sisa != "" dan (sisa[0] == "\"" atau sisa[0] == "'") {
+            hasil[k] = _nilai_kutip(sisa, sumber, nomor)
+        } selain {
+            hasil[k] = _nilai_polos(sisa)
+        }
+    }
+    kembalikan hasil
+}
+
+# ---------------------------------------------------------------- INI
+
+# urai_ini(teks, sumber = "<teks>", batas_ukuran = BATAS_UKURAN) -> kamus
+# bagian -> kamus kunci -> teks. Kunci sebelum bagian pertama masuk bagian
+# "". Komentar diawali ';' atau '#'. Pemisah '=' atau ':' (yang pertama).
+# Bagian atau kunci ganda adalah galat; tidak ada baris lanjutan.
+fungsi urai_ini(teks, sumber = "<teks>", batas_ukuran = BATAS_UKURAN) {
+    variabel hasil = kamus()
+    variabel bagian = ""
+    variabel nomor = 0
+    untuk mentah dalam _baris(_siapkan(teks, sumber, batas_ukuran)) {
+        nomor = nomor + 1
+        variabel l = _pangkas(mentah)
+        jika l == "" atau l[0] == ";" atau l[0] == "#" {
+            lanjut
+        }
+        jika l[0] == "[" {
+            jika l[-1] != "]" {
+                naikkan GalatKonfigurasi("header bagian tanpa ']'", sumber, nomor)
+            }
+            bagian = _pangkas(l[1:-1])
+            jika bagian == "" {
+                naikkan GalatKonfigurasi("nama bagian kosong", sumber, nomor)
+            }
+            jika punya(hasil, bagian) {
+                naikkan GalatKonfigurasi("bagian [" + bagian + "] ganda", sumber, nomor)
+            }
+            hasil[bagian] = kamus()
+            lanjut
+        }
+        variabel pos = -1
+        variabel i = 0
+        selagi i < panjang(l) {
+            jika l[i] == "=" atau l[i] == ":" {
+                pos = i
+                hentikan
+            }
+            i = i + 1
+        }
+        jika pos < 0 {
+            naikkan GalatKonfigurasi("baris tanpa '=' atau ':'", sumber, nomor)
+        }
+        variabel k = _pangkas(l[:pos])
+        jika k == "" {
+            naikkan GalatKonfigurasi("nama kunci kosong", sumber, nomor)
+        }
+        jika tidak punya(hasil, bagian) {
+            hasil[bagian] = kamus()
+        }
+        jika punya(hasil[bagian], k) {
+            naikkan GalatKonfigurasi("kunci '" + k + "' ganda di bagian [" + bagian + "]", sumber, nomor)
+        }
+        hasil[bagian][k] = _pangkas(l[pos + 1:])
+    }
+    kembalikan hasil
+}
+
+# ---------------------------------------------------------------- berkas
+
+# _baca(j, batas) -> isi berkas; ukuran diperiksa SEBELUM dibaca.
+fungsi _baca(j, batas) {
+    jika tidak jalur.adalah_berkas(j) {
+        naikkan GalatKonfigurasi("berkas tidak ditemukan", j)
+    }
+    jika jalur.ukuran(j) > batas {
+        naikkan GalatKonfigurasi("melebihi batas ukuran " + ke_teks(batas) + " bita", j)
+    }
+    kembalikan baca_semua(j)
+}
+
+# baca_env(j, batas_ukuran = BATAS_UKURAN) -> kamus dari berkas .env.
+fungsi baca_env(j, batas_ukuran = BATAS_UKURAN) {
+    kembalikan urai_env(_baca(j, batas_ukuran), j, batas_ukuran)
+}
+
+# baca_ini(j, batas_ukuran = BATAS_UKURAN) -> kamus bagian dari berkas INI.
+fungsi baca_ini(j, batas_ukuran = BATAS_UKURAN) {
+    kembalikan urai_ini(_baca(j, batas_ukuran), j, batas_ukuran)
+}
+
+# _format_dari(j) -> "env" / "ini" berdasarkan nama berkas.
+fungsi _format_dari(j) {
+    variabel nama = jalur.nama_dasar(j)
+    variabel eks = jalur.ekstensi(j)
+    jika nama == ".env" atau eks == ".env" atau nama[:5] == ".env." {
+        kembalikan "env"
+    }
+    jika eks == ".ini" atau eks == ".cfg" atau eks == ".conf" {
+        kembalikan "ini"
+    }
+    jika eks == ".toml" atau eks == ".yaml" atau eks == ".yml" {
+        naikkan GalatKonfigurasi("format " + eks + " belum didukung (baru .env dan INI)", j)
+    }
+    naikkan GalatKonfigurasi("format berkas tidak dikenali; pakai .env, .ini, .cfg atau .conf", j)
+}
+
+# _ratakan(ini) -> kamus datar: bagian "" -> "kunci", lainnya "bagian.kunci".
+fungsi _ratakan(ini) {
+    variabel datar = kamus()
+    untuk b dalam kunci(ini) {
+        untuk k dalam kunci(ini[b]) {
+            datar[k jika b == "" selain b + "." + k] = ini[b][k]
+        }
+    }
+    kembalikan datar
+}
+
+# ---------------------------------------------------------------- skema
+
+_TIPE = ["teks", "bulat", "desimal", "logika", "daftar"]
+_ATRIBUT_SPEK = ["tipe", "wajib", "bawaan", "rahasia", "pilihan"]
+_BENAR = ["benar", "ya", "true", "yes", "on", "1"]
+_SALAH = ["salah", "tidak", "false", "no", "off", "0"]
+_KATA_RAHASIA = ["SANDI", "PASSWORD", "PASSWD", "SECRET", "RAHASIA", "TOKEN", "KEY", "KUNCI"]
+
+# _spek(k, s) -> kamus spesifikasi yang lengkap untuk kunci k.
+fungsi _spek(k, s) {
+    jika jenis(s) == "teks" {
+        s = {"tipe": s}
+    }
+    jika jenis(s) != "kamus" {
+        naikkan GalatKonfigurasi("skema '" + k + "': harus nama tipe atau kamus")
+    }
+    untuk a dalam kunci(s) {
+        jika a tidak dalam _ATRIBUT_SPEK {
+            naikkan GalatKonfigurasi("skema '" + k + "': atribut '" + ke_teks(a) + "' tidak dikenal")
+        }
+    }
+    variabel tipe = ambil(s, "tipe", "teks")
+    jika tipe tidak dalam _TIPE {
+        naikkan GalatKonfigurasi("skema '" + k + "': tipe '" + ke_teks(tipe) + "' tidak dikenal")
+    }
+    variabel spek = {"tipe": tipe, "wajib": ambil(s, "wajib", salah), "rahasia": ambil(s, "rahasia", salah)}
+    jika punya(s, "bawaan") {
+        spek["bawaan"] = s["bawaan"]
+    }
+    jika punya(s, "pilihan") {
+        spek["pilihan"] = s["pilihan"]
+    }
+    kembalikan spek
+}
+
+# _nama_rahasia(k) -> benar bila nama kunci tampak seperti rahasia.
+fungsi _nama_rahasia(k) {
+    variabel besar = huruf_besar(ke_teks(k))
+    untuk kata dalam _KATA_RAHASIA {
+        jika kata dalam besar {
+            kembalikan benar
+        }
+    }
+    kembalikan salah
+}
+
+fungsi _bulat_sah(t) {
+    variabel i = 1 jika panjang(t) > 0 dan (t[0] == "+" atau t[0] == "-") selain 0
+    jika i >= panjang(t) {
+        kembalikan salah
+    }
+    selagi i < panjang(t) {
+        jika tidak _digit(t[i]) {
+            kembalikan salah
+        }
+        i = i + 1
+    }
+    kembalikan benar
+}
+
+# _ubah(v, tipe) -> [benar, nilai] atau [salah, kosong].
+fungsi _ubah(v, tipe) {
+    variabel j = jenis(v)
+    jika tipe == "teks" {
+        kembalikan [benar, v jika j == "teks" selain ke_teks(v)]
+    }
+    jika tipe == "logika" {
+        jika j == "logika" {
+            kembalikan [benar, v]
+        }
+        jika j == "teks" {
+            variabel kecil = huruf_kecil(_pangkas(v))
+            jika kecil dalam _BENAR {
+                kembalikan [benar, benar]
+            }
+            jika kecil dalam _SALAH {
+                kembalikan [benar, salah]
+            }
+        }
+        kembalikan [salah, kosong]
+    }
+    jika tipe == "daftar" {
+        jika j == "daftar" {
+            kembalikan [benar, v]
+        }
+        jika j != "teks" {
+            kembalikan [salah, kosong]
+        }
+        variabel isi = []
+        jika _pangkas(v) == "" {
+            kembalikan [benar, isi]
+        }
+        variabel kini = []
+        untuk c dalam v + "," {
+            jika c == "," {
+                tambah(isi, _pangkas(teks_gabung(kini, "")))
+                kini = []
+            } selain {
+                tambah(kini, c)
+            }
+        }
+        kembalikan [benar, isi]
+    }
+    jika j == "angka" {
+        jika tipe == "desimal" {
+            kembalikan [benar, ke_desimal(v)]
+        }
+        kembalikan [benar, v] jika ke_bulat(v) adalah v selain [salah, kosong]
+    }
+    jika j != "teks" {
+        kembalikan [salah, kosong]
+    }
+    variabel t = _pangkas(v)
+    jika tipe == "bulat" {
+        jika tidak _bulat_sah(t) {
+            kembalikan [salah, kosong]
+        }
+        coba {
+            kembalikan [benar, ke_bulat(t)]
+        } kecuali e {
+            kembalikan [salah, kosong]
+        }
+    }
+    # desimal: tolak teks kosong, nan dan takhingga.
+    coba {
+        variabel d = ke_desimal(t)
+        jika t == "" atau d - d != 0 {
+            kembalikan [salah, kosong]
+        }
+        kembalikan [benar, d]
+    } kecuali e {
+        kembalikan [salah, kosong]
+    }
+}
+
+# ---------------------------------------------------------------- muat
+
+# Hasil muat(). Nilai dibaca dengan konf["KUNCI"], konf.ambil("KUNCI",
+# bawaan) atau konf.KUNCI tidak didukung (kunci boleh memuat titik).
+# Mencetak objek ini menyamarkan kunci rahasia.
+kelas Konfigurasi {
+    init(nilai, asal, rahasia) {
+        diri._nilai = nilai
+        diri._asal = asal
+        diri._rahasia = rahasia
+    }
+
+    _ambil_(k) {
+        jika tidak punya(diri._nilai, k) {
+            naikkan GalatKunci("kunci konfigurasi '" + ke_teks(k) + "' tidak ada")
+        }
+        kembalikan diri._nilai[k]
+    }
+
+    ambil(k, bawaan = kosong) {
+        kembalikan ambil(diri._nilai, k, bawaan)
+    }
+
+    punya(k) {
+        kembalikan punya(diri._nilai, k)
+    }
+
+    kunci() {
+        kembalikan kunci(diri._nilai)
+    }
+
+    # sumber(k) -> dari mana nilai k berasal: "bawaan", "berkas <jalur>"
+    # atau "lingkungan <NAMA>"; kosong bila k tidak ada.
+    sumber(k) {
+        kembalikan ambil(diri._asal, k, kosong)
+    }
+
+    adalah_rahasia(k) {
+        kembalikan k dalam diri._rahasia
+    }
+
+    # ke_kamus() -> salinan berisi nilai ASLI, termasuk rahasia.
+    ke_kamus() {
+        variabel hasil = kamus()
+        untuk k dalam kunci(diri._nilai) {
+            hasil[k] = diri._nilai[k]
+        }
+        kembalikan hasil
+    }
+
+    # samarkan() -> salinan dengan nilai rahasia diganti "***"; aman dicatat.
+    samarkan() {
+        variabel hasil = kamus()
+        untuk k dalam kunci(diri._nilai) {
+            hasil[k] = "***" jika k dalam diri._rahasia selain diri._nilai[k]
+        }
+        kembalikan hasil
+    }
+
+    _panjang_() {
+        kembalikan panjang(diri._nilai)
+    }
+
+    _iter_() {
+        kembalikan kunci(diri._nilai)
+    }
+
+    _teks_() {
+        kembalikan "Konfigurasi(" + repr(diri.samarkan()) + ")"
+    }
+
+    _repr_() {
+        kembalikan diri._teks_()
+    }
+}
+
+# _nama_lingkungan(awalan, k) -> awalan + KUNCI (huruf besar, '.'/'-' -> '_').
+fungsi _nama_lingkungan(awalan, k) {
+    kembalikan awalan + ganti(ganti(huruf_besar(k), ".", "_"), "-", "_")
+}
+
+fungsi _daftar_berkas(berkas) {
+    jika berkas == kosong {
+        kembalikan []
+    }
+    jika jenis(berkas) == "teks" {
+        kembalikan [berkas]
+    }
+    kembalikan daftar(berkas)
+}
+
+# _validasi(nilai, asal, spek_semua, rahasia, awalan) -> daftar pesan galat;
+# nilai yang lolos ditulis kembali ke `nilai` dalam tipe tujuannya.
+fungsi _validasi(nilai, asal, spek_semua, rahasia, awalan) {
+    variabel galat = []
+    untuk k dalam kunci(spek_semua) {
+        variabel spek = spek_semua[k]
+        jika tidak punya(nilai, k) {
+            jika spek["wajib"] {
+                variabel saran = ""
+                jika awalan != kosong {
+                    saran = " (atur " + _nama_lingkungan(awalan, k) + ")"
+                }
+                tambah(galat, "kunci wajib '" + k + "' tidak ada" + saran)
+            }
+            lanjut
+        }
+        variabel hasil = _ubah(nilai[k], spek["tipe"])
+        jika tidak hasil[0] {
+            variabel pesan = "'" + k + "' dari " + asal[k] + " bukan " + spek["tipe"]
+            jika k tidak dalam rahasia {
+                pesan = pesan + ": " + repr(nilai[k])
+            }
+            tambah(galat, pesan)
+            lanjut
+        }
+        jika punya(spek, "pilihan") dan hasil[1] tidak dalam spek["pilihan"] {
+            variabel pesan2 = "'" + k + "' dari " + asal[k] + " harus salah satu dari " + repr(spek["pilihan"])
+            jika k tidak dalam rahasia {
+                pesan2 = pesan2 + ", bukan " + repr(hasil[1])
+            }
+            tambah(galat, pesan2)
+            lanjut
+        }
+        nilai[k] = hasil[1]
+    }
+    kembalikan galat
+}
+
+# muat(bawaan = kosong, berkas = kosong, awalan_lingkungan = kosong,
+#      skema = kosong, isi_lingkungan = kosong, berkas_opsional = salah,
+#      batas_ukuran = BATAS_UKURAN) -> Konfigurasi
+#
+# Prioritas (yang kanan menimpa yang kiri):
+#   bawaan di skema < `bawaan` < berkas (urut daftar) < lingkungan
+# - berkas: satu jalur atau daftar jalur (.env, .ini/.cfg/.conf; INI
+#   diratakan menjadi "bagian.kunci"). Berkas yang tidak ada adalah galat,
+#   kecuali `berkas_opsional = benar`.
+# - awalan_lingkungan: bila diberikan (boleh ""), setiap kunci yang dikenal
+#   dicari di lingkungan sebagai awalan + KUNCI (huruf besar, '.'/'-' -> '_').
+# - isi_lingkungan: kamus pengganti lingkungan OS (untuk pengujian).
+# - skema: kamus kunci -> nama tipe atau {tipe, wajib, bawaan, rahasia,
+#   pilihan}. Semua pelanggaran dilaporkan sekaligus dalam satu
+#   GalatKonfigurasi.
+fungsi muat(bawaan = kosong, berkas = kosong, awalan_lingkungan = kosong, skema = kosong, isi_lingkungan = kosong, berkas_opsional = salah, batas_ukuran = BATAS_UKURAN) {
+    variabel nilai = kamus()
+    variabel asal = kamus()
+    variabel spek_semua = kamus()
+    variabel rahasia = himpunan()
+    jika skema != kosong {
+        untuk k dalam kunci(skema) {
+            variabel spek = _spek(k, skema[k])
+            spek_semua[k] = spek
+            jika spek["rahasia"] {
+                rahasia.tambah(k)
+            }
+            jika punya(spek, "bawaan") {
+                nilai[k] = spek["bawaan"]
+                asal[k] = "bawaan"
+            }
+        }
+    }
+    jika bawaan != kosong {
+        untuk k dalam kunci(bawaan) {
+            nilai[k] = bawaan[k]
+            asal[k] = "bawaan"
+        }
+    }
+    untuk j dalam _daftar_berkas(berkas) {
+        jika berkas_opsional dan tidak jalur.ada(j) {
+            lanjut
+        }
+        variabel data = kosong
+        jika _format_dari(j) == "env" {
+            data = baca_env(j, batas_ukuran)
+        } selain {
+            data = _ratakan(baca_ini(j, batas_ukuran))
+        }
+        untuk k dalam kunci(data) {
+            nilai[k] = data[k]
+            asal[k] = "berkas " + j
+        }
+    }
+    jika awalan_lingkungan != kosong {
+        variabel dikenal = kunci(nilai)
+        untuk k dalam kunci(spek_semua) {
+            jika k tidak dalam dikenal {
+                tambah(dikenal, k)
+            }
+        }
+        untuk k dalam dikenal {
+            variabel nama = _nama_lingkungan(awalan_lingkungan, k)
+            variabel v = kosong
+            jika isi_lingkungan != kosong {
+                v = ambil(isi_lingkungan, nama, kosong)
+            } selain {
+                v = ambil_lingkungan(nama)
+            }
+            jika v != kosong {
+                nilai[k] = v
+                asal[k] = "lingkungan " + nama
+            }
+        }
+    }
+    untuk k dalam kunci(nilai) {
+        jika _nama_rahasia(k) {
+            rahasia.tambah(k)
+        }
+    }
+    variabel galat = _validasi(nilai, asal, spek_semua, rahasia, awalan_lingkungan)
+    jika panjang(galat) > 0 {
+        naikkan GalatKonfigurasi("konfigurasi tidak sah:\n  - " + teks_gabung(galat, "\n  - "))
+    }
+    kembalikan Konfigurasi(nilai, asal, rahasia)
+}

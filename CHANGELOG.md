@@ -9,6 +9,16 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **Modul `konfigurasi` dan `unicode` (Fase 24, V1).** `konfigurasi`
+  mengurai `.env` dan INI (BOM/CRLF ditangani, galat bernomor baris, batas
+  1 MiB diperiksa sebelum berkas dibaca) dan `muat()` menggabungkan
+  bawaan < berkas < lingkungan berawalan (hanya kunci yang dikenal) dengan
+  validasi skema; nilai rahasia disamarkan dan tidak pernah masuk pesan
+  galat. `unicode` memberi `huruf_besar`/`huruf_kecil`/`lipat_huruf` yang
+  identik dengan Python untuk Latin/Yunani/Sirilik (U+0000–U+052F) serta
+  `pangkas`/`pisah_spasi`/`adalah_spasi` untuk spasi Unicode. Builtin
+  `huruf_besar`/`huruf_kecil`/`panjang` tidak berubah. TOML, YAML dan
+  normalisasi NFC/NFD belum.
 - **Manajer paket `indk paket` (Fase 14, V1)** — dependensi proyek tanpa menyalin
   folder dengan tangan. `indk paket mulai` membuat `indonesiaku.toml`;
   `tambah <nama> --git <url> [--tag|--rev]` atau `--path <dir>`, `hapus`,

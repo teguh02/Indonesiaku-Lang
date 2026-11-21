@@ -1,0 +1,6 @@
+skema 'port': tipe 'angka' tidak dikenal
+[baris 347, kolom 97] dalam _spek()
+    …e '" + ke_teks(tipe) + "' tidak dikenal")
+                                             ^
+[baris 610, kolom 46] dalam muat()
+[baris 3, kolom 53] dalam skrip

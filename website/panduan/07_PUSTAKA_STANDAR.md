@@ -2549,7 +2549,119 @@ yang ter-escape otomatis. Lihat juga
 [§8.8 Aplikasi dengan templat](08_DEPLOYMENT.md) untuk menjalankannya di
 container berikut tabel troubleshooting.
 
-### 2.23 `pustaka/kompres.idk` — gzip, zlib, deflate
+### 2.23 `pustaka/konfigurasi.idk` — konfigurasi aplikasi
+
+Membaca berkas `.env` dan INI, lalu menggabungkan beberapa sumber dengan
+prioritas yang jelas dan memvalidasinya dengan skema sederhana. BOM UTF-8 dan
+akhir baris CRLF (berkas dari Notepad) ditangani otomatis; galat format
+menyebut sumber dan nomor baris.
+
+```indonesiaku
+impor konfigurasi
+
+env = konfigurasi.urai_env("PORT=8080  # komentar\nNAMA=\"Toko ☕\"\n")
+cetak(env)        # {"PORT": "8080", "NAMA": "Toko ☕"}
+
+ini = konfigurasi.urai_ini("[db]\nhost = localhost\nport: 5432\n")
+cetak(ini)        # {"db": {"host": "localhost", "port": "5432"}}
+
+konf = konfigurasi.muat(
+    bawaan = {"mode": "dev"},
+    awalan_lingkungan = "APP_",
+    isi_lingkungan = {"APP_PORT": "9000", "APP_TOKEN": "abc"},
+    skema = {
+        "port": {"tipe": "bulat", "bawaan": 8000},
+        "mode": {"pilihan": ["dev", "produksi"]},
+        "token": {"tipe": "teks", "wajib": benar}
+    }
+)
+cetak(konf["port"], konf.sumber("port"))   # 9000 lingkungan APP_PORT
+cetak(konf)       # Konfigurasi({"port": 9000, "mode": "dev", "token": "***"})
+```
+
+| Nama | Deskripsi |
+|------|-----------|
+| `urai_env(teks, sumber="<teks>", batas_ukuran=BATAS_UKURAN)` | Kamus `KUNCI → teks`. Baris `KUNCI=nilai`, awalan `export ` boleh, `#` komentar (juga ` #` di belakang nilai tanpa kutip), `'...'` literal, `"..."` mengenal `\n \t \r \" \\`. Kunci ganda: yang terakhir menang |
+| `urai_ini(teks, sumber="<teks>", batas_ukuran=BATAS_UKURAN)` | Kamus `bagian → kamus`. `kunci = nilai` atau `kunci: nilai`; komentar `;`/`#` di awal baris; kunci sebelum bagian pertama masuk bagian `""`. Bagian/kunci ganda adalah galat |
+| `baca_env(jalur)`, `baca_ini(jalur)` | Sama, dari berkas; ukuran diperiksa **sebelum** berkas dibaca |
+| `muat(bawaan, berkas, awalan_lingkungan, skema, isi_lingkungan, berkas_opsional=salah, batas_ukuran)` | Objek `Konfigurasi` (lihat di bawah) |
+| `BATAS_UKURAN` | 1048576 bita (1 MiB) per sumber |
+| `GalatKonfigurasi` | Galat format/validasi; `.pesan` (`"sumber:baris: alasan"`), `.sumber`, `.baris` |
+
+**Prioritas `muat`** (yang kanan menimpa yang kiri): `bawaan` di skema <
+argumen `bawaan` < `berkas` (urut daftar) < lingkungan.
+
+- `berkas`: satu jalur atau daftar. `.env` (atau nama `.env`/`.env.*`) diurai
+  sebagai `.env`; `.ini`/`.cfg`/`.conf` sebagai INI dan diratakan menjadi
+  kunci `bagian.kunci`. Berkas yang tidak ada adalah galat, kecuali
+  `berkas_opsional = benar`. `.toml`/`.yaml` belum didukung dan ditolak
+  dengan pesan jelas.
+- Lingkungan hanya dibaca bila `awalan_lingkungan` diberikan (boleh `""`), dan
+  **hanya untuk kunci yang dikenal** (skema, bawaan, berkas) dengan nama
+  `awalan + KUNCI` — huruf besar, `.` dan `-` menjadi `_` (`db.port` →
+  `APP_DB_PORT`). Variabel lingkungan lain tidak pernah disalin.
+  `isi_lingkungan` (kamus) menggantikan lingkungan OS, berguna untuk tes.
+  Dalam mode `--sandbox` membaca lingkungan ditolak.
+- `skema`: kunci → nama tipe (`"teks"`, `"bulat"`, `"desimal"`, `"logika"`,
+  `"daftar"`) atau kamus `{tipe, wajib, bawaan, rahasia, pilihan}`. Teks
+  dari berkas/lingkungan diubah ke tipenya: `logika` menerima
+  `benar/salah/ya/tidak/true/false/yes/no/on/off/1/0`, `daftar` dipisah
+  koma, `desimal` menolak `nan`/takhingga. Atribut atau tipe yang salah ketik
+  adalah galat. Semua pelanggaran dilaporkan sekaligus dalam satu
+  `GalatKonfigurasi`. Kunci di luar skema tetap ada sebagai teks.
+
+**Objek `Konfigurasi`:** `konf["k"]` (`GalatKunci` bila tidak ada),
+`konf.ambil(k, bawaan)`, `konf.punya(k)`, `konf.kunci()`, `konf.sumber(k)`
+(`"bawaan"`, `"berkas <jalur>"` atau `"lingkungan <NAMA>"`),
+`konf.adalah_rahasia(k)`, `konf.samarkan()`, `konf.ke_kamus()`, `panjang()`
+dan `untuk k dalam konf`.
+
+**Rahasia:** kunci bertanda `"rahasia": benar`, atau yang namanya memuat
+`SANDI`, `PASSWORD`, `PASSWD`, `SECRET`, `RAHASIA`, `TOKEN`, `KEY` atau
+`KUNCI` (tak peka huruf), tampil `***` saat objek dicetak, di `repr()` dan
+`samarkan()`, dan nilainya tidak pernah dimasukkan ke pesan galat.
+`ke_kamus()` dan `konf["k"]` tetap mengembalikan nilai asli.
+
+Sengaja **tidak** didukung: interpolasi `${VAR}`, nilai `.env` multi-baris,
+baris lanjutan INI, dan pengecilan kunci INI otomatis (beda dengan
+`configparser` Python, kunci INI peka huruf besar).
+
+### 2.24 `pustaka/unicode.idk` — huruf dan spasi Unicode
+
+Builtin `huruf_besar()`/`huruf_kecil()` hanya mengubah huruf ASCII, dan itu
+**tidak diubah** agar keluaran program lama tetap sama. Modul `unicode`
+memberi versi yang hasilnya identik dengan `str.upper()`, `str.lower()` dan
+`str.casefold()` Python (data Unicode 16.0) untuk code point U+0000–U+052F:
+Latin (termasuk Latin Extended dan IPA), Yunani/Koptik dan Sirilik.
+
+```indonesiaku
+impor unicode
+
+cetak(huruf_besar("straße"), unicode.huruf_besar("straße"))   # STRAßE STRASSE
+cetak(unicode.huruf_kecil("ΟΔΥΣΣΕΥΣ"))                        # οδυσσευς
+cetak(unicode.sama_tanpa_huruf("Straße", "STRASSE"))          # benar
+cetak("[" + unicode.pangkas(chr(12288) + "halo" + chr(160)) + "]")   # [halo]
+cetak(unicode.pisah_spasi("a" + chr(160) + "b  c"))           # ["a", "b", "c"]
+```
+
+| Nama | Deskripsi |
+|------|-----------|
+| `huruf_besar(t)` | Seperti `str.upper()`; bisa mengubah panjang (`"ß"` → `"SS"`) |
+| `huruf_kecil(t)` | Seperti `str.lower()`, termasuk sigma akhir Yunani (`Σ` di akhir kata → `ς`) dan `"İ"` → `"i̇"` (2 karakter) |
+| `lipat_huruf(t)` | Seperti `str.casefold()`, untuk membandingkan tanpa memedulikan huruf |
+| `sama_tanpa_huruf(a, b)` | `lipat_huruf(a) == lipat_huruf(b)` |
+| `adalah_spasi(c)` | Benar bila karakter `c` adalah spasi Unicode (29 code point `str.isspace()`, termasuk NBSP U+00A0 dan U+3000; *zero width space* U+200B bukan spasi) |
+| `pangkas(t)` | Seperti `str.strip()` tanpa argumen |
+| `pisah_spasi(t)` | Seperti `str.split()` tanpa argumen |
+
+Batasan: karakter di luar U+0000–U+052F (misalnya Yunani politonik, Armenia,
+huruf lebar penuh) dikembalikan apa adanya walau Python mengubahnya; aksara
+tanpa huruf besar/kecil (CJK, emoji) memang tidak berubah. Aturan khusus
+locale (huruf i Turki) tidak diterapkan, sama seperti Python. `panjang()`
+tetap menghitung code point: `panjang("e" + chr(769))` adalah 2. Normalisasi
+NFC/NFD dan kategori Unicode **belum tersedia**.
+
+### 2.25 `pustaka/kompres.idk` — gzip, zlib, deflate
 
 Padanan modul `gzip`/`zlib` Python, di atas **miniz** yang di-vendor (bukan
 deflate buatan sendiri). Masukan boleh teks (dikompresi sebagai bita
@@ -2594,7 +2706,7 @@ berupa daftar bita dibatasi 256 MiB apa pun `batas`-nya (satu nilai per bita
 memakan memori); data sebesar itu proses lewat `gzip_berkas`/
 `buka_gzip_berkas`.
 
-### 2.24 `pustaka/arsip.idk` — TAR, TAR.GZ dan ZIP
+### 2.26 `pustaka/arsip.idk` — TAR, TAR.GZ dan ZIP
 
 Padanan `tarfile`/`zipfile` Python, dengan **ekstraksi yang aman secara
 bawaan**. Format dikenali dari isinya, bukan dari ekstensi.

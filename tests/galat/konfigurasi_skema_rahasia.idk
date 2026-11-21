@@ -1,0 +1,16 @@
+# Validasi skema: semua pelanggaran dilaporkan sekaligus, dan nilai kunci
+# rahasia (bertanda rahasia, atau bernama mengandung SANDI/TOKEN/KEY/...)
+# TIDAK PERNAH muncul di pesan galat.
+impor konfigurasi
+konfigurasi.muat(
+    skema = {
+        "port": "bulat",
+        "sandi_db": {"tipe": "bulat"},
+        "pin": {"tipe": "bulat", "rahasia": benar},
+        "mode": {"pilihan": ["dev", "produksi"]},
+        "url_db": {"wajib": benar}
+    },
+    awalan_lingkungan = "APP_",
+    isi_lingkungan = {"APP_PORT": "80a", "APP_SANDI_DB": "hunter2", "APP_PIN": "12-34", "APP_MODE": "uji"}
+)
+cetak("tidak tercapai")

@@ -1,0 +1,5 @@
+# .env dengan kutip yang tidak ditutup: GalatKonfigurasi tak tertangkap
+# menunjuk sumber dan nomor baris (baris kosong dan komentar ikut dihitung).
+impor konfigurasi
+konfigurasi.urai_env("# komentar\r\nA=1\r\n\r\nSANDI=\"rahasia\r\n", "aplikasi.env")
+cetak("tidak tercapai")
