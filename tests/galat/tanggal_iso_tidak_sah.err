@@ -1,0 +1,6 @@
+tanggal 29 tidak ada pada bulan 2 tahun 2023
+[baris 196, kolom 94] dalam init()
+    …ak ada pada bulan {bulan} tahun {tahun}")
+                                             ^
+[baris 577, kolom 62] dalam dari_iso()
+[baris 3, kolom 57] dalam skrip

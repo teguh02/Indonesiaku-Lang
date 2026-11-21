@@ -1,0 +1,9 @@
+baris 1, kolom 769: kedalaman elemen melebihi batas 256
+[baris 459, kolom 45] dalam galat()
+    …    naikkan GalatXML(pesan, baris, kolom)
+                                             ^
+[baris 728, kolom 86] dalam tag_buka()
+[baris 850, kolom 52] dalam elemen_akar()
+[baris 869, kolom 42] dalam dokumen()
+[baris 891, kolom 26] dalam urai()
+[baris 3, kolom 36] dalam skrip

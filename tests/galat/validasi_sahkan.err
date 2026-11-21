@@ -1,0 +1,5 @@
+data tidak sah: surel: bukan alamat email yang sah; umur: minimal 17
+[baris 629, kolom 87] dalam sahkan()
+    … " + teks_gabung(ringkas, "; "), h.galat)
+                                             ^
+[baris 4, kolom 68] dalam skrip

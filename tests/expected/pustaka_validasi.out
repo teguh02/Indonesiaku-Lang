@@ -1,0 +1,75 @@
+== email
+"budi@contoh.id" benar
+"siti.aminah+toko@mail.co.id" benar
+"andré@exämple.de" benar
+"pengguna@例え.jp" benar
+"x@localhost" salah
+".a@b.co" salah
+"a..b@c.id" salah
+"a@b@c.id" salah
+"a b@c.id" salah
+"a@-b.id" salah
+"a@b.123" salah
+"" salah
+salah
+== url
+"https://contoh.id/a?b=1#c" benar
+"http://127.0.0.1:8080/" benar
+"https://[::1]:443/" benar
+"HTTPS://Contoh.ID" benar
+"https://токен.рф/путь" benar
+"javascript:alert(1)" salah
+"data:text/html,x" salah
+"https://user:sandi@jahat.com" salah
+"https://contoh.id:0" salah
+"https://contoh.id:99999" salah
+"https:/contoh.id" salah
+"https://contoh .id" salah
+"https://contoh.id\\jalur" salah
+"ftp://berkas.id" salah
+ftp diizinkan: benar
+== angka
+benar benar salah benar salah salah
+benar benar salah salah salah salah
+== skema
+salah
+  kode_pos -> ["format tidak sesuai"]
+  kota -> ["harus salah satu dari: Bandung, Medan, Makassar"]
+  nama -> ["minimal 2 karakter"]
+  situs -> ["bukan URL yang sah (skema yang diizinkan: https)"]
+  surel -> ["bukan alamat email yang sah"]
+  tinggi -> ["harus bilangan"]
+  umur -> ["minimal 17"]
+pertama umur: minimal 17 | pertama nama: minimal 2 karakter
+benar {"nama": "Ñoño Ünal", "umur": 30, "surel": "nono@contoh.id", "situs": "https://contoh.id", "kota": kosong, "setuju": benar, "kode_pos": "40115", "tinggi": 170.5}
+admin tidak ikut: salah
+{"umur": ["maksimal 120"]}
+== sahkan
+{"nama": "Ayu", "surel": "ayu@contoh.id"}
+data tidak sah: nama: wajib diisi; surel: wajib diisi
+{"nama": ["wajib diisi"], "surel": ["wajib diisi"]}
+skema 'x': tipe 'tanggal' tidak dikenal
+skema 'x': atribut 'panjang' tidak dikenal
+== regresi
+{"n": ["harus bilangan bulat"]}
+{"n": ["harus bilangan bulat"]}
+benar salah
+salah
+"http://exa mple.com/" salah
+"http://exa mple.com/" salah
+"http://exa​mple.com/" salah
+"http://a／evil.com/" salah
+"http://0x7f.0x0.0x0.0x1/" salah
+"http://0x7f000001/" salah
+"http://01.01.01.01/" salah
+"http://[:::]/" salah
+"http://[1:2]/" salah
+"http://[::1.2.3.4.5.6]/" salah
+"http://[2001:db8::8a2e:370:7334]/" benar
+"http://[::ffff:192.0.2.1]/" benar
+"http://[1:2:3:4:5:6:7:8]/" benar
+"http://[1:2:3:4:5:6:7:8:9]/" salah
+"http://localhost/" benar
+"a​@b.com" salah
+"a@b .com" salah
+"a@b.com" salah

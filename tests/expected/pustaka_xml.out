@@ -1,0 +1,103 @@
+== urai
+katalog katalog "" urn:buku {"": "urn:buku", "dc": "http://purl.org/dc/elements/1.1/"} <Elemen katalog>
+b1 id "Laskar & Pelangi" 85000 IDR -
+b2 ja "日本語の本 AB — ünïcödé" 1200 JPY -
+"<b>tebal</b> & mentah"
+b1 kosong urn:buku
+2 5
+<katalog xmlns="urn:buku" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <buku id="b1" dc:bahasa="id">
+    <judul>Laskar &amp; Pelangi</judul>
+    <catatan>&lt;b&gt;tebal&lt;/b&gt; &amp; mentah</catatan>
+    <harga mata_uang="IDR">85000</harga>
+  </buku>
+  <buku id="b2" dc:bahasa="ja">
+    <judul>日本語の本 AB — ünïcödé</judul>
+    <harga mata_uang="JPY">1200</harga>
+    <stok/>
+  </buku>
+</katalog>
+urn:a x a {"a:id": "1", "xml:lang": "id"} urn:b urn:b
+"a\nb\nc x <>&'\""
+{"b": "satu \"dua\"", "c": "t ab baris"}
+bom
+== bentuk
+<?xml version="1.0" encoding="UTF-8"?>
+<pesan id="7" teks="a&quot;b&lt;c&gt;&amp;">1 &lt; 2 &amp; "ok" ]]&gt;<anak/>ekor42</pesan>
+<r xmlns="urn:r" xmlns:p="urn:p">
+  <p:a p:x="1">isi</p:a>
+  <b>
+    <c/>
+  </b>
+</r>
+1 b
+<t v="tab&#9;baris&#10;cr&#13;">baris&#13;
+baru</t>
+"tab\tbaris\ncr\r" "baris\r\nbaru"
+&lt;&amp;&gt; &quot;'&lt; benar salah salah benar
+nama elemen tidak sah: "1salah"
+nama atribut tidak sah: "b c"
+karakter U+0001 tidak boleh ada di XML
+bentuk() memerlukan Elemen, bukan teks
+== serangan
+baris 2, kolom 1: DTD (<!DOCTYPE>) tidak diizinkan: ditolak untuk mencegah XXE dan entity expansion
+baris 1, kolom 1: DTD (<!DOCTYPE>) tidak diizinkan: ditolak untuk mencegah XXE dan entity expansion
+baris 1, kolom 1: DTD (<!DOCTYPE>) tidak diizinkan: ditolak untuk mencegah XXE dan entity expansion
+baris 1, kolom 4: entitas '&xxe;' tidak dikenal (DTD dan entitas kustom tidak didukung)
+baris 1, kolom 1: DTD (<!DOCTYPE>) tidak diizinkan: ditolak untuk mencegah XXE dan entity expansion
+baris 1, kolom 4: deklarasi markup tidak diizinkan di dalam elemen
+baris 1, kolom 4: deklarasi markup tidak diizinkan di dalam elemen
+baris 1, kolom 769: kedalaman elemen melebihi batas 256
+3000 tingkat: x
+baris 1, kolom 80: jumlah elemen melebihi batas 20
+dokumen 2007 bita melebihi batas 1000 bita
+baris 1, kolom 2198: jumlah atribut melebihi batas 256
+baris 1, kolom 4: rujukan karakter tidak sah: &#1114112;
+baris 1, kolom 4: rujukan karakter tidak sah: &#99999999999999999999;
+== tidak well-formed
+baris 1, kolom 1: dokumen tidak memiliki elemen akar
+baris 1, kolom 4: dokumen tidak memiliki elemen akar
+baris 1, kolom 7: tag penutup </a> tidak cocok dengan <b>
+baris 1, kolom 4: dokumen berakhir sebelum </a>
+baris 1, kolom 8: hanya boleh ada satu elemen akar
+baris 1, kolom 1: teks tidak boleh berada di luar elemen akar
+baris 1, kolom 5: teks tidak boleh berada di luar elemen akar
+baris 1, kolom 10: atribut 'b' ganda
+baris 1, kolom 1: awalan namespace 'p' belum dideklarasikan
+baris 1, kolom 7: '<' tidak boleh ada di nilai atribut
+baris 1, kolom 6: ']]>' tidak boleh muncul di teks
+baris 1, kolom 6: nilai atribut harus diapit tanda kutip
+baris 1, kolom 9: harapkan spasi sebelum atribut
+baris 1, kolom 11: '--' tidak boleh ada di dalam komentar
+baris 1, kolom 4: rujukan karakter tidak sah: &#0;
+baris 1, kolom 4: rujukan karakter tidak sah: &#xD800;
+baris 1, kolom 6: '&' harus ditulis sebagai '&amp;'
+baris 1, kolom 4: karakter U+0001 tidak boleh ada di XML
+baris 1, kolom 4: awalan namespace tidak boleh dibatalkan dengan URI kosong
+baris 1, kolom 36: atribut 'q:x' ganda setelah namespace diuraikan
+baris 1, kolom 1: awalan 'xmlns' tidak boleh dipakai untuk elemen
+baris 1, kolom 2: harapkan nama
+baris 1, kolom 4: tag penutup </b> tidak cocok dengan <a>
+baris 1, kolom 13: bagian CDATA tidak ditutup
+baris 1, kolom 1: hanya encoding UTF-8 yang didukung, bukan "ISO-8859-1"
+baris 1, kolom 1: versi XML tidak didukung: "2.0"
+baris 1, kolom 5: deklarasi XML hanya boleh di awal dokumen
+baris 3, kolom 1: tag penutup </c> tidak cocok dengan <b>
+urai() memerlukan teks, bukan angka kosong
+3 1
+== regresi
+40000 1
+["xy", <Elemen b>, "zw"]
+baris 1, kolom 4: karakter U+FFFE tidak boleh ada di XML
+baris 1, kolom 7: karakter U+FFFF tidak boleh ada di XML
+baris 1, kolom 9: karakter U+0001 tidak boleh ada di XML
+baris 1, kolom 8: karakter U+0001 tidak boleh ada di XML
+baris 1, kolom 1: deklarasi namespace terlarang: awalan 'xml' dengan URI "urn:x"
+baris 1, kolom 1: deklarasi namespace terlarang: awalan '' dengan URI "http://www.w3.org/XML/1998/namespace"
+baris 1, kolom 1: deklarasi namespace terlarang: awalan 'p' dengan URI "http://www.w3.org/2000/xmlns/"
+baris 1, kolom 1: deklarasi namespace terlarang: awalan 'xmlns' dengan URI "urn:x"
+DITERIMA: <a xmlns:xml="http://www.w3.org/XML/1998/namespace"/>
+baris 1, kolom 8: harapkan spasi setelah target instruksi pemrosesan
+DITERIMA: <a>AA</a>
+nama atribut tidak sah: "y onload=\"evil()\" z"
+nama elemen tidak sah: "a><x"
