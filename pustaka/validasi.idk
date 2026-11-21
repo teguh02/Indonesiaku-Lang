@@ -1,0 +1,632 @@
+# pustaka/validasi.idk - Validasi input (modul `validasi`, Fase 19).
+# Pemakaian:
+#     impor validasi
+#     dari validasi impor periksa, sahkan, adalah_email, adalah_url
+#
+# Isi:
+#   - adalah_email(t), adalah_url(t, skema), adalah_bulat(t), adalah_desimal(t)
+#       pemeriksaan satu nilai -> benar/salah, tidak pernah melempar galat
+#       untuk input yang buruk.
+#   - periksa(data, skema) -> Hasil {sah, galat, nilai}
+#       memeriksa kamus (mis. req["form"]) terhadap skema sederhana dan
+#       MENGUMPULKAN galat per field, bukan berhenti di galat pertama.
+#   - sahkan(data, skema) -> nilai, atau melempar GalatValidasi.
+#
+# Skema memakai atribut yang sama dengan skema `konfigurasi.muat()`
+# (tipe, wajib, bawaan, pilihan) ditambah batas khusus input:
+#     {"nama":  {"tipe": "teks", "wajib": benar, "panjang_min": 2, "panjang_maks": 50},
+#      "umur":  {"tipe": "bulat", "min": 17, "maks": 120},
+#      "surel": {"tipe": "email", "wajib": benar},
+#      "situs": {"tipe": "url", "skema_url": ["https"]}}
+#
+# BATAS TANGGUNG JAWAB: validasi memastikan BENTUK data. Ia BUKAN pengganti
+# escaping keluaran (pakai templat/`templat.aman`), parameter SQL (`?`/`$1`),
+# token CSRF, maupun autentikasi. Teks yang lolos validasi masih harus
+# di-escape saat ditulis ke HTML.
+
+impor pola
+
+kelas GalatValidasi < Galat {
+    # galat: kamus field -> daftar pesan (kosong untuk galat skema).
+    init(pesan, galat = kosong) {
+        diri.pesan = pesan
+        diri.galat = galat jika galat != kosong selain {}
+    }
+}
+
+# Hasil periksa(): `sah` (logika), `galat` (kamus field -> daftar pesan),
+# `nilai` (kamus berisi HANYA field skema, sudah dikonversi ke tipenya).
+kelas Hasil {
+    init(galat, nilai) {
+        diri.galat = galat
+        diri.nilai = nilai
+        diri.sah = panjang(galat) == 0
+    }
+
+    # pesan_pertama(field) -> pesan galat pertama field itu, atau kosong.
+    pesan_pertama(field) {
+        jika punya(diri.galat, field) {
+            kembalikan diri.galat[field][0]
+        }
+        kembalikan kosong
+    }
+}
+
+_TIPE = ["teks", "bulat", "desimal", "logika", "daftar", "email", "url"]
+_ATRIBUT = ["tipe", "wajib", "bawaan", "pilihan", "min", "maks", "panjang_min",
+            "panjang_maks", "pola", "skema_url", "pangkas"]
+_BENAR = ["benar", "ya", "true", "yes", "on", "1"]
+_SALAH = ["salah", "tidak", "false", "no", "off", "0"]
+_SKEMA_URL_BAWAAN = ["http", "https"]
+_BATAS_EMAIL = 254
+_BATAS_URL = 2048
+
+# ---------------------------------------------------------------- utilitas
+
+fungsi _spasi(c) {
+    kembalikan c == " " atau c == "\t" atau c == "\n" atau c == "\r"
+}
+
+fungsi _pangkas(t) {
+    variabel a = 0
+    variabel b = panjang(t)
+    selagi a < b dan _spasi(t[a]) {
+        a += 1
+    }
+    selagi b > a dan _spasi(t[b - 1]) {
+        b -= 1
+    }
+    kembalikan t[a:b]
+}
+
+fungsi _digit(c) {
+    kembalikan c >= "0" dan c <= "9"
+}
+
+fungsi _huruf_ascii(c) {
+    kembalikan (c >= "a" dan c <= "z") atau (c >= "A" dan c <= "Z")
+}
+
+# _unicode_terlarang(o) -> benar untuk code point non-ASCII yang tidak boleh
+# ada di alamat: kendali C1, spasi Unicode, karakter format tak terlihat
+# (zero width, arah teks, BOM) dan tanda baca lebar penuh/garis miring
+# tiruan yang bisa menyamarkan host ("a／evil.com").
+fungsi _unicode_terlarang(o) {
+    kembalikan (o >= 128 dan o <= 160) atau o == 173 atau o == 1564 atau o == 5760 atau (o >= 8192 dan o <= 8207) atau (o >= 8232 dan o <= 8239) atau o == 8260 atau (o >= 8287 dan o <= 8303) atau o == 8725 atau o == 10744 atau o == 12288 atau o == 65279 atau (o >= 65281 dan o <= 65295) atau (o >= 65306 dan o <= 65312) atau (o >= 65339 dan o <= 65344) atau (o >= 65371 dan o <= 65381) atau o == 65534 atau o == 65535
+}
+
+# _kendali(c) -> benar untuk karakter kendali/spasi (ASCII maupun Unicode).
+fungsi _kendali(c) {
+    variabel o = ord(c)
+    kembalikan o <= 32 atau o == 127 atau (o > 127 dan _unicode_terlarang(o))
+}
+
+# _non_ascii_sah(c) -> benar untuk huruf non-ASCII yang boleh di nama.
+fungsi _non_ascii_sah(c) {
+    variabel o = ord(c)
+    kembalikan o > 127 dan tidak _unicode_terlarang(o)
+}
+
+# ---------------------------------------------------------------- angka
+
+# adalah_bulat(t) -> benar bila t bilangan bulat ("-12", "+3", atau bulat).
+fungsi adalah_bulat(t) {
+    jika jenis(t) == "angka" {
+        # nan/takhingga tidak bisa diubah ke bulat; tolak dulu.
+        kembalikan t - t == 0 dan ke_bulat(t) adalah t
+    }
+    jika jenis(t) != "teks" {
+        kembalikan salah
+    }
+    t = _pangkas(t)
+    # Lebih dari 19 digit pasti di luar int64 (ke_bulat akan melempar).
+    jika panjang(t) > 20 {
+        kembalikan salah
+    }
+    variabel i = 1 jika panjang(t) > 0 dan (t[0] == "+" atau t[0] == "-") selain 0
+    jika i >= panjang(t) {
+        kembalikan salah
+    }
+    selagi i < panjang(t) {
+        jika tidak _digit(t[i]) {
+            kembalikan salah
+        }
+        i += 1
+    }
+    coba {
+        ke_bulat(t)
+        kembalikan benar
+    } kecuali e {
+        kembalikan salah
+    }
+}
+
+# adalah_desimal(t) -> benar bila t bilangan berhingga ("3.5", "-2", "1e3").
+# nan dan takhingga ditolak.
+fungsi adalah_desimal(t) {
+    jika jenis(t) == "angka" {
+        kembalikan t - t == 0
+    }
+    jika jenis(t) != "teks" {
+        kembalikan salah
+    }
+    t = _pangkas(t)
+    jika t == "" {
+        kembalikan salah
+    }
+    untuk c dalam t {
+        jika tidak (_digit(c) atau c dalam "+-.eE") {
+            kembalikan salah
+        }
+    }
+    coba {
+        variabel d = ke_desimal(t)
+        kembalikan d - d == 0
+    } kecuali e {
+        kembalikan salah
+    }
+}
+
+# ---------------------------------------------------------------- email
+
+_EMAIL_LOKAL = "!#$%&'*+/=?^_`{|}~.-"
+
+# _label_domain(l) -> benar bila l label DNS yang sah: huruf/angka/"-",
+# tidak diawali/diakhiri "-", 1-63 karakter. Huruf non-ASCII diterima
+# (nama domain internasional ditulis dalam Unicode).
+fungsi _label_domain(l) {
+    jika panjang(l) == 0 atau panjang(l) > 63 {
+        kembalikan salah
+    }
+    jika l[0] == "-" atau l[panjang(l) - 1] == "-" {
+        kembalikan salah
+    }
+    untuk c dalam l {
+        jika tidak (_huruf_ascii(c) atau _digit(c) atau c == "-" atau _non_ascii_sah(c)) {
+            kembalikan salah
+        }
+    }
+    kembalikan benar
+}
+
+fungsi _pisah_titik(t) {
+    variabel bagian = []
+    variabel awal = 0
+    variabel i = 0
+    selagi i < panjang(t) {
+        jika t[i] == "." {
+            tambah(bagian, t[awal:i])
+            awal = i + 1
+        }
+        i += 1
+    }
+    tambah(bagian, t[awal:panjang(t)])
+    kembalikan bagian
+}
+
+# _domain_sah(d, wajib_titik) -> benar bila d nama domain yang sah.
+fungsi _domain_sah(d, wajib_titik) {
+    jika panjang(d) == 0 atau panjang(d) > 253 {
+        kembalikan salah
+    }
+    variabel label = _pisah_titik(d)
+    jika wajib_titik dan panjang(label) < 2 {
+        kembalikan salah
+    }
+    untuk l dalam label {
+        jika tidak _label_domain(l) {
+            kembalikan salah
+        }
+    }
+    # Label terakhir tidak boleh diawali angka: TLD sungguhan berupa huruf
+    # (atau "xn--"), dan aturan ini menolak bentuk IP samaran seperti
+    # "0x7f000001" atau "0x7f.0.0.1" yang ditafsirkan sebagai 127.0.0.1.
+    kembalikan tidak _digit(label[panjang(label) - 1][0])
+}
+
+# adalah_email(t) -> benar bila t berbentuk alamat surel "lokal@domain".
+# Aturan praktis (bukan seluruh RFC 5322): bagian lokal 1-64 karakter dari
+# huruf/angka/!#$%&'*+/=?^_`{|}~.- atau huruf non-ASCII, tanpa titik di awal,
+# akhir, atau berurutan; domain minimal dua label. Tanda kutip, komentar dan
+# literal IP sengaja ditolak. Ini memeriksa BENTUK, bukan bahwa kotak suratnya ada.
+fungsi adalah_email(t) {
+    jika jenis(t) != "teks" atau panjang(t) > _BATAS_EMAIL {
+        kembalikan salah
+    }
+    variabel at = -1
+    variabel i = 0
+    selagi i < panjang(t) {
+        jika t[i] == "@" {
+            jika at >= 0 {
+                kembalikan salah
+            }
+            at = i
+        }
+        i += 1
+    }
+    jika at < 1 atau at > 64 {
+        kembalikan salah
+    }
+    variabel lokal = t[0:at]
+    jika lokal[0] == "." atau lokal[panjang(lokal) - 1] == "." atau ".." dalam lokal {
+        kembalikan salah
+    }
+    untuk c dalam lokal {
+        jika tidak (_huruf_ascii(c) atau _digit(c) atau c dalam _EMAIL_LOKAL atau _non_ascii_sah(c)) {
+            kembalikan salah
+        }
+    }
+    kembalikan _domain_sah(t[at + 1:panjang(t)], benar)
+}
+
+# ---------------------------------------------------------------- URL
+
+fungsi _ipv4_sah(h) {
+    variabel bagian = _pisah_titik(h)
+    jika panjang(bagian) != 4 {
+        kembalikan salah
+    }
+    untuk b dalam bagian {
+        jika panjang(b) == 0 atau panjang(b) > 3 atau tidak adalah_bulat(b) atau b[0] == "+" atau b[0] == "-" {
+            kembalikan salah
+        }
+        # "010" ditafsirkan oktal oleh sebagian pengurai: tolak nol di depan.
+        jika panjang(b) > 1 dan b[0] == "0" {
+            kembalikan salah
+        }
+        jika ke_bulat(b) > 255 {
+            kembalikan salah
+        }
+    }
+    kembalikan benar
+}
+
+fungsi _pisah_titik_dua(t) {
+    variabel bagian = []
+    variabel awal = 0
+    variabel i = 0
+    selagi i < panjang(t) {
+        jika t[i] == ":" {
+            tambah(bagian, t[awal:i])
+            awal = i + 1
+        }
+        i += 1
+    }
+    tambah(bagian, t[awal:panjang(t)])
+    kembalikan bagian
+}
+
+# _grup_ipv6(g) -> jumlah grup 16-bit yang diwakili g (1, atau 2 untuk
+# IPv4 tertanam di akhir), atau -1 bila tidak sah.
+fungsi _grup_ipv6(bagian) {
+    variabel n = 0
+    variabel i = 0
+    selagi i < panjang(bagian) {
+        variabel g = bagian[i]
+        jika i == panjang(bagian) - 1 dan "." dalam g {
+            jika tidak _ipv4_sah(g) {
+                kembalikan -1
+            }
+            n += 2
+        } jika_lain panjang(g) < 1 atau panjang(g) > 4 {
+            kembalikan -1
+        } selain {
+            untuk c dalam g {
+                jika tidak (_digit(c) atau c dalam "abcdefABCDEF") {
+                    kembalikan -1
+                }
+            }
+            n += 1
+        }
+        i += 1
+    }
+    kembalikan n
+}
+
+# _ipv6_sah(t) -> benar untuk alamat IPv6 RFC 4291 (tanpa zone id).
+fungsi _ipv6_sah(t) {
+    variabel ganda = 0
+    variabel i = 0
+    selagi i + 1 < panjang(t) {
+        jika t[i] == ":" dan t[i + 1] == ":" {
+            ganda += 1
+        }
+        i += 1
+    }
+    jika ganda == 0 {
+        kembalikan _grup_ipv6(_pisah_titik_dua(t)) == 8
+    }
+    jika ganda > 1 atau ":::" dalam t {
+        kembalikan salah
+    }
+    variabel pos = 0
+    selagi t[pos:pos + 2] != "::" {
+        pos += 1
+    }
+    variabel kiri = t[0:pos]
+    variabel kanan = t[pos + 2:panjang(t)]
+    variabel n = 0
+    jika kiri != "" {
+        jika "." dalam kiri {
+            kembalikan salah
+        }
+        variabel a = _grup_ipv6(_pisah_titik_dua(kiri))
+        jika a < 0 {
+            kembalikan salah
+        }
+        n += a
+    }
+    jika kanan != "" {
+        variabel b = _grup_ipv6(_pisah_titik_dua(kanan))
+        jika b < 0 {
+            kembalikan salah
+        }
+        n += b
+    }
+    kembalikan n <= 7
+}
+
+fungsi _host_sah(h) {
+    jika panjang(h) > 2 dan h[0] == "[" dan h[panjang(h) - 1] == "]" {
+        kembalikan _ipv6_sah(h[1:panjang(h) - 1])
+    }
+    jika _ipv4_sah(h) {
+        kembalikan benar
+    }
+    kembalikan _domain_sah(h, salah)
+}
+
+# _skema_dari(t) -> nama skema huruf kecil, atau kosong bila tidak ada.
+fungsi _skema_dari(t) {
+    jika panjang(t) == 0 atau tidak _huruf_ascii(t[0]) {
+        kembalikan kosong
+    }
+    variabel i = 1
+    selagi i < panjang(t) {
+        variabel c = t[i]
+        jika c == ":" {
+            kembalikan huruf_kecil(t[0:i])
+        }
+        jika tidak (_huruf_ascii(c) atau _digit(c) atau c == "+" atau c == "-" atau c == ".") {
+            kembalikan kosong
+        }
+        i += 1
+    }
+    kembalikan kosong
+}
+
+# adalah_url(t, skema = ["http", "https"]) -> benar bila t URL absolut
+# "skema://host[:port][/jalur][?query][#fragmen]" dengan skema dari daftar
+# yang diizinkan. Daftar izin inilah yang menolak "javascript:" dan "data:".
+# Spasi, karakter kendali dan backslash selalu ditolak; userinfo
+# ("user:sandi@host") ditolak agar URL tidak menyamarkan host tujuan.
+fungsi adalah_url(t, skema = _SKEMA_URL_BAWAAN) {
+    jika jenis(t) != "teks" atau panjang(t) == 0 atau panjang(t) > _BATAS_URL {
+        kembalikan salah
+    }
+    untuk c dalam t {
+        jika _kendali(c) atau c == "\\" {
+            kembalikan salah
+        }
+    }
+    variabel s = _skema_dari(t)
+    jika s == kosong {
+        kembalikan salah
+    }
+    variabel izin = []
+    untuk x dalam skema {
+        tambah(izin, huruf_kecil(x))
+    }
+    jika s tidak dalam izin {
+        kembalikan salah
+    }
+    variabel sisa = t[panjang(s) + 1:panjang(t)]
+    jika panjang(sisa) < 3 atau sisa[0:2] != "//" {
+        kembalikan salah
+    }
+    sisa = sisa[2:panjang(sisa)]
+    variabel akhir = 0
+    selagi akhir < panjang(sisa) dan sisa[akhir] tidak dalam "/?#" {
+        akhir += 1
+    }
+    variabel otoritas = sisa[0:akhir]
+    jika "@" dalam otoritas {
+        kembalikan salah
+    }
+    variabel host = otoritas
+    # Port: ":" terakhir di luar literal IPv6 "[...]".
+    variabel titik_dua = -1
+    variabel i = panjang(otoritas) - 1
+    selagi i >= 0 dan otoritas[i] != "]" {
+        jika otoritas[i] == ":" {
+            titik_dua = i
+            hentikan
+        }
+        i -= 1
+    }
+    jika titik_dua >= 0 {
+        variabel port = otoritas[titik_dua + 1:panjang(otoritas)]
+        host = otoritas[0:titik_dua]
+        jika panjang(port) > 5 atau tidak adalah_bulat(port) atau port[0] == "+" atau port[0] == "-" {
+            kembalikan salah
+        }
+        jika ke_bulat(port) < 1 atau ke_bulat(port) > 65535 {
+            kembalikan salah
+        }
+    }
+    kembalikan _host_sah(host)
+}
+
+# ---------------------------------------------------------------- skema
+
+fungsi _galat_skema(k, pesan) {
+    naikkan GalatValidasi("skema '" + ke_teks(k) + "': " + pesan)
+}
+
+# _spek(k, s) -> kamus spesifikasi lengkap; galat skema dilempar SEKARANG
+# karena itu kesalahan program, bukan kesalahan input pengguna.
+fungsi _spek(k, s) {
+    jika jenis(s) == "teks" {
+        s = {"tipe": s}
+    }
+    jika jenis(s) != "kamus" {
+        _galat_skema(k, "harus nama tipe atau kamus")
+    }
+    untuk a dalam kunci(s) {
+        jika a tidak dalam _ATRIBUT {
+            _galat_skema(k, "atribut '" + ke_teks(a) + "' tidak dikenal")
+        }
+    }
+    variabel tipe = ambil(s, "tipe", "teks")
+    jika tipe tidak dalam _TIPE {
+        _galat_skema(k, "tipe '" + ke_teks(tipe) + "' tidak dikenal")
+    }
+    variabel spek = {}
+    untuk a dalam kunci(s) {
+        spek[a] = s[a]
+    }
+    spek["tipe"] = tipe
+    jika punya(spek, "pola") {
+        coba {
+            spek["_pola"] = pola.kompilasi(spek["pola"])
+        } kecuali e {
+            _galat_skema(k, "pola tidak sah")
+        }
+    }
+    kembalikan spek
+}
+
+fungsi _kosong(v) {
+    kembalikan v == kosong atau (jenis(v) == "teks" dan _pangkas(v) == "")
+}
+
+# _ubah(v, tipe) -> [benar, nilai] atau [salah, pesan].
+fungsi _ubah(v, spek) {
+    variabel tipe = spek["tipe"]
+    variabel j = jenis(v)
+    jika tipe == "teks" atau tipe == "email" atau tipe == "url" {
+        jika j != "teks" {
+            kembalikan [salah, "harus teks"]
+        }
+        jika ambil(spek, "pangkas", benar) {
+            v = _pangkas(v)
+        }
+        jika tipe == "email" dan tidak adalah_email(v) {
+            kembalikan [salah, "bukan alamat email yang sah"]
+        }
+        jika tipe == "url" dan tidak adalah_url(v, ambil(spek, "skema_url", _SKEMA_URL_BAWAAN)) {
+            kembalikan [salah, "bukan URL yang sah (skema yang diizinkan: " + teks_gabung(ambil(spek, "skema_url", _SKEMA_URL_BAWAAN), ", ") + ")"]
+        }
+        kembalikan [benar, v]
+    }
+    jika tipe == "bulat" {
+        jika tidak adalah_bulat(v) {
+            kembalikan [salah, "harus bilangan bulat"]
+        }
+        kembalikan [benar, v jika j == "angka" selain ke_bulat(_pangkas(v))]
+    }
+    jika tipe == "desimal" {
+        jika tidak adalah_desimal(v) {
+            kembalikan [salah, "harus bilangan"]
+        }
+        kembalikan [benar, ke_desimal(v jika j == "angka" selain _pangkas(v))]
+    }
+    jika tipe == "logika" {
+        jika j == "logika" {
+            kembalikan [benar, v]
+        }
+        jika j == "teks" dan huruf_kecil(_pangkas(v)) dalam _BENAR {
+            kembalikan [benar, benar]
+        }
+        jika j == "teks" dan huruf_kecil(_pangkas(v)) dalam _SALAH {
+            kembalikan [benar, salah]
+        }
+        kembalikan [salah, "harus ya/tidak"]
+    }
+    # daftar
+    jika j == "daftar" {
+        kembalikan [benar, v]
+    }
+    kembalikan [salah, "harus daftar"]
+}
+
+# _batas(v, spek) -> daftar pesan untuk batas yang dilanggar.
+fungsi _batas(v, spek) {
+    variabel galat = []
+    variabel berukuran = jenis(v) == "teks" atau jenis(v) == "daftar"
+    variabel ukur = panjang(v) jika berukuran selain 0
+    jika punya(spek, "panjang_min") dan berukuran dan ukur < spek["panjang_min"] {
+        tambah(galat, f"minimal {spek['panjang_min']} karakter" jika jenis(v) == "teks" selain f"minimal {spek['panjang_min']} item")
+    }
+    jika punya(spek, "panjang_maks") dan berukuran dan ukur > spek["panjang_maks"] {
+        tambah(galat, f"maksimal {spek['panjang_maks']} karakter" jika jenis(v) == "teks" selain f"maksimal {spek['panjang_maks']} item")
+    }
+    jika punya(spek, "min") dan jenis(v) == "angka" dan v < spek["min"] {
+        tambah(galat, f"minimal {spek['min']}")
+    }
+    jika punya(spek, "maks") dan jenis(v) == "angka" dan v > spek["maks"] {
+        tambah(galat, f"maksimal {spek['maks']}")
+    }
+    jika punya(spek, "pilihan") dan v tidak dalam spek["pilihan"] {
+        variabel nama = []
+        untuk p dalam spek["pilihan"] {
+            tambah(nama, ke_teks(p))
+        }
+        tambah(galat, "harus salah satu dari: " + teks_gabung(nama, ", "))
+    }
+    jika punya(spek, "_pola") dan jenis(v) == "teks" dan pola.cocok_penuh(spek["_pola"], v) == kosong {
+        tambah(galat, "format tidak sesuai")
+    }
+    kembalikan galat
+}
+
+# periksa(data, skema) -> Hasil. `data` biasanya req["form"] atau hasil
+# json_urai. Field yang tidak ada di skema diabaikan dan TIDAK disalin ke
+# `nilai` (mencegah mass assignment). Teks kosong/spasi dianggap tidak diisi.
+fungsi periksa(data, skema) {
+    jika jenis(skema) != "kamus" {
+        naikkan GalatValidasi("skema harus kamus")
+    }
+    jika jenis(data) != "kamus" {
+        naikkan GalatValidasi("data harus kamus")
+    }
+    variabel galat = {}
+    variabel nilai = {}
+    untuk k dalam kunci(skema) {
+        variabel spek = _spek(k, skema[k])
+        variabel v = ambil(data, k, kosong)
+        jika _kosong(v) {
+            jika ambil(spek, "wajib", salah) {
+                galat[k] = ["wajib diisi"]
+            }
+            nilai[k] = ambil(spek, "bawaan", kosong)
+            lanjut
+        }
+        variabel hasil = _ubah(v, spek)
+        jika tidak hasil[0] {
+            galat[k] = [hasil[1]]
+            lanjut
+        }
+        variabel pesan = _batas(hasil[1], spek)
+        jika panjang(pesan) > 0 {
+            galat[k] = pesan
+        } selain {
+            nilai[k] = hasil[1]
+        }
+    }
+    kembalikan Hasil(galat, nilai)
+}
+
+# sahkan(data, skema) -> kamus nilai; melempar GalatValidasi dengan
+# `.galat` per field bila ada yang tidak sah.
+fungsi sahkan(data, skema) {
+    variabel h = periksa(data, skema)
+    jika tidak h.sah {
+        variabel ringkas = []
+        untuk k dalam kunci(h.galat) {
+            tambah(ringkas, ke_teks(k) + ": " + teks_gabung(h.galat[k], ", "))
+        }
+        naikkan GalatValidasi("data tidak sah: " + teks_gabung(ringkas, "; "), h.galat)
+    }
+    kembalikan h.nilai
+}

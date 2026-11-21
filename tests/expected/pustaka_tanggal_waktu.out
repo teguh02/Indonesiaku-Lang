@@ -1,0 +1,60 @@
+== urai dan format
+2024-03-10T12:30:05.250000+07:00 TanggalWaktu("2024-03-10T12:30:05.250000+07:00")
+2024 3 10 12 30 5 250000 420
+1710048605 2024-03-10T05:30:05.250000Z 2024-03-10T14:30:05.250000+09:00 2024-03-10T13:30:05.250000+08:00
+2000-02-29T00:00:00 2024-01-01T08:00:00 2024-01-01T08:00:00Z
+2024-06-01T00:00:00-05:30 2024-06-01T00:00:00+05:30 2024-06-01T00:00:00+05:00
+2024-06-01T10:00:00.500000Z 2024-06-01T10:00:00.123456Z
+7 70 2024-03-10 12:30:05.250000 2024-03-10 12:30:05.250000+07:00
+Minggu, 10 Maret 2024 pukul 12:30:05.250000 +0700 (hari ke-070, Min Mar, ISO 7) 100%
+17/08/2024 10:00 -05:30
+== aritmetika
+2024-02-29T00:00:00 2023-02-28T00:00:00 2024-02-29T00:00:00
+2025-02-28T00:00:00 2028-02-29T00:00:00
+2025-01-01T00:00:00+07:00
+2024-02-29T00:00:00 2023-12-31T23:59:59.999999
+2025-01-01T02:01:00
+benar salah salah benar 88200
+5.25
+[TanggalWaktu("2024-05-01T05:00:00+07:00"), TanggalWaktu("2024-05-01T00:00:00Z"), TanggalWaktu("2024-04-30T23:00:00-02:00")]
+salah
+salah benar benar 28
+== unix
+1970-01-01T00:00:00Z 2023-11-15T05:13:20+07:00 1970-01-01T00:00:01.500000Z 1969-12-31T23:59:59Z
+9999-12-31T23:59:59Z -62135596800 0
+angka benar benar
+0 benar
+== galat
+tanggal 29 tidak ada pada bulan 2 tahun 2023
+tanggal 30 tidak ada pada bulan 2 tahun 2024
+bulan 13 di luar rentang 1-12
+bulan 0 di luar rentang 1-12
+jam 24 di luar rentang 0-23
+menit 60 di luar rentang 0-59
+detik kabisat (60) tidak didukung
+bukan tanggal ISO 8601 yang sah: "2024-01-01T10:00+24:00" (offset tidak sah)
+bukan tanggal ISO 8601 yang sah: "2024-01-01T10:00+07:60" (offset tidak sah)
+bukan tanggal ISO 8601 yang sah: "2024-1-01" (tanggal harus berbentuk YYYY-MM-DD)
+bukan tanggal ISO 8601 yang sah: "2024-01-01T10:00:00." (pecahan detik harus 1-9 digit)
+bukan tanggal ISO 8601 yang sah: "2024-01-01X10:00" (pemisah tanggal dan jam harus 'T' atau spasi)
+bukan tanggal ISO 8601 yang sah: "2024-01-01T10:00:00+07:0" (offset tidak sah)
+bukan tanggal ISO 8601 yang sah: "2024-01-01T10" (jam harus berbentuk HH:MM)
+bukan tanggal ISO 8601 yang sah: "abc" (tahun harus 4 digit)
+bukan tanggal ISO 8601 yang sah: "２０２４-01-01" (tahun harus 4 digit)
+bukan tanggal ISO 8601 yang sah: "2024-01-01T10:00:00.1234567891Z" (pecahan detik harus 1-9 digit)
+tahun 0 di luar rentang 1-9999
+<: tidak dapat mencampur waktu naif dan waktu ber-offset
+unix() memerlukan waktu ber-offset; pakai beri_offset() dulu
+hasil di luar rentang tahun 1-9999
+offset tidak sah: "WIB"
+hari harus bilangan bulat, bukan 1.5
+direktif format tidak dikenal: %Q
+== luapan
+hasil di luar rentang tahun 1-9999
+hasil di luar rentang tahun 1-9999
+hasil di luar rentang tahun 1-9999
+hasil di luar rentang tahun 1-9999
+hasil di luar rentang tahun 1-9999
+hasil di luar rentang tahun 1-9999
+tahun harus bilangan bulat, bukan takhingga
+9999-12-31T00:00:00

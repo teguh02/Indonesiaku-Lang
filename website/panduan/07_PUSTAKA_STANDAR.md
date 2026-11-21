@@ -608,6 +608,9 @@ Setelan registri `LongPathsEnabled` tidak diperlukan.
 | `jam()` | Waktu CPU yang dipakai proses (detik), bukan waktu dinding: tidak bertambah selama `henti()`. Untuk mengukur waktu dinding pakai `waktu()` |
 | `henti(detik)` | Jeda eksekusi |
 
+Untuk mengurai/menulis ISO 8601, offset UTC dan aritmetika tanggal, pakai
+modul `tanggal_waktu` (§2.31).
+
 ### 1.8 Lain-lain
 
 | Fungsi / Variabel | Deskripsi |
@@ -3117,6 +3120,210 @@ Semua asersi mengembalikan responsnya, jadi bisa dirantai pada satu baris.
 Toples kuki satu-domain: atribut `Path`/`Domain`/`Expires` diabaikan. Belum
 tersedia: helper autentikasi, unggah multipart, snapshot respons, dan
 mock/fake untuk database, SMTP, waktu, atau filesystem.
+
+### 2.30 `pustaka/validasi.idk` — validasi input formulir
+
+Memeriksa data dari formulir (`req["form"]`), query, atau JSON terhadap
+skema sederhana dan **mengumpulkan semua galat per field**, jadi formulir
+bisa menampilkan setiap kesalahan sekaligus. Tersedia sejak versi setelah
+1.7.0 (Fase 19 V1). Atribut `tipe`, `wajib`, `bawaan` dan `pilihan` sama
+dengan skema `konfigurasi.muat()`.
+
+```indonesiaku
+impor validasi
+
+skema = {
+    "nama":  {"tipe": "teks", "wajib": benar, "panjang_min": 2, "panjang_maks": 50},
+    "umur":  {"tipe": "bulat", "min": 17, "maks": 120},
+    "surel": {"tipe": "email", "wajib": benar},
+    "situs": {"tipe": "url", "skema_url": ["https"]},
+    "kota":  {"pilihan": ["Bandung", "Medan"]}
+}
+h = validasi.periksa({"nama": "A", "umur": "15", "surel": "siti@contoh.id",
+                      "situs": "javascript:alert(1)", "admin": "1"}, skema)
+cetak(h.sah)                     # salah
+cetak(h.galat["umur"])           # ["minimal 17"]
+cetak(h.pesan_pertama("situs"))  # bukan URL yang sah (skema yang diizinkan: https)
+
+h = validasi.periksa({"nama": " Siti ", "umur": "30", "surel": "siti@contoh.id"}, skema)
+cetak(h.nilai)   # nama dipangkas, umur jadi bulat; "admin" tidak pernah disalin
+cetak(validasi.adalah_email("andré@exämple.de"), validasi.adalah_url("http://127.0.0.1:8080/"))
+```
+
+| Nama | Deskripsi |
+|------|-----------|
+| `periksa(data, skema)` | → `Hasil` dengan `sah` (logika), `galat` (kamus field → daftar pesan), `nilai` (kamus HANYA field skema, sudah dikonversi); `pesan_pertama(field)` |
+| `sahkan(data, skema)` | Seperti `periksa`, tetapi mengembalikan `nilai` atau melempar `GalatValidasi` (`.galat` per field) |
+| `adalah_email(t)` | Bentuk `lokal@domain` praktis; huruf non-ASCII diterima, kutip/komentar/literal IP ditolak. Tidak memeriksa kotak surat |
+| `adalah_url(t, skema=["http", "https"])` | URL absolut dengan skema dari daftar izin; userinfo (`user:sandi@`), spasi, karakter kendali dan `\` ditolak |
+| `adalah_bulat(t)` / `adalah_desimal(t)` | Teks/angka berbentuk bilangan; `nan`/takhingga ditolak |
+| `GalatValidasi` | Galat skema (atribut/tipe tak dikenal — kesalahan program) atau dari `sahkan` |
+
+Atribut skema: `tipe` (`teks` bawaan, `bulat`, `desimal`, `logika`, `daftar`,
+`email`, `url`), `wajib`, `bawaan`, `pilihan`, `min`/`maks` (angka),
+`panjang_min`/`panjang_maks` (karakter atau item), `pola` (regex penuh,
+`pustaka/pola.idk`), `skema_url`, `pangkas` (bawaan `benar` untuk teks).
+Skema boleh hanya nama tipe: `{"tinggi": "desimal"}`. Teks kosong atau
+berisi spasi saja dianggap tidak diisi.
+
+```indonesiaku
+impor validasi
+dari validasi impor GalatValidasi
+
+coba {
+    validasi.sahkan({"surel": "salah"}, {"surel": "email", "nama": {"wajib": benar}})
+} kecuali GalatValidasi sebagai e {
+    cetak(e.galat)   # {"surel": ["bukan alamat email yang sah"], "nama": ["wajib diisi"]}
+}
+```
+
+> **Validasi bukan escaping.** Teks yang lolos `periksa()` masih bisa berisi
+> `<script>`: tetap tulis ke HTML lewat templat (auto-escape) atau
+> `templat.aman`, kirim ke SQL lewat parameter `?`/`$1`, dan lindungi
+> formulir dengan token CSRF (`web.wajib_csrf`).
+
+### 2.31 `pustaka/tanggal_waktu.idk` — tanggal & waktu ISO 8601
+
+Mengurai dan menulis ISO 8601/RFC 3339, mengubah offset UTC, aritmetika
+tanggal, dan format dengan nama hari/bulan bahasa Indonesia. Tersedia
+sejak versi setelah 1.7.0 (Fase 19 V1). Semua hitungan memakai bilangan
+bulat, kalender Gregorian, tahun 1–9999, presisi mikrodetik.
+
+```indonesiaku
+impor tanggal_waktu sebagai tw
+
+w = tw.dari_iso("2024-08-17T10:00:00+07:00")
+cetak(w.ke_utc())                 # 2024-08-17T03:00:00Z
+cetak(w.ke_offset(tw.WITA))       # 2024-08-17T11:00:00+08:00
+cetak(w.unix())                   # 1723863600
+cetak(w.format("%A, %d %B %Y"))   # Sabtu, 17 Agustus 2024
+cetak(tw.buat(2024, 1, 31).tambah_bulan(1))   # 2024-02-29T00:00:00
+cetak(w.tambah(hari=1, jam=-2).iso())         # 2024-08-18T08:00:00+07:00
+cetak(tw.dari_iso("2024-08-17T03:00:00Z") == w)                  # benar
+cetak(tw.dari_iso("2024-08-18T00:00:00+07:00").selisih(w))       # 50400
+cetak(tw.dari_unix(0), tw.sekarang().offset)                      # 1970-01-01T00:00:00Z 0
+```
+
+| Nama | Deskripsi |
+|------|-----------|
+| `dari_iso(t)` | `YYYY-MM-DD` atau `YYYY-MM-DD[T\|spasi]HH:MM[:SS[.f]]` + `Z`/`±HH:MM`/`±HHMM`/`±HH`; tanpa offset → naif |
+| `buat(tahun, bulan, hari, jam=0, menit=0, detik=0, mikrodetik=0, offset=kosong)` | Sama dengan `TanggalWaktu(...)`; `offset` dalam menit atau teks `"+07:00"` |
+| `dari_unix(detik, offset=0)` | Dari detik epoch (boleh desimal) |
+| `sekarang()` / `sekarang_lokal()` / `offset_lokal()` | Waktu saat ini (UTC / offset sistem saat ini) dan offset sistem dalam menit |
+| `adalah_kabisat(tahun)`, `hari_dalam_bulan(tahun, bulan)` | Kalender |
+| `urai_offset(o)`, `teks_offset(menit)` | `"+05:30"` ↔ `330` |
+| `UTC`, `WIB`, `WITA`, `WIT` | Offset 0, 420, 480, 540 menit |
+| `GalatTanggal` | Tanggal/offset tidak sah, atau mencampur naif dan ber-offset |
+
+Metode `TanggalWaktu` (objek tidak pernah berubah; semua mengembalikan
+objek baru): `iso(pemisah="T")` (UTC ditulis `Z`), `tanggal_iso()`,
+`waktu_iso()`, `format(pola)` (`%Y %m %d %H %M %S %f %z %j %u %A %a %B %b %%`),
+`tambah(hari, jam, menit, detik, mikrodetik)`, `tambah_bulan(n)` dan
+`tambah_tahun(n)` (tanggal dijepit ke akhir bulan), `selisih(lain)` (detik),
+`ke_offset(o)` / `ke_utc()` (titik waktu sama, offset lain), `beri_offset(o)`
+(jam dinding sama, offset baru), `unix()`, `hari_minggu()` (1 = Senin … 7 =
+Minggu), `hari_tahun()`, `punya_offset()`; bidang `tahun bulan hari jam menit
+detik mikrodetik offset`. Operator `== != < <= > >=` membandingkan titik
+waktu; `terurut()` bekerja.
+
+```indonesiaku
+impor tanggal_waktu
+dari tanggal_waktu impor GalatTanggal
+
+untuk s dalam ["2023-02-29", "2024-01-01T24:00", "2024-01-01T10:00+24:00"] {
+    coba {
+        tanggal_waktu.dari_iso(s)
+    } kecuali GalatTanggal sebagai e {
+        cetak(e.pesan)
+    }
+}
+```
+
+Batasan V1: **zona waktu bernama (IANA, mis. `Asia/Jakarta`) dan aturan DST
+belum didukung** — hanya offset tetap. Itu sudah tepat untuk WIB/WITA/WIT
+(Indonesia tidak memakai DST) dan untuk stempel waktu API dalam UTC, tetapi
+tidak untuk menghitung jam lokal kota ber-DST di tanggal lain;
+`offset_lokal()` hanya benar untuk saat ini. Detik kabisat (`:60`), jam
+`24:00`, bentuk dasar (`20240817T1000`), minggu (`2024-W33`) dan ordinal
+(`2024-230`) ditolak. Builtin lama `waktu()`, `tanggal()` dan
+`format_tanggal()` (§1.7) tidak berubah.
+
+### 2.32 `pustaka/xml.idk` — XML aman
+
+Mengurai dan membuat XML: elemen, atribut, teks, CDATA, rujukan karakter
+dan namespace. Tersedia sejak versi setelah 1.7.0 (Fase 19 V1).
+
+```indonesiaku
+impor xml
+
+akar = xml.urai("""<?xml version="1.0" encoding="UTF-8"?>
+<katalog xmlns="urn:buku">
+  <buku id="b1"><judul>Laskar &amp; Pelangi</judul></buku>
+  <buku id="b2"><judul><![CDATA[日本語 <tebal>]]></judul></buku>
+</katalog>""")
+untuk b dalam akar.cari_semua("buku") {
+    cetak(b.ambil("id"), b.cari("judul").teks())
+}
+# b1 Laskar & Pelangi
+# b2 日本語 <tebal>
+cetak(akar.ns, akar.cari("buku", "urn:buku").ambil("id"))   # urn:buku b1
+
+pesan = xml.buat("pesan", {"untuk": "Budi & Ani"}, "1 < 2")
+pesan.tambah(xml.buat("tanda", kosong, "✓"))
+cetak(xml.bentuk(pesan))
+# <pesan untuk="Budi &amp; Ani">1 &lt; 2<tanda>✓</tanda></pesan>
+cetak(xml.bentuk(xml.buat("r").tambah(xml.buat("a")).tambah(xml.buat("b")), benar, "  "))
+```
+
+| Nama | Deskripsi |
+|------|-----------|
+| `urai(teks, batas_ukuran, batas_kedalaman, batas_elemen, batas_atribut)` | → `Elemen` akar; komentar dan instruksi pemrosesan dibuang |
+| `buat(nama, atribut=kosong, teks=kosong)` | Elemen baru; atribut `xmlns`/`xmlns:p` menjadi deklarasi namespace |
+| `bentuk(elemen, deklarasi=salah, indentasi=kosong)` | → teks XML ter-escape; `indentasi` (mis. `"  "`) merapikan elemen yang anaknya hanya elemen |
+| `lolos(t)` / `lolos_atribut(t)` | Escaping manual untuk isi elemen / nilai atribut |
+| `nama_sah(t)` | Benar bila `t` nama XML (QName) |
+| `BATAS_UKURAN`, `BATAS_KEDALAMAN`, `BATAS_ELEMEN`, `BATAS_ATRIBUT` | Bawaan 1 MiB, 256, 100.000, 256 per elemen |
+| `GalatXML` | Dokumen tidak well-formed, ditolak, atau melewati batas; `.baris` dan `.kolom` |
+
+`Elemen` punya bidang `nama` (QName seperti ditulis), `atribut` (kamus,
+tanpa xmlns), `anak` (daftar `Elemen` dan teks), `ns` (URI namespace atau
+`kosong`), `ns_dekl`, dan metode `lokal()`, `awalan()`, `ambil(nama,
+bawaan)`, `atur(nama, nilai)`, `tambah(anak)`, `elemen()`, `cari(nama,
+ns=kosong)`, `cari_semua(nama, ns=kosong)`, `teks()`. Tanpa `ns`, `cari`
+mencocokkan QName persis; dengan `ns`, nama lokal dalam namespace itu.
+
+**Keamanan — selalu aktif, tidak bisa dimatikan pada V1:**
+
+```indonesiaku
+impor xml
+dari xml impor GalatXML
+
+serangan = "<!DOCTYPE r [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><r>&xxe;</r>"
+coba {
+    xml.urai(serangan)
+} kecuali GalatXML sebagai e {
+    cetak(e.pesan)   # baris 1, kolom 1: DTD (<!DOCTYPE>) tidak diizinkan: ...
+}
+coba {
+    xml.urai("<a>" * 1000 + "</a>" * 1000)
+} kecuali GalatXML sebagai e {
+    cetak(e.pesan)   # ... kedalaman elemen melebihi batas 256
+}
+```
+
+- `<!DOCTYPE>` **selalu ditolak**, jadi tidak ada entitas eksternal (XXE:
+  membaca berkas atau URL) dan tidak ada entitas bersarang ("billion laughs").
+- Hanya `&lt; &gt; &amp; &apos; &quot;` dan rujukan karakter (`&#65;`,
+  `&#x41;`) yang dikenali; entitas lain ditolak.
+- Ukuran (dihitung dalam bita UTF-8, sebelum diurai), kedalaman, jumlah
+  elemen dan atribut dibatasi; parser iteratif sehingga dokumen dalam tidak
+  menghabiskan tumpukan panggilan.
+- Hanya UTF-8: deklarasi `encoding` lain ditolak, bukan ditebak.
+
+Batasan V1: belum ada streaming/SAX (seluruh dokumen dimuat ke memori; urai
+±0,5 MB/detik), XPath, validasi skema (XSD/DTD), komentar sebagai simpul,
+maupun akses atribut per namespace (atribut dibaca dengan QName-nya,
+mis. `b.ambil("dc:bahasa")`).
 
 ## 3. Aplikasi Contoh: Todo-list JSON DB
 

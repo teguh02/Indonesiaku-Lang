@@ -1,0 +1,5 @@
+# Dokumen dengan entitas eksternal (XXE) yang tidak ditangkap menghentikan
+# program; isi berkas lokal tidak pernah dibaca.
+impor xml
+d = xml.urai("<!DOCTYPE r [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><r>&xxe;</r>")
+cetak("TIDAK BOLEH TERCETAK", d.teks())

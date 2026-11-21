@@ -3098,6 +3098,24 @@ Value nativeFnDaftar(int argCount, Value* args) {
     // GC: iterAt allocates a fresh string per character, so the new daftar and
     // each element must stay rooted while the array grows.
     push(OBJ_VAL(list));
+    if (IS_STRING(src)) {
+        // Linear walk over the bytes: iterAt() would call utf8ByteOffset()
+        // per character, which is O(n) for non-ASCII text and made daftar()
+        // of a 120K-character string take seconds. `src` stays rooted in
+        // args[0]; re-read its chars after each allocation anyway.
+        ObjString* teks = AS_STRING(src);
+        int offset = 0;
+        while (offset < teks->length) {
+            int bytes = utf8CharBytes(teks, offset);
+            Value element = OBJ_VAL(copyString(teks->chars + offset, bytes));
+            push(element);
+            writeValueArray(&list->items, element);
+            pop();
+            offset += bytes;
+        }
+        pop();
+        return OBJ_VAL(list);
+    }
     for (int i = 0; i < count; i++) {
         Value element = IS_DICT(src) ? dictKeyAt(AS_DICT(src), i) : iterAt(src, i);
         push(element);

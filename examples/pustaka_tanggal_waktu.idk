@@ -1,0 +1,96 @@
+# pustaka/tanggal_waktu.idk: ISO 8601, offset tetap, aritmetika tanggal.
+impor tanggal_waktu sebagai tw
+dari tanggal_waktu impor dari_iso, buat, GalatTanggal
+
+fungsi uji_urai() {
+    cetak("== urai dan format")
+    variabel w = dari_iso("2024-03-10T12:30:05.25+07:00")
+    cetak(w, repr(w))
+    cetak(w.tahun, w.bulan, w.hari, w.jam, w.menit, w.detik, w.mikrodetik, w.offset)
+    cetak(w.unix(), w.ke_utc(), w.ke_offset("+09:00"), w.ke_offset(tw.WITA))
+    cetak(dari_iso("2000-02-29"), dari_iso("2024-01-01 08:00"), dari_iso("2024-01-01t08:00:00z"))
+    cetak(dari_iso("2024-06-01T00:00:00-05:30"), dari_iso("2024-06-01T00:00:00+0530"), dari_iso("2024-06-01T00:00:00+05"))
+    cetak(dari_iso("2024-06-01T10:00:00,5Z"), dari_iso("2024-06-01T10:00:00.123456789Z"))
+    cetak(w.hari_minggu(), w.hari_tahun(), w.tanggal_iso(), w.waktu_iso(), w.iso(" "))
+    cetak(w.format("%A, %d %B %Y pukul %H:%M:%S.%f %z (hari ke-%j, %a %b, ISO %u) 100%%"))
+    cetak(buat(2024, 8, 17, 10, offset=tw.WIB).format("%d/%m/%Y %H:%M"), tw.teks_offset(-330))
+}
+
+fungsi uji_aritmetika() {
+    cetak("== aritmetika")
+    cetak(buat(2024, 1, 31).tambah_bulan(1), buat(2023, 1, 31).tambah_bulan(1), buat(2024, 3, 31).tambah_bulan(-1))
+    cetak(buat(2024, 2, 29).tambah_tahun(1), buat(2024, 2, 29).tambah_tahun(4))
+    cetak(buat(2024, 12, 31, 23, 59, 59, offset="+07:00").tambah(detik=1))
+    cetak(buat(2024, 3, 1).tambah(hari=-1), buat(2024, 1, 1, mikrodetik=1).tambah(mikrodetik=-2))
+    cetak(buat(2023, 12, 31).tambah(hari=366, jam=25, menit=61))
+    variabel a = dari_iso("2024-03-10T05:30:00Z")
+    variabel b = dari_iso("2024-03-10T12:30:00+07:00")
+    cetak(a == b, a != b, a < b, a <= b, a.selisih(dari_iso("2024-03-09T05:00:00Z")))
+    cetak(dari_iso("2024-03-10T12:30:05.25+07:00").selisih(a))
+    cetak(terurut([dari_iso("2024-05-01T00:00Z"), dari_iso("2024-04-30T23:00-02:00"), dari_iso("2024-05-01T05:00+07:00")]))
+    cetak(buat(2024, 1, 1) == buat(2024, 1, 1, offset=0))
+    cetak(tw.adalah_kabisat(1900), tw.adalah_kabisat(2000), tw.adalah_kabisat(2024), tw.hari_dalam_bulan(2023, 2))
+}
+
+fungsi uji_unix() {
+    cetak("== unix")
+    cetak(tw.dari_unix(0), tw.dari_unix(1700000000, "+07:00"), tw.dari_unix(1.5), tw.dari_unix(-1))
+    cetak(tw.dari_unix(253402300799), buat(1, 1, 1, offset=0).unix(), dari_iso("1970-01-01T07:00:00+07:00").unix())
+    variabel lokal = tw.offset_lokal()
+    cetak(jenis(lokal), abs(lokal) < 1440, abs(tw.sekarang().unix() - ke_bulat(waktu())) <= 2)
+    cetak(tw.sekarang().offset, tw.sekarang_lokal().offset == lokal)
+}
+
+fungsi uji_galat() {
+    cetak("== galat")
+    untuk s dalam ["2023-02-29", "2024-02-30", "2024-13-01", "2024-00-10", "2024-01-01T24:00",
+                   "2024-01-01T23:60", "2024-01-01T23:59:60", "2024-01-01T10:00+24:00",
+                   "2024-01-01T10:00+07:60", "2024-1-01", "2024-01-01T10:00:00.",
+                   "2024-01-01X10:00", "2024-01-01T10:00:00+07:0", "2024-01-01T10", "abc",
+                   "２０２４-01-01", "2024-01-01T10:00:00.1234567891Z", "0000-01-01"] {
+        coba {
+            cetak(dari_iso(s))
+        } kecuali GalatTanggal sebagai e {
+            cetak(e.pesan)
+        }
+    }
+    variabel a = dari_iso("2024-03-10T05:30:00Z")
+    untuk f dalam [fungsi() { kembalikan a < buat(2024, 1, 1) },
+                   fungsi() { kembalikan buat(2024, 1, 1).unix() },
+                   fungsi() { kembalikan buat(9999, 12, 31).tambah(hari=1) },
+                   fungsi() { kembalikan buat(2024, 1, 1, offset="WIB") },
+                   fungsi() { kembalikan buat(2024, 1, 1.5) },
+                   fungsi() { kembalikan a.format("%Q") }] {
+        coba {
+            cetak(f())
+        } kecuali GalatTanggal sebagai e {
+            cetak(e.pesan)
+        }
+    }
+}
+
+# Regresi tinjauan: nilai raksasa dan takhingga menjadi GalatTanggal,
+# bukan galat luapan mentah yang lolos dari `kecuali GalatTanggal`.
+fungsi uji_luapan() {
+    cetak("== luapan")
+    untuk f dalam [fungsi() { kembalikan buat(2024, 1, 1).tambah(10 ** 17) },
+                   fungsi() { kembalikan buat(2024, 1, 1).tambah(mikrodetik=10 ** 18) },
+                   fungsi() { kembalikan tw.dari_unix(10 ** 15) },
+                   fungsi() { kembalikan tw.dari_unix(1e30) },
+                   fungsi() { kembalikan buat(2024, 1, 1).tambah_bulan(10 ** 18) },
+                   fungsi() { kembalikan buat(2024, 1, 1).tambah_tahun(10 ** 18) },
+                   fungsi() { kembalikan buat(1e999, 1, 1) },
+                   fungsi() { kembalikan buat(1, 1, 1).tambah(hari=3652058) }] {
+        coba {
+            cetak(f())
+        } kecuali GalatTanggal sebagai e {
+            cetak(e.pesan)
+        }
+    }
+}
+
+uji_urai()
+uji_aritmetika()
+uji_unix()
+uji_galat()
+uji_luapan()

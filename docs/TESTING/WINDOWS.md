@@ -1843,6 +1843,102 @@ status diharapkan 200, didapat 201 [POST /gema -> 201; badan: "{\"byte\":14}"]
 
 `Content-Length` dihitung dalam byte: `{"kopi":"☕"}` adalah 14 byte. Tidak ada port yang dibuka, jadi kasus ini tidak bergantung firewall.
 
+#### VAL-01 — Modul `validasi`: galat per field, URL berbahaya, teks multibahasa
+
+Berkas `VAL-01.idk`:
+
+```indonesiaku
+# Modul validasi: galat per field, URL berbahaya ditolak, teks multibahasa
+impor validasi
+skema = {"nama": {"wajib": benar, "panjang_maks": 10}, "umur": {"tipe": "bulat", "min": 17},
+         "surel": "email", "situs": {"tipe": "url", "skema_url": ["https"]}}
+h = validasi.periksa({"nama": "", "umur": "15", "surel": "andré@exämple.de", "situs": "javascript:alert(1)"}, skema)
+cetak(h.sah, h.galat)
+h = validasi.periksa({"nama": " Ñoño ", "umur": "30", "admin": "1"}, skema)
+cetak(h.sah, h.nilai)
+cetak(validasi.adalah_url("https://токен.рф/путь"), validasi.adalah_url("https://user:pw@jahat.com"))
+```
+
+Jalankan `indk VAL-01.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+salah {"nama": ["wajib diisi"], "umur": ["minimal 17"], "situs": ["bukan URL yang sah (skema yang diizinkan: https)"]}
+benar {"nama": "Ñoño", "umur": 30, "surel": kosong, "situs": kosong}
+benar salah
+```
+
+Field kosong yang wajib, angka di bawah batas dan skema `javascript:` dilaporkan sekaligus per field; `admin` yang tidak ada di skema tidak pernah masuk `nilai`; domain Unicode diterima, userinfo di URL ditolak.
+
+#### TGL-01 — Modul `tanggal_waktu`: ISO 8601, offset tetap, akhir bulan, tanggal tidak sah
+
+Berkas `TGL-01.idk`:
+
+```indonesiaku
+# Modul tanggal_waktu: ISO 8601, offset tetap, akhir bulan, tanggal tidak sah
+impor tanggal_waktu sebagai tw
+dari tanggal_waktu impor GalatTanggal
+w = tw.dari_iso("2024-02-29T23:30:00.5+07:00")
+cetak(w.ke_utc(), w.unix(), w.format("%A, %d %B %Y %z"))
+cetak(w.tambah(jam=1), w.tambah_tahun(1), tw.dari_unix(0, "-05:30"))
+untuk s dalam ["2023-02-29", "2024-01-01T10:00+24:00", "2024-01-01T23:59:60Z"] {
+    coba {
+        tw.dari_iso(s)
+    } kecuali GalatTanggal sebagai e {
+        cetak(e.pesan)
+    }
+}
+```
+
+Jalankan `indk TGL-01.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+2024-02-29T16:30:00.500000Z 1709224200 Kamis, 29 Februari 2024 +0700
+2024-03-01T00:30:00.500000+07:00 2025-02-28T23:30:00.500000+07:00 1969-12-31T18:30:00-05:30
+tanggal 29 tidak ada pada bulan 2 tahun 2023
+bukan tanggal ISO 8601 yang sah: "2024-01-01T10:00+24:00" (offset tidak sah)
+detik kabisat (60) tidak didukung
+```
+
+29 Februari 2024 adalah hari Kamis; `tambah_tahun(1)` menjepit ke 28 Februari 2025; tanggal yang tidak ada, offset +24:00 dan detik kabisat ditolak dengan `GalatTanggal`. Hasil tidak bergantung pada zona waktu sistem.
+
+#### XML-01 — Modul `xml`: namespace, CDATA, multibahasa, XXE dan kedalaman ditolak
+
+Berkas `XML-01.idk`:
+
+```indonesiaku
+# Modul xml: namespace, CDATA, multibahasa, XXE dan kedalaman ditolak
+impor xml
+dari xml impor GalatXML
+a = xml.urai("<k xmlns=\"urn:k\"><j id=\"1\">日本語 &amp; ünï</j><c><![CDATA[<b>]]></c></k>")
+cetak(a.ns, a.cari("j").ambil("id"), a.cari("j").teks(), a.cari("c").teks())
+cetak(xml.bentuk(xml.buat("p", {"q": "\"&<"}, "1 < 2")))
+untuk s dalam ["<!DOCTYPE r [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><r>&x;</r>", "<r>&x;</r>", "<a>" * 300 + "</a>" * 300] {
+    coba {
+        xml.urai(s)
+    } kecuali GalatXML sebagai e {
+        cetak(e.pesan)
+    }
+}
+```
+
+Jalankan `indk XML-01.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+urn:k 1 日本語 & ünï <b>
+<p q="&quot;&amp;&lt;">1 &lt; 2</p>
+baris 1, kolom 1: DTD (<!DOCTYPE>) tidak diizinkan: ditolak untuk mencegah XXE dan entity expansion
+baris 1, kolom 4: entitas '&x;' tidak dikenal (DTD dan entitas kustom tidak didukung)
+baris 1, kolom 769: kedalaman elemen melebihi batas 256
+```
+
+Dokumen dengan `<!DOCTYPE>` (XXE) dan entitas tak dikenal ditolak tanpa membaca berkas apa pun; 300 elemen bersarang melewati batas kedalaman 256.
+
 <!-- BERSAMA:AKHIR -->
 
 ## 5. Suite otomatis dari tag rilis

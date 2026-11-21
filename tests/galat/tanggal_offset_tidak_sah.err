@@ -1,0 +1,6 @@
+bukan tanggal ISO 8601 yang sah: "2024-01-01T10:00:00+25:00" (offset tidak sah)
+[baris 508, kolom 98] dalam _galat_iso()
+    …: " + repr(tampil) + " (" + alasan + ")")
+                                             ^
+[baris 574, kolom 45] dalam dari_iso()
+[baris 3, kolom 57] dalam skrip

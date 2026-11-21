@@ -101,6 +101,12 @@ Konstanta: `ascii_letters` `huruf_ascii`, `ascii_lowercase` `huruf_kecil_ascii`,
 
 Nama hari/bulan dalam bahasa Indonesia secara bawaan (`Senin`, `Januari`).
 
+**Status (Fase 19 V1):** `pustaka/tanggal_waktu.idk` mengimplementasikan
+`TanggalWaktu` (tanggal saja = `TanggalWaktu` tengah malam; selisih sebagai
+detik lewat `selisih()`, belum kelas `SelisihWaktu`; zona = offset tetap
+`UTC/WIB/WITA/WIT`, belum `ZonaWaktu` IANA). `pustaka/xml.idk` mengisi baris
+`xml` di §10; lihat `docs/ANALISIS/KATALOG_API_DAN_GAP_WEB.md`.
+
 ## 6. `os`, `os.path`, `pathlib`, `shutil`, `glob`, `tempfile` → `os`, `jalur` (P2, C)
 
 | Python | Usulan | Ada |

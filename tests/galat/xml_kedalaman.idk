@@ -1,0 +1,4 @@
+# Elemen bersarang melewati batas kedalaman ditolak, bukan menghabiskan memori.
+impor xml
+xml.urai("<a>" * 300 + "</a>" * 300)
+cetak("TIDAK BOLEH TERCETAK")
