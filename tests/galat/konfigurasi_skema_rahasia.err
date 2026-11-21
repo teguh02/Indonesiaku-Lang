@@ -1,0 +1,10 @@
+konfigurasi tidak sah:
+  - 'port' dari lingkungan APP_PORT bukan bulat: "80a"
+  - 'sandi_db' dari lingkungan APP_SANDI_DB bukan bulat
+  - 'pin' dari lingkungan APP_PIN bukan bulat
+  - 'mode' dari lingkungan APP_MODE harus salah satu dari ["dev", "produksi"], bukan "uji"
+  - kunci wajib 'url_db' tidak ada (atur APP_URL_DB)
+[baris 670, kolom 95] dalam muat()
+    …h:\n  - " + teks_gabung(galat, "\n  - "))
+                                             ^
+[baris 15, kolom 1] dalam skrip

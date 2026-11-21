@@ -1366,6 +1366,101 @@ bernilai `kosong` mengembalikan `kosong` bukan `bawaan`, bentuk metode
 baru (`panjang` tetap 3), dan salah pakai menaikkan `GalatTipe` yang dapat
 ditangkap `coba/kecuali`.
 
+#### PUS-08 — `konfigurasi`: `.env`/INI dengan BOM dan CRLF, prioritas, rahasia
+
+`PUS-08.idk`:
+
+```indonesiaku
+impor konfigurasi
+dari konfigurasi impor GalatKonfigurasi
+
+variabel bom = chr(65279)
+cetak(konfigurasi.urai_env(bom + "# komentar\r\nexport NAMA=\"Kafe ☕\"\r\nPORT=8080 # catatan\r\n"))
+cetak(konfigurasi.urai_ini("[db]\r\nhost = localhost\r\nport: 5432\r\n"))
+
+variabel konf = konfigurasi.muat(
+    bawaan = {"PORT": "80"},
+    awalan_lingkungan = "APP_",
+    isi_lingkungan = {"APP_PORT": "9000", "APP_SANDI": "hunter2"},
+    skema = {"PORT": "bulat", "SANDI": {"wajib": benar}, "DEBUG": {"tipe": "logika", "bawaan": salah}}
+)
+cetak(konf["PORT"], konf.sumber("PORT"), konf["DEBUG"])
+cetak(konf)
+
+coba {
+    konfigurasi.urai_env("A=1\r\nB='terbuka\r\n", "app.env")
+} kecuali GalatKonfigurasi sebagai e {
+    cetak(e.pesan)
+}
+coba {
+    konfigurasi.muat(skema = {"PORT": "bulat", "TOKEN": "bulat"}, awalan_lingkungan = "",
+                     isi_lingkungan = {"PORT": "x", "TOKEN": "s3cr3t"})
+} kecuali GalatKonfigurasi sebagai e {
+    cetak(e.pesan)
+    cetak("bocor:", "s3cr3t" dalam e.pesan)
+}
+```
+
+Jalankan `indk PUS-08.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+{"NAMA": "Kafe ☕", "PORT": "8080"}
+{"db": {"host": "localhost", "port": "5432"}}
+9000 lingkungan APP_PORT salah
+Konfigurasi({"DEBUG": salah, "PORT": 9000, "SANDI": "***"})
+app.env:2: kutip ' tidak ditutup
+konfigurasi tidak sah:
+  - 'PORT' dari lingkungan PORT bukan bulat: "x"
+  - 'TOKEN' dari lingkungan TOKEN bukan bulat
+bocor: salah
+```
+
+Yang diperiksa: BOM UTF-8 dan `\r\n` dibuang sebelum mengurai, `export ` dan
+komentar ` #` di belakang nilai dikenali, lingkungan (berawalan `APP_`)
+menimpa `bawaan` dan diubah ke tipe skema, kunci rahasia tampil `***` saat
+objek dicetak, galat format menyebut sumber dan nomor baris, semua
+pelanggaran skema dilaporkan sekaligus, dan nilai kunci rahasia (`TOKEN`)
+tidak pernah masuk pesan galat.
+
+#### PUS-09 — `unicode`: huruf besar/kecil dan spasi Unicode
+
+`PUS-09.idk`:
+
+```indonesiaku
+impor unicode
+
+cetak(huruf_besar("straße"), unicode.huruf_besar("straße"))
+cetak(unicode.huruf_kecil("ΟΔΥΣΣΕΥΣ ПРИВЕТ İ"), panjang(unicode.huruf_kecil("İ")))
+cetak(unicode.lipat_huruf("Straße") == unicode.lipat_huruf("STRASSE"))
+cetak(unicode.huruf_besar("日本語 😀 ǆ"))
+cetak("[" + unicode.pangkas(chr(12288) + "halo" + chr(160)) + "]")
+cetak(unicode.pisah_spasi("a" + chr(160) + "b  c"), unicode.adalah_spasi(chr(8203)))
+cetak(panjang("e" + chr(769)))
+```
+
+Jalankan `indk PUS-09.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+STRAßE STRASSE
+οδυσσευς привет i̇ 2
+benar
+日本語 😀 Ǆ
+[halo]
+["a", "b", "c"] salah
+2
+```
+
+Yang diperiksa: builtin `huruf_besar` tetap ASCII saja sedangkan
+`unicode.huruf_besar` mengikuti Python (`ß` → `SS`), sigma akhir Yunani,
+Sirilik, `İ` menjadi 2 karakter, CJK/emoji tidak berubah, NBSP dan U+3000
+dipangkas, *zero width space* (U+200B) bukan spasi, dan `panjang()` tetap
+menghitung code point. Di konsol Windows, karakter non-ASCII harus tampil
+utuh (bukan `?` atau mojibake).
+
 <!-- BERSAMA:AKHIR -->
 
 ## 5. Suite otomatis dari tag rilis

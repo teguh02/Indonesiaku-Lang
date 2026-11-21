@@ -1,0 +1,15 @@
+builtin : STRAßE äRGER
+unicode : STRASSE ÄRGER
+kecil   : ça va? привет мир
+Yunani  : οδυσσευς ΟΔΥΣΣΕΎΣ
+ß       : SS 2
+İ       : 2 karakter (i + titik kombinasi)
+lipat   : strasse strasse
+sama?   : benar
+lainnya : Ǆ É 日本語 😀
+batasan : benar
+panjang tetap per karakter: 1 2
+pangkas : [Halo dunia]
+pisah   : ["Halo", "dunia"]
+spasi?  : salah benar
+galat   : huruf_besar() hanya menerima teks

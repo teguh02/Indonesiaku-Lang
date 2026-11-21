@@ -1,0 +1,6 @@
+besar.ini: melebihi batas ukuran 32 bita
+[baris 55, kolom 93] dalam _siapkan()
+    …ran " + ke_teks(batas) + " bita", sumber)
+                                             ^
+[baris 227, kolom 66] dalam urai_ini()
+[baris 3, kolom 68] dalam skrip

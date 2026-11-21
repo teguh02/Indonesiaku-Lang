@@ -1,0 +1,4 @@
+# Salah ketik di skema adalah galat, bukan diabaikan diam-diam.
+impor konfigurasi
+konfigurasi.muat(skema = {"port": {"tipe": "angka"}})
+cetak("tidak tercapai")
