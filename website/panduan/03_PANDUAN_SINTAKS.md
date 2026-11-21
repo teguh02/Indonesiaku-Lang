@@ -2695,6 +2695,8 @@ variabel lingkungan `INDK_PATH`, lalu `pustaka/` di direktori kerja, lalu
 `indk`, `../pustaka`, atau `../share/indonesiaku/pustaka`). Karena itu modul
 standar seperti `pola` atau `koleksi` bisa diimpor dari folder mana pun,
 dan modul Anda sendiri yang bernama sama tetap didahulukan.
+Paket yang dipasang dengan `indk paket` dicari paling akhir, di `.indk_paket/`
+akar proyek (lihat [Manajer Paket](10_MANAJER_PAKET.md)).
 
 Modul yang diimpor **tidak** mencemari variabel Anda. Dua modul boleh memakai
 nama yang sama tanpa saling menimpa:
