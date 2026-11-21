@@ -9,6 +9,22 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **Observability V1 untuk server web (Fase 22)**: `app.pantau()` di
+  `pustaka/web.idk` mendaftarkan `GET /health` (liveness), `GET /ready`
+  (readiness lewat `periksa_siap()`, 503 bila gagal) dan `GET /metrics`
+  (format teks Prometheus: `indk_http_permintaan_total{metode,status}`,
+  histogram `indk_http_durasi_detik`, `indk_mulai_detik`), plus header
+  `X-Request-ID`. Setiap permintaan kini punya `req["id"]`; `X-Request-ID`
+  kiriman luar hanya dipercaya dari `proxy_tepercaya()`. `pustaka/log.idk`
+  mendapat `log.atur(format = "json")` (satu objek JSON per baris) dan
+  argumen `data` opsional di setiap metode pencatat; baris log
+  `app.jalankan()` membawa `request_id`, `metode`, `path`, `status`,
+  `durasi_ms`. Tanpa `pantau()` dan tanpa format JSON, respons dan log lama
+  byte-identik. Pesan galat 500 di stderr kini menyertakan `(id ...)`.
+  **Belum ada:** graceful shutdown lewat SIGTERM (butuh C), tracing,
+  `SECURITY.md`, uji beban. Diuji golden `web_pantau`/`log_json`, empat
+  pasangan `tests/galat`, dan `tests/web_pantau_server.sh` (22 asersi lewat
+  soket).
 - **Bundel executable AOT V1** (`indk` tanpa argumen menjalankan skrip yang
   ditempel ke akhir biner lewat `scripts/bangun_bundel.sh`) — distribusi
   satu-file untuk skrip tunggal (Fase 8). Argumen bundel sendiri diteruskan

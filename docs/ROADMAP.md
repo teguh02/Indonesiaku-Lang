@@ -1076,15 +1076,15 @@ kalkulator-indonesiaku/
 
 ### Fase 22 — Observability, profiling, kompatibilitas dan kesiapan produksi
 
-**Status:** ⬜ belum. **Target RC rekomendasi:** `v1.17.0-rc.1`. **Target stabil rekomendasi:** `v1.17.0`. **Ketergantungan:** semua fase runtime, jaringan, database, web dan package manager yang relevan.
+**Status:** 🟨 sebagian (V1 observability web: log JSON, ID permintaan, health/ready/metrics). **Target RC rekomendasi:** `v1.17.0-rc.1`. **Target stabil rekomendasi:** `v1.17.0`. **Ketergantungan:** semua fase runtime, jaringan, database, web dan package manager yang relevan.
 
 **Tujuan:** aplikasi Indonesiaku mudah didiagnosis, diperbarui, diaudit dan dipelihara. Kualitas, keamanan dan kompatibilitas adalah kegiatan **lintas fase sejak sekarang**, bukan alasan untuk menunggu Fase 22.
 
-1. [x] Buat `docs/RENCANA_FITUR/observability_production.md` serta kebijakan tertulis support matrix, compatibility policy, deprecation, security disclosure dan release lifecycle. (rencana ditulis; implementasi paket A-D item 2-10 masih ⬜)
-2. [ ] Sediakan **structured logging**: timestamp, level, module, request/task correlation ID, format dapat dibaca mesin, masking rahasia secara default, rotasi atau integrasi collector.
-3. [ ] Sediakan **metrics dan tracing** dasar: latensi request, error rate, durasi query, queue depth, memori/GC, task/connections; tentukan pilihan interoperabilitas misalnya OpenTelemetry/Prometheus tanpa mengunci satu vendor.
+1. [x] Buat `docs/RENCANA_FITUR/selesai/observability_production.md` serta kebijakan tertulis support matrix, compatibility policy, deprecation, security disclosure dan release lifecycle. (rencana ditulis; V1 paket A.1–A.3 dan B.5 selesai, A.4/C/D ditunda — lihat §0 rencana)
+2. [ ] Sediakan **structured logging**: timestamp, level, module, request/task correlation ID, format dapat dibaca mesin, masking rahasia secara default, rotasi atau integrasi collector. *(V1 ✅: `log.atur(format="json")`, `data=` per catatan, `request_id` di log `app.jalankan()`; masking otomatis dan rotasi belum.)*
+3. [ ] Sediakan **metrics dan tracing** dasar: latensi request, error rate, durasi query, queue depth, memori/GC, task/connections; tentukan pilihan interoperabilitas misalnya OpenTelemetry/Prometheus tanpa mengunci satu vendor. *(V1 ✅: `/metrics` Prometheus untuk total permintaan per metode/status dan histogram latensi via `app.pantau()`; query DB, memori/GC dan tracing belum.)*
 4. [ ] Implementasikan **profiler** CPU/wall time, alokasi memori, GC pause, hot functions dan diagnostik kebocoran; jaga overhead profiling opt-in dan dokumentasikan akurasi pengukuran.
-5. [ ] Susun pedoman deployment **production readiness**: konfigurasi environment/secrets, health/readiness endpoint, graceful shutdown, reverse proxy, TLS, batas resource, backup/restore, observability, container isolation dan prosedur recovery.
+5. [ ] Susun pedoman deployment **production readiness**: konfigurasi environment/secrets, health/readiness endpoint, graceful shutdown, reverse proxy, TLS, batas resource, backup/restore, observability, container isolation dan prosedur recovery. *(V1 ✅: health/readiness via `app.pantau()` dan `08_DEPLOYMENT.md` §8.10; graceful shutdown SIGTERM belum — butuh C.)*
 6. [ ] Tetapkan kompatibilitas API dan versioning: SemVer, stabil/eksperimental, minimum supported runtime, deprecation warning, jendela dukungan patch/LTS bila sumber daya tersedia, kebijakan minor vs major dan perubahan format paket.
 7. [ ] Tegakkan proses keamanan: `SECURITY.md`, pelaporan kerentanan privat, threat-model update, CI security scan/dependency audit, SBOM bila relevan, release provenance/checksums, penanganan CVE dan komunikasi advisory.
 8. [ ] Lakukan pengujian beban/stress, chaos/network failure, CPU/memory profiling, regresi lintas OS/arsitektur, canary RC, dan verifikasi installer/Docker/artefak sebelum rilis; publikasikan metodologi dan hasil.
