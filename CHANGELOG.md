@@ -32,6 +32,23 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `tests/galat`, `tests/unduh_server.sh` (server lokal, badan biner 300 KB),
   `tests/berkas_tautan.sh` (symlink) dan `tests/test_berkas_windows.ps1`
   (junction + jalur non-ASCII).
+- **Kerangka CLI dan klien uji HTTP (Fase 25 V1)**: modul baru `cli`
+  (`pustaka/cli.idk`) di atas `opsi`: `cli.Perintah` dengan sub-perintah
+  bertingkat, bantuan otomatis per tingkat, `--versi`, `validasi=` khusus,
+  kode keluar terdokumentasi (0 sukses, 1 `GalatCli`, 2 pemakaian salah,
+  atau kode dari penangan), `jalankan()` yang tidak memanggil `keluar()`
+  sehingga bisa diuji, dan `skrip_lengkapi_bash()`. Modul baru `uji_http`
+  (`pustaka/uji_http.idk`): `uji_http.klien(app)` menguji aplikasi
+  `web.Aplikasi` **tanpa membuka port** (memanggil `app.tangani()`
+  langsung), dengan `json=`/`form=`, toples kuki otomatis, dan asersi
+  berantai `pastikan_status`/`pastikan_kepala`/`pastikan_json`/
+  `pastikan_json_berisi`/`pastikan_kuki`/`pastikan_badan_berisi` yang
+  melaporkan kegagalan lewat `indk uji`. `examples/api_siswa.idk` kini bisa
+  diimpor (server hanya jalan bila `__nama__ == "__utama__"`) dan diuji CRUD
+  oleh `examples/uji_api_siswa.idk`. `tests/test_uji.sh` menerima sumber di
+  `examples/`, dan `tests/test_all.ps1` kini ikut menjalankan `indk uji`.
+  Konektor MQTT/AMQP ditunda.
+
 - **Observability V1 untuk server web (Fase 22)**: `app.pantau()` di
   `pustaka/web.idk` mendaftarkan `GET /health` (liveness), `GET /ready`
   (readiness lewat `periksa_siap()`, 503 bila gagal) dan `GET /metrics`

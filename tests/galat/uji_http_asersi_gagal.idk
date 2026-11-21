@@ -1,0 +1,7 @@
+# Asersi uji_http yang tidak ditangkap menghentikan program (kode 70).
+impor web
+impor uji_http
+
+variabel app = web.Aplikasi()
+app.rute("GET", "/x", fungsi(req) { kembalikan web.json(200, "{\"a\":1}") })
+uji_http.klien(app).ambil("/x").pastikan_json({"a": 2})

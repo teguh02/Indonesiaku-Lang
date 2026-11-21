@@ -1758,6 +1758,92 @@ salah salah
 
 Yang diperiksa: `daftar_isi()` memperlihatkan nama jahat apa adanya, `ekstrak()` menolaknya dengan `GalatArsip`, dan karena seluruh arsip diperiksa dulu, entri yang aman pun (`aman.txt`) tidak ditulis; tidak ada berkas di luar direktori kerja.
 
+#### CLI-01 — Modul `cli`: sub-perintah, `--versi`, validasi, kode keluar 0/2/4
+
+Berkas `CLI-01.idk`:
+
+```indonesiaku
+# Kerangka cli: sub-perintah, bantuan, validasi, kode keluar (galat ke stdout)
+impor cli
+fungsi ke_stdout(t) {
+    cetak("galat> " + t)
+}
+app = cli.Perintah("alat", "Alat uji.", versi = "0.1", galat = ke_stdout)
+sapa = app.sub("sapa", "menyapa seseorang")
+sapa.argumen("nama")
+sapa.argumen("--kali", pendek = "-k", bawaan = 1, jenis_nilai = "bulat",
+             validasi = fungsi(n) { kembalikan n >= 1 })
+sapa.tangani(fungsi(a) {
+    untuk i dalam rentang(a.kali) {
+        cetak(f"halo, {a.nama} ({a.perintah})")
+    }
+})
+app.sub("gagal").tangani(fungsi(a) { naikkan cli.GalatCli("sengaja", 4) })
+cetak(app.jalankan(["sapa", "Budi", "-k", "2"]))
+cetak(app.jalankan(["--versi"]))
+cetak(app.jalankan(["sapa", "Budi", "--kali=0"]))
+cetak(app.jalankan(["gagal"]))
+cetak(app.jalankan(["lompat"]))
+```
+
+Jalankan `indk CLI-01.idk`. **Kode keluar: `0`.** stderr kosong.
+
+stdout yang diharapkan:
+
+```text
+halo, Budi (sapa)
+halo, Budi (sapa)
+0
+alat 0.1
+0
+galat> pemakaian: alat sapa [-h] [-k KALI] nama
+galat> alat sapa: galat: argumen --kali: nilai tidak sah: 0
+2
+galat> alat gagal: galat: sengaja
+4
+galat> pemakaian: alat [-h] [--versi] <perintah> ...
+galat> alat: galat: perintah tidak dikenal: "lompat" (pilih dari sapa, gagal)
+2
+```
+
+Pesan galat dialihkan ke stdout lewat `galat=` supaya bisa dibandingkan; tanpa itu keduanya ditulis ke stderr. `jalankan()` mengembalikan kode, tidak memanggil `keluar()`.
+
+#### UJH-01 — Modul `uji_http`: uji aplikasi web tanpa port, JSON, kuki, asersi gagal
+
+Berkas `UJH-01.idk`:
+
+```indonesiaku
+# Klien uji HTTP in-process: JSON, status, kuki, tanpa membuka port
+impor web
+impor uji_http
+app = web.Aplikasi()
+app.rute("POST", "/gema", fungsi(req) {
+    kembalikan web.set_kuki(web.json(201, "{\"byte\":" + ke_teks(panjang_byte(req["badan"])) + "}"),
+                            "terakhir", "gema")
+})
+k = uji_http.klien(app)
+r = k.kirim("/gema", json = {"kopi": "☕"})
+r.pastikan_status(201).pastikan_json({"byte": 14}).pastikan_kuki("terakhir", "gema")
+cetak(r, r.json(), k.kuki)
+k.ambil("/tidak-ada").pastikan_status(404)
+coba {
+    r.pastikan_status(200)
+} kecuali GalatPenegasan sebagai e {
+    cetak(e.pesan)
+}
+```
+
+Jalankan `indk UJH-01.idk`. **Kode keluar: `0`.** stderr kosong.
+
+stdout yang diharapkan:
+
+```text
+<ResponsUji 201 Created> {"byte": 14} {"terakhir": "gema"}
+status diharapkan 200, didapat 201 [POST /gema -> 201; badan: "{\"byte\":14}"]
+```
+
+`Content-Length` dihitung dalam byte: `{"kopi":"☕"}` adalah 14 byte. Tidak ada port yang dibuka, jadi kasus ini tidak bergantung firewall.
+
 ### BRK — Berkas dan unduhan (Fase 17)
 
 #### BRK-01 — Modul `berkas`: salin, pindah, jelajahi, hapus bertingkat

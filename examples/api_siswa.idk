@@ -121,6 +121,11 @@ app.rute("DELETE", "/siswa/:id", fungsi(req) {
     kembalikan web.json(200, json_teks({"dihapus": benar}))
 })
 
-cetak("API siswa di http://127.0.0.1:" + ke_teks(PORT) + "/siswa")
-app.jalankan(PORT, 10, SISA)
-db_tutup(db)
+# Server hanya berjalan bila berkas ini dijalankan langsung. Diimpor
+# (`impor api_siswa`), ia cukup menyediakan `app` dan `db`, sehingga
+# examples/uji_api_siswa.idk bisa mengujinya in-process lewat uji_http.
+jika __nama__ == "__utama__" {
+    cetak("API siswa di http://127.0.0.1:" + ke_teks(PORT) + "/siswa")
+    app.jalankan(PORT, 10, SISA)
+    db_tutup(db)
+}
