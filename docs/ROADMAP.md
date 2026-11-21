@@ -1149,22 +1149,27 @@ kalkulator-indonesiaku/
 
 ### Fase 25 — CLI framework, pengujian HTTP dan integrasi message broker/IoT
 
-**Status:** ⬜ belum. **Kandidat rilis rekomendasi:** `v1.20.0-rc.1`. **Rilis stabil rekomendasi:** `v1.20.0`. **Ketergantungan:** Fase 11 (REST/HTTP), 14 (package manager), 17 (jaringan), 20–21 (async dan background jobs), serta Fase 23 untuk payload biner.
+**Status:** 🟨 sebagian (V1) — `pustaka/cli.idk` dan `pustaka/uji_http.idk` tersedia; konektor MQTT/AMQP ditunda. Rencana: `docs/RENCANA_FITUR/selesai/cli_http_test_broker.md`. **Kandidat rilis rekomendasi:** `v1.20.0-rc.1`. **Rilis stabil rekomendasi:** `v1.20.0`. **Ketergantungan:** Fase 11 (REST/HTTP), 14 (package manager), 17 (jaringan), 20–21 (async dan background jobs), serta Fase 23 untuk payload biner.
 
 **Tujuan:** developer dapat membuat aplikasi CLI dan menguji API tanpa menulis boilerplate berlebihan, sambil menyediakan konektor komunikasi terdistribusi sebagai paket independen bila diperlukan.
 
 **Langkah pengembangan:**
 
-1. [ ] Buat `docs/RENCANA_FITUR/cli_http_test_broker.md`; audit `pustaka/opsi.idk`, `indk uji`, HTTP client/server, dan `pustaka/` lain agar tidak menduplikasi argparse/testing yang sudah ada.
+1. [x] Buat `docs/RENCANA_FITUR/cli_http_test_broker.md`; audit `pustaka/opsi.idk`, `indk uji`, HTTP client/server, dan `pustaka/` lain agar tidak menduplikasi argparse/testing yang sudah ada.
 2. [ ] Bangun CLI framework di atas `opsi`: subcommand, bantuan otomatis, validasi opsi, default, exit codes, autocomplete shell (jika feasible), konfigurasi dan contoh `indk buat ...`; pertahankan akses ke CLI standar tanpa framework.
+   — **sebagian (V1):** `cli.Perintah` dengan sub-perintah bertingkat, bantuan otomatis, `--versi`, validasi khusus + jenis/pilihan/bawaan dari `opsi`, kode keluar 0/1/2/n, autocomplete **Bash**; `opsi` tidak berubah. Sisa: konfigurasi dari berkas/lingkungan, autocomplete zsh/fish/PowerShell, `indk buat ...`.
 3. [ ] Sediakan test client HTTP untuk pengujian aplikasi REST tanpa membuka port publik bila arsitektur memungkinkan; assertions status, headers, JSON, cookies, auth, upload, snapshot/golden output dan mock dependency.
+   — **sebagian (V1):** `uji_http.klien(app)` memanggil `app.tangani()` in-process (tanpa port, `web.idk` tidak diubah); asersi status, header, JSON, kuki (toples kuki otomatis), badan; terpadu dengan `indk uji`. Sisa: auth helper, upload multipart, snapshot, mock dependency.
 4. [ ] Tambahkan fixtures dan mock/fake untuk database, SMTP, waktu, filesystem dan request; uji isolasi dan determinisme agar `indk uji` tetap dapat dipakai pada CI.
+   — **sebagian kecil:** hanya fake request (`uji_http.permintaan_mentah`). Fake database/SMTP/waktu/filesystem belum.
 5. [ ] Rancang konektor **MQTT** untuk IoT dan **AMQP/RabbitMQ** untuk antrean sebagai **library/plugin opsional**, bukan dependensi wajib runtime; definisikan TLS/auth, QoS, reconnect/backoff, delivery semantics dan batas resource.
+   — **ditunda** di V1: tidak ada kode broker.
 6. [ ] Tambahkan contoh CLI pengelola data, integration test REST CRUD dan demo publish/subscribe MQTT pada broker uji lokal. Jangan memerlukan broker publik untuk menjalankan tes otomatis.
+   — **sebagian:** contoh CLI `examples/pustaka_cli.idk` dan integration test REST CRUD `examples/uji_api_siswa.idk` (dijalankan `indk uji` di suite). Demo MQTT belum.
 7. [ ] Uji protokol rusak, timeout, kredensial salah, reconnect, sertifikat tidak valid, duplicate delivery, penanganan payload biner dan cleanup.
 8. [ ] Terbitkan panduan CLI/API testing/integrasi broker, contoh plugin, matriks kompatibilitas versi minimal Indonesiaku serta review dependency native.
 
-**Contoh API ilustratif (belum tersedia):** `cli.Perintah("siswa")`, `uji_http.klien(app)`, `mqtt.sambung("localhost", 1883)`.
+**Contoh API:** `cli.Perintah("siswa")` dan `uji_http.klien(app)` **tersedia** (V1); `mqtt.sambung("localhost", 1883)` masih ilustratif.
 
 **Gerbang rilis:** CLI/test client dapat digunakan dari aplikasi contoh, fungsi konektor yang diumumkan lulus tes lokal, TLS dan autentikasi aman, dan library tambahan memiliki versi serta dokumentasi yang tidak mengunci semua pengguna ke broker tertentu.
 
@@ -1219,7 +1224,7 @@ kalkulator-indonesiaku/
 | 22 | Logging, profiling, observability, kompatibilitas dan keamanan rilis | ⬜ belum |
 | 23 | Byte/buffer, streaming, ZIP/TAR/gzip dan keamanan arsip | ⬜ belum |
 | 24 | Unicode, i18n, konfigurasi, YAML/TOML dan serialisasi | ⬜ belum |
-| 25 | CLI framework, HTTP test client, MQTT/RabbitMQ opsional | ⬜ belum |
+| 25 | CLI framework, HTTP test client, MQTT/RabbitMQ opsional | 🟨 sebagian — V1: `cli` (sub-perintah, bantuan, validasi, kode keluar, autocomplete Bash) dan `uji_http` (klien uji in-process + asersi, terpadu `indk uji`); broker MQTT/AMQP ditunda |
 | Lintas fase | Validasi 3 aplikasi nyata (SSR, REST API, otomasi server) | ⬜ belum |
 
 ## Standar branch dan kontribusi
