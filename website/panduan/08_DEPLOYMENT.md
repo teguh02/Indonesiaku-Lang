@@ -393,6 +393,85 @@ Untuk SQLite, yang perlu ditulis adalah berkas DB beserta berkas `-wal` dan
 - [ ] Log aplikasi tidak memuat badan atau header (bawaan `app.jalankan()`)
 - [ ] Rencana pembaruan sertifikat
 - [ ] Disadari: satu permintaan pada satu waktu
+- [ ] `app.pantau()` aktif, `/metrics` dibatasi di proxy (§8.10)
+- [ ] Disadari: belum ada graceful shutdown lewat SIGTERM (§8.10)
+
+## 8.10 Health check, metrics, dan log terstruktur
+
+`app.pantau()` (lihat [bab 7](07_PUSTAKA_STANDAR.md), *Observability*)
+memberi tiga rute dan ID permintaan; `log.atur(format = "json")` membuat
+setiap baris log satu objek JSON.
+
+```indonesiaku-takjalan
+impor web
+impor log
+
+log.atur(format = "json")                 # stderr -> docker logs -> Loki/ELK
+app = web.Aplikasi()
+app.proxy_tepercaya(["172.20.0.2"])       # alamat nginx di jaringan compose
+app.pantau(periksa_siap = fungsi() {
+    db_eksekusi(db, "SELECT 1")           # galat -> 503, detail hanya di log
+    kembalikan benar
+})
+app.jalankan(8080, alamat = "0.0.0.0")
+```
+
+**Healthcheck container.** Image runtime tidak membawa `curl`; pakai
+interpreter itu sendiri, yang selalu ada. Salin skrip kecil ini ke image:
+
+```indonesiaku-takjalan
+# cek_sehat.idk -- keluar 0 bila /health menjawab 200, selain itu 1.
+impor "pustaka/http.idk"
+coba {
+    keluar(0 jika http_ambil("http://127.0.0.1:8080/health").status == 200 selain 1)
+} kecuali e {
+    keluar(1)
+}
+```
+
+```yaml
+    healthcheck:
+      test: ["CMD", "indk", "/app/cek_sehat.idk"]
+      interval: 30s
+      timeout: 5s
+```
+
+`/health` (liveness) hanya memastikan proses melayani; arahkan *readiness*
+orchestrator ke `/ready`.
+
+**Nginx.** Teruskan ID permintaan nginx supaya log proxy dan log aplikasi
+memakai ID yang sama, dan jangan buka `/metrics` ke publik:
+
+```nginx
+location / {
+    proxy_set_header X-Request-ID $request_id;
+    proxy_pass http://app:8080;
+}
+location = /metrics {
+    allow 10.0.0.0/8;      # jaringan Prometheus
+    deny all;
+    proxy_pass http://app:8080;
+}
+```
+
+`X-Request-ID` dari nginx hanya dipakai bila alamat nginx terdaftar di
+`proxy_tepercaya()`; dari alamat lain header itu diabaikan dan aplikasi
+membuat ID sendiri.
+
+**Prometheus.** Scrape `/metrics` seperti target biasa. Contoh kueri:
+`rate(indk_http_permintaan_total{status=~"5.."}[5m])` untuk error rate dan
+`histogram_quantile(0.95, rate(indk_http_durasi_detik_bucket[5m]))` untuk p95.
+
+**Belum ada (jangan diasumsikan):**
+
+- **Graceful shutdown lewat SIGTERM.** `docker stop` mengirim SIGTERM lalu
+  SIGKILL setelah 10 detik; permintaan yang sedang berjalan saat itu terputus.
+  Satu-satunya jalur berhenti anggun hari ini adalah `app.berhenti()` dari
+  dalam aplikasi. Menangkap sinyal membutuhkan dukungan C dan masih
+  direncanakan (Fase 22 roadmap).
+- Tracing terdistribusi (OpenTelemetry) dan metrics memori/GC.
+- Hasil uji beban. Belum ada angka kapasitas resmi; ukur sendiri sebelum
+  mengandalkan server ini.
 
 ---
 

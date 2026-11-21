@@ -427,6 +427,131 @@ kelas Aplikasi {
         diri.cors_header = "Content-Type, X-CSRF-Token"
         diri.cors_umur = 600
         diri.proxy_daftar = []       # kosong = X-Forwarded-For diabaikan
+        # Observability (Fase 22). Mati sampai pantau() dipanggil, supaya
+        # respons aplikasi lama tetap byte-identik (tanpa X-Request-ID).
+        diri.pantau_aktif = salah
+        diri._metrik = kosong
+        diri._id_terakhir = kosong
+    }
+
+    # pantau(kesehatan, kesiapan, periksa_siap, metrik) -> diri.
+    #
+    # Menyalakan observability minimum: rute GET untuk liveness, readiness,
+    # dan metrics Prometheus, header X-Request-ID di setiap respons, dan
+    # field request_id di log app.jalankan(). Jalur bernilai kosong berarti
+    # rute itu tidak didaftarkan.
+    #
+    # Rute ini rute biasa: middleware (mis. autentikasi) ikut berlaku. Itu
+    # disengaja -- /metrics tidak punya autentikasi sendiri, jadi batasi
+    # aksesnya lewat middleware atau reverse proxy.
+    pantau(kesehatan = "/health", kesiapan = "/ready", periksa_siap = kosong,
+           metrik = "/metrics") {
+        jika diri.pantau_aktif {
+            naikkan GalatWeb("pantau() sudah dipanggil")
+        }
+        untuk j dalam [kesehatan, kesiapan, metrik] {
+            jika j bukan adalah kosong {
+                jika jenis(j) != "teks" atau j == "" atau j[0] != "/" {
+                    naikkan GalatWeb("jalur pantau harus teks yang diawali '/', atau kosong")
+                }
+            }
+        }
+        jika periksa_siap bukan adalah kosong dan tidak bisa_dipanggil(periksa_siap) {
+            naikkan GalatWeb("periksa_siap harus bisa dipanggil")
+        }
+
+        diri.pantau_aktif = benar
+        diri._metrik = {
+            "total": {},
+            "bucket": [0 untuk b dalam _WEB_BUCKET_DURASI],
+            "jumlah": 0.0,
+            "hitung": 0,
+            "mulai": waktu()
+        }
+
+        # Liveness: proses hidup dan gelung melayani. Sengaja TIDAK memeriksa
+        # apa pun yang mahal -- satu utas, jadi health check yang lambat
+        # menunda permintaan pengguna.
+        jika kesehatan bukan adalah kosong {
+            diri.rute("GET", kesehatan, fungsi(req) {
+                kembalikan json(200, "{\"status\":\"ok\"}")
+            })
+        }
+        # Readiness: boleh memeriksa ketergantungan (mis. db "SELECT 1").
+        # Galat di dalam periksa_siap jadi 503; detailnya hanya ke log,
+        # tidak ke klien.
+        jika kesiapan bukan adalah kosong {
+            diri.rute("GET", kesiapan, fungsi(req) {
+                kembalikan _web_jawab_siap(periksa_siap, req)
+            })
+        }
+        jika metrik bukan adalah kosong {
+            variabel app = diri
+            diri.rute("GET", metrik, fungsi(req) {
+                kembalikan http_response(200, "text/plain; version=0.0.4; charset=utf-8",
+                                         app.metrik_teks())
+            })
+        }
+        kembalikan diri
+    }
+
+    # _rekam(metode, status, detik) -> catat satu permintaan ke counter.
+    _rekam(metode, status, detik) {
+        variabel m = diri._metrik
+        variabel kunci_metrik = _web_label_metode(metode) + " " + ke_teks(status)
+        jika punya(m["total"], kunci_metrik) {
+            m["total"][kunci_metrik] = m["total"][kunci_metrik] + 1
+        } selain {
+            m["total"][kunci_metrik] = 1
+        }
+        variabel i = 0
+        selagi i < panjang(_WEB_BUCKET_DURASI) {
+            jika detik <= _WEB_BUCKET_DURASI[i] {
+                m["bucket"][i] = m["bucket"][i] + 1
+                hentikan
+            }
+            i = i + 1
+        }
+        m["jumlah"] = m["jumlah"] + detik
+        m["hitung"] = m["hitung"] + 1
+    }
+
+    # metrik_teks() -> teks format eksposisi Prometheus 0.0.4.
+    #
+    # Path TIDAK menjadi label: tiap path unik (mis. /todos/123) akan menjadi
+    # deret waktu baru dan menghabiskan memori Prometheus maupun proses ini.
+    metrik_teks() {
+        jika tidak diri.pantau_aktif {
+            naikkan GalatWeb("metrik belum aktif; panggil pantau() lebih dulu")
+        }
+        variabel m = diri._metrik
+        variabel b = []
+        tambah(b, "# HELP indk_http_permintaan_total Jumlah permintaan HTTP yang dijawab, per metode dan status.")
+        tambah(b, "# TYPE indk_http_permintaan_total counter")
+        untuk k dalam terurut(kunci(m["total"])) {
+            variabel sp = teks_cari(k, " ")
+            variabel metode = potong(k, 0, sp)
+            variabel status = potong(k, sp + 1, panjang(k) - sp - 1)
+            tambah(b, "indk_http_permintaan_total{metode=\"" + metode + "\",status=\""
+                      + status + "\"} " + ke_teks(m["total"][k]))
+        }
+        tambah(b, "# HELP indk_http_durasi_detik Durasi menangani permintaan HTTP, dalam detik.")
+        tambah(b, "# TYPE indk_http_durasi_detik histogram")
+        variabel kumulatif = 0
+        variabel i = 0
+        selagi i < panjang(_WEB_BUCKET_DURASI) {
+            kumulatif = kumulatif + m["bucket"][i]
+            tambah(b, "indk_http_durasi_detik_bucket{le=\"" + ke_teks(_WEB_BUCKET_DURASI[i])
+                      + "\"} " + ke_teks(kumulatif))
+            i = i + 1
+        }
+        tambah(b, "indk_http_durasi_detik_bucket{le=\"+Inf\"} " + ke_teks(m["hitung"]))
+        tambah(b, "indk_http_durasi_detik_sum " + ke_teks(m["jumlah"]))
+        tambah(b, "indk_http_durasi_detik_count " + ke_teks(m["hitung"]))
+        tambah(b, "# HELP indk_mulai_detik Waktu pantau() dipanggil, detik sejak epoch.")
+        tambah(b, "# TYPE indk_mulai_detik gauge")
+        tambah(b, "indk_mulai_detik " + ke_teks(m["mulai"]))
+        kembalikan teks_gabung(b, "\n") + "\n"
     }
 
     # cors(asal, kredensial, metode, header) -> diri.
@@ -765,6 +890,20 @@ kelas Aplikasi {
     # supaya pemanggil lama -- termasuk contoh di panduan yang memanggil
     # app.tangani(mentah) langsung -- tetap bekerja.
     tangani(mentah, peer = kosong) {
+        variabel mulai = jam()
+        # ID dibuat SEBELUM mengurai: permintaan rusak (400) pun mendapat ID
+        # yang bisa dicocokkan dengan baris lognya.
+        diri._id_terakhir = _web_bita_ke_heks(acak_bita(8))
+        variabel res = diri._tangani(mentah, peer)
+        jika diri.pantau_aktif {
+            diri._rekam(_web_metode_dari(mentah), _web_status_dari(res), jam() - mulai)
+            res = _web_sisip_header(res, [["X-Request-ID", diri._id_terakhir]])
+        }
+        kembalikan res
+    }
+
+    # _tangani(mentah, peer) -> teks respons; isi tangani() yang sebenarnya.
+    _tangani(mentah, peer) {
         variabel req = kosong
         coba {
             req = http_urai_request(mentah)
@@ -857,6 +996,20 @@ kelas Aplikasi {
         # berjalan, supaya middleware dan rute sama-sama melihatnya.
         req["alamat"] = diri._alamat_klien(req, peer)
 
+        # Correlation ID. X-Request-ID kiriman luar hanya dipercaya dari
+        # proxy tepercaya (nginx `$request_id`), dengan alasan yang sama
+        # seperti X-Forwarded-For: klien biasa bisa mengisinya apa saja.
+        # Bentuknya dibatasi supaya tidak bisa menyuntikkan baris log.
+        jika peer bukan adalah kosong dan peer dalam diri.proxy_daftar {
+            jika "x-request-id" dalam req["header"] {
+                variabel rid = teks_pangkas(req["header"]["x-request-id"])
+                jika _web_id_sah(rid) {
+                    diri._id_terakhir = rid
+                }
+            }
+        }
+        req["id"] = diri._id_terakhir
+
         variabel cors = diri._cors_header(req)
 
         # Preflight dijawab di sini, tidak diteruskan ke penangan: peramban
@@ -884,8 +1037,11 @@ kelas Aplikasi {
             # Detail galat TIDAK bocor ke klien; operator melihatnya di stderr.
             # tulis_galat() tidak menambah baris baru sendiri, jadi "\n"
             # wajib: tanpa itu pesan ini menempel ke baris log berikutnya.
+            # ID permintaan ikut ditulis supaya baris ini bisa dicocokkan
+            # dengan X-Request-ID yang dilihat klien.
             tulis_galat("web: galat menangani " + req["metode"] + " "
-                        + req["path"] + ": " + ke_teks(e) + "\n")
+                        + req["path"] + " (id " + req["id"] + "): "
+                        + ke_teks(e) + "\n")
             kembalikan teks(500, "Galat internal")
         }
     }
@@ -917,16 +1073,21 @@ kelas Aplikasi {
     #
     # Badan dan header TIDAK pernah dicatat: badan bisa memuat kata sandi dan
     # header memuat cookie sesi. Hanya metode, path, status, dan durasi.
+    #
+    # Field terstruktur (`data`) hanya tampil bila log.atur(format="json");
+    # baris teks tetap "GET /x 200 1.2ms" seperti sebelumnya.
     _catat(metode, path, status, mulai) {
         variabel ms = bulatkan((jam() - mulai) * 1000, 1)
         variabel pesan = metode + " " + path + " " + ke_teks(status)
         pesan = pesan + " " + ke_teks(ms) + "ms"
+        variabel data = {"request_id": diri._id_terakhir, "metode": metode,
+                         "path": path, "status": status, "durasi_ms": ms}
         jika status >= 500 {
-            diri.pencatat.galat(pesan)
+            diri.pencatat.galat(pesan, data)
         } jika_lain status >= 400 {
-            diri.pencatat.peringatan(pesan)
+            diri.pencatat.peringatan(pesan, data)
         } selain {
-            diri.pencatat.info(pesan)
+            diri.pencatat.info(pesan, data)
         }
     }
 
@@ -1029,6 +1190,62 @@ kelas Aplikasi {
         }
         kembalikan dilayani
     }
+}
+
+# --- observability (Fase 22) -------------------------------------------------
+
+# Batas bucket histogram durasi, dalam detik: bucket bawaan klien Prometheus,
+# supaya dasbor dan histogram_quantile() yang sudah umum langsung cocok.
+_WEB_BUCKET_DURASI = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+
+# Metode yang boleh menjadi label apa adanya. Selain ini dikelompokkan ke
+# "LAIN": metode dikirim klien, dan label bebas membuat siapa pun bisa
+# menumbuhkan jumlah deret waktu tanpa batas.
+_WEB_METODE_BAKU = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
+fungsi _web_label_metode(metode) {
+    jika metode dalam _WEB_METODE_BAKU {
+        kembalikan metode
+    }
+    kembalikan "LAIN"
+}
+
+# _web_id_sah(t) -> benar bila t layak dipakai sebagai ID permintaan:
+# 1..64 karakter [A-Za-z0-9._-]. Spasi, kutip, dan baris baru ditolak, jadi
+# ID dari luar tidak bisa memecah atau memalsukan baris log.
+fungsi _web_id_sah(t) {
+    jika panjang(t) < 1 atau panjang(t) > 64 {
+        kembalikan salah
+    }
+    untuk c dalam t {
+        variabel k = ord(c)
+        variabel sah = (k >= 48 dan k <= 57) atau (k >= 65 dan k <= 90)
+        sah = sah atau (k >= 97 dan k <= 122) atau c == "-" atau c == "_" atau c == "."
+        jika tidak sah {
+            kembalikan salah
+        }
+    }
+    kembalikan benar
+}
+
+# _web_jawab_siap(periksa, req) -> respons readiness.
+fungsi _web_jawab_siap(periksa, req) {
+    variabel tidak_siap = json(503, "{\"status\":\"tidak siap\"}")
+    jika periksa adalah kosong {
+        kembalikan json(200, "{\"status\":\"ok\"}")
+    }
+    variabel hasil = salah
+    coba {
+        hasil = periksa()
+    } kecuali e {
+        log.ambil_pencatat("web").peringatan("kesiapan gagal: " + ke_teks(e),
+                                             {"request_id": req["id"]})
+        kembalikan tidak_siap
+    }
+    jika hasil {
+        kembalikan json(200, "{\"status\":\"ok\"}")
+    }
+    kembalikan tidak_siap
 }
 
 # _web_metode_dari(mentah) -> metode HTTP, atau "?" bila tak terbaca.

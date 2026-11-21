@@ -467,6 +467,7 @@ jobs:
                    tests/web_csrf.sh \
                    tests/web_auth.sh \
                    tests/web_cors.sh \
+                   tests/web_pantau_server.sh \
                    tests/keamanan_app.sh \
                    tests/versi_konsisten.sh \
                    tests/http_pengalihan_server.sh \

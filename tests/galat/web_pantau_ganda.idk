@@ -1,0 +1,5 @@
+# pantau() dua kali: rute ganda dan counter yang di-reset diam-diam.
+impor web
+variabel app = web.Aplikasi()
+app.pantau()
+app.pantau()
