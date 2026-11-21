@@ -1,6 +1,6 @@
 # Roadmap — Bahasa Indonesiaku
 
-**Satu-satunya sumber kebenaran untuk roadmap.** Versi rilis terbaru: `1.4.0`
+**Satu-satunya sumber kebenaran untuk roadmap.** Versi rilis terbaru: `1.7.0`
 (`INDK_VERSION` di `src/common.h`). Riwayat detail per rilis ada di
 [`CHANGELOG.md`](../CHANGELOG.md).
 
@@ -568,7 +568,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 | 11 — HTTP/HTTPS | — | `v1.5.0` ✅ terbit | Validasi TLS dan uji keamanan/protokol server lulus |
 | 12 — HTML SSR | — | `v1.5.0` ✅ terbit | Templating aman dan contoh SSR lengkap |
 | 13 — Web security | `v1.6.0-rc.1` ✅ terbit | `v1.6.0` ✅ terbit | Audit dan tes auth/session/CSRF lulus |
-| 14 — Package manager | `v1.7.0-rc.1` | `v1.7.0` | Resolusi dependensi dan supply-chain checks lulus |
+| 14 — Package manager | — | 🟨 V1 lokal di `[Belum dirilis]` (`v1.7.0` terpakai untuk templat Fase 12) | Resolusi dependensi dan supply-chain checks lulus |
 | 15 — Debugger & FFI | `v1.8.0-rc.1` | `v1.8.0` | API native/GC dan debug tests lulus |
 | 16 — WASM & performa | `v1.9.0-rc.1` | `v1.9.0` | Uji browser/WASM dan benchmark yang relevan lulus |
 | 17 — Transfer file & SSH/SFTP/FTP | `v1.10.0-rc.1` | `v1.10.0` | Protokol aman, uji transfer, host key dan TLS lulus |
@@ -836,17 +836,17 @@ menghasilkan fitur yang tampak benar dan sepenuhnya tidak aman. Rencananya di
 
 ### Fase 14 — Package manager, perkakas proyek dan integrasi library
 
-**Tujuan:** developer dapat memulai dan membagikan proyek backend tanpa menyalin modul secara manual. **Status:** ⬜ belum. **Pemetaan:** P3, DX-01, DX-02.
+**Tujuan:** developer dapat memulai dan membagikan proyek backend tanpa menyalin modul secara manual. **Status:** 🟨 sebagian — manajer paket V1 lokal (`indk paket`, butir 1–2) selesai; registri, scaffolding, dan boilerplate library belum. **Pemetaan:** P3, DX-01, DX-02.
 
-**Rekomendasi rilis fase: `v1.7.0` (minor), kandidat `v1.7.0-rc.1`; patch `v1.7.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.
+**Rekomendasi rilis fase: `v1.8.0` (minor), kandidat `v1.8.0-rc.1`; patch `v1.8.1` dan seterusnya jika hanya perbaikan kompatibel.** (`v1.7.0` sudah dipakai untuk templat lanjutan Fase 12.) Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.
 
 **Gerbang rilis:** Manajer paket dengan lockfile/integritas, scaffolding dan instalasi reproducible lulus uji, termasuk kegagalan jaringan dan arsip berbahaya.
 
 
 **Langkah pengembangan:**
 
-1. [x] Buat rencana docs/RENCANA_FITUR/manajer_paket.md: manifest, nama paket/namespace, versi semantik, lockfile, cache, URL registri, checksum/signature dan lokasi instalasi non-root. (rencana V1 lokal-saja ditulis; registry publik sengaja ditunda, lihat alasan di dokumen)
-2. [ ] Implementasikan perintah CLI inisialisasi proyek, tambah, hapus, daftar, perbarui dan pemulihan lockfile; pisahkan dependency resolution dari unduhan.
+1. [x] Buat rencana docs/RENCANA_FITUR/selesai/manajer_paket.md: manifest, nama paket/namespace, versi semantik, lockfile, cache, URL registri, checksum/signature dan lokasi instalasi non-root. (rencana V1 lokal-saja ditulis; registry publik sengaja ditunda, lihat alasan di dokumen)
+2. [x] Implementasikan perintah CLI inisialisasi proyek, tambah, hapus, daftar, perbarui dan pemulihan lockfile; pisahkan dependency resolution dari unduhan. *(V1: `indk paket mulai/tambah/hapus/pasang/perbarui/daftar` di `pustaka/paket.idk`; `src/main.c` hanya meneruskan argumen. Sumber git (dikunci ke commit SHA + checksum isi) dan direktori lokal; dependensi transitif, konflik ditolak, cache git di `.indk_paket/.cache/` sehingga `pasang` bisa tanpa jaringan. Resolusi selesai seluruhnya di staging sebelum `.indk_paket/` disentuh. `impor <nama>` menemukan `.indk_paket/` di akar proyek (langkah resolusi terakhir di `resolveModulePath`, sesudah pustaka standar). Diuji `tests/paket_cli.idk` — 62 asersi, tanpa jaringan; sabotase checksum, url, resolusi impor, dan pembersihan cache git semuanya merah.)*
 3. [ ] Rancang format paket yang dapat dipublikasikan dan registry/API dengan otorisasi, integritas artefak, kebijakan takedown dan mitigasi package-name squatting. **Registri publik belum perlu diluncurkan sebelum desain keamanan selesai.**
 4. [ ] Tambahkan scaffolding aplikasi backend (**DX-01**): direktori modul, file konfigurasi, contoh HTTP dan database, tes awal, penggunaan environment serta perintah menjalankan/menguji.
 5. [ ] Integrasikan paket backend dan SSR dengan manajer paket serta lockfile (**DX-02**) tanpa menghilangkan opsi memakai standard library bawaan.
@@ -891,8 +891,8 @@ kalkulator-indonesiaku/
 
 **Kriteria selesai:** template dari nol bisa dihasilkan dan dijalankan di Windows/Linux/macOS, import berfungsi, tes bawaan hijau, dokumentasi akurat, publish/install lokal reproducible, serta fungsi yang masih direncanakan tidak ditampilkan sebagai tersedia.
 
-6. [ ] Tambahkan tes konflik dependensi, paket berbahaya, checksum tidak cocok, install offline/cache, downgrade, path traversal arsip, reproducible install, serta Windows/Linux/macOS.
-7. [ ] Dokumentasikan cara membuat, mempublikasikan, menginstal dan mengaudit dependensi paket serta lisensi pihak ketiga.
+6. [ ] Tambahkan tes konflik dependensi, paket berbahaya, checksum tidak cocok, install offline/cache, downgrade, path traversal arsip, reproducible install, serta Windows/Linux/macOS. *(Sebagian, V1: konflik, checksum tidak cocok, pasang offline dari cache, pasang ulang byte-identik, tag yang bergeser, url `-`/`ext::`, nama paket berbahaya dan lintas OS lewat `tests/test_paket.{sh,ps1}`. Path traversal arsip tidak berlaku selama V1 tidak mengunduh arsip; downgrade menunggu rentang versi.)*
+7. [ ] Dokumentasikan cara membuat, mempublikasikan, menginstal dan mengaudit dependensi paket serta lisensi pihak ketiga. *(Sebagian: membuat, memasang, dan mengaudit lewat kunci ada di `website/panduan/10_MANAJER_PAKET.md`; mempublikasikan menunggu registri, lisensi pihak ketiga belum.)*
 
 **Selesai jika:** proyek bersih dapat dibuat dan dependensi dipasang secara reproducible dengan lockfile, validasi integritas aktif dan tutorial telah diuji.
 

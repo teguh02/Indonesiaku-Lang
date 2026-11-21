@@ -259,6 +259,24 @@ agents alike:
   reads: a library defining `panjang`, or doing `dari bita impor ke_teks`,
   silently replaced the builtin inside `pustaka/json.idk` (T-U8). Never let a
   user-level definition reach `vm.globals`.
+- **Installed packages are a resolution step, not an `INDK_PATH` entry.**
+  `findInPackages` in `vm.c` maps `impor nama[.sub]` to
+  `.indk_paket/nama/nama.idk` (or `nama/sub.idk`) in the nearest ancestor
+  holding `indonesiaku.toml` (walking up with `../`, no realpath); an
+  importer that is itself inside `.indk_paket/` uses the project that
+  contains it. It is the LAST step, after the stdlib roots, so a package can
+  never shadow or hijack a stdlib module -- keep it last. CLI subcommands
+  written in Indonesiaku (`indk paket`, `--periksa-pembaruan`) load their
+  script by absolute path through `jalankanPustakaCli`/`vmCariPustakaInterpreter`,
+  never `impor nama`, which would check the cwd first and let a project
+  replace the tool. `_info_jalur` FOLLOWS symlinks; code that copies or
+  deletes trees must ask `_adalah_tautan` first. All package-manager logic is
+  in `pustaka/paket.idk`. Two traps found while building it:
+  `jalur_indk()` returns `\` on Windows while `pustaka/jalur.idk` only knows
+  `/` (wrap it in `jalur.dari_windows`), and git writes its object files
+  read-only on Windows, so Indonesiaku cannot delete a clone it made — the
+  git mirror cache in `.indk_paket/.cache/` is kept on purpose and test
+  workspaces are removed by the `.sh`/`.ps1` wrappers. `kasus` is a keyword.
 - **A module name is an identifier, so language keywords cannot be path
   components:** `impor paket.dalam` fails because `dalam` is the `in` operator.
   Name module files accordingly.

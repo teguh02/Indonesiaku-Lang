@@ -9,6 +9,32 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **Manajer paket `indk paket` (Fase 14, V1)** — dependensi proyek tanpa menyalin
+  folder dengan tangan. `indk paket mulai` membuat `indonesiaku.toml`;
+  `tambah <nama> --git <url> [--tag|--rev]` atau `--path <dir>`, `hapus`,
+  `pasang`, `perbarui [nama]`, `daftar`, dan `-C <dir>`. `indonesiaku.lock`
+  mencatat commit SHA persis dan checksum SHA-256 isi, jadi `pasang`
+  menghasilkan isi byte-identik walau tag di remote dipindah, menolak isi yang
+  tidak cocok, dan bisa berjalan tanpa jaringan dari cache
+  `.indk_paket/.cache/`. Dependensi transitif ikut terpasang; konflik nama
+  ditolak. Tidak ada skrip pasca-pasang. URL diawali `-` atau berisi `::`,
+  nama yang sama dengan modul standar, dan paket git yang bergantung pada
+  `path` lokal ditolak. Seluruh logikanya ditulis dalam Indonesiaku
+  (`pustaka/paket.idk`). Panduan: `website/panduan/10_MANAJER_PAKET.md`;
+  uji: `tests/paket_cli.idk` (tanpa jaringan).
+- **`impor` menemukan paket terpasang**: `impor nama` memuat
+  `.indk_paket/nama/nama.idk` dan `impor nama.sub` memuat
+  `.indk_paket/nama/sub.idk` dari akar proyek terdekat (direktori yang berisi
+  `indonesiaku.toml`). Langkah ini paling akhir, sesudah pustaka standar, jadi
+  impor yang dulu berhasil tidak berubah artinya dan paket tidak pernah
+  membayangi modul standar.
+
+### Keamanan
+
+- **`indk --periksa-pembaruan` (dan `indk paket`) dimuat dari pustaka standar
+  interpreter**, bukan lewat `impor` biasa yang lebih dulu memeriksa direktori
+  kerja: sebelumnya `pembaruan.idk` di direktori kerja menggantikan perintah
+  itu dengan kodenya sendiri.
 - **Debugger VS Code (F5)** di atas `indk awakutu`: adapter Debug Adapter
   Protocol tanpa dependensi (`editors/vscode-indonesiaku/debug-adapter.js`)
   dengan breakpoint di gutter, step over/into/out, call stack, Variables

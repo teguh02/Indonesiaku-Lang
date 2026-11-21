@@ -80,6 +80,13 @@ Menaruh server Indonesiaku di internet tanpa membuat lubang.
 - TLS dan pembaruan sertifikat
 - Daftar periksa sebelum publik
 
+### 10. [Manajer Paket: `indk paket`](10_MANAJER_PAKET.md)
+Memakai pustaka orang lain tanpa menyalin folder dengan tangan.
+- `indonesiaku.toml` (manifest) dan `indonesiaku.lock` (commit persis + checksum)
+- Sumber git (tag/commit) dan direktori lokal; `impor <nama>` langsung bekerja
+- Pasang ulang yang identik di semua mesin, bisa tanpa jaringan dari cache
+- Tanpa skrip pasca-pasang; batas sadar V1: belum ada registri dan rentang versi
+
 ### 9. [Embedding: Menjalankan Indonesiaku dari Program C](09_EMBEDDING.md)
 Memakai Indonesiaku sebagai bahasa skrip di dalam aplikasi C Anda.
 - Membangun `libindk.a` dan menaut program sendiri terhadapnya
@@ -139,6 +146,7 @@ cetak("Hasil penjumlahan:", jumlah)
 - **[07_PUSTAKA_STANDAR.md](07_PUSTAKA_STANDAR.md)** - Referensi fungsi bawaan & pustaka
 - **[08_DEPLOYMENT.md](08_DEPLOYMENT.md)** - Docker, reverse proxy, TLS, isolasi
 - **[09_EMBEDDING.md](09_EMBEDDING.md)** - API embedding C (`libindk.a`), fungsi C sebagai builtin
+- **[10_MANAJER_PAKET.md](10_MANAJER_PAKET.md)** - `indk paket`: manifest, kunci, dependensi git/lokal
 - **[CHANGELOG.md](../CHANGELOG.md)** - Riwayat perubahan tiap versi
 - **[QUICKSTART.md](../QUICKSTART.md)** - Panduan cepat memulai
 - **[examples/](../examples/)** - 50+ contoh program siap jalan
