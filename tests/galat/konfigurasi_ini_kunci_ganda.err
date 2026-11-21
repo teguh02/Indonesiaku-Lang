@@ -1,0 +1,5 @@
+aplikasi.ini:4: kunci 'host' ganda di bagian [db]
+[baris 267, kolom 105] dalam urai_ini()
+    … bagian [" + bagian + "]", sumber, nomor)
+                                             ^
+[baris 3, kolom 76] dalam skrip

@@ -1,0 +1,112 @@
+# konfigurasi: .env, INI, prioritas sumber dan validasi skema.
+#
+# Semua isi berkas di sini dibuat dari teks supaya contoh ini berdiri
+# sendiri; isi_lingkungan menggantikan lingkungan OS agar keluarannya sama
+# di setiap mesin.
+
+impor konfigurasi
+dari konfigurasi impor GalatKonfigurasi
+
+fungsi bagian_env() {
+    cetak("== .env ==")
+    variabel isi = teks_gabung([
+        "# komentar",
+        "export APP_NAMA = Toko Ñandú 🛒",
+        "PORT=8080   # komentar di belakang",
+        "SAPAAN=\"Halo,\\n\\\"dunia\\\"\"",
+        "POLA='tanpa \\n escape # bukan komentar'",
+        "KOSONG=",
+        "URL=http://x/#anchor",
+        "PORT=9090",
+    ], "\n")
+    variabel env = konfigurasi.urai_env(isi)
+    untuk k dalam terurut(kunci(env)) {
+        cetak(k, "=", repr(env[k]))
+    }
+}
+
+fungsi bagian_ini() {
+    cetak("== INI ==")
+    variabel isi = teks_gabung([
+        "; komentar",
+        "nama = global",
+        "[basis_data]",
+        "host = localhost",
+        "port: 5432",
+        "[日本]",
+        "挨拶 = こんにちは",
+    ], "\r\n")
+    variabel ini = konfigurasi.urai_ini(chr(65279) + isi)
+    untuk b dalam kunci(ini) {
+        cetak(repr(b), ini[b])
+    }
+}
+
+fungsi bagian_muat() {
+    cetak("== muat ==")
+    variabel skema = {
+        "port": {"tipe": "bulat", "bawaan": 8000},
+        "debug": "logika",
+        "mode": {"tipe": "teks", "pilihan": ["dev", "uji", "produksi"], "bawaan": "dev"},
+        "host_diizinkan": {"tipe": "daftar", "bawaan": []},
+        "rasio": {"tipe": "desimal", "bawaan": 0.5},
+        "SANDI_DB": {"tipe": "teks", "wajib": benar},
+    }
+    variabel konf = konfigurasi.muat(
+        bawaan = {"debug": "tidak"},
+        awalan_lingkungan = "APP_",
+        skema = skema,
+        isi_lingkungan = {
+            "APP_PORT": "9000",
+            "APP_DEBUG": "Ya",
+            "APP_HOST_DIIZINKAN": "a.test, b.test",
+            "APP_SANDI_DB": "rahasia-sekali",
+            "APP_LAIN": "tidak dibaca karena tidak dikenal",
+        }
+    )
+    untuk k dalam terurut(konf.kunci()) {
+        cetak(k, repr(konf[k]), "<-", konf.sumber(k))
+    }
+    cetak(konf)
+    cetak("rahasia asli tetap bisa dibaca:", panjang(konf["SANDI_DB"]), "karakter")
+    cetak("ambil bawaan:", konf.ambil("tidak_ada", 42), "punya:", konf.punya("mode"))
+    coba {
+        cetak(konf["tidak_ada"])
+    } kecuali GalatKunci sebagai e {
+        cetak("GalatKunci:", e.pesan)
+    }
+}
+
+fungsi bagian_galat() {
+    cetak("== galat ==")
+    coba {
+        konfigurasi.urai_env("A=1\nB\n")
+    } kecuali GalatKonfigurasi sebagai e {
+        cetak(e.pesan, "| baris", e.baris)
+    }
+    coba {
+        konfigurasi.urai_ini("[a]\nk=1\n[a]\n", "app.ini")
+    } kecuali GalatKonfigurasi sebagai e {
+        cetak(e.pesan)
+    }
+    coba {
+        konfigurasi.urai_env("A=" + "x" * 100, "besar.env", 50)
+    } kecuali GalatKonfigurasi sebagai e {
+        cetak(e.pesan)
+    }
+    coba {
+        konfigurasi.muat(
+            skema = {"port": "bulat", "token_api": {"tipe": "bulat"}, "wajib": {"wajib": benar}},
+            awalan_lingkungan = "",
+            isi_lingkungan = {"PORT": "delapan", "TOKEN_API": "s3cr3t"}
+        )
+    } kecuali GalatKonfigurasi sebagai e {
+        cetak(e.pesan)
+        cetak("nilai rahasia bocor?", "s3cr3t" dalam e.pesan)
+    }
+}
+
+bagian_env()
+bagian_ini()
+bagian_muat()
+bagian_galat()

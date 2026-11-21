@@ -1,0 +1,6 @@
+aplikasi.env:4: kutip " tidak ditutup
+[baris 161, kolom 84] dalam _nilai_kutip()
+    … kutip + " tidak ditutup", sumber, nomor)
+                                             ^
+[baris 209, kolom 56] dalam urai_env()
+[baris 4, kolom 84] dalam skrip

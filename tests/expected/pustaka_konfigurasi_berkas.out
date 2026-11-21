@@ -1,0 +1,12 @@
+KUNCI_API = "abc123" <- berkas _contoh_konfigurasi.env
+NAMA = "Kafe ☕ Ünïcödé" <- berkas _contoh_konfigurasi.env
+PORT = 8080 <- berkas _contoh_konfigurasi.env
+db.host = "localhost" <- berkas _contoh_konfigurasi.ini
+db.port = 6543 <- lingkungan APP_DB_PORT
+fitur.beta = benar <- berkas _contoh_konfigurasi.ini
+Konfigurasi({"PORT": 8080, "NAMA": "Kafe ☕ Ünïcödé", "KUNCI_API": "***", "db.host": "localhost", "db.port": 6543, "fitur.beta": benar})
+_contoh_konfigurasi.env: melebihi batas ukuran 10 bita
+_contoh_konfigurasi.env:3: kutip ' tidak ditutup | sumber _contoh_konfigurasi.env | baris 3
+_tidak_ada.env: berkas tidak ditemukan
+aplikasi.toml: format .toml belum didukung (baru .env dan INI)
+bersih: salah salah

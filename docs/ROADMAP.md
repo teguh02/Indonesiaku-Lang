@@ -578,7 +578,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 | 21 — Realtime, cache dan jobs | `v1.14.0-rc.1` | `v1.14.0` | WebSocket, Redis, SMTP, queue dan scheduler diuji |
 | 22 — Observability dan kesiapan produksi | `v1.15.0-rc.1` | `v1.15.0` | Logging/metrics/profiler, keamanan dan release policy teruji |
 | 23 — Data biner/arsip | `v1.16.0-rc.1` | `v1.16.0` | Binary/streaming dan ekstraksi arsip aman teruji |
-| 24 — Unicode/i18n/konfigurasi | `v1.17.0-rc.1` | `v1.17.0` | Unicode/locale/serialisasi dan parser aman lulus |
+| 24 — Unicode/i18n/konfigurasi | `v1.17.0-rc.1` | 🟨 V1 (`konfigurasi`, `unicode`) di `[Belum dirilis]` | Unicode/locale/serialisasi dan parser aman lulus |
 | 25 — CLI, API testing, broker | `v1.18.0-rc.1` | `v1.18.0` | CLI/test client dan protokol broker opsional teruji |
 
 **Tahapan rilis di dalam tiap fase:**
@@ -1128,19 +1128,19 @@ kalkulator-indonesiaku/
 
 ### Fase 24 — Unicode, i18n, konfigurasi dan format pertukaran data
 
-**Status:** ⬜ belum. **Kandidat rilis rekomendasi:** `v1.19.0-rc.1`. **Rilis stabil rekomendasi:** `v1.19.0`. **Ketergantungan:** Fase 23 untuk encoding/binary, Fase 10–12 untuk aplikasi nyata, dan pustaka standar yang sudah ada.
+**Status:** 🟨 sebagian — V1: `pustaka/konfigurasi.idk` (`.env`/INI, prioritas sumber, skema, rahasia) dan `pustaka/unicode.idk` (case mapping Latin/Yunani/Sirilik, spasi Unicode); rencana di `docs/RENCANA_FITUR/selesai/unicode_i18n_konfigurasi.md`. TOML/YAML, normalisasi, locale belum. **Kandidat rilis rekomendasi:** `v1.19.0-rc.1`. **Rilis stabil rekomendasi:** `v1.19.0`. **Ketergantungan:** Fase 23 untuk encoding/binary, Fase 10–12 untuk aplikasi nyata, dan pustaka standar yang sudah ada.
 
 **Tujuan:** memudahkan pengembangan aplikasi lintas bahasa/locale serta konfigurasi dan pertukaran data dengan format yang umum, tanpa mengubah sintaks inti Indonesiaku.
 
 **Langkah pengembangan:**
 
-1. [ ] Buat `docs/RENCANA_FITUR/unicode_i18n_konfigurasi.md`; audit fungsi `teks`, `tanggal_waktu`, `jalur`, JSON, CSV, XML (Fase 19), serta `lingkungan` yang sudah ada; identifikasi kesenjangan dengan tes, bukan asumsi.
-2. [ ] Definisikan operasi Unicode yang eksplisit: normalisasi NFC/NFD/NFKC/NFKD, case folding, kategori Unicode, whitespace, code point vs grapheme cluster; pertahankan semantik `panjang()` historis tanpa breaking change.
+1. [x] Buat `docs/RENCANA_FITUR/unicode_i18n_konfigurasi.md`; audit fungsi `teks`, `tanggal_waktu`, `jalur`, JSON, CSV, XML (Fase 19), serta `lingkungan` yang sudah ada; identifikasi kesenjangan dengan tes, bukan asumsi.
+2. [ ] *(sebagian: case mapping/case folding U+0000–U+052F dan whitespace di `unicode`; NFC/NFD/kategori/grapheme ditunda)* Definisikan operasi Unicode yang eksplisit: normalisasi NFC/NFD/NFKC/NFKD, case folding, kategori Unicode, whitespace, code point vs grapheme cluster; pertahankan semantik `panjang()` historis tanpa breaking change.
 3. [ ] Sediakan fasilitas locale/i18n yang teruji: format angka/mata uang/tanggal, pluralisasi, timezone data yang diperbarui, message catalog dan fallback; dokumentasikan dukungan locale OS yang berbeda.
-4. [ ] Tambahkan parser/serializer YAML dan TOML dengan batas ukuran/kedalaman, error lokasi, tipe yang terdefinisi dan keamanan; gunakan parser YAML **safe mode** secara default, tanpa konstruksi objek arbitrer.
-5. [ ] Tambahkan loader konfigurasi terstruktur: environment variables, `.env` (opsional sesuai kebutuhan), berkas TOML/YAML/INI serta prioritas sumber dan validasi skema; jangan menulis secrets ke log atau memaksa konfigurasi global yang mengejutkan.
+4. [ ] *(belum: TOML menunggu ekstraksi `urai_toml` dari `pustaka/paket.idk`; YAML ditunda, alasan di rencana fitur)* Tambahkan parser/serializer YAML dan TOML dengan batas ukuran/kedalaman, error lokasi, tipe yang terdefinisi dan keamanan; gunakan parser YAML **safe mode** secara default, tanpa konstruksi objek arbitrer.
+5. [ ] *(sebagian: `.env`/INI/lingkungan, prioritas dan skema selesai; sumber TOML/YAML menunggu butir 4)* Tambahkan loader konfigurasi terstruktur: environment variables, `.env` (opsional sesuai kebutuhan), berkas TOML/YAML/INI serta prioritas sumber dan validasi skema; jangan menulis secrets ke log atau memaksa konfigurasi global yang mengejutkan.
 6. [ ] Evaluasi MessagePack dan serialisasi biner lain sebagai paket opsional; tetapkan kebijakan kompatibilitas format, tipe/precision, dan keamanan deserialisasi tanpa eksekusi kode.
-7. [ ] Uji input multilingual, emoji, combining marks, kasus Turkish locale, DST, file konfigurasi rusak, YAML bombs/tags, serialisasi roundtrip, resource limits serta lintas platform.
+7. [ ] *(sebagian: multilingual, emoji, combining mark, konfigurasi rusak, BOM/CRLF, batas ukuran, diferensial vs Python; DST/YAML/roundtrip belum)* Uji input multilingual, emoji, combining marks, kasus Turkish locale, DST, file konfigurasi rusak, YAML bombs/tags, serialisasi roundtrip, resource limits serta lintas platform.
 8. [ ] Buat contoh aplikasi multibahasa dan konfigurasi lingkungan dev/test/production; lengkapi dokumentasi referensi dan migrasi.
 
 **Contoh API ilustratif (belum tersedia):** `unicode.normalisasi("NFC", teks)`, `lokalisasi.format_tanggal(waktu, "id-ID")`, `konfigurasi.muat("aplikasi.toml")`.

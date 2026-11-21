@@ -1,0 +1,31 @@
+== .env ==
+APP_NAMA = "Toko Ñandú 🛒"
+KOSONG = ""
+POLA = "tanpa \\n escape # bukan komentar"
+PORT = "9090"
+SAPAAN = "Halo,\n\"dunia\""
+URL = "http://x/#anchor"
+== INI ==
+"" {"nama": "global"}
+"basis_data" {"host": "localhost", "port": "5432"}
+"日本" {"挨拶": "こんにちは"}
+== muat ==
+SANDI_DB "rahasia-sekali" <- lingkungan APP_SANDI_DB
+debug benar <- lingkungan APP_DEBUG
+host_diizinkan ["a.test", "b.test"] <- lingkungan APP_HOST_DIIZINKAN
+mode "dev" <- bawaan
+port 9000 <- lingkungan APP_PORT
+rasio 0.5 <- bawaan
+Konfigurasi({"port": 9000, "mode": "dev", "host_diizinkan": ["a.test", "b.test"], "rasio": 0.5, "debug": benar, "SANDI_DB": "***"})
+rahasia asli tetap bisa dibaca: 14 karakter
+ambil bawaan: 42 punya: benar
+GalatKunci: kunci konfigurasi 'tidak_ada' tidak ada
+== galat ==
+<teks>:2: baris tanpa '=' | baris 2
+app.ini:3: bagian [a] ganda
+besar.env: melebihi batas ukuran 50 bita
+konfigurasi tidak sah:
+  - 'port' dari lingkungan PORT bukan bulat: "delapan"
+  - 'token_api' dari lingkungan TOKEN_API bukan bulat
+  - kunci wajib 'wajib' tidak ada (atur WAJIB)
+nilai rahasia bocor? salah
