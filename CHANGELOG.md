@@ -9,6 +9,29 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **Transfer berkas V1: modul `berkas` dan `jaringan.unduh` (Fase 17).**
+  `berkas` memberi `salin_berkas`, `salin_direktori`, `ganti_nama` (rename
+  atomik), `pindahkan` (lintas perangkat = salin + hapus),
+  `hapus_direktori_bertingkat`, `jelajahi_direktori`, `berkas_sementara`/
+  `direktori_sementara` (nama acak CSPRNG, dibuat eksklusif, `0600`/`0700`),
+  `info` (tanpa mengikuti tautan) dan `sha256` (streaming). Tujuan yang ada
+  tidak ditimpa tanpa `timpa=benar`, menyalin berkas ke dirinya sendiri
+  ditolak sebelum terpotong, dan operasi pohon **tidak pernah mengikuti
+  tautan simbolik/junction**. Galat adalah `GalatOS` dengan alasan portabel
+  baru `adalah direktori`, `berkas yang sama`, `tautan simbolik`,
+  `beda perangkat`. `jaringan.unduh(url, tujuan, ...)` menulis badan
+  HTTP/HTTPS per potongan ke berkas sementara di direktori tujuan lalu
+  me-rename-nya hanya setelah status 2xx, `Content-Length`, `maks_ukuran` dan
+  SHA-256 opsional terpenuhi -- tidak pernah ada berkas setengah jadi.
+  Mendukung `batas_waktu`, `kemajuan` (kembalikan `salah` untuk batal) dan
+  pengalihan dengan aturan `http_ambil`. Semua yang membuat/memindah/
+  menghapus serta unduhan ditolak di `--sandbox`. Native internal baru di
+  `src/sistem.c` dan `src/native.c` (tidak ada builtin publik baru). **Belum
+  ada:** resume `Range`, batas waktu connect, `chmod`, FTP/FTPS, SSH, SFTP.
+  Diuji golden `pustaka_berkas`/`pustaka_jaringan`, tiga pasangan
+  `tests/galat`, `tests/unduh_server.sh` (server lokal, badan biner 300 KB),
+  `tests/berkas_tautan.sh` (symlink) dan `tests/test_berkas_windows.ps1`
+  (junction + jalur non-ASCII).
 - **Observability V1 untuk server web (Fase 22)**: `app.pantau()` di
   `pustaka/web.idk` mendaftarkan `GET /health` (liveness), `GET /ready`
   (readiness lewat `periksa_siap()`, 503 bila gagal) dan `GET /metrics`

@@ -2865,6 +2865,148 @@ cetak(kripto.aead_dekripsi(kripto.CHACHA20_POLY1305, k, n, ct, "hdr"))
 > tepercaya — itu tugas isolasi container (lihat `--sandbox` di atas). Belum
 > tersedia: Argon2id, tanda tangan Ed25519, XChaCha20.
 
+### 2.26 `pustaka/berkas.idk` — salin, pindah, hapus pohon, berkas sementara
+
+Operasi berkas dan direktori ala `shutil`/`tempfile` Python. Tersedia sejak
+versi setelah 1.7.0 (Fase 17 V1). Menghapus **satu** berkas tetap memakai
+builtin `hapus_berkas`.
+
+```indonesiaku
+impor berkas
+
+d = berkas.direktori_sementara()              # direktori baru yang unik
+tulis_semua(d + "/catatan.txt", "isi")
+berkas.salin_berkas(d + "/catatan.txt", d + "/cadangan.txt")
+berkas.ganti_nama(d + "/cadangan.txt", d + "/arsip ☕.txt")
+cetak(berkas.sha256(d + "/arsip ☕.txt") == sha256("isi"))   # benar
+
+buat_direktori(d + "/proyek")
+tulis_semua(d + "/proyek/README", "baca aku")
+berkas.salin_direktori(d + "/proyek", d + "/proyek-lama")
+untuk entri dalam berkas.jelajahi_direktori(d) {
+    dir, subdir, isi = entri
+    cetak(dir[panjang(d):] atau ".", subdir, isi)
+}
+# . ["proyek", "proyek-lama"] ["arsip ☕.txt", "catatan.txt"]
+# /proyek [] ["README"]
+# /proyek-lama [] ["README"]
+
+coba {
+    berkas.salin_berkas(d + "/catatan.txt", d + "/arsip ☕.txt")
+} kecuali GalatOS sebagai e {
+    cetak("sudah ada" dalam e.pesan)          # benar: tanpa timpa=benar ditolak
+}
+berkas.hapus_direktori_bertingkat(d)
+```
+
+Aturan yang sama untuk semua fungsi:
+
+- **Tidak menimpa tanpa diminta.** Tujuan yang sudah ada menaikkan `GalatOS`
+  (`... sudah ada`) kecuali `timpa=benar`. Tujuan berupa direktori selalu
+  ditolak — tidak ada "salin ke dalam direktori" ala `cp`; tulis jalur
+  lengkapnya.
+- **Galat portabel.** `GalatOS` dengan alasan yang sama di semua OS:
+  `tidak ada`, `sudah ada`, `akses ditolak`, `adalah direktori`,
+  `berkas yang sama`, `tautan simbolik`, `beda perangkat`. Galat dari modul
+  sendiri memakai `GalatBerkas`, turunan `GalatOS`.
+- **Tautan simbolik tidak diikuti dalam operasi pohon.** `salin_direktori`
+  menolak tautan di dalam pohon kecuali `lewati_tautan=benar`;
+  `hapus_direktori_bertingkat` menghapus tautannya saja (isi target aman) dan
+  menolak akar yang berupa tautan; `jelajahi_direktori` mencantumkan tautan di
+  daftar berkas tanpa menelusurinya. `salin_berkas` mengikuti tautan pada
+  **asal** (seperti `cp`) tetapi tidak pernah menulis melalui tautan di
+  **tujuan**. Di Windows, symlink dan *junction* sama-sama dianggap tautan.
+- **Jalur Unicode** berfungsi di semua OS, termasuk Windows di luar code page.
+- **`--sandbox`**: semua yang membuat, memindah, atau menghapus ditolak
+  (`GalatIzin`); `info` dan `sha256` tetap boleh, seperti `baca_semua`.
+
+| Nama | Deskripsi |
+|------|-----------|
+| `salin_berkas(asal, tujuan, timpa=salah)` | Salin isi + bit izin, per 64 KB (tidak dimuat ke memori). Menyalin ke dirinya sendiri ditolak (`berkas yang sama`) sebelum apa pun terpotong |
+| `salin_direktori(asal, tujuan, timpa=salah, lewati_tautan=salah)` | Salin pohon. Dengan `timpa=benar` direktori yang ada dipakai ulang. Menyalin ke dalam dirinya sendiri ditolak. **Tidak atomik**: galat di tengah meninggalkan salinan sebagian |
+| `ganti_nama(asal, tujuan, timpa=salah)` | Rename atomik di sistem berkas yang sama; lintas perangkat → `GalatBerkas` `beda perangkat` |
+| `pindahkan(asal, tujuan, timpa=salah)` | Seperti `ganti_nama`, lintas perangkat jatuh ke salin + hapus (`shutil.move`) |
+| `hapus_direktori_bertingkat(jalur)` | `rm -r` tanpa mengikuti tautan |
+| `jelajahi_direktori(akar)` | Daftar tupel `(direktori, subdirektori, berkas)` dari atas ke bawah, nama terurut (`os.walk`) |
+| `berkas_sementara(awalan="indk-", akhiran="", direktori=kosong)` | Buat berkas kosong **baru** bernama acak (CSPRNG), eksklusif, izin `0600`; kembalikan jalurnya. Anda yang menghapusnya |
+| `direktori_sementara(awalan="indk-", direktori=kosong)` | Sama, untuk direktori (izin `0700`) |
+| `direktori_sementara_sistem()` | `TMPDIR`, `TEMP`, `TMP`, lalu `/tmp`, lalu `.` |
+| `info(jalur)` | Kamus `jenis` (`berkas`/`direktori`/`tautan`/`lain`), `ukuran`, `waktu_ubah`, `mode` (bit izin POSIX, `kosong` di Windows), `baca_saja`; tautan **tidak** diikuti |
+| `sha256(jalur)` | SHA-256 heksa isi berkas, dibaca bertahap |
+| `GalatBerkas` | Turunan `GalatOS` untuk galat dari modul ini |
+
+> **Belum tersedia:** mengubah izin/pemilik (`chmod`/`chown`) dan membuat
+> tautan. Berkas baca-saja di Windows (mis. objek `.git`) membuat
+> `hapus_direktori_bertingkat` gagal dengan `akses ditolak` — tidak dihapus
+> paksa diam-diam. Tanpa `timpa`, `ganti_nama` di Linux/macOS memeriksa
+> tujuan sebelum rename, jadi ada jendela balapan yang sempit; Windows
+> menolaknya secara atomik. Berkas skrip bernama `berkas.idk` di direktori
+> yang sama membayangi modul ini (direktori skrip dicari lebih dulu).
+
+### 2.27 `pustaka/jaringan.idk` — unduh berkas HTTP/HTTPS
+
+`unduh()` menyimpan respons HTTP/HTTPS langsung ke disk **tanpa menampung
+seluruh badan di memori**. Tersedia sejak versi setelah 1.7.0 (Fase 17 V1).
+
+```indonesiaku-takjalan
+impor jaringan
+dari jaringan impor GalatUnduhan
+
+coba {
+    hasil = jaringan.unduh(
+        "https://contoh.invalid/rilis/indk-1.7.0.tar.gz", "indk.tar.gz",
+        sha256="9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        maks_ukuran=50 * 1024 * 1024,           # byte
+        batas_waktu=30,                          # detik per baca/tulis soket
+        kemajuan=fungsi(n, total) { cetak(n, "/", total) })
+    cetak(hasil["ukuran"], hasil["sha256"], hasil["url"])
+} kecuali GalatUnduhan sebagai e {
+    cetak("unduhan gagal:", e.pesan)   # 4xx/5xx, checksum, ukuran, batal, terputus
+}
+```
+
+Jaminan:
+
+- **Tidak ada berkas setengah jadi.** Badan ditulis ke berkas sementara
+  bernama acak **di direktori tujuan**, lalu di-rename (atomik) ke tujuan
+  hanya setelah statusnya 2xx, panjangnya sama dengan `Content-Length`,
+  tidak melewati `maks_ukuran`, dan SHA-256-nya cocok. Galat apa pun —
+  termasuk koneksi putus atau checksum salah — menghapus berkas sementara
+  itu; tujuan tidak pernah tersentuh.
+- **Streaming.** Badan ditulis per potongan soket (paling banyak 64 KB);
+  pemakaian memori tidak bergantung pada ukuran berkas. Data biner disimpan
+  byte demi byte, apa adanya.
+- **TLS selalu diverifikasi** (sama seperti `http_ambil`), dan pengalihan
+  diikuti dengan aturan yang sama: paling banyak `maks_pengalihan` lompatan
+  (bawaan 5, `0` = tidak diikuti), penurunan `https` → `http` ditolak,
+  putaran ditolak.
+- **Tujuan yang sudah ada** ditolak sebelum koneksi dibuka kecuali
+  `timpa=benar`. Hanya `http://` dan `https://` yang diterima.
+- `kemajuan(diterima, total)` dipanggil setiap potongan tiba (`total` adalah
+  `kosong` bila server tidak mengirim `Content-Length`). Kembalikan `salah`
+  untuk **membatalkan**.
+
+| Parameter | Bawaan | Arti |
+|-----------|--------|------|
+| `timpa` | `salah` | Izinkan mengganti berkas yang sudah ada (atomik) |
+| `batas_waktu` | `30` | Detik per operasi baca/tulis soket; lewat → `Galat` "melewati batas waktu" |
+| `maks_ukuran` | `kosong` | Batas byte, dicek terhadap `Content-Length` **dan** byte yang benar-benar tiba |
+| `sha256` | `kosong` | Heksa yang diharapkan (huruf besar/kecil) |
+| `kemajuan` | `kosong` | `fungsi(diterima, total)`; `salah` = batal |
+| `maks_pengalihan` | `5` | Lompatan pengalihan maksimum |
+| `kepala` | `kosong` | Kamus header tambahan, mis. `{"Authorization": "Bearer ..."}` |
+
+Hasilnya kamus `{"jalur", "url" (URL terakhir setelah pengalihan), "ukuran",
+"sha256", "tipe" (Content-Type atau kosong)}`. `GalatUnduhan` adalah turunan
+`GalatJaringan` → `GalatOS`, jadi penangan `GalatOS` yang sudah ada ikut
+menangkapnya. Ditolak (`GalatIzin`) di `--sandbox`.
+
+> **Belum tersedia:** melanjutkan unduhan (`Range`), batas waktu untuk
+> *membuka* koneksi dan batas waktu total (yang ada adalah batas per operasi
+> baca/tulis), serta HTTP/1.1 *chunked* (permintaan dikirim sebagai HTTP/1.0,
+> jadi server tidak boleh memakainya). FTP/FTPS, SSH, dan SFTP direncanakan
+> (Fase 17 langkah 4–6) dan belum ada.
+
 ## 3. Aplikasi Contoh: Todo-list JSON DB
 
 Dua aplikasi contoh lengkap menunjukkan penggunaan pustaka standar untuk
