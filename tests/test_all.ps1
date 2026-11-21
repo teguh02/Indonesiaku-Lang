@@ -179,6 +179,19 @@ if (Test-Path $unicode) {
     }
 }
 
+# Ekstraksi arsip tidak menulis melalui junction yang sudah ada (Fase 23).
+$tautan = Join-Path $PSScriptRoot "test_arsip_tautan.ps1"
+if (Test-Path $tautan) {
+    Write-Host ""
+    $total++
+    & powershell -ExecutionPolicy Bypass -File $tautan
+    if ($LASTEXITCODE -eq 0) {
+        $passed++
+    } else {
+        $failed++; $failures += "arsip-tautan"
+    }
+}
+
 # ada_berkas() untuk berkas yang dikunci proses lain (T-W9).
 $terkunci = Join-Path $PSScriptRoot "test_ada_berkas_terkunci.ps1"
 if (Test-Path $terkunci) {

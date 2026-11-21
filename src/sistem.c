@@ -1600,3 +1600,68 @@ Value nativeFnJalankanProses(int argCount, Value* args) {
     free(galat.data);
     return hasil;
 }
+
+// ---------------------------------------------------------------------------
+// Helpers for safe archive extraction (src/arsip.c, Fase 23)
+// ---------------------------------------------------------------------------
+
+// Like jenisJalur(), but a symbolic link (or, on Windows, any reparse point:
+// symlink, junction, mount point) is reported as SISTEM_JALUR_TAUTAN instead
+// of being followed. Extraction walks every component below the destination
+// with this, so an entry can never be written through a link that already
+// exists there.
+int sistemJenisTanpaTautan(const char* jalur) {
+#ifdef _WIN32
+    wchar_t* w = keLebarJalur(jalur);
+    if (w == NULL) return SISTEM_JALUR_GALAT;
+    DWORD atribut = GetFileAttributesW(w);
+    Alasan a = atribut == INVALID_FILE_ATTRIBUTES ? alasanTerakhir() : ALASAN_LAIN;   // before free()
+    free(w);
+    if (atribut == INVALID_FILE_ATTRIBUTES) {
+        return a == ALASAN_TIDAK_ADA || a == ALASAN_BUKAN_DIREKTORI ? SISTEM_JALUR_TIDAK_ADA
+                                                                     : SISTEM_JALUR_GALAT;
+    }
+    if (atribut & FILE_ATTRIBUTE_REPARSE_POINT) return SISTEM_JALUR_TAUTAN;
+    return (atribut & FILE_ATTRIBUTE_DIRECTORY) ? SISTEM_JALUR_DIREKTORI : SISTEM_JALUR_BERKAS;
+#else
+    struct stat st;
+    if (lstat(jalur, &st) != 0) {
+        Alasan a = alasanTerakhir();
+        return a == ALASAN_TIDAK_ADA || a == ALASAN_BUKAN_DIREKTORI ? SISTEM_JALUR_TIDAK_ADA
+                                                                     : SISTEM_JALUR_GALAT;
+    }
+    if (S_ISLNK(st.st_mode)) return SISTEM_JALUR_TAUTAN;
+    if (S_ISDIR(st.st_mode)) return SISTEM_JALUR_DIREKTORI;
+    if (S_ISREG(st.st_mode)) return SISTEM_JALUR_BERKAS;
+    return SISTEM_JALUR_LAIN;
+#endif
+}
+
+bool sistemBuatSatuDirektori(const char* jalur) {
+#ifdef _WIN32
+    wchar_t* w = keLebarJalur(jalur);
+    BOOL ok = w != NULL && CreateDirectoryW(w, NULL);
+    free(w);
+    return ok != 0;
+#else
+    return mkdir(jalur, 0777) == 0;
+#endif
+}
+
+// Open `jalur` for writing (create or truncate), refusing to follow a link
+// at the final component. POSIX gets that atomically from O_NOFOLLOW;
+// Windows has no equivalent for _wfopen, so the caller must have checked the
+// component with sistemJenisTanpaTautan() first (a race remains there, and
+// is documented in the plan).
+FILE* sistemBukaTulisTanpaTautan(const char* jalur) {
+#ifdef _WIN32
+    if (sistemJenisTanpaTautan(jalur) == SISTEM_JALUR_TAUTAN) return NULL;
+    return sistemBukaBerkas(jalur, "wb");
+#else
+    int fd = open(jalur, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, 0666);
+    if (fd < 0) return NULL;
+    FILE* f = fdopen(fd, "wb");
+    if (f == NULL) close(fd);
+    return f;
+#endif
+}

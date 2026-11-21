@@ -173,6 +173,17 @@ if [ -f tests/test_jalur_unicode.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Ekstraksi arsip tidak menulis melalui tautan yang sudah ada (Fase 23).
+if [ -f tests/test_arsip_tautan.sh ]; then
+    echo ""
+    if bash tests/test_arsip_tautan.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES arsip-tautan"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Performa parsing badan: urlencoded harus LINEAR, bukan kuadratik.
 # Yang diperiksa bentuk pertumbuhan (2x ukuran -> ~2x waktu), bukan ambang
 # detik, supaya runner lambat tidak membuatnya merah palsu.
