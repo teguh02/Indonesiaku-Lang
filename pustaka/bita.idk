@@ -142,3 +142,25 @@ fungsi dari_heksa(teks) {
     }
     kembalikan hasil
 }
+
+# baca_berkas(jalur, batas=256 MiB) -> isi berkas sebagai daftar bita.
+# baca_semua() memberi teks, dan teks tidak bisa memuat bita yang bukan
+# UTF-8 sah (gambar, arsip, data terkompresi). GalatBita bila berkas lebih
+# besar dari `batas`; GalatOS bila tidak bisa dibuka.
+fungsi baca_berkas(jalur, batas = 268435456) {
+    coba {
+        kembalikan _baca_berkas_bita(jalur, batas)
+    } kecuali GalatNilai sebagai e {
+        naikkan GalatBita(e.pesan)
+    }
+}
+
+# tulis_berkas(jalur, data) -> jumlah bita yang ditulis. `data` boleh daftar
+# bita atau teks (ditulis sebagai bita UTF-8-nya). Berkas lama ditimpa.
+fungsi tulis_berkas(jalur, data) {
+    coba {
+        kembalikan _tulis_berkas_bita(jalur, data)
+    } kecuali GalatNilai sebagai e {
+        naikkan GalatBita(e.pesan)
+    }
+}

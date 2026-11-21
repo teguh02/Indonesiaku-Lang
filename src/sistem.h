@@ -46,6 +46,18 @@ double sistemWaktuCpu(void);
 // module search, which looks for pustaka/ next to the interpreter.
 bool sistemJalurInterpreter(char* out, size_t ukuran);
 
+// Archive extraction helpers (src/arsip.c). sistemJenisTanpaTautan() is
+// lstat(): a link or Windows reparse point is reported, never followed.
+#define SISTEM_JALUR_GALAT     (-1)
+#define SISTEM_JALUR_TIDAK_ADA 0
+#define SISTEM_JALUR_BERKAS    1
+#define SISTEM_JALUR_DIREKTORI 2
+#define SISTEM_JALUR_TAUTAN    3
+#define SISTEM_JALUR_LAIN      4
+int sistemJenisTanpaTautan(const char* jalur);
+bool sistemBuatSatuDirektori(const char* jalur);
+FILE* sistemBukaTulisTanpaTautan(const char* jalur);
+
 Value nativeFnKeluar(int argCount, Value* args);           // keluar(kode=0)
 Value nativeFnTulisGalat(int argCount, Value* args);       // tulis_galat(teks)
 Value nativeFnLingkungan(int argCount, Value* args);       // lingkungan()

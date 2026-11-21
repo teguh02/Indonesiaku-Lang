@@ -1,0 +1,120 @@
+# Kompresi gzip/zlib/deflate (Fase 23): pustaka/kompres.idk di atas miniz.
+# Data biner = daftar bulat 0..255 (modul bita). Berkas sementara dibuat
+# di direktori kerja lalu dihapus lagi.
+impor kompres
+impor bita
+dari kompres impor GalatKompres
+
+fungsi bagian_roundtrip() {
+    cetak("== roundtrip ==")
+    variabel teks = "Indonesiaku café ☕ " * 40
+    variabel g = kompres.gzip(teks)
+    cetak(g[0:4])                                   # [31, 139, 8, 0]: penanda gzip
+    cetak(bita.ke_teks(kompres.buka_gzip(g)) == teks, panjang(g) < panjang(bita.ke_bita(teks)))
+    variabel z = kompres.zlib(teks)
+    cetak(z[0], bita.ke_teks(kompres.buka_zlib(z)) == teks)
+    cetak(bita.ke_teks(kompres.buka_deflate(kompres.deflate(teks))) == teks)
+
+    # Bita acak (tidak dapat dikompresi) dan NUL di tengah data.
+    variabel acak = acak_bita(4096)
+    untuk tingkat dalam [0, 1, 6, 9] {
+        cetak(tingkat,
+              kompres.buka_gzip(kompres.gzip(acak, tingkat)) == acak,
+              kompres.buka_zlib(kompres.zlib(acak, tingkat)) == acak,
+              kompres.buka_deflate(kompres.deflate(acak, tingkat)) == acak)
+    }
+    variabel nul = [0, 0, 0, 1, 0, 255, 0]
+    cetak(kompres.buka_gzip(kompres.gzip(nul)))
+    cetak(kompres.buka_zlib(kompres.zlib([])), kompres.buka_gzip(kompres.gzip("")))
+    cetak(kompres.gzip("abc") == kompres.gzip("abc"))   # deterministik: MTIME 0
+}
+
+fungsi bagian_python() {
+    cetak("== data dari Python ==")
+    # gzip.GzipFile(filename="halo.txt", mtime=1700000000): kepala FNAME.
+    variabel gz = bita.dari_heksa("1f8b080800f1536502ff68616c6f2e74787400cb48ccc95748492cca5408a82cc9c8cfe30200e278d34111000000")
+    cetak(repr(bita.ke_teks(kompres.buka_gzip(gz))))
+    # zlib.compress(b"indonesiaku " * 20, 9)
+    variabel zl = bita.dari_heksa("78dacbcc4bc9cf4b2dce4ccc2e55c81c016c00a04c5e89")
+    cetak(panjang(kompres.buka_zlib(zl)), bita.ke_teks(kompres.buka_zlib(zl))[0:12])
+    # gzip multi-anggota, seperti `cat a.gz b.gz`.
+    cetak(bita.ke_teks(kompres.buka_gzip(kompres.gzip("satu-") + gz)))
+}
+
+fungsi bagian_checksum() {
+    cetak("== checksum ==")
+    cetak(kompres.crc32("hello"), kompres.adler32("hello"))   # = zlib.crc32/adler32 Python
+    cetak(kompres.crc32(""), kompres.adler32(""))
+    cetak(kompres.crc32("world", kompres.crc32("hello ")) == kompres.crc32("hello world"))
+    cetak(kompres.crc32([104, 101, 108, 108, 111]) == kompres.crc32("hello"))
+}
+
+fungsi coba_buka(nama, f) {
+    coba {
+        f()
+        cetak(nama, "-> tidak gagal?!")
+    } kecuali GalatKompres sebagai e {
+        cetak(nama, "->", e.pesan)
+    }
+}
+
+fungsi bagian_galat() {
+    cetak("== data rusak dan batas ==")
+    variabel g = kompres.gzip("data yang cukup panjang untuk dirusak " * 3)
+    variabel rusak = salin_daftar(g)
+    rusak[15] = (rusak[15] + 1) % 256
+    coba_buka("rusak", fungsi() { kembalikan kompres.buka_gzip(rusak) })
+    coba_buka("terpotong", fungsi() { kembalikan kompres.buka_gzip(g[0:20]) })
+    coba_buka("sisa", fungsi() { kembalikan kompres.buka_gzip(g + [7]) })
+    coba_buka("bukan gzip", fungsi() { kembalikan kompres.buka_gzip("halo") })
+    variabel z = kompres.zlib("abcabc")
+    z[panjang(z) - 1] = (z[panjang(z) - 1] + 1) % 256
+    coba_buka("adler32", fungsi() { kembalikan kompres.buka_zlib(z) })
+    # Bom kecil: 64 KB nol -> beberapa ratus bita; batas keluaran 1000 bita.
+    variabel bom = kompres.gzip([0] * 65535, 9)
+    cetak("bom:", panjang(bom) < 200)
+    coba_buka("bom", fungsi() { kembalikan kompres.buka_gzip(bom, 1000) })
+    cetak(panjang(kompres.buka_gzip(bom, 65535)))
+    coba_buka("bita 300", fungsi() { kembalikan kompres.gzip([1, 300]) })
+    coba_buka("tingkat 10", fungsi() { kembalikan kompres.gzip("a", 10) })
+    coba_buka("batas -1", fungsi() { kembalikan kompres.buka_gzip(g, -1) })
+    coba {
+        kompres.gzip(12)
+    } kecuali GalatTipe sebagai e {
+        cetak("GalatTipe:", e.pesan)
+    }
+}
+
+fungsi salin_daftar(d) {
+    kembalikan [x untuk x dalam d]
+}
+
+fungsi bagian_berkas() {
+    cetak("== berkas ==")
+    variabel asli = "_contoh_kompres_asli.bin"
+    variabel gz = "_contoh_kompres.gz"
+    variabel pulih = "_contoh_kompres_pulih.bin"
+    variabel data = acak_bita(3000) + [0] * 20000
+    cetak(bita.tulis_berkas(asli, data))
+    cetak(kompres.gzip_berkas(asli, gz) < 20000)
+    cetak(kompres.buka_gzip_berkas(gz, pulih))
+    cetak(bita.baca_berkas(pulih) == data)
+    # Melewati batas: berkas tujuan yang setengah jadi dihapus.
+    hapus_berkas(pulih)
+    coba_buka("batas berkas", fungsi() { kembalikan kompres.buka_gzip_berkas(gz, pulih, 100) })
+    cetak(ada_berkas(pulih))
+    coba {
+        bita.baca_berkas(asli, 10)
+    } kecuali GalatBita sebagai e {
+        cetak("GalatBita:", e.pesan)
+    }
+    hapus_berkas(asli)
+    hapus_berkas(gz)
+}
+
+dari bita impor GalatBita
+bagian_roundtrip()
+bagian_python()
+bagian_checksum()
+bagian_galat()
+bagian_berkas()
