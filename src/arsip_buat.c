@@ -64,7 +64,7 @@ static bool tarKepala(PenulisArsip* w, const char* nama, char tipe, uint64_t uku
     bool muat = n <= 100;
     if (!muat && n <= 256) {
         for (size_t i = n - 1; i > 0; i--) {
-            if (nama[i] == '/' && i <= 155 && n - i - 1 <= 100 && n - i - 1 > 0) { potong = i; muat = true; break; }
+            if (nama[i] == '/' && i <= 155 && i + 1 < n && n - i - 1 <= 100) { potong = i; muat = true; break; }
         }
     }
     if (!muat) {

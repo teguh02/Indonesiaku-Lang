@@ -63,7 +63,9 @@ SOURCES = src/main.c \
           src/vm.c
 
 # miniz (src/vendor/miniz, lihat PROVENANCE.md): zlib/gzip/ZIP untuk Fase 23.
-MINIZ_OBJECTS = src/vendor/miniz/miniz.o
+# Dikompilasi lewat src/miniz_bungkus.c yang memasang makro fitur untuk
+# fseeko/ftello (GCC 14 menolak deklarasi implisit di bawah -std=c11).
+MINIZ_OBJECTS = src/miniz_bungkus.o
 
 OBJECTS = $(SOURCES:.c=.o) $(MBEDTLS_OBJECTS) $(MINIZ_OBJECTS)
 
@@ -119,7 +121,7 @@ src/vendor/mbedtls/library/%.o: src/vendor/mbedtls/library/%.c
 	$(CC) $(filter-out -Wall -Wextra,$(CFLAGS)) -c $< -o $@
 
 # miniz: byte upstream dipertahankan, hanya warning vendor yang diredam.
-src/vendor/miniz/miniz.o: src/vendor/miniz/miniz.c src/vendor/miniz/miniz.h
+src/miniz_bungkus.o: src/miniz_bungkus.c src/vendor/miniz/miniz.c src/vendor/miniz/miniz.h
 	$(CC) $(filter-out -Wall -Wextra,$(CFLAGS)) -c $< -o $@
 
 %.o: %.c $(HEADERS)

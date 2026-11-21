@@ -20,6 +20,9 @@ the TAR format are implemented in those files, not in miniz. Our files define
 `MINIZ_NO_ZLIB_COMPATIBLE_NAMES` before including `miniz.h` so the zlib-style
 macros (`crc32`, `inflate`, ...) do not leak into the interpreter.
 
-No vendor source modifications. The Makefile compiles `miniz.c` with the
-project flags minus `-Wall -Wextra` (sanitizer flags are kept). Update only
+No vendor source modifications. `miniz.c` is compiled through
+`src/miniz_bungkus.c`, which only sets `_DEFAULT_SOURCE`/`_LARGEFILE64_SOURCE`
+(miniz needs `fseeko`/`ftello`, hidden by `-std=c11`) and silences vendor
+warnings; the Makefile also drops `-Wall -Wextra` there (sanitizer flags are
+kept). Update only
 from a pinned official release archive, and record the new hashes here.
