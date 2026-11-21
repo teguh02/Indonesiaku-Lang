@@ -9,6 +9,22 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **Validasi input, tanggal/waktu ISO 8601 dan XML aman (Fase 19 V1)**: tiga
+  modul baru dalam Indonesiaku murni. `validasi` memeriksa formulir/JSON
+  terhadap skema (`tipe`, `wajib`, `bawaan`, `pilihan` seperti
+  `konfigurasi`, plus `min`/`maks`, `panjang_min`/`panjang_maks`, `pola`,
+  `skema_url`), mengumpulkan galat per field, tidak menyalin field di luar
+  skema, dan menyediakan `adalah_email`/`adalah_url` (daftar izin skema,
+  menolak `javascript:` dan userinfo). `tanggal_waktu` mengurai/menulis
+  ISO 8601/RFC 3339, offset UTC tetap (`WIB`/`WITA`/`WIT`), aritmetika
+  (termasuk `tambah_bulan` yang menjepit akhir bulan), perbandingan dan
+  `format()` dengan nama hari/bulan Indonesia; zona waktu IANA/DST belum.
+  `xml` mengurai elemen/atribut/teks/CDATA/namespace dan membentuk XML
+  ter-escape; `<!DOCTYPE>` (XXE, billion laughs) dan entitas kustom selalu
+  ditolak, ukuran/kedalaman/jumlah elemen/atribut dibatasi, parser iteratif.
+  Audit gap API web ada di `docs/ANALISIS/KATALOG_API_DAN_GAP_WEB.md`.
+  Panduan: `07_PUSTAKA_STANDAR.md` §2.30–2.32.
+
 - **Observability V1 untuk server web (Fase 22)**: `app.pantau()` di
   `pustaka/web.idk` mendaftarkan `GET /health` (liveness), `GET /ready`
   (readiness lewat `periksa_siap()`, 503 bila gagal) dan `GET /metrics`
