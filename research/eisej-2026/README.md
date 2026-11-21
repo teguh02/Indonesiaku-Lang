@@ -1,7 +1,7 @@
 # Replication package — AI-Assisted Solo Agile Development of an Indonesian-Keyword Programming Language
 
 Replication package for the article submitted to e-Informatica Software Engineering Journal
-(authors: Teguh Rijanandi, Eko Risdianto).
+(author: Teguh Rijanandi).
 
 Studied project: https://github.com/teguh02/Indonesiaku-Lang
 Analysed snapshot: commit e718dc304a9ecad4d211cd161c2ed086b1447a55 (18 November 2026),
@@ -40,5 +40,5 @@ The benchmark (`benchmark/ukur_banding.py`) needs Windows (it reads process memo
 `GetProcessMemoryInfo`), the interpreters built from commits `1c15f98` (K12) and `958ca74` (K21) with
 `mingw32-make`, and Python 3.14. Usage is documented at the top of the script.
 
-The scripts in `figures/` are included for transparency; they expect the authors' original folder
+The scripts in `figures/` are included for transparency; they expect the author's original folder
 layout (input paths are set at the top of each script).
