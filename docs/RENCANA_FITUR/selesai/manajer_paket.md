@@ -1,7 +1,7 @@
 # Rencana Fitur: Manajer Paket (Fase 14)
 
-- **Status:** usulan
-- **Target versi:** v1.8.0 (lockfile+CLI lokal), registry publik ditunda
+- **Status:** selesai (V1 lokal; lihat §11 untuk penyimpangan dari usulan)
+- **Target versi:** rilis minor berikutnya (lockfile+CLI lokal), registry publik ditunda
 - **Pemilik:** Teguh R
 
 ## 1. Masalah
@@ -144,3 +144,63 @@ resolusi modul).
 - **Native C untuk manajer paket** — ditolak, kontradiksi prinsip roadmap
   "library ditulis dalam .idk, C tidak wajib". Satu-satunya sentuhan C
   adalah dispatcher subcommand di `main.c` (≤10 baris, pola `awakutu`).
+
+## 11. Yang dibangun (V1) dan penyimpangan dari usulan
+
+Dikerjakan di `pustaka/paket.idk` (seluruh logika, termasuk pengurai TOML
+subset) + dispatcher `indk paket` di `src/main.c` + **satu langkah resolusi
+baru** di `src/vm.c`. Diuji `tests/paket_cli.idk` (dibungkus
+`tests/test_paket.{sh,ps1}`), tanpa jaringan: semua sumber adalah repositori
+git lokal yang dibuat oleh tesnya sendiri.
+
+Penyimpangan, masing-masing dengan alasan:
+
+1. **`impor` menemukan `.indk_paket/` sendiri, bukan lewat `INDK_PATH`
+   manual** (§5 memilih "dokumentasikan export INDK_PATH"). Dengan
+   `INDK_PATH=.indk_paket`, `impor kalkulator` mencari
+   `.indk_paket/kalkulator.idk`, padahal paket adalah direktori; satu entri
+   `INDK_PATH` per paket membuat setiap skrip butuh variabel lingkungan
+   panjang yang harus diperbarui setiap `tambah`. `findInPackages` (±50
+   baris, tanpa alokasi) mencari `.indk_paket/<nama>/<nama>.idk` untuk
+   `impor nama` dan `.indk_paket/<nama>/sub.idk` untuk `impor nama.sub`, di
+   direktori pengimpor lalu naik ke induknya (pola `node_modules`).
+   Hanya `.indk_paket/` di akar proyek terdekat (direktori dengan
+   `indonesiaku.toml`) yang dipakai; kode di dalam paket memakai proyek yang
+   memasangnya. Langkah ini **paling akhir**, sesudah pustaka standar: review
+   keamanan menunjukkan bahwa menaruhnya sebelum pustaka standar membuat
+   proyek yang membawa `.indk_paket/paket/paket.idk` bisa membajak
+   `indk paket` sendiri. Nama paket yang sama dengan modul standar tetap
+   ditolak saat `tambah` (paket itu tidak akan pernah terjangkau).
+2. **Nama perintah berbahasa Indonesia** sesuai AGENTS.md: `mulai`
+   (bukan `init`), `pasang` (bukan `install`), ditambah `-C <dir>`.
+3. **Sumber tarball/HTTP tidak ada di V1.** Belum ada pengekstrak arsip
+   (Fase 23), dan menulis satu khusus untuk manajer paket berarti permukaan
+   serangan path traversal baru. Sumber V1: git dan direktori lokal.
+4. **Cache git persisten** di `.indk_paket/.cache/<sha256(url)>.git`
+   (cermin `--mirror`), bukan klon sementara: git di Windows menulis objek
+   read-only sehingga klon sementara tidak bisa dihapus dari Indonesiaku.
+   Efek sampingnya diinginkan: `pasang` untuk commit yang sudah ada di cache
+   tidak butuh jaringan.
+5. **Checksum** = SHA-256 atas daftar (`sha256(isi)`, jalur relatif) yang
+   terurut, dihitung dari berkas yang dikeluarkan git dengan
+   `core.autocrlf=false` sehingga sama di semua OS. Untuk sumber git,
+   ketidakcocokan dengan kunci menolak pemasangan; untuk sumber `path`
+   (kode milik sendiri) checksum dicatat ulang.
+6. **Penguatan git** di luar §6: `--` sebelum url, url diawali `-` dan
+   berisi `::` ditolak sebelum git dipanggil, `protocol.ext.allow=never`,
+   `core.symlinks=false` (tautan simbolik menjadi berkas teks), tag yang
+   memuat `..`/`:`/`-` di awal ditolak, `rev` harus heksadesimal.
+7. **Dependensi transitif** ikut di V1 (rata di `.indk_paket/`), dengan
+   konflik nama ditolak dan paket git dilarang bergantung pada `path`.
+
+8. **Hasil review keamanan** yang ikut diperbaiki: `indk paket` dan
+   `--periksa-pembaruan` dimuat dari pustaka standar interpreter lewat jalur
+   absolut; tautan simbolik/junction di sumber `path` ditolak lewat native
+   baru `_adalah_tautan` (lstat / reparse point) karena `_info_jalur`
+   mengikuti tautan; `config` cache git ditulis ulang setiap dipakai dan hook
+   serta fsmonitor dimatikan; pemangkasan `.indk_paket/` hanya untuk paket di
+   kunci lama; `rev` kunci wajib SHA 40 karakter; nama perangkat Windows
+   (`con`, `nul`, ...) ditolak; `hapus` mengembalikan manifest bila gagal.
+
+Belum dikerjakan (tetap di roadmap Fase 14): registri publik, rentang versi,
+scaffolding (DX-01), boilerplate library, lisensi pihak ketiga.

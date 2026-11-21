@@ -1,0 +1,1159 @@
+# pustaka/paket.idk - manajer paket proyek (Fase 14, V1).
+#
+# Dijalankan lewat `indk paket <perintah>`. Rancangan dan alasannya ada di
+# docs/RENCANA_FITUR/selesai/manajer_paket.md. Ringkasnya:
+#
+#   indonesiaku.toml   manifest yang ditulis pengembang
+#   indonesiaku.lock   hasil resolusi: commit persis + checksum isi
+#   .indk_paket/<nama>/  paket terpasang; `impor <nama>` menemukannya sendiri
+#
+# Sumber V1 hanya git (dikunci ke commit SHA) dan direktori lokal. Tidak ada
+# registri, tidak ada rentang versi, dan TIDAK ADA skrip pasca-pasang: kode
+# paket tidak pernah dijalankan oleh manajer paket.
+
+impor jalur
+impor proses
+dari proses impor GalatProses
+dari pembaruan impor banding_versi
+
+kelas GalatPaket < Galat {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+variabel MANIFEST = "indonesiaku.toml"
+variabel KUNCI = "indonesiaku.lock"
+variabel DIR_PAKET = ".indk_paket"
+variabel _UNDUH = ".unduh"
+variabel _CACHE = ".cache"
+variabel _HURUF_AWAL = "abcdefghijklmnopqrstuvwxyz_"
+variabel _HURUF = "abcdefghijklmnopqrstuvwxyz_0123456789"
+variabel _HEKSA = "0123456789abcdef"
+variabel _MAKS_NAMA = 64
+variabel _MAKS_PAKET = 200
+
+
+# --- teks kecil ---------------------------------------------------------------
+
+fungsi _pisah(t, c) {
+    variabel hasil = daftar()
+    variabel kini = daftar()
+    untuk h dalam t {
+        jika h == c {
+            hasil.tambah(teks_gabung(kini, ""))
+            kini = daftar()
+        } selain {
+            kini.tambah(h)
+        }
+    }
+    hasil.tambah(teks_gabung(kini, ""))
+    kembalikan hasil
+}
+
+fungsi _spasi(c) {
+    kembalikan c == " " atau c == "\t" atau c == "\r" atau c == "\n"
+}
+
+fungsi _rapikan(t) {
+    variabel a = 0
+    variabel b = panjang(t)
+    selagi a < b dan _spasi(t[a]) { a = a + 1 }
+    selagi b > a dan _spasi(t[b - 1]) { b = b - 1 }
+    kembalikan t[a:b]
+}
+
+fungsi _mulai_dengan(t, awal) {
+    kembalikan panjang(t) >= panjang(awal) dan t[0:panjang(awal)] == awal
+}
+
+fungsi _kutip(t) {
+    variabel keluar = daftar()
+    untuk c dalam t {
+        jika c == "\\" {
+            keluar.tambah("\\\\")
+        } jika_lain c == "\"" {
+            keluar.tambah("\\\"")
+        } jika_lain c == "\n" {
+            keluar.tambah("\\n")
+        } jika_lain c == "\t" {
+            keluar.tambah("\\t")
+        } jika_lain c == "\r" {
+            keluar.tambah("\\r")
+        } selain {
+            keluar.tambah(c)
+        }
+    }
+    kembalikan "\"" + teks_gabung(keluar, "") + "\""
+}
+
+
+# --- TOML (subset) ---------------------------------------------------------------
+#
+# Yang didukung: komentar `#`, `[tabel]`, `[[larik_tabel]]`, `kunci = nilai`
+# dengan nilai teks berkutip ganda, bulat, benar/salah (`true`/`false`), dan
+# tabel sebaris `{ a = "x", b = "y" }`. Selain itu ditolak dengan nomor baris,
+# bukan ditebak: manifest yang salah dibaca lebih berbahaya daripada yang
+# ditolak.
+
+fungsi _galat_toml(berkas, baris, pesan) {
+    naikkan GalatPaket(berkas + ":" + ke_teks(baris) + ": " + pesan)
+}
+
+fungsi _kunci_toml(t, i, berkas, baris) {
+    # -> [nama, posisi sesudahnya]
+    variabel n = panjang(t)
+    jika i < n dan t[i] == "\"" {
+        variabel s = _teks_toml(t, i, berkas, baris)
+        kembalikan s
+    }
+    variabel awal = i
+    selagi i < n dan (t[i] dalam _HURUF atau t[i] dalam "ABCDEFGHIJKLMNOPQRSTUVWXYZ-") {
+        i = i + 1
+    }
+    jika i == awal {
+        _galat_toml(berkas, baris, "harapkan nama kunci")
+    }
+    kembalikan [t[awal:i], i]
+}
+
+fungsi _teks_toml(t, i, berkas, baris) {
+    # t[i] adalah kutip pembuka. -> [teks, posisi sesudah kutip penutup]
+    variabel n = panjang(t)
+    variabel keluar = daftar()
+    i = i + 1
+    selagi i < n {
+        variabel c = t[i]
+        jika c == "\"" {
+            kembalikan [teks_gabung(keluar, ""), i + 1]
+        }
+        jika c == "\\" {
+            jika i + 1 >= n { hentikan }
+            variabel e = t[i + 1]
+            jika e == "\"" {
+                keluar.tambah("\"")
+            } jika_lain e == "\\" {
+                keluar.tambah("\\")
+            } jika_lain e == "n" {
+                keluar.tambah("\n")
+            } jika_lain e == "t" {
+                keluar.tambah("\t")
+            } jika_lain e == "r" {
+                keluar.tambah("\r")
+            } selain {
+                _galat_toml(berkas, baris, "escape '\\" + e + "' tidak didukung")
+            }
+            i = i + 2
+        } selain {
+            keluar.tambah(c)
+            i = i + 1
+        }
+    }
+    _galat_toml(berkas, baris, "teks tanpa kutip penutup")
+}
+
+fungsi _lewati_spasi(t, i) {
+    selagi i < panjang(t) dan (t[i] == " " atau t[i] == "\t") { i = i + 1 }
+    kembalikan i
+}
+
+fungsi _nilai_toml(t, i, berkas, baris) {
+    # -> [nilai, posisi sesudahnya]
+    i = _lewati_spasi(t, i)
+    variabel n = panjang(t)
+    jika i >= n {
+        _galat_toml(berkas, baris, "harapkan nilai sesudah '='")
+    }
+    variabel c = t[i]
+    jika c == "\"" {
+        kembalikan _teks_toml(t, i, berkas, baris)
+    }
+    jika c == "{" {
+        kembalikan _tabel_sebaris(t, i, berkas, baris)
+    }
+    jika c == "[" atau c == "'" {
+        _galat_toml(berkas, baris, "larik dan teks berkutip tunggal belum didukung")
+    }
+    variabel awal = i
+    selagi i < n dan !(t[i] dalam " \t,}") { i = i + 1 }
+    variabel kata = t[awal:i]
+    jika kata == "true" { kembalikan [benar, i] }
+    jika kata == "false" { kembalikan [salah, i] }
+    variabel j = 0
+    jika panjang(kata) > 0 dan kata[0] == "-" { j = 1 }
+    jika panjang(kata) > j dan panjang(kata) <= 18 {
+        variabel angka = benar
+        untuk d dalam kata[j:] {
+            jika !(d dalam "0123456789") { angka = salah }
+        }
+        jika angka { kembalikan [ke_bulat(kata), i] }
+    }
+    _galat_toml(berkas, baris, "nilai tidak dikenal '" + kata + "' (teks harus berkutip ganda)")
+}
+
+fungsi _tabel_sebaris(t, i, berkas, baris) {
+    variabel hasil = kamus()
+    i = _lewati_spasi(t, i + 1)
+    jika i < panjang(t) dan t[i] == "}" { kembalikan [hasil, i + 1] }
+    selagi benar {
+        i = _lewati_spasi(t, i)
+        variabel k = _kunci_toml(t, i, berkas, baris)
+        i = _lewati_spasi(t, k[1])
+        jika i >= panjang(t) atau t[i] != "=" {
+            _galat_toml(berkas, baris, "harapkan '=' sesudah '" + k[0] + "'")
+        }
+        variabel v = _nilai_toml(t, i + 1, berkas, baris)
+        jika k[0] dalam hasil {
+            _galat_toml(berkas, baris, "kunci '" + k[0] + "' ganda")
+        }
+        hasil[k[0]] = v[0]
+        i = _lewati_spasi(t, v[1])
+        jika i < panjang(t) dan t[i] == "," {
+            i = i + 1
+        } jika_lain i < panjang(t) dan t[i] == "}" {
+            kembalikan [hasil, i + 1]
+        } selain {
+            _galat_toml(berkas, baris, "harapkan ',' atau '}' di tabel sebaris")
+        }
+    }
+}
+
+fungsi _buang_komentar(baris_teks) {
+    variabel kutip = salah
+    variabel i = 0
+    selagi i < panjang(baris_teks) {
+        variabel c = baris_teks[i]
+        jika kutip dan c == "\\" {
+            i = i + 2
+            lanjut
+        }
+        jika c == "\"" { kutip = !kutip }
+        jika c == "#" dan !kutip { kembalikan baris_teks[0:i] }
+        i = i + 1
+    }
+    kembalikan baris_teks
+}
+
+fungsi _kepala_tabel(isi, hasil, berkas, nomor) {
+    # isi = "[nama]" atau "[[nama]]" -> tabel tempat kunci berikutnya ditulis.
+    variabel larik = _mulai_dengan(isi, "[[")
+    variabel nama = ""
+    jika larik {
+        jika !(panjang(isi) >= 4 dan isi[panjang(isi) - 2:] == "]]") {
+            _galat_toml(berkas, nomor, "harapkan ']]'")
+        }
+        nama = _rapikan(isi[2:panjang(isi) - 2])
+    } selain {
+        jika isi[panjang(isi) - 1] != "]" {
+            _galat_toml(berkas, nomor, "harapkan ']'")
+        }
+        nama = _rapikan(isi[1:panjang(isi) - 1])
+    }
+    jika panjang(nama) == 0 atau "." dalam nama {
+        _galat_toml(berkas, nomor, "nama tabel '" + nama + "' tidak didukung")
+    }
+    variabel tabel = kamus()
+    jika larik {
+        jika !(nama dalam hasil) { hasil[nama] = daftar() }
+        jika jenis(hasil[nama]) != "daftar" {
+            _galat_toml(berkas, nomor, "'" + nama + "' sudah dipakai sebagai tabel biasa")
+        }
+        hasil[nama].tambah(tabel)
+    } selain {
+        jika nama dalam hasil {
+            _galat_toml(berkas, nomor, "tabel [" + nama + "] didefinisikan dua kali")
+        }
+        hasil[nama] = tabel
+    }
+    kembalikan tabel
+}
+
+# urai_toml(teks, berkas) -> kamus. `berkas` hanya untuk pesan galat.
+fungsi urai_toml(sumber, berkas = "<teks>") {
+    variabel hasil = kamus()
+    variabel kini = hasil
+    variabel nomor = 0
+    untuk mentah dalam _pisah(sumber, "\n") {
+        nomor = nomor + 1
+        variabel isi = _rapikan(_buang_komentar(mentah))
+        jika panjang(isi) == 0 { lanjut }
+        jika isi[0] == "[" {
+            kini = _kepala_tabel(isi, hasil, berkas, nomor)
+            lanjut
+        }
+        variabel k = _kunci_toml(isi, 0, berkas, nomor)
+        variabel i = _lewati_spasi(isi, k[1])
+        jika i >= panjang(isi) atau isi[i] != "=" {
+            _galat_toml(berkas, nomor, "harapkan '=' sesudah '" + k[0] + "'")
+        }
+        variabel v = _nilai_toml(isi, i + 1, berkas, nomor)
+        jika panjang(_rapikan(isi[v[1]:])) > 0 {
+            _galat_toml(berkas, nomor, "sisa teks tak terduga sesudah nilai")
+        }
+        jika k[0] dalam kini {
+            _galat_toml(berkas, nomor, "kunci '" + k[0] + "' ganda")
+        }
+        kini[k[0]] = v[0]
+    }
+    kembalikan hasil
+}
+
+
+# --- berkas dan direktori ------------------------------------------------------
+
+fungsi _jenis(p) {
+    variabel info = _info_jalur(p)
+    jika info == kosong { kembalikan kosong }
+    kembalikan info[0]
+}
+
+fungsi hapus_pohon(p) {
+    # Tautan dihapus SEBAGAI tautan: mengikutinya berarti menghapus isi
+    # targetnya, yang bisa berada di luar proyek.
+    jika _adalah_tautan(p) {
+        coba {
+            hapus_berkas(p)
+        } kecuali Galat sebagai e {
+            hapus_direktori(p)
+        }
+        kembalikan
+    }
+    variabel j = _jenis(p)
+    jika j == kosong { kembalikan }
+    jika j == "direktori" {
+        untuk nama dalam isi_direktori(p) {
+            hapus_pohon(jalur.gabung(p, nama))
+        }
+        hapus_direktori(p)
+    } selain {
+        hapus_berkas(p)
+    }
+}
+
+fungsi _buat_dir_wajib(p) {
+    jika _jenis(p) != "direktori" { buat_direktori(p) }
+}
+
+# Salin pohon `asal` ke `tujuan` (yang belum ada). `.git` dan `.indk_paket`
+# dilewati. Selain berkas biasa dan direktori ditolak: tautan simbolik di
+# sumber lokal bisa menunjuk ke luar proyek.
+fungsi _salin_pohon(asal, tujuan) {
+    buat_direktori(tujuan)
+    untuk nama dalam terurut(isi_direktori(asal)) {
+        jika nama == ".git" atau nama == DIR_PAKET { lanjut }
+        variabel a = jalur.gabung(asal, nama)
+        variabel b = jalur.gabung(tujuan, nama)
+        jika _adalah_tautan(a) {
+            # _info_jalur mengikuti tautan, jadi tautan di sumber `path` akan
+            # menyalin berkas dari luar paket (mis. ~/.ssh) atau berputar
+            # tanpa akhir pada tautan melingkar.
+            naikkan GalatPaket("'" + a + "' adalah tautan simbolik; ditolak")
+        }
+        variabel j = _jenis(a)
+        jika j == "direktori" {
+            _salin_pohon(a, b)
+        } jika_lain j == "berkas" {
+            tulis_semua(b, baca_semua(a))
+        } selain {
+            naikkan GalatPaket("'" + a + "' bukan berkas biasa atau direktori; ditolak")
+        }
+    }
+}
+
+fungsi _daftar_berkas(akar, awalan, keluar) {
+    untuk nama dalam terurut(isi_direktori(akar)) {
+        variabel p = jalur.gabung(akar, nama)
+        variabel rel = nama
+        jika panjang(awalan) > 0 { rel = awalan + "/" + nama }
+        jika _adalah_tautan(p) {
+            naikkan GalatPaket("'" + p + "' adalah tautan simbolik; ditolak")
+        }
+        jika _jenis(p) == "direktori" {
+            _daftar_berkas(p, rel, keluar)
+        } selain {
+            keluar.tambah([rel, p])
+        }
+    }
+}
+
+# checksum(dir) -> "sha256:<heksa>" atas daftar (jalur relatif, sha256 isi)
+# yang terurut, jadi tidak bergantung pada urutan direktori dari OS.
+fungsi checksum(akar) {
+    variabel berkas = daftar()
+    _daftar_berkas(akar, "", berkas)
+    variabel menurut_rel = kamus()
+    untuk b dalam berkas { menurut_rel[b[0]] = b[1] }
+    variabel baris = daftar()
+    untuk rel dalam terurut(kunci(menurut_rel)) {
+        baris.tambah(sha256(baca_semua(menurut_rel[rel])) + "  " + rel + "\n")
+    }
+    kembalikan "sha256:" + sha256(teks_gabung(baris, ""))
+}
+
+
+# --- nama dan versi ---------------------------------------------------------------
+
+fungsi _modul_standar(nama) {
+    # Nama yang dipakai pustaka standar terpasang tidak boleh menjadi nama
+    # paket: paket akan membayangi modul standar tanpa terlihat.
+    # jalur_indk() memakai '\' di Windows; modul jalur hanya mengenal '/'.
+    variabel d = jalur.nama_direktori(jalur.dari_windows(jalur_indk()))
+    untuk akar dalam [jalur.gabung(d, "pustaka"), jalur.gabung(d, "..", "pustaka"),
+                      jalur.gabung(d, "..", "share", "indonesiaku", "pustaka")] {
+        jika _jenis(jalur.gabung(akar, nama + ".idk")) == "berkas" { kembalikan benar }
+    }
+    kembalikan salah
+}
+
+fungsi periksa_nama(nama) {
+    jika jenis(nama) != "teks" atau panjang(nama) == 0 atau panjang(nama) > _MAKS_NAMA {
+        naikkan GalatPaket("nama paket harus teks 1.." + ke_teks(_MAKS_NAMA) + " karakter")
+    }
+    jika !(nama[0] dalam _HURUF_AWAL) {
+        naikkan GalatPaket("nama paket '" + nama + "' harus diawali huruf kecil atau '_'")
+    }
+    untuk c dalam nama {
+        jika !(c dalam _HURUF) {
+            naikkan GalatPaket("nama paket '" + nama + "' hanya boleh huruf kecil, angka, dan '_' "
+                               + "(nama itu dipakai langsung di `impor`)")
+        }
+    }
+    # Nama perangkat Windows tidak bisa menjadi nama direktori di sana.
+    jika nama dalam ["con", "prn", "aux", "nul"] atau (panjang(nama) == 4
+            dan (nama[0:3] == "com" atau nama[0:3] == "lpt") dan nama[3] dalam "123456789") {
+        naikkan GalatPaket("nama paket '" + nama + "' adalah nama perangkat Windows")
+    }
+    jika _modul_standar(nama) {
+        naikkan GalatPaket("nama paket '" + nama + "' sudah dipakai modul pustaka standar")
+    }
+}
+
+
+# Nama dari berkas kunci dipakai untuk menghapus direktori, jadi diperiksa
+# bentuknya (bukan statusnya sebagai modul standar).
+fungsi periksa_nama_aman(nama) {
+    jika jenis(nama) != "teks" atau panjang(nama) == 0 atau !(nama[0] dalam _HURUF_AWAL) {
+        naikkan GalatPaket("nama paket tidak sah di " + KUNCI + ": " + repr(nama))
+    }
+    untuk c dalam nama {
+        jika !(c dalam _HURUF) {
+            naikkan GalatPaket("nama paket tidak sah di " + KUNCI + ": " + repr(nama))
+        }
+    }
+}
+
+
+# --- spesifikasi dependensi ---------------------------------------------------------
+
+# Bentuk normal: {"sumber": "git", "url", "minta"} atau {"sumber": "path", "path"}.
+# `minta` = "tag:<t>", "rev:<sha>", atau "HEAD" (cabang bawaan remote).
+fungsi _spesifikasi(nama, s, berkas) {
+    jika jenis(s) != "kamus" {
+        naikkan GalatPaket(berkas + ": dependensi '" + nama + "' harus tabel sebaris, "
+                           + "mis. { git = \"https://...\", tag = \"v1.0.0\" }")
+    }
+    untuk k dalam kunci(s) {
+        jika !(k dalam ["git", "tag", "rev", "path"]) {
+            naikkan GalatPaket(berkas + ": dependensi '" + nama + "': kunci '" + k + "' tidak dikenal")
+        }
+        jika jenis(s[k]) != "teks" atau panjang(s[k]) == 0 {
+            naikkan GalatPaket(berkas + ": dependensi '" + nama + "': '" + k + "' harus teks tidak kosong")
+        }
+    }
+    jika "git" dalam s dan "path" dalam s {
+        naikkan GalatPaket(berkas + ": dependensi '" + nama + "' tidak boleh punya 'git' sekaligus 'path'")
+    }
+    jika "path" dalam s {
+        jika "tag" dalam s atau "rev" dalam s {
+            naikkan GalatPaket(berkas + ": dependensi '" + nama + "': 'tag'/'rev' hanya untuk 'git'")
+        }
+        kembalikan {"sumber": "path", "path": s["path"]}
+    }
+    jika !("git" dalam s) {
+        naikkan GalatPaket(berkas + ": dependensi '" + nama + "' butuh 'git' atau 'path'")
+    }
+    jika "tag" dalam s dan "rev" dalam s {
+        naikkan GalatPaket(berkas + ": dependensi '" + nama + "': pilih salah satu 'tag' atau 'rev'")
+    }
+    _periksa_url(s["git"])
+    variabel minta = "HEAD"
+    jika "tag" dalam s {
+        _periksa_ref(s["tag"])
+        minta = "tag:" + s["tag"]
+    }
+    jika "rev" dalam s {
+        _periksa_rev(s["rev"])
+        minta = "rev:" + s["rev"]
+    }
+    kembalikan {"sumber": "git", "url": s["git"], "minta": minta}
+}
+
+fungsi _periksa_url(url) {
+    # Argumen yang diawali '-' akan dibaca git sebagai opsi (--upload-pack=...
+    # menjalankan perintah), dan transport `ext::` menjalankan perintah
+    # sembarang. Keduanya ditolak sebelum git dipanggil.
+    jika url[0] == "-" atau "::" dalam url {
+        naikkan GalatPaket("url git '" + url + "' ditolak")
+    }
+    untuk c dalam url {
+        jika ord(c) < 32 {
+            naikkan GalatPaket("url git mengandung karakter kontrol")
+        }
+    }
+}
+
+fungsi _periksa_ref(r) {
+    jika r[0] == "-" atau ".." dalam r atau ":" dalam r {
+        naikkan GalatPaket("tag '" + r + "' ditolak")
+    }
+    untuk c dalam r {
+        jika ord(c) <= 32 atau c dalam "~^?*[\\" {
+            naikkan GalatPaket("tag '" + r + "' mengandung karakter tidak sah")
+        }
+    }
+}
+
+fungsi _periksa_rev(r) {
+    jika panjang(r) < 7 atau panjang(r) > 40 {
+        naikkan GalatPaket("rev '" + r + "' harus SHA commit heksadesimal 7..40 karakter")
+    }
+    untuk c dalam r {
+        jika !(c dalam _HEKSA) {
+            naikkan GalatPaket("rev '" + r + "' harus SHA commit heksadesimal huruf kecil")
+        }
+    }
+}
+
+fungsi _sama_spesifikasi(a, b) {
+    jika a["sumber"] != b["sumber"] { kembalikan salah }
+    jika a["sumber"] == "path" { kembalikan a["path_abs"] == b["path_abs"] }
+    kembalikan a["url"] == b["url"] dan a["minta"] == b["minta"]
+}
+
+fungsi _teks_spesifikasi(s) {
+    jika s["sumber"] == "path" { kembalikan "path " + s["path"] }
+    kembalikan "git " + s["url"] + " (" + s["minta"] + ")"
+}
+
+
+# --- git -------------------------------------------------------------------------
+
+# Opsi yang selalu dipasang: byte berkas sama di semua OS (tanpa konversi
+# CRLF), tautan simbolik menjadi berkas teks biasa (tidak bisa menunjuk ke
+# luar paket), dan transport ext:: dimatikan.
+variabel _GIT_C = ["-c", "core.autocrlf=false", "-c", "core.symlinks=false",
+                   "-c", "protocol.ext.allow=never", "-c", "advice.detachedHead=false",
+                   "-c", "core.hooksPath=/indk-paket-tanpa-hook", "-c", "core.fsmonitor=false"]
+
+fungsi _git(argumen_git, keterangan) {
+    variabel perintah = ["git"]
+    untuk a dalam _GIT_C { perintah.tambah(a) }
+    untuk a dalam argumen_git { perintah.tambah(a) }
+    variabel h = kosong
+    coba {
+        h = proses.jalankan(perintah)
+    } kecuali GalatProses sebagai e {
+        naikkan GalatPaket("git tidak dapat dijalankan (" + e.pesan + "); pasang git dulu")
+    } kecuali GalatOS sebagai e {
+        naikkan GalatPaket("git tidak dapat dijalankan (" + e.pesan + "); pasang git dulu")
+    }
+    jika h.kode_keluar != 0 {
+        naikkan GalatPaket(keterangan + " gagal: " + _rapikan(h.galat))
+    }
+    kembalikan _rapikan(h.keluaran)
+}
+
+# Klon git disimpan sebagai cermin di .indk_paket/.cache/<hash url>.git dan
+# dipakai ulang, bukan dihapus: git di Windows menulis berkas objeknya
+# read-only sehingga klon sementara tidak bisa dibuang, dan cache inilah yang
+# membuat `indk paket pasang` bisa berjalan tanpa jaringan bila commit yang
+# dikunci sudah pernah diambil.
+fungsi _kutip_git(t) {
+    kembalikan "\"" + ganti(ganti(t, "\\", "\\\\"), "\"", "\\\"") + "\""
+}
+
+# Cache bisa saja datang dari luar (arsip proyek yang ikut membawa
+# .indk_paket/): `config` di dalamnya bisa memasang fsmonitor, hook, atau
+# filter yang menjalankan perintah saat checkout. Karena itu config ditulis
+# ulang dengan isi yang diketahui setiap kali cache dipakai, dan atribut
+# lokal cache dibuang. Hook dan fsmonitor juga dimatikan lewat _GIT_C.
+fungsi _bersihkan_cermin(c, url) {
+    tulis_semua(jalur.gabung(c, "config"), teks_gabung([
+        "[core]",
+        "\trepositoryformatversion = 0",
+        "\tbare = true",
+        "[remote \"origin\"]",
+        "\turl = " + _kutip_git(url),
+        "\tfetch = +refs/*:refs/*",
+        "\tmirror = true",
+        ""], "\n"))
+    variabel atribut = jalur.gabung(c, "info", "attributes")
+    jika _jenis(atribut) != kosong { hapus_pohon(atribut) }
+}
+
+fungsi _cermin(url, dir_cache) {
+    _buat_dir_wajib(dir_cache)
+    variabel c = jalur.gabung(dir_cache, sha256(url)[0:24] + ".git")
+    jika _jenis(c) != "direktori" {
+        _git(["clone", "--quiet", "--mirror", "--", url, c], "mengklon '" + url + "'")
+        _bersihkan_cermin(c, url)
+        kembalikan [c, benar]
+    }
+    _bersihkan_cermin(c, url)
+    kembalikan [c, salah]
+}
+
+fungsi _cari_commit(cermin, ref) {
+    # -> SHA 40 karakter, atau kosong bila ref tidak ada di cermin.
+    variabel perintah = ["git"]
+    untuk a dalam _GIT_C { perintah.tambah(a) }
+    untuk a dalam ["--git-dir=" + cermin, "rev-parse", "--verify", "--quiet",
+                   "--end-of-options", ref + "^{commit}"] {
+        perintah.tambah(a)
+    }
+    variabel h = proses.jalankan(perintah)
+    variabel sha = _rapikan(h.keluaran)
+    jika h.kode_keluar != 0 atau panjang(sha) != 40 { kembalikan kosong }
+    kembalikan sha
+}
+
+# Ambil sumber git ke direktori `tujuan` (belum ada). -> SHA commit persis.
+fungsi _ambil_git(nama, spes, rev_kunci, tujuan, kerja) {
+    variabel cm = _cermin(spes["url"], jalur.gabung(jalur.nama_direktori(kerja), _CACHE))
+    variabel cermin = cm[0]
+    variabel ref = "HEAD"
+    jika rev_kunci != kosong {
+        ref = rev_kunci
+    } jika_lain _mulai_dengan(spes["minta"], "tag:") {
+        ref = "refs/tags/" + spes["minta"][4:]
+    } jika_lain _mulai_dengan(spes["minta"], "rev:") {
+        ref = spes["minta"][4:]
+    }
+    # Commit yang dikunci dan sudah ada di cache tidak butuh jaringan. Selain
+    # itu (tag/cabang yang mungkin sudah bergeser, atau commit yang belum
+    # pernah diambil) cermin diperbarui dulu.
+    variabel sha = kosong
+    jika rev_kunci != kosong atau cm[1] {
+        sha = _cari_commit(cermin, ref)
+    }
+    jika sha == kosong {
+        jika !cm[1] {
+            _git(["--git-dir=" + cermin, "fetch", "--quiet", "--prune", "--force", "origin"],
+                 "memperbarui '" + spes["url"] + "'")
+        }
+        sha = _cari_commit(cermin, ref)
+    }
+    jika sha == kosong {
+        naikkan GalatPaket("'" + ref + "' tidak ditemukan di " + spes["url"] + " (paket '" + nama + "')")
+    }
+    buat_direktori(tujuan)
+    _git(["--git-dir=" + cermin, "-c", "core.bare=false", "--work-tree=" + jalur.absolut(tujuan),
+          "checkout", "--quiet", "--force", sha, "--", "."],
+         "mengeluarkan isi paket '" + nama + "'")
+    kembalikan sha
+}
+
+
+# --- resolusi ---------------------------------------------------------------------
+
+fungsi _baca_manifest(dir_proyek) {
+    variabel p = jalur.gabung(dir_proyek, MANIFEST)
+    jika _jenis(p) != "berkas" { kembalikan kosong }
+    variabel m = urai_toml(baca_semua(p), p)
+    untuk t dalam ["paket", "dependensi"] {
+        jika t dalam m dan jenis(m[t]) != "kamus" {
+            naikkan GalatPaket(p + ": [" + t + "] harus tabel")
+        }
+    }
+    kembalikan m
+}
+
+fungsi _dependensi(m, berkas) {
+    # -> daftar [nama, spesifikasi] terurut nama
+    variabel hasil = daftar()
+    jika m == kosong atau !("dependensi" dalam m) { kembalikan hasil }
+    variabel dep = m["dependensi"]
+    untuk nama dalam terurut(kunci(dep)) {
+        periksa_nama(nama)
+        hasil.tambah([nama, _spesifikasi(nama, dep[nama], berkas)])
+    }
+    kembalikan hasil
+}
+
+fungsi _periksa_interpreter(nama, m, versi) {
+    jika m == kosong atau !("paket" dalam m) { kembalikan }
+    variabel p = m["paket"]
+    jika "nama" dalam p dan p["nama"] != nama {
+        naikkan GalatPaket("paket dipasang sebagai '" + nama + "' tetapi manifestnya bernama '"
+                           + ke_teks(p["nama"]) + "'; impor internalnya akan rusak")
+    }
+    jika "interpreter_minimum" dalam p dan banding_versi(versi, ke_teks(p["interpreter_minimum"])) < 0 {
+        naikkan GalatPaket("paket '" + nama + "' butuh Indonesiaku " + ke_teks(p["interpreter_minimum"])
+                           + " atau lebih baru (terpasang " + versi + ")")
+    }
+}
+
+fungsi _baca_kunci(dir_proyek) {
+    variabel p = jalur.gabung(dir_proyek, KUNCI)
+    variabel hasil = kamus()
+    jika _jenis(p) != "berkas" { kembalikan hasil }
+    variabel k = urai_toml(baca_semua(p), p)
+    jika !("paket" dalam k) { kembalikan hasil }
+    untuk e dalam k["paket"] {
+        untuk f dalam ["nama", "sumber", "checksum"] {
+            jika !(f dalam e) {
+                naikkan GalatPaket(p + ": entri tanpa '" + f + "'; buat ulang dengan `indk paket perbarui`")
+            }
+        }
+        periksa_nama_aman(e["nama"])
+        jika e["sumber"] == "git" {
+            variabel rev = ambil(e, "rev", "")
+            variabel sah = panjang(rev) == 40
+            untuk c dalam rev {
+                jika !(c dalam _HEKSA) { sah = salah }
+            }
+            jika !sah {
+                naikkan GalatPaket(p + ": rev '" + rev + "' untuk '" + e["nama"]
+                                   + "' bukan SHA commit 40 karakter")
+            }
+        }
+        hasil[e["nama"]] = e
+    }
+    kembalikan hasil
+}
+
+fungsi _kunci_cocok(e, spes) {
+    jika e["sumber"] != spes["sumber"] { kembalikan salah }
+    jika spes["sumber"] == "path" { kembalikan ambil(e, "path", kosong) == spes["path"] }
+    kembalikan ambil(e, "url", kosong) == spes["url"] dan ambil(e, "minta", kosong) == spes["minta"] dan "rev" dalam e
+}
+
+# Satu dependensi: ambil ke staging, verifikasi, kembalikan entri kunci.
+fungsi _ambil_satu(nama, spes, dir_asal, e_kunci, kerja, versi) {
+    variabel tujuan = jalur.gabung(kerja, nama)
+    variabel entri = {"nama": nama, "sumber": spes["sumber"]}
+    jika spes["sumber"] == "path" {
+        variabel asal = jalur.gabung(dir_asal, spes["path"])
+        jika _jenis(asal) != "direktori" {
+            naikkan GalatPaket("path paket '" + nama + "' bukan direktori: " + asal)
+        }
+        _salin_pohon(asal, tujuan)
+        entri["path"] = spes["path"]
+    } selain {
+        variabel rev_kunci = kosong
+        jika e_kunci != kosong { rev_kunci = e_kunci["rev"] }
+        variabel sha = _ambil_git(nama, spes, rev_kunci, tujuan, kerja)
+        entri["url"] = spes["url"]
+        entri["minta"] = spes["minta"]
+        entri["rev"] = sha
+    }
+    entri["checksum"] = checksum(tujuan)
+    # Isi git yang dikunci WAJIB sama persis: commit yang sama tetapi isi
+    # berbeda berarti repositori ditulis ulang atau unduhan dirusak.
+    jika e_kunci != kosong dan spes["sumber"] == "git" dan e_kunci["checksum"] != entri["checksum"] {
+        naikkan GalatPaket("checksum paket '" + nama + "' tidak cocok dengan " + KUNCI
+                           + " (dikunci " + e_kunci["checksum"] + ", didapat " + entri["checksum"]
+                           + "); paket TIDAK dipasang")
+    }
+    jika _jenis(jalur.gabung(tujuan, nama + ".idk")) != "berkas" {
+        naikkan GalatPaket("paket '" + nama + "' tidak punya berkas masuk '" + nama + ".idk' di akarnya")
+    }
+    kembalikan entri
+}
+
+# selesaikan(dir_proyek, versi, perbarui) -> [entri terurut, kerja]
+# `perbarui` = kosong (pakai kunci bila cocok), "*" (abaikan kunci), atau nama.
+fungsi _selesaikan(dir_proyek, versi, perbarui, kerja) {
+    variabel m = _baca_manifest(dir_proyek)
+    jika m == kosong {
+        naikkan GalatPaket(MANIFEST + " tidak ditemukan; mulai dengan `indk paket mulai`")
+    }
+    variabel kunci_lama = _baca_kunci(dir_proyek)
+    variabel antre = daftar()
+    untuk d dalam _dependensi(m, MANIFEST) {
+        antre.tambah([d[0], d[1], dir_proyek, MANIFEST])
+    }
+    variabel hasil = kamus()
+    variabel spes_dipakai = kamus()
+    variabel i = 0
+    selagi i < panjang(antre) {
+        variabel item = antre[i]
+        i = i + 1
+        variabel nama = item[0]
+        variabel spes = item[1]
+        jika spes["sumber"] == "path" {
+            spes["path_abs"] = jalur.normalisasi(jalur.absolut(jalur.gabung(item[2], spes["path"])))
+        }
+        jika nama dalam hasil {
+            jika !_sama_spesifikasi(spes_dipakai[nama], spes) {
+                naikkan GalatPaket("konflik dependensi '" + nama + "': "
+                                   + _teks_spesifikasi(spes_dipakai[nama]) + " vs "
+                                   + _teks_spesifikasi(spes) + " (diminta " + item[3] + ")")
+            }
+            lanjut
+        }
+        jika panjang(hasil) >= _MAKS_PAKET {
+            naikkan GalatPaket("terlalu banyak paket (maksimum " + ke_teks(_MAKS_PAKET) + ")")
+        }
+        variabel e_kunci = kosong
+        jika nama dalam kunci_lama dan perbarui != "*" dan perbarui != nama dan _kunci_cocok(kunci_lama[nama], spes) {
+            e_kunci = kunci_lama[nama]
+        }
+        variabel entri = _ambil_satu(nama, spes, item[2], e_kunci, kerja, versi)
+        hasil[nama] = entri
+        spes_dipakai[nama] = spes
+        variabel dir_paket = jalur.gabung(kerja, nama)
+        variabel mp = _baca_manifest(dir_paket)
+        _periksa_interpreter(nama, mp, versi)
+        untuk d dalam _dependensi(mp, nama + "/" + MANIFEST) {
+            jika d[1]["sumber"] == "path" dan spes["sumber"] == "git" {
+                naikkan GalatPaket("paket git '" + nama + "' tidak boleh bergantung pada path lokal ('"
+                                   + d[0] + "'): path itu tidak ada di mesin lain")
+            }
+            variabel basis = dir_paket
+            jika spes["sumber"] == "path" { basis = jalur.gabung(item[2], spes["path"]) }
+            antre.tambah([d[0], d[1], basis, nama + "/" + MANIFEST])
+        }
+    }
+    variabel urut = daftar()
+    untuk n dalam terurut(kunci(hasil)) { urut.tambah(hasil[n]) }
+    kembalikan urut
+}
+
+fungsi _tulis_kunci(dir_proyek, entri) {
+    variabel baris = ["# indonesiaku.lock -- dibuat oleh `indk paket`; jangan disunting tangan.",
+                      "versi_kunci = 1", ""]
+    untuk e dalam entri {
+        baris.tambah("[[paket]]")
+        untuk k dalam ["nama", "sumber", "url", "minta", "rev", "path", "checksum"] {
+            jika k dalam e { baris.tambah(k + " = " + _kutip(e[k])) }
+        }
+        baris.tambah("")
+    }
+    tulis_semua(jalur.gabung(dir_proyek, KUNCI), teks_gabung(baris, "\n"))
+}
+
+# Pasang hasil resolusi: baru menyentuh .indk_paket SETELAH semua paket
+# berhasil diambil dan diverifikasi, jadi kegagalan di tengah jalan tidak
+# meninggalkan proyek setengah terpasang.
+fungsi _pasang_hasil(dir_proyek, entri, kerja, lama) {
+    variabel dir_paket = jalur.gabung(dir_proyek, DIR_PAKET)
+    variabel dipakai = kamus()
+    untuk e dalam entri {
+        dipakai[e["nama"]] = benar
+        variabel tujuan = jalur.gabung(dir_paket, e["nama"])
+        hapus_pohon(tujuan)
+        _salin_pohon(jalur.gabung(kerja, e["nama"]), tujuan)
+    }
+    # Paket yang dulu dipasang (tercatat di kunci lama) tetapi tidak lagi
+    # dibutuhkan dibuang. Direktori lain di .indk_paket/ bukan milik manajer
+    # paket dan dibiarkan.
+    untuk nama dalam kunci(lama) {
+        jika !(nama dalam dipakai) {
+            periksa_nama_aman(nama)
+            hapus_pohon(jalur.gabung(dir_paket, nama))
+        }
+    }
+}
+
+# selaraskan(dir_proyek, versi, perbarui) -> daftar entri terpasang.
+fungsi selaraskan(dir_proyek, versi, perbarui = kosong) {
+    variabel dir_paket = jalur.gabung(dir_proyek, DIR_PAKET)
+    _buat_dir_wajib(dir_paket)
+    variabel kerja = jalur.gabung(dir_paket, _UNDUH)
+    hapus_pohon(kerja)
+    buat_direktori(kerja)
+    variabel entri = kosong
+    variabel lama = _baca_kunci(dir_proyek)
+    coba {
+        entri = _selesaikan(dir_proyek, versi, perbarui, kerja)
+        _pasang_hasil(dir_proyek, entri, kerja, lama)
+        _tulis_kunci(dir_proyek, entri)
+    } akhirnya {
+        hapus_pohon(kerja)
+    }
+    kembalikan entri
+}
+
+
+# --- manifest: tulis ---------------------------------------------------------------
+
+fungsi _templat_manifest(nama) {
+    kembalikan teks_gabung([
+        "# Manifest proyek Indonesiaku. Lihat panduan bab Manajer Paket.",
+        "[paket]",
+        "nama = " + _kutip(nama),
+        "versi = \"0.1.0\"",
+        "",
+        "[dependensi]",
+        "# contoh:",
+        "# teks_lanjut = { git = \"https://github.com/akun/teks_lanjut\", tag = \"v1.0.0\" }",
+        "# util = { path = \"../util\" }",
+        ""], "\n")
+}
+
+fungsi _baris_dependensi(nama, opsi) {
+    variabel bagian = daftar()
+    untuk k dalam ["git", "tag", "rev", "path"] {
+        jika k dalam opsi { bagian.tambah(k + " = " + _kutip(opsi[k])) }
+    }
+    kembalikan nama + " = { " + teks_gabung(bagian, ", ") + " }"
+}
+
+# Ganti isi bagian [dependensi]: tambah satu baris (`baris_baru`) atau buang
+# baris milik `nama_buang`. Komentar dan baris lain dibiarkan apa adanya.
+fungsi _sunting_dependensi(sumber, baris_baru, nama_buang) {
+    variabel baris = _pisah(sumber, "\n")
+    variabel keluar = daftar()
+    variabel di_dep = salah
+    variabel ada_dep = salah
+    variabel sisip_di = 0 - 1
+    variabel dibuang = salah
+    untuk b dalam baris {
+        variabel isi = _rapikan(_buang_komentar(b))
+        jika panjang(isi) > 0 dan isi[0] == "[" {
+            di_dep = isi == "[dependensi]"
+            jika di_dep { ada_dep = benar }
+            keluar.tambah(b)
+            jika di_dep { sisip_di = panjang(keluar) }
+            lanjut
+        }
+        jika di_dep dan nama_buang != kosong dan panjang(isi) > 0 {
+            variabel k = _rapikan(_pisah(isi, "=")[0])
+            jika k == nama_buang {
+                dibuang = benar
+                lanjut
+            }
+        }
+        keluar.tambah(b)
+        jika di_dep dan panjang(isi) > 0 { sisip_di = panjang(keluar) }
+    }
+    jika nama_buang != kosong {
+        kembalikan [teks_gabung(keluar, "\n"), dibuang]
+    }
+    jika !ada_dep {
+        jika panjang(keluar) > 0 dan keluar[panjang(keluar) - 1] == "" {
+            keluar.hapus_pada(panjang(keluar) - 1)
+        }
+        keluar.tambah("")
+        keluar.tambah("[dependensi]")
+        keluar.tambah(baris_baru)
+        keluar.tambah("")
+    } selain {
+        keluar.sisip(sisip_di, baris_baru)
+    }
+    kembalikan [teks_gabung(keluar, "\n"), benar]
+}
+
+
+# --- perintah ----------------------------------------------------------------------
+
+# Direktori proyek tempat perintah bekerja: "." atau argumen `-C <dir>`.
+variabel _PROYEK = "."
+
+fungsi _p(nama) {
+    kembalikan jalur.gabung(_PROYEK, nama)
+}
+
+fungsi _cetak_bantuan() {
+    cetak(teks_gabung([
+        "Penggunaan: indk paket [-C <direktori>] <perintah> [argumen]",
+        "",
+        "Perintah:",
+        "  mulai [nama]                       Buat indonesiaku.toml di direktori ini",
+        "  tambah <nama> --git <url> [--tag <tag> | --rev <sha>]",
+        "  tambah <nama> --path <direktori>   Tambah dependensi lalu pasang",
+        "  hapus <nama>                       Buang dependensi dari manifest dan .indk_paket",
+        "  pasang                             Pasang persis sesuai indonesiaku.lock",
+        "  perbarui [nama]                    Resolusi ulang (semua atau satu paket)",
+        "  daftar                             Tampilkan dependensi dan status pemasangan",
+        "  bantuan                            Tampilkan pesan ini",
+        "",
+        "Paket terpasang di .indk_paket/<nama>/ dan diimpor dengan `impor <nama>`."], "\n"))
+}
+
+fungsi _laporan(entri) {
+    jika panjang(entri) == 0 {
+        cetak("tidak ada dependensi")
+        kembalikan
+    }
+    untuk e dalam entri {
+        jika e["sumber"] == "git" {
+            cetak("  " + e["nama"] + "  git " + e["rev"][0:12])
+        } selain {
+            cetak("  " + e["nama"] + "  path " + e["path"])
+        }
+    }
+    cetak(ke_teks(panjang(entri)) + " paket terpasang di " + DIR_PAKET + "/")
+}
+
+fungsi _cmd_mulai(arg) {
+    jika _jenis(_p(MANIFEST)) != kosong {
+        naikkan GalatPaket(MANIFEST + " sudah ada")
+    }
+    variabel nama = kosong
+    jika panjang(arg) > 0 {
+        nama = arg[0]
+    } selain {
+        nama = huruf_kecil(ganti(jalur.nama_dasar(jalur.absolut(_PROYEK)), "-", "_"))
+    }
+    jika jenis(nama) != "teks" atau panjang(nama) == 0 atau !(nama[0] dalam _HURUF_AWAL) {
+        nama = "proyek"
+    }
+    tulis_semua(_p(MANIFEST), _templat_manifest(nama))
+    cetak("dibuat " + MANIFEST + " untuk proyek '" + nama + "'")
+    kembalikan 0
+}
+
+fungsi _opsi_tambah(arg) {
+    # arg = [nama, --git url, --tag t, ...] -> [nama, opsi]
+    jika panjang(arg) < 3 {
+        kembalikan kosong
+    }
+    variabel opsi = kamus()
+    variabel i = 1
+    selagi i < panjang(arg) {
+        variabel o = arg[i]
+        jika !(o dalam ["--git", "--tag", "--rev", "--path"]) atau i + 1 >= panjang(arg) {
+            kembalikan kosong
+        }
+        opsi[o[2:]] = arg[i + 1]
+        i = i + 2
+    }
+    kembalikan [arg[0], opsi]
+}
+
+fungsi _cmd_tambah(arg, versi) {
+    variabel o = _opsi_tambah(arg)
+    jika o == kosong {
+        tulis_galat("Penggunaan: indk paket tambah <nama> --git <url> [--tag <tag> | --rev <sha>]\n"
+                    + "           indk paket tambah <nama> --path <direktori>\n")
+        kembalikan 64
+    }
+    variabel nama = o[0]
+    periksa_nama(nama)
+    _spesifikasi(nama, o[1], "argumen")
+    jika _jenis(_p(MANIFEST)) != "berkas" {
+        naikkan GalatPaket(MANIFEST + " tidak ditemukan; mulai dengan `indk paket mulai`")
+    }
+    variabel lama = baca_semua(_p(MANIFEST))
+    variabel m = urai_toml(lama, MANIFEST)
+    jika "dependensi" dalam m dan nama dalam m["dependensi"] {
+        naikkan GalatPaket("dependensi '" + nama + "' sudah ada di " + MANIFEST)
+    }
+    variabel baru = _sunting_dependensi(lama, _baris_dependensi(nama, o[1]), kosong)[0]
+    tulis_semua(_p(MANIFEST), baru)
+    coba {
+        _laporan(selaraskan(_PROYEK, versi))
+    } kecuali Galat sebagai e {
+        # Manifest dikembalikan: dependensi yang gagal dipasang tidak boleh
+        # tertinggal dan membuat `pasang` berikutnya gagal juga.
+        tulis_semua(_p(MANIFEST), lama)
+        naikkan e
+    }
+    kembalikan 0
+}
+
+fungsi _cmd_hapus(arg, versi) {
+    jika panjang(arg) != 1 {
+        tulis_galat("Penggunaan: indk paket hapus <nama>\n")
+        kembalikan 64
+    }
+    jika _jenis(_p(MANIFEST)) != "berkas" {
+        naikkan GalatPaket(MANIFEST + " tidak ditemukan")
+    }
+    variabel h = _sunting_dependensi(baca_semua(_p(MANIFEST)), kosong, arg[0])
+    jika !h[1] {
+        naikkan GalatPaket("dependensi '" + arg[0] + "' tidak ada di " + MANIFEST)
+    }
+    variabel lama = baca_semua(_p(MANIFEST))
+    tulis_semua(_p(MANIFEST), h[0])
+    coba {
+        _laporan(selaraskan(_PROYEK, versi))
+    } kecuali Galat sebagai e {
+        tulis_semua(_p(MANIFEST), lama)
+        naikkan e
+    }
+    kembalikan 0
+}
+
+fungsi _cmd_daftar() {
+    variabel m = _baca_manifest(_PROYEK)
+    jika m == kosong {
+        naikkan GalatPaket(MANIFEST + " tidak ditemukan")
+    }
+    variabel kunci_lama = _baca_kunci(_PROYEK)
+    variabel dep = _dependensi(m, MANIFEST)
+    jika panjang(dep) == 0 {
+        cetak("tidak ada dependensi")
+    }
+    untuk d dalam dep {
+        variabel status = "belum terpasang"
+        jika _jenis(jalur.gabung(_PROYEK, DIR_PAKET, d[0], d[0] + ".idk")) == "berkas" {
+            status = "terpasang"
+        }
+        variabel rev = ""
+        jika d[0] dalam kunci_lama dan "rev" dalam kunci_lama[d[0]] {
+            rev = " @ " + kunci_lama[d[0]]["rev"][0:12]
+        }
+        cetak(d[0] + "  " + _teks_spesifikasi(d[1]) + rev + "  [" + status + "]")
+    }
+    untuk n dalam terurut(kunci(kunci_lama)) {
+        variabel langsung = salah
+        untuk d dalam dep {
+            jika d[0] == n { langsung = benar }
+        }
+        jika !langsung { cetak(n + "  (dependensi tidak langsung)") }
+    }
+    kembalikan 0
+}
+
+# utama(argumen, versi) -> kode keluar. Dipanggil oleh `indk paket`.
+fungsi utama(arg, versi) {
+    global _PROYEK
+    _PROYEK = "."
+    jika panjang(arg) >= 2 dan arg[0] == "-C" {
+        _PROYEK = arg[1]
+        arg = arg[2:]
+        jika _jenis(_PROYEK) != "direktori" {
+            tulis_galat("galat: direktori '" + _PROYEK + "' tidak ada\n")
+            kembalikan 1
+        }
+    }
+    jika panjang(arg) == 0 atau arg[0] == "bantuan" atau arg[0] == "-h" atau arg[0] == "--help" {
+        _cetak_bantuan()
+        jika panjang(arg) == 0 { kembalikan 64 }
+        kembalikan 0
+    }
+    variabel cmd = arg[0]
+    variabel sisa = arg[1:]
+    coba {
+        jika cmd == "mulai" {
+            kembalikan _cmd_mulai(sisa)
+        } jika_lain cmd == "tambah" {
+            kembalikan _cmd_tambah(sisa, versi)
+        } jika_lain cmd == "hapus" {
+            kembalikan _cmd_hapus(sisa, versi)
+        } jika_lain cmd == "pasang" {
+            _laporan(selaraskan(_PROYEK, versi))
+            kembalikan 0
+        } jika_lain cmd == "perbarui" {
+            variabel target = "*"
+            jika panjang(sisa) > 0 { target = sisa[0] }
+            _laporan(selaraskan(_PROYEK, versi, target))
+            kembalikan 0
+        } jika_lain cmd == "daftar" {
+            kembalikan _cmd_daftar()
+        }
+    } kecuali GalatPaket sebagai e {
+        tulis_galat("galat: " + e.pesan + "\n")
+        kembalikan 1
+    } kecuali Galat sebagai e {
+        # Galat OS dan sejenisnya (izin ditolak, disk penuh) tetap dilaporkan
+        # sebagai satu baris, bukan jejak interpreter.
+        tulis_galat("galat: " + ke_teks(e.pesan) + "\n")
+        kembalikan 1
+    }
+    tulis_galat("perintah paket tidak dikenal: '" + cmd + "' (lihat `indk paket bantuan`)\n")
+    kembalikan 64
+}

@@ -707,6 +707,32 @@ Value nativeFnJalurNyata(int argCount, Value* args) {
 #endif
 }
 
+// _adalah_tautan(jalur) -> benar bila `jalur` sendiri adalah tautan simbolik
+// (POSIX lstat) atau reparse point/junction (Windows), TANPA mengikutinya.
+// _info_jalur() mengikuti tautan, jadi pemanggil yang menyalin atau menghapus
+// pohon direktori (pustaka/paket.idk) memakai ini lebih dulu: mengikuti
+// tautan berarti menyalin berkas dari luar pohon, menghapus isi target, atau
+// berputar tanpa akhir pada tautan melingkar. Tidak ada -> salah.
+Value nativeFnAdalahTautan(int argCount, Value* args) {
+    const char* jalur;
+    if (argCount != 1 || !teksArg(argCount, args, 0, "_adalah_tautan", &jalur)) {
+        if (argCount != 1) nativeRaiseKelas(vm.galatTipe, "_adalah_tautan() memerlukan 1 teks");
+        return KOSONG_VAL;
+    }
+#ifdef _WIN32
+    wchar_t* w = keLebarJalur(jalur);
+    if (w == NULL) return BOOL_VAL(false);
+    DWORD attr = GetFileAttributesW(w);
+    free(w);
+    if (attr == INVALID_FILE_ATTRIBUTES) return BOOL_VAL(false);
+    return BOOL_VAL((attr & FILE_ATTRIBUTE_REPARSE_POINT) != 0);
+#else
+    struct stat st;
+    if (lstat(jalur, &st) != 0) return BOOL_VAL(false);
+    return BOOL_VAL(S_ISLNK(st.st_mode));
+#endif
+}
+
 // _info_jalur(jalur) -> ("berkas" | "direktori" | "lain", ukuran, waktu_ubah)
 // or kosong when nothing is there.
 Value nativeFnInfoJalur(int argCount, Value* args) {
