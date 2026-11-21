@@ -1,0 +1,48 @@
+# Modul `jaringan` (Fase 17): unduh() memeriksa semua argumen SEBELUM
+# membuka koneksi atau menyentuh disk. Contoh ini tidak memakai jaringan;
+# unduhan sungguhan diuji terhadap server lokal di tests/unduh_server.sh.
+
+impor jaringan
+dari jaringan impor GalatUnduhan, GalatJaringan
+
+fungsi coba_unduh(f) {
+    coba {
+        f()
+        cetak("  (tidak gagal)")
+    } kecuali GalatUnduhan sebagai e {
+        cetak("  GalatUnduhan:", e.pesan)
+    } kecuali GalatJaringan sebagai e {
+        cetak("  GalatJaringan:", e.pesan)
+    } kecuali GalatTipe sebagai e {
+        cetak("  GalatTipe:", e.pesan)
+    } kecuali GalatNilai sebagai e {
+        cetak("  GalatNilai:", e.pesan)
+    }
+}
+
+cetak("skema bukan http:")
+coba_unduh(fungsi() { jaringan.unduh("ftp://contoh.invalid/a.zip", "a.zip") })
+coba_unduh(fungsi() { jaringan.unduh("file:///etc/passwd", "a.zip") })
+cetak("tujuan bukan teks:")
+coba_unduh(fungsi() { jaringan.unduh("http://contoh.invalid/a", 42) })
+cetak("sha256 rusak:")
+coba_unduh(fungsi() { jaringan.unduh("http://contoh.invalid/a", "a", sha256="abc") })
+cetak("batas:")
+coba_unduh(fungsi() { jaringan.unduh("http://contoh.invalid/a", "a", batas_waktu=0) })
+coba_unduh(fungsi() { jaringan.unduh("http://contoh.invalid/a", "a", maks_ukuran=1.5) })
+coba_unduh(fungsi() { jaringan.unduh("http://contoh.invalid/a", "a", maks_pengalihan=-1) })
+cetak("kemajuan bukan fungsi:")
+coba_unduh(fungsi() { jaringan.unduh("http://contoh.invalid/a", "a", kemajuan=5) })
+cetak("header menyusup:")
+coba_unduh(fungsi() { jaringan.unduh("http://contoh.invalid/a\r\nX: 1", "a") })
+
+# Tujuan yang sudah ada ditolak sebelum koneksi dibuka.
+tulis_semua("_unduh_contoh.txt", "jangan ditimpa")
+cetak("tujuan sudah ada:")
+coba_unduh(fungsi() { jaringan.unduh("http://contoh.invalid/a", "_unduh_contoh.txt") })
+cetak("isi tetap   :", baca_semua("_unduh_contoh.txt"))
+hapus_berkas("_unduh_contoh.txt")
+
+# GalatUnduhan turunan GalatJaringan turunan GalatOS: penangan GalatOS yang
+# sudah ada ikut menangkap kegagalan unduhan.
+cetak("hierarki    :", turunan_dari(GalatUnduhan, GalatJaringan), turunan_dari(GalatJaringan, GalatOS))

@@ -1,0 +1,4 @@
+# hapus_direktori_bertingkat() pada jalur yang tidak ada adalah GalatOS,
+# bukan diam-diam berhasil.
+impor berkas
+berkas.hapus_direktori_bertingkat("_tidak_ada_direktori_ini")

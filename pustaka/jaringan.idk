@@ -1,0 +1,282 @@
+# pustaka/jaringan.idk - Unduhan berkas HTTP/HTTPS ke disk (modul `jaringan`).
+# Pemakaian:
+#     impor jaringan
+#     hasil = jaringan.unduh("https://contoh.invalid/arsip.zip", "arsip.zip",
+#                            sha256="9f86d0...", maks_ukuran=50 * 1024 * 1024)
+#
+# unduh() dibangun di atas klien pustaka/http.idk (HTTP/1.0, TLS selalu
+# terverifikasi lewat tls_mulai), tetapi TIDAK menampung badan di memori:
+# setiap potongan soket (maks 64 KB) langsung ditulis ke berkas sementara di
+# direktori tujuan. Berkas itu baru di-rename ke tujuan setelah statusnya 2xx,
+# panjangnya cocok dengan Content-Length, tidak melewati maks_ukuran, dan
+# SHA-256-nya cocok (bila diminta). Galat apa pun menghapus berkas sementara:
+# tujuan tidak pernah berisi unduhan setengah jadi.
+#
+# Ditolak (GalatIzin) di `indk --sandbox` karena memakai soket_sambung.
+
+impor "pustaka/http.idk"
+impor berkas
+impor jalur
+
+# Galat dari unduh() sendiri: status 4xx/5xx, batal, ukuran, checksum,
+# respons rusak. Turunan GalatJaringan -> GalatOS.
+kelas GalatUnduhan < GalatJaringan {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+_MAKS_KEPALA = 65536
+_PENGALIHAN = [301, 302, 303, 307, 308]
+
+fungsi _bulat_non_negatif(nilai, apa) {
+    jika jenis(nilai) != "angka" atau ke_bulat(nilai) bukan adalah nilai atau nilai < 0 {
+        naikkan GalatNilai(f"unduh(): {apa} harus bilangan bulat >= 0, bukan {repr(nilai)}")
+    }
+}
+
+fungsi _sha256_sah(nilai) {
+    jika jenis(nilai) != "teks" atau panjang(nilai) != 64 {
+        naikkan GalatNilai(f"unduh(): sha256 harus 64 karakter heksa, bukan {repr(nilai)}")
+    }
+    variabel kecil = huruf_kecil(nilai)
+    untuk c dalam kecil {
+        jika tidak c dalam "0123456789abcdef" {
+            naikkan GalatNilai(f"unduh(): sha256 harus 64 karakter heksa, bukan {repr(nilai)}")
+        }
+    }
+    kembalikan kecil
+}
+
+# _permintaan(bagian, kepala) -> teks permintaan GET HTTP/1.0.
+# Accept-Encoding: identity -- badan disimpan apa adanya, bukan dikompresi.
+fungsi _permintaan(bagian, kepala) {
+    variabel host = bagian[0]
+    variabel port = bagian[1]
+    variabel port_bawaan = 443 jika bagian[3] selain 80
+    variabel host_kepala = host jika port == port_bawaan selain host + ":" + ke_teks(port)
+    variabel baris = ["GET " + bagian[2] + " HTTP/1.0", "Host: " + host_kepala,
+                      "User-Agent: Indonesiaku", "Accept-Encoding: identity",
+                      "Connection: close"]
+    jika kepala bukan adalah kosong {
+        untuk nama dalam kepala {
+            baris.tambah(_http_aman(ke_teks(nama), "nama header", salah) + ": "
+                         + _http_aman(ke_teks(kepala[nama]), "nilai header", benar))
+        }
+    }
+    kembalikan teks_gabung(baris, "\r\n") + "\r\n\r\n"
+}
+
+# _urai_kepala(teks, url) -> [status, alasan, kamus header huruf kecil].
+fungsi _urai_kepala(mentah, url) {
+    variabel baris = teks_pisah(mentah, "\r\n")
+    variabel status = teks_pisah(baris[0], " ")
+    jika panjang(status) < 2 atau tidak teks_mulai_dengan(status[0], "HTTP/") {
+        naikkan GalatUnduhan(f"unduh(): baris status tidak sah dari {url}: {repr(baris[0])}")
+    }
+    variabel kode = status[1]
+    jika panjang(kode) != 3 atau tidak semua([c >= "0" dan c <= "9" untuk c dalam kode]) {
+        naikkan GalatUnduhan(f"unduh(): kode status tidak sah dari {url}: {repr(kode)}")
+    }
+    variabel hasil = kamus()
+    untuk b dalam baris[1:] {
+        variabel h = _http_pisah_header(b)
+        jika h[0] != "" {
+            hasil[huruf_kecil(h[0])] = h[1]
+        }
+    }
+    kembalikan [ke_bulat(kode), teks_gabung(status[2:], " "), hasil]
+}
+
+# _panjang_konten(kepala, url) -> bulat atau kosong.
+fungsi _panjang_konten(kepala, url) {
+    jika tidak "content-length" dalam kepala {
+        kembalikan kosong
+    }
+    variabel t = teks_pangkas(kepala["content-length"])
+    jika t == "" atau tidak semua([c >= "0" dan c <= "9" untuk c dalam t]) {
+        naikkan GalatUnduhan(f"unduh(): Content-Length tidak sah dari {url}: {repr(t)}")
+    }
+    kembalikan ke_bulat(t)
+}
+
+# _tulis_badan(...) -> jumlah byte yang ditulis. `awal` adalah byte badan yang
+# sudah ikut terbaca bersama kepala.
+fungsi _tulis_badan(s, awal, total, jalur_tmp, maks_ukuran, kemajuan, url) {
+    jika maks_ukuran bukan adalah kosong dan total bukan adalah kosong dan total > maks_ukuran {
+        naikkan GalatUnduhan(f"unduh(): {url} berukuran {total} bita, melebihi maks_ukuran {maks_ukuran}")
+    }
+    variabel f = buka_berkas(jalur_tmp, "t")
+    variabel diterima = 0
+    coba {
+        variabel potongan = awal
+        selagi benar {
+            jika potongan != "" {
+                diterima += panjang_byte(potongan)
+                jika maks_ukuran bukan adalah kosong dan diterima > maks_ukuran {
+                    naikkan GalatUnduhan(f"unduh(): {url} melebihi maks_ukuran {maks_ukuran} bita")
+                }
+                jika total bukan adalah kosong dan diterima > total {
+                    naikkan GalatUnduhan(f"unduh(): {url} mengirim lebih dari Content-Length {total}")
+                }
+                tulis(f, potongan)
+                jika kemajuan bukan adalah kosong dan kemajuan(diterima, total) adalah salah {
+                    naikkan GalatUnduhan(f"unduh(): dibatalkan setelah {diterima} bita")
+                }
+            }
+            potongan = soket_baca(s)
+            jika potongan == "" {
+                hentikan
+            }
+        }
+    } akhirnya {
+        tutup(f)
+    }
+    jika total bukan adalah kosong dan diterima < total {
+        naikkan GalatUnduhan(f"unduh(): koneksi terputus setelah {diterima} dari {total} bita")
+    }
+    kembalikan diterima
+}
+
+# _ambil_ke(...) -> kamus {"url", "ukuran", "tipe"} setelah badan tertulis di
+# jalur_tmp. Mengikuti pengalihan dengan aturan http_ambil(): batas lompatan,
+# tolak penurunan https -> http, tolak putaran.
+fungsi _ambil_ke(url, jalur_tmp, batas_waktu, maks_ukuran, kemajuan, maks_pengalihan, kepala) {
+    variabel kini = url
+    variabel dikunjungi = [url]
+    selagi benar {
+        variabel bagian = http_urai_url(kini)
+        variabel s = soket_sambung(bagian[0], bagian[1])
+        variabel lanjut_ke = kosong
+        coba {
+            soket_batas_waktu(s, batas_waktu)
+            jika bagian[3] {
+                tls_mulai(s, bagian[0])
+            }
+            soket_tulis(s, _permintaan(bagian, kepala))
+            variabel h = _soket_baca_kepala(s, _MAKS_KEPALA)
+            jika h adalah kosong {
+                naikkan GalatUnduhan(f"unduh(): respons dari {kini} tidak lengkap")
+            }
+            jika h adalah salah {
+                naikkan GalatUnduhan(f"unduh(): kepala respons dari {kini} melebihi {_MAKS_KEPALA} bita")
+            }
+            variabel r = _urai_kepala(h[0], kini)
+            variabel status = r[0]
+            jika status dalam _PENGALIHAN dan "location" dalam r[2] dan maks_pengalihan > 0 {
+                jika panjang(dikunjungi) > maks_pengalihan {
+                    naikkan GalatUnduhan(f"unduh(): pengalihan melebihi {maks_pengalihan} lompatan: "
+                                         + teks_gabung(dikunjungi, " -> "))
+                }
+                lanjut_ke = _http_gabung_url(kini, teks_pangkas(r[2]["location"]))
+            } selain {
+                jika status < 200 atau status > 299 {
+                    naikkan GalatUnduhan(f"unduh(): {status} {r[1]} untuk {kini}")
+                }
+                variabel n = _tulis_badan(s, h[1], _panjang_konten(r[2], kini), jalur_tmp,
+                                          maks_ukuran, kemajuan, kini)
+                variabel tipe = r[2]["content-type"] jika "content-type" dalam r[2] selain kosong
+                kembalikan {"url": kini, "ukuran": n, "tipe": tipe}
+            }
+        } akhirnya {
+            soket_tutup(s)
+        }
+        # Penurunan https -> http ditolak: permintaan berikut (termasuk
+        # header kepala= seperti Authorization) akan dikirim polos.
+        jika bagian[3] dan tidak http_urai_url(lanjut_ke)[3] {
+            naikkan GalatUnduhan(f"unduh(): pengalihan menurunkan keamanan dari https ke http: {kini} -> {lanjut_ke}")
+        }
+        jika lanjut_ke dalam dikunjungi {
+            naikkan GalatUnduhan(f"unduh(): pengalihan berputar: " + teks_gabung(dikunjungi, " -> ")
+                                 + f" -> {lanjut_ke}")
+        }
+        dikunjungi.tambah(lanjut_ke)
+        kini = lanjut_ke
+    }
+}
+
+# unduh(url, tujuan, timpa=salah, batas_waktu=30, maks_ukuran=kosong,
+#       sha256=kosong, kemajuan=kosong, maks_pengalihan=5, kepala=kosong)
+#   -> kamus {"jalur", "url", "ukuran", "sha256", "tipe"}
+#
+#   timpa            tujuan yang sudah ada ditolak kecuali benar
+#   batas_waktu      detik per operasi baca/tulis soket (bukan total)
+#   maks_ukuran      byte; dicek terhadap Content-Length DAN byte yang tiba
+#   sha256           heksa yang diharapkan; tidak cocok -> GalatUnduhan
+#   kemajuan         fungsi(diterima, total) per potongan; total kosong bila
+#                    server tidak mengirim Content-Length; kembalikan salah
+#                    untuk membatalkan
+#   maks_pengalihan  0 = jangan ikuti pengalihan
+#   kepala           kamus header tambahan (mis. Authorization)
+fungsi unduh(url, tujuan, timpa = salah, batas_waktu = 30, maks_ukuran = kosong,
+             sha256 = kosong, kemajuan = kosong, maks_pengalihan = 5, kepala = kosong) {
+    jika jenis(tujuan) != "teks" atau tujuan == "" {
+        naikkan GalatTipe(f"unduh(): tujuan harus teks tidak kosong, bukan {repr(tujuan)}")
+    }
+    jika jenis(batas_waktu) != "angka" atau batas_waktu <= 0 {
+        naikkan GalatNilai(f"unduh(): batas_waktu harus angka > 0, bukan {repr(batas_waktu)}")
+    }
+    jika maks_ukuran bukan adalah kosong {
+        _bulat_non_negatif(maks_ukuran, "maks_ukuran")
+    }
+    _bulat_non_negatif(maks_pengalihan, "maks_pengalihan")
+    variabel harapan = kosong
+    jika sha256 bukan adalah kosong {
+        harapan = _sha256_sah(sha256)
+    }
+    jika kemajuan bukan adalah kosong dan jenis(kemajuan) != "fungsi" {
+        naikkan GalatTipe(f"unduh(): kemajuan harus fungsi, bukan {jenis(kemajuan)}")
+    }
+    jika kepala bukan adalah kosong dan jenis(kepala) != "kamus" {
+        naikkan GalatTipe(f"unduh(): kepala harus kamus, bukan {jenis(kepala)}")
+    }
+    # Skema lain (file://, ftp://) ditolak sebelum menyentuh disk atau jaringan.
+    jika jenis(url) != "teks" {
+        naikkan GalatTipe(f"unduh(): url harus teks, bukan {jenis(url)}")
+    }
+    variabel kecil = huruf_kecil(url)
+    jika tidak (teks_mulai_dengan(kecil, "http://") atau teks_mulai_dengan(kecil, "https://")) {
+        naikkan GalatUnduhan(f"unduh(): url harus diawali http:// atau https://: {repr(url)}")
+    }
+    http_urai_url(url)      # host, port, dan karakter terlarang
+
+    variabel ada = _info_lengkap(tujuan)
+    jika ada bukan adalah kosong {
+        jika ada[0] == "direktori" {
+            naikkan GalatUnduhan(f"unduh(): '{tujuan}' adalah direktori")
+        }
+        jika tidak timpa {
+            naikkan GalatUnduhan(f"unduh(): '{tujuan}' sudah ada (pakai timpa=benar)")
+        }
+    }
+    variabel dir = jalur.nama_direktori(tujuan)
+    jika dir == "" {
+        dir = "."
+    }
+    # Di direktori tujuan, bukan /tmp: rename hanya atomik di sistem berkas
+    # yang sama.
+    variabel sementara = berkas.berkas_sementara(
+        awalan="." + jalur.nama_dasar(tujuan) + ".", akhiran=".unduh", direktori=dir)
+    variabel selesai = salah
+    coba {
+        variabel hasil = _ambil_ke(url, sementara, batas_waktu, maks_ukuran, kemajuan,
+                                   maks_pengalihan, kepala)
+        hasil["sha256"] = berkas.sha256(sementara)
+        jika harapan bukan adalah kosong dan hasil["sha256"] != harapan {
+            naikkan GalatUnduhan(f"unduh(): SHA-256 tidak cocok untuk {hasil['url']}: "
+                                 + f"diharapkan {harapan}, didapat {hasil['sha256']}")
+        }
+        _ganti_nama(sementara, tujuan, timpa, "unduh")
+        selesai = benar
+        hasil["jalur"] = tujuan
+        kembalikan hasil
+    } akhirnya {
+        jika tidak selesai {
+            coba {
+                hapus_berkas(sementara)
+            } kecuali GalatOS {
+                # Gagal membersihkan tidak boleh menutupi galat aslinya.
+            }
+        }
+    }
+}

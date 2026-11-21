@@ -1,0 +1,335 @@
+# pustaka/berkas.idk - Operasi berkas dan direktori lokal (modul `berkas`).
+# Pemakaian:
+#     impor berkas
+#     dari berkas impor salin_berkas, salin_direktori
+#
+# Padanan `shutil` + sebagian `os`/`tempfile` Python (Fase 17 V1):
+#
+#   salin_berkas(asal, tujuan, timpa=salah)            cp
+#   salin_direktori(asal, tujuan, timpa=salah,
+#                   lewati_tautan=salah)               cp -r, tanpa ikut tautan
+#   ganti_nama(asal, tujuan, timpa=salah)              rename atomik
+#   pindahkan(asal, tujuan, timpa=salah)               mv (lintas perangkat ok)
+#   hapus_direktori_bertingkat(jalur)                  rm -r, tanpa ikut tautan
+#   jelajahi_direktori(akar)                           os.walk (daftar tupel)
+#   berkas_sementara(awalan, akhiran, direktori)       tempfile.mkstemp
+#   direktori_sementara(awalan, direktori)             tempfile.mkdtemp
+#   direktori_sementara_sistem()                       tempfile.gettempdir
+#   info(jalur)                                        os.lstat, sebagai kamus
+#   sha256(jalur)                                      hash isi tanpa memuatnya
+#
+# Menghapus satu berkas sudah ada sebagai builtin `hapus_berkas` dan tidak
+# diduplikasi di sini.
+#
+# Kegagalan sistem berkas adalah GalatOS dengan alasan yang sama di semua OS
+# ("tidak ada", "sudah ada", "akses ditolak", "adalah direktori",
+# "berkas yang sama", "tautan simbolik", "beda perangkat").
+#
+# Tautan simbolik: salin_berkas mengikuti tautan pada ASAL (seperti cp).
+# Operasi pohon TIDAK PERNAH mengikuti tautan -- itu bisa menyalin atau
+# menghapus isi di luar pohon, atau berputar tanpa akhir. Di Windows,
+# "tautan" berarti reparse point (symlink maupun junction).
+#
+# Semua yang membuat, memindah, atau menghapus ditolak (GalatIzin) di
+# `indk --sandbox`.
+
+impor jalur
+
+kelas GalatBerkas < GalatOS {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+_HEKSA = "0123456789abcdef"
+_PERCOBAAN_NAMA = 100
+
+# _heksa_acak(n) -> 2n karakter heksa dari CSPRNG (acak_bita), supaya nama
+# berkas sementara tidak bisa ditebak lebih dulu oleh proses lain.
+fungsi _heksa_acak(n) {
+    variabel t = ""
+    untuk b dalam acak_bita(n) {
+        t = t + _HEKSA[b // 16] + _HEKSA[b % 16]
+    }
+    kembalikan t
+}
+
+fungsi _wajib_teks(nilai, fungsi_nama, apa) {
+    jika jenis(nilai) != "teks" {
+        naikkan GalatTipe(f"{fungsi_nama}(): {apa} harus teks, bukan {jenis(nilai)}")
+    }
+    jika nilai == "" {
+        naikkan GalatNilai(f"{fungsi_nama}(): {apa} tidak boleh kosong")
+    }
+}
+
+# Awalan/akhiran nama sementara tidak boleh membawa pemisah jalur: itu akan
+# menaruh berkas di luar direktori yang diminta.
+fungsi _wajib_tanpa_pemisah(nilai, fungsi_nama, apa) {
+    jika jenis(nilai) != "teks" {
+        naikkan GalatTipe(f"{fungsi_nama}(): {apa} harus teks, bukan {jenis(nilai)}")
+    }
+    jika "/" dalam nilai atau "\\" dalam nilai {
+        naikkan GalatNilai(f"{fungsi_nama}(): {apa} tidak boleh memuat pemisah jalur: {repr(nilai)}")
+    }
+}
+
+# info(jalur) -> kamus tentang jalur ITU SENDIRI (tautan tidak diikuti):
+#   "jenis"      "berkas" | "direktori" | "tautan" | "lain"
+#   "ukuran"     bulat, byte
+#   "waktu_ubah" desimal, detik sejak 1970
+#   "mode"       bit izin POSIX (mis. 0o644), kosong di Windows
+#   "baca_saja"  logika: tidak ada bit tulis (POSIX) / atribut read-only (Windows)
+fungsi info(j) {
+    _wajib_teks(j, "info", "jalur")
+    variabel t = _info_lengkap(j)
+    jika t adalah kosong {
+        naikkan GalatBerkas(f"info(): '{j}' tidak ada")
+    }
+    kembalikan {"jenis": t[0], "ukuran": t[1], "waktu_ubah": t[2], "mode": t[3], "baca_saja": t[4]}
+}
+
+# sha256(jalur) -> heksa SHA-256 isi berkas, dibaca per 64 KB.
+fungsi sha256(j) {
+    _wajib_teks(j, "sha256", "jalur")
+    kembalikan _sha256_berkas(j, "sha256")
+}
+
+# salin_berkas(asal, tujuan, timpa=salah) -> tujuan.
+# Menyalin isi dan bit izin. Tujuan yang sudah ada ditolak tanpa timpa=benar;
+# tujuan berupa direktori atau tautan selalu ditolak; menyalin berkas ke
+# dirinya sendiri ditolak sebelum apa pun dipotong.
+fungsi salin_berkas(asal, tujuan, timpa = salah) {
+    _wajib_teks(asal, "salin_berkas", "asal")
+    _wajib_teks(tujuan, "salin_berkas", "tujuan")
+    _salin_berkas(asal, tujuan, timpa, "salin_berkas")
+    kembalikan tujuan
+}
+
+# ganti_nama(asal, tujuan, timpa=salah) -> tujuan.
+# Rename atomik di sistem berkas yang sama. Lintas perangkat -> GalatBerkas
+# "beda perangkat" (pakai pindahkan()).
+fungsi ganti_nama(asal, tujuan, timpa = salah) {
+    _wajib_teks(asal, "ganti_nama", "asal")
+    _wajib_teks(tujuan, "ganti_nama", "tujuan")
+    jika tidak _ganti_nama(asal, tujuan, timpa, "ganti_nama") {
+        naikkan GalatBerkas(f"ganti_nama(): '{asal}' -> '{tujuan}' beda perangkat")
+    }
+    kembalikan tujuan
+}
+
+# pindahkan(asal, tujuan, timpa=salah) -> tujuan.
+# Seperti ganti_nama, tetapi bila keduanya di sistem berkas berbeda, isinya
+# disalin lalu asal dihapus (shutil.move). Tautan tidak bisa dipindah lintas
+# perangkat: bahasa ini belum bisa membuat tautan baru.
+fungsi pindahkan(asal, tujuan, timpa = salah) {
+    _wajib_teks(asal, "pindahkan", "asal")
+    _wajib_teks(tujuan, "pindahkan", "tujuan")
+    jika _ganti_nama(asal, tujuan, timpa, "pindahkan") {
+        kembalikan tujuan
+    }
+    variabel t = _info_lengkap(asal)
+    jika t[0] == "tautan" {
+        naikkan GalatBerkas(f"pindahkan(): '{asal}' tautan simbolik, tidak dapat dipindah lintas perangkat")
+    }
+    jika t[0] == "direktori" {
+        _salin_pohon(asal, tujuan, timpa, salah, "pindahkan")
+        _hapus_pohon(asal)
+    } selain {
+        _salin_berkas(asal, tujuan, timpa, "pindahkan")
+        hapus_berkas(asal)
+    }
+    kembalikan tujuan
+}
+
+# _cek_direktori(j, fungsi_nama) -- j harus direktori sungguhan, bukan tautan.
+fungsi _cek_direktori(j, fungsi_nama) {
+    variabel t = _info_lengkap(j)
+    jika t adalah kosong {
+        naikkan GalatBerkas(f"{fungsi_nama}(): '{j}' tidak ada")
+    }
+    jika t[0] == "tautan" {
+        naikkan GalatBerkas(f"{fungsi_nama}(): '{j}' tautan simbolik")
+    }
+    jika t[0] != "direktori" {
+        naikkan GalatBerkas(f"{fungsi_nama}(): '{j}' bukan direktori")
+    }
+}
+
+# _di_dalam(anak, induk) -> benar bila jalur nyata `anak` sama dengan atau
+# berada di bawah `induk`. Menyalin direktori ke dalam dirinya sendiri akan
+# menyalin hasil salinannya lagi tanpa akhir.
+fungsi _diawali(t, awal) {
+    kembalikan t[:panjang(awal)] == awal
+}
+
+fungsi _di_dalam(anak, induk) {
+    variabel a = _jalur_nyata(anak)
+    variabel i = _jalur_nyata(induk)
+    jika a adalah kosong atau i adalah kosong {
+        kembalikan salah
+    }
+    kembalikan a == i atau _diawali(a, i + "/") atau _diawali(a, i + "\\")
+}
+
+fungsi _salin_pohon(asal, tujuan, timpa, lewati_tautan, fungsi_nama) {
+    variabel t = _info_lengkap(tujuan)
+    jika t adalah kosong {
+        buat_direktori(tujuan)
+    } selain {
+        jika tidak timpa {
+            naikkan GalatBerkas(f"{fungsi_nama}(): '{tujuan}' sudah ada")
+        }
+        jika t[0] != "direktori" {
+            naikkan GalatBerkas(f"{fungsi_nama}(): '{tujuan}' bukan direktori")
+        }
+    }
+    untuk nama dalam isi_direktori(asal) {
+        variabel s = jalur.gabung(asal, nama)
+        variabel d = jalur.gabung(tujuan, nama)
+        variabel i = _info_lengkap(s)
+        jika i adalah kosong {
+            lanjut          # terhapus di antara pembacaan direktori dan sekarang
+        }
+        jika i[0] == "tautan" {
+            jika lewati_tautan {
+                lanjut
+            }
+            naikkan GalatBerkas(f"{fungsi_nama}(): '{s}' tautan simbolik (pakai lewati_tautan=benar)")
+        }
+        jika i[0] == "direktori" {
+            _salin_pohon(s, d, timpa, lewati_tautan, fungsi_nama)
+        } jika_lain i[0] == "berkas" {
+            _salin_berkas(s, d, timpa, fungsi_nama)
+        } selain {
+            naikkan GalatBerkas(f"{fungsi_nama}(): '{s}' bukan berkas biasa")
+        }
+    }
+}
+
+# salin_direktori(asal, tujuan, timpa=salah, lewati_tautan=salah) -> tujuan.
+# Tujuan tidak boleh sudah ada kecuali timpa=benar (direktori yang ada
+# dipakai ulang, berkas yang sama namanya ditimpa). Tautan simbolik di dalam
+# pohon tidak pernah diikuti: tanpa lewati_tautan=benar ia menjadi galat.
+# Tidak atomik: galat di tengah jalan meninggalkan salinan sebagian.
+fungsi salin_direktori(asal, tujuan, timpa = salah, lewati_tautan = salah) {
+    _wajib_teks(asal, "salin_direktori", "asal")
+    _wajib_teks(tujuan, "salin_direktori", "tujuan")
+    _cek_direktori(asal, "salin_direktori")
+    variabel baru = _info_lengkap(tujuan) adalah kosong
+    jika baru {
+        # Periksa induk tujuan: tujuannya sendiri belum ada untuk diselesaikan.
+        variabel induk = jalur.nama_direktori(tujuan)
+        jika _di_dalam(induk jika induk != "" selain ".", asal) {
+            naikkan GalatBerkas(f"salin_direktori(): '{tujuan}' berada di dalam '{asal}'")
+        }
+    } jika_lain _di_dalam(tujuan, asal) {
+        naikkan GalatBerkas(f"salin_direktori(): '{tujuan}' berada di dalam '{asal}'")
+    }
+    _salin_pohon(asal, tujuan, timpa, lewati_tautan, "salin_direktori")
+    kembalikan tujuan
+}
+
+fungsi _hapus_pohon(d) {
+    untuk nama dalam isi_direktori(d) {
+        variabel p = jalur.gabung(d, nama)
+        variabel i = _info_lengkap(p)
+        jika i adalah kosong {
+            lanjut
+        }
+        jika i[0] == "tautan" {
+            _hapus_tautan(p, "hapus_direktori_bertingkat")      # tautannya saja
+        } jika_lain i[0] == "direktori" {
+            _hapus_pohon(p)
+        } selain {
+            hapus_berkas(p)
+        }
+    }
+    hapus_direktori(d)
+}
+
+# hapus_direktori_bertingkat(jalur) -> kosong. Seperti `rm -r`: tautan di
+# dalam pohon dihapus sebagai tautan, isinya tidak disentuh; akar yang
+# berupa tautan ditolak (shutil.rmtree juga menolaknya).
+fungsi hapus_direktori_bertingkat(j) {
+    _wajib_teks(j, "hapus_direktori_bertingkat", "jalur")
+    _cek_direktori(j, "hapus_direktori_bertingkat")
+    _hapus_pohon(j)
+}
+
+fungsi _jelajah(d, hasil) {
+    variabel subdir = []
+    variabel isi = []
+    untuk nama dalam isi_direktori(d) {
+        variabel i = _info_lengkap(jalur.gabung(d, nama))
+        jika i adalah kosong {
+            lanjut
+        }
+        jika i[0] == "direktori" {
+            subdir.tambah(nama)
+        } selain {
+            isi.tambah(nama)
+        }
+    }
+    hasil.tambah((d, subdir, isi))
+    untuk nama dalam subdir {
+        _jelajah(jalur.gabung(d, nama), hasil)
+    }
+}
+
+# jelajahi_direktori(akar) -> daftar tupel (direktori, subdirektori, berkas),
+# dari atas ke bawah, nama terurut. Tautan simbolik masuk daftar `berkas` dan
+# tidak pernah ditelusuri.
+fungsi jelajahi_direktori(akar) {
+    _wajib_teks(akar, "jelajahi_direktori", "akar")
+    _cek_direktori(akar, "jelajahi_direktori")
+    variabel hasil = []
+    _jelajah(akar, hasil)
+    kembalikan hasil
+}
+
+# direktori_sementara_sistem() -> TMPDIR, TEMP, atau TMP (yang pertama berupa
+# direktori), lalu /tmp, lalu ".". Dengan "/" sebagai pemisah.
+fungsi direktori_sementara_sistem() {
+    untuk nama dalam ["TMPDIR", "TEMP", "TMP"] {
+        variabel d = ambil_lingkungan(nama)
+        jika d bukan adalah kosong dan d != "" dan jalur.adalah_direktori(d) {
+            kembalikan jalur.dari_windows(d)
+        }
+    }
+    jika jalur.adalah_direktori("/tmp") {
+        kembalikan "/tmp"
+    }
+    kembalikan "."
+}
+
+fungsi _buat_sementara(awalan, akhiran, direktori, adalah_dir, fungsi_nama) {
+    _wajib_tanpa_pemisah(awalan, fungsi_nama, "awalan")
+    _wajib_tanpa_pemisah(akhiran, fungsi_nama, "akhiran")
+    variabel d = direktori
+    jika d adalah kosong {
+        d = direktori_sementara_sistem()
+    } selain {
+        _wajib_teks(d, fungsi_nama, "direktori")
+    }
+    untuk _ dalam rentang(_PERCOBAAN_NAMA) {
+        variabel p = jalur.gabung(d, awalan + _heksa_acak(8) + akhiran)
+        jika _buat_eksklusif(p, adalah_dir, fungsi_nama) {
+            kembalikan p
+        }
+    }
+    naikkan GalatBerkas(f"{fungsi_nama}(): gagal mendapat nama unik di '{d}'")
+}
+
+# berkas_sementara(awalan="indk-", akhiran="", direktori=kosong) -> jalur
+# berkas kosong BARU (dibuat eksklusif, izin 0600 di POSIX). Pemanggil yang
+# menghapusnya.
+fungsi berkas_sementara(awalan = "indk-", akhiran = "", direktori = kosong) {
+    kembalikan _buat_sementara(awalan, akhiran, direktori, salah, "berkas_sementara")
+}
+
+# direktori_sementara(awalan="indk-", direktori=kosong) -> jalur direktori
+# kosong BARU (izin 0700 di POSIX). Hapus dengan hapus_direktori_bertingkat.
+fungsi direktori_sementara(awalan = "indk-", direktori = kosong) {
+    kembalikan _buat_sementara(awalan, "", direktori, benar, "direktori_sementara")
+}

@@ -117,6 +117,25 @@ EOF
 periksa "proses.jalankan jalan tanpa sandbox" "JALAN" "$(jalankan normal "$kode_proses")"
 periksa "proses.jalankan ditolak dalam sandbox" "ditolak" "$(jalankan sandbox "$kode_proses")"
 
+# Modul berkas (Fase 17): yang membuat, memindah, atau menghapus ditolak.
+# Setiap kasus memakai berkasnya sendiri supaya jalan normal tidak bergantung
+# pada urutan.
+printf 'x' > "$TMP/asal.txt"
+for pasangan in \
+    "salin_berkas:berkas.salin_berkas(\"$TMP_IDK/asal.txt\", \"$TMP_IDK/salin.txt\")" \
+    "ganti_nama:berkas.ganti_nama(\"$TMP_IDK/salin.txt\", \"$TMP_IDK/nama.txt\")" \
+    "berkas_sementara:berkas.berkas_sementara(direktori=\"$TMP_IDK\")" \
+    "direktori_sementara:berkas.direktori_sementara(direktori=\"$TMP_IDK\")"
+do
+    nama="${pasangan%%:*}"
+    ekspr="${pasangan#*:}"
+    kode="$(printf 'impor berkas\n%s' "$(bungkus "$ekspr")")"
+    periksa "berkas.$nama jalan tanpa sandbox" "JALAN" "$(jalankan normal "$kode")"
+    periksa "berkas.$nama ditolak dalam sandbox" "ditolak" "$(jalankan sandbox "$kode")"
+done
+kode_unduh="$(printf 'impor jaringan\n%s' "$(bungkus "jaringan.unduh(\"http://127.0.0.1:9/x\", \"$TMP_IDK/u.bin\")")")"
+periksa "jaringan.unduh ditolak dalam sandbox" "ditolak" "$(jalankan sandbox "$kode_unduh")"
+
 # --- Galat yang benar --------------------------------------------------------
 
 # GalatIzin adalah turunan GalatOS, jadi penangan GalatOS yang sudah ada di

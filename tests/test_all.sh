@@ -655,6 +655,29 @@ if [ -f tests/http_pengalihan_server.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# jaringan.unduh() (Fase 17) terhadap server HTTP lokal: streaming ke disk,
+# checksum, batas ukuran/waktu, dan tidak ada berkas parsial tertinggal.
+if [ -f tests/unduh_server.sh ]; then
+    echo ""
+    if bash tests/unduh_server.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES unduh-server"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
+# Modul berkas: tautan simbolik tidak pernah diikuti dalam operasi pohon.
+if [ -f tests/berkas_tautan.sh ]; then
+    echo ""
+    if bash tests/berkas_tautan.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES berkas-tautan"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Template playground juga dipamerkan ke pengunjung — ikut diuji berjalan.
 if [ -f tests/test_templat_playground.sh ]; then
     echo ""

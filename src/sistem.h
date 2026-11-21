@@ -60,4 +60,13 @@ Value nativeFnJalurNyata(int argCount, Value* args);       // _jalur_nyata(jalur
 Value nativeFnAdalahTautan(int argCount, Value* args);     // _adalah_tautan(jalur)
 Value nativeFnJalankanProses(int argCount, Value* args);   // _jalankan_proses(perintah, masukan)
 
+// Fase 17 V1, wrapped by pustaka/berkas.idk and pustaka/jaringan.idk. The
+// last argument is the public function name used in error messages.
+Value nativeFnInfoLengkap(int argCount, Value* args);      // _info_lengkap(jalur)
+Value nativeFnGantiNama(int argCount, Value* args);        // _ganti_nama(asal, tujuan, timpa, nama)
+Value nativeFnSalinBerkas(int argCount, Value* args);      // _salin_berkas(asal, tujuan, timpa, nama)
+Value nativeFnBuatEksklusif(int argCount, Value* args);    // _buat_eksklusif(jalur, direktori, nama)
+Value nativeFnHapusTautan(int argCount, Value* args);      // _hapus_tautan(jalur, nama)
+Value nativeFnSha256Berkas(int argCount, Value* args);     // _sha256_berkas(jalur, nama)
+
 #endif

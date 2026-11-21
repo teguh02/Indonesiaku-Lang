@@ -206,6 +206,20 @@ if (Test-Path $batch) {
     }
 }
 
+# Modul berkas (Fase 17): jalur non-ASCII dan junction yang tidak boleh
+# diikuti saat menyalin/menghapus pohon.
+$berkasWin = Join-Path $PSScriptRoot "test_berkas_windows.ps1"
+if (Test-Path $berkasWin) {
+    Write-Host ""
+    $total++
+    & powershell -ExecutionPolicy Bypass -File $berkasWin
+    if ($LASTEXITCODE -eq 0) {
+        $passed++
+    } else {
+        $failed++; $failures += "berkas-windows"
+    }
+}
+
 # Aset ikon pemasang Windows. Satu-satunya OS yang memakainya, jadi ujinya
 # wajib ikut di harness ini: test_all.ps1 tidak memanggil sub-suite .sh.
 $aset = Join-Path $PSScriptRoot "aset_pemasang.ps1"

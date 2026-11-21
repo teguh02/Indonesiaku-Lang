@@ -1,0 +1,19 @@
+skema bukan http:
+  GalatUnduhan: unduh(): url harus diawali http:// atau https://: "ftp://contoh.invalid/a.zip"
+  GalatUnduhan: unduh(): url harus diawali http:// atau https://: "file:///etc/passwd"
+tujuan bukan teks:
+  GalatTipe: unduh(): tujuan harus teks tidak kosong, bukan 42
+sha256 rusak:
+  GalatNilai: unduh(): sha256 harus 64 karakter heksa, bukan "abc"
+batas:
+  GalatNilai: unduh(): batas_waktu harus angka > 0, bukan 0
+  GalatNilai: unduh(): maks_ukuran harus bilangan bulat >= 0, bukan 1.5
+  GalatNilai: unduh(): maks_pengalihan harus bilangan bulat >= 0, bukan -1
+kemajuan bukan fungsi:
+  GalatTipe: unduh(): kemajuan harus fungsi, bukan angka
+header menyusup:
+  GalatJaringan: url memuat karakter terlarang: "http://contoh.invalid/a\r\nX: 1"
+tujuan sudah ada:
+  GalatUnduhan: unduh(): '_unduh_contoh.txt' sudah ada (pakai timpa=benar)
+isi tetap   : jangan ditimpa
+hierarki    : benar benar

@@ -1,0 +1,9 @@
+# Menyalin berkas ke dirinya sendiri dengan timpa=benar akan mengosongkannya;
+# salin_berkas() menolaknya sebelum tujuan dipotong.
+impor berkas
+tulis_semua("_galat_salin_diri.txt", "isi")
+coba {
+    berkas.salin_berkas("_galat_salin_diri.txt", "_galat_salin_diri.txt", timpa=benar)
+} akhirnya {
+    hapus_berkas("_galat_salin_diri.txt")
+}

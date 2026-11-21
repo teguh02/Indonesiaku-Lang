@@ -1,0 +1,6 @@
+hapus_direktori_bertingkat(): '_tidak_ada_direktori_ini' tidak ada
+[baris 149, kolom 64] dalam _cek_direktori()
+    …rkas(f"{fungsi_nama}(): '{j}' tidak ada")
+                                             ^
+[baris 256, kolom 51] dalam hapus_direktori_bertingkat()
+[baris 4, kolom 61] dalam skrip
