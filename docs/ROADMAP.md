@@ -898,7 +898,7 @@ kalkulator-indonesiaku/
 
 ### Fase 15 — Debugger, embedding API dan FFI
 
-**Tujuan:** memperluas ekosistem tooling dan integrasi native secara aman. **Status:** ⬜ belum. **Pemetaan:** P4, P5.
+**Tujuan:** memperluas ekosistem tooling dan integrasi native secara aman. **Status:** 🟨 sebagian — debugger CLI `indk awakutu` + adapter DAP VS Code dan API embedding C (`libindk.a`) sudah ada; pause/variabel lokal/step asli, FFI, dan kebijakan ABI belum. **Pemetaan:** P4, P5.
 
 **Rekomendasi rilis fase: `v1.8.0` (minor), kandidat `v1.8.0-rc.1`; patch `v1.8.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.
 
@@ -907,11 +907,11 @@ kalkulator-indonesiaku/
 
 **Langkah pengembangan:**
 
-1. [ ] Rancang debugger dalam docs/RENCANA_FITUR/debugger.md: metadata baris/kolom, breakpoint, pause/step, inspeksi frame/variabel, protokol komunikasi editor dan overhead saat debug nonaktif.
-2. [ ] Implementasikan eksekusi debugger terkontrol dan tes step in/over/out, exception, closure, generator, nested call, serta terminasi program.
-3. [ ] Buat docs/RENCANA_FITUR/embedding_ffi.md: ABI C publik, lifecycle VM, registrasi fungsi native, konversi Value, error, multi-instance dan rooting GC.
-4. [ ] Implementasikan API embedding terlebih dahulu; FFI umum menyusul hanya setelah batas keamanan, ownership memori dan sandbox disepakati.
-5. [ ] Sediakan header publik, contoh host C, dokumentasi API, tes sanitizer, kompatibilitas compiler serta prosedur pemeliharaan ABI.
+1. [ ] Rancang debugger dalam docs/RENCANA_FITUR/debugger.md: metadata baris/kolom, breakpoint, pause/step, inspeksi frame/variabel, protokol komunikasi editor dan overhead saat debug nonaktif. *(Sebagian: debugger CLI `indk awakutu` sudah ada dengan overhead satu tes boolean per instruksi saat nonaktif, dan protokol editor kini memakai teks stdin/stderr awakutu lewat adapter DAP — [rencana ekstensi](RENCANA_FITUR/pengembangan_ekstensi_vscode.md) §A. Belum ada: `debugger.md` itu sendiri, pause, inspeksi variabel lokal, breakpoint per berkas.)*
+2. [ ] Implementasikan eksekusi debugger terkontrol dan tes step in/over/out, exception, closure, generator, nested call, serta terminasi program. *(Sebagian: `indk awakutu` (`tests/test_awakutu.sh`) + adapter DAP VS Code (`editors/vscode-indonesiaku/test-dap.js`) menguji breakpoint, step over, step into/out tiruan adapter, nested call, galat runtime dan terminasi. Belum: step into/out asli di VM, berhenti pada exception, serta tes closure dan generator.)*
+3. [ ] Buat docs/RENCANA_FITUR/embedding_ffi.md: ABI C publik, lifecycle VM, registrasi fungsi native, konversi Value, error, multi-instance dan rooting GC. *(Sebagian: sisi embedding sudah dirancang di [`selesai/embedding_c.md`](RENCANA_FITUR/selesai/embedding_c.md) — permukaan API, lifecycle, registrasi fungsi, galat, dan keputusan satu runtime per proses (K22). Belum: rancangan FFI, konversi `Value` yang kaya, aturan rooting GC untuk host.)*
+4. [ ] Implementasikan API embedding terlebih dahulu; FFI umum menyusul hanya setelah batas keamanan, ownership memori dan sandbox disepakati. *(Sebagian: API embedding sudah ada — `src/indk.h`, `src/indk_api.c`, `make libindk.a`. FFI umum belum.)*
+5. [ ] Sediakan header publik, contoh host C, dokumentasi API, tes sanitizer, kompatibilitas compiler serta prosedur pemeliharaan ABI. *(Sebagian: header `src/indk.h`, contoh host C, panduan [`09_EMBEDDING.md`](../website/panduan/09_EMBEDDING.md), dan `tests/embedding.sh` sudah ada. Belum: kebijakan stabilitas/pemeliharaan ABI tertulis dan matriks kompatibilitas compiler.)*
 
 **Selesai jika:** debugging teruji tanpa merusak mode biasa, aplikasi C dapat memanggil Indonesiaku melalui API stabil yang terdokumentasi dan interaksi GC aman.
 
