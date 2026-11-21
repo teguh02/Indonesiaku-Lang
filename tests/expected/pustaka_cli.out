@@ -66,6 +66,9 @@ $ siswa
 [galat] pemakaian: siswa [-h] [--versi] [-r] <perintah> ...
 [galat] siswa: galat: sub-perintah wajib diberikan (pilih dari tambah, daftar, hapus, ekspor)
 -> kode keluar 2
+cetak: benar Budi
+0
+ditolak: argumen 'rinci' sudah dipakai perintah 'alat'
 --- autocomplete bash ---
 # autocomplete bash untuk siswa (dibuat oleh pustaka cli Indonesiaku)
 _siswa_lengkapi() {

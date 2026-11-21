@@ -75,6 +75,16 @@ fungsi _bentuk_opsi(t) {
     kembalikan tidak (t[1] >= "0" dan t[1] <= "9")
 }
 
+# _tujuan_dari(nama) -> nama atribut hasil, aturan yang sama dengan opsi:
+# "--nilai-akhir" -> "nilai_akhir".
+fungsi _tujuan_dari(nama) {
+    variabel t = nama
+    selagi panjang(t) > 0 dan t[0] == "-" {
+        t = t[1:]
+    }
+    kembalikan ganti(t, "-", "_")
+}
+
 fungsi _sah_nama(nama) {
     jika jenis(nama) != "teks" atau nama == "" {
         kembalikan salah
@@ -131,6 +141,20 @@ kelas Perintah {
         jika validasi bukan adalah kosong dan tidak bisa_dipanggil(validasi) {
             naikkan GalatCli("validasi harus bisa dipanggil")
         }
+        # Diperiksa SEBELUM didaftarkan ke opsi, supaya penolakan tidak
+        # meninggalkan argumen setengah terdaftar.
+        jika jenis(nama) == "teks" {
+            variabel tujuan = _tujuan_dari(nama)
+            jika tujuan == "perintah" {
+                naikkan GalatCli("'perintah' dipakai cli untuk jalur sub-perintah; pilih nama lain")
+            }
+            # Induk dan sub-perintah berbagi satu objek hasil: nama yang sama
+            # di dua tingkat akan saling menimpa diam-diam.
+            variabel pemilik = diri._pemilik_tujuan(tujuan)
+            jika pemilik bukan adalah kosong dan pemilik bukan adalah diri {
+                naikkan GalatCli(f"argumen '{tujuan}' sudah dipakai perintah '{pemilik.nama_lengkap()}'")
+            }
+        }
         variabel arg = kosong
         coba {
             arg = diri._p.tambah_argumen(nama, pendek = pendek, bawaan = bawaan,
@@ -139,9 +163,6 @@ kelas Perintah {
                                          metavar = metavar)
         } kecuali GalatOpsi sebagai e {
             naikkan GalatCli(e.pesan)
-        }
-        jika arg.tujuan == "perintah" {
-            naikkan GalatCli("'perintah' dipakai cli untuk jalur sub-perintah; pilih nama lain")
         }
         jika tidak arg.posisi dan arg.perlu_nilai() {
             diri._perlu_nilai.tambah(arg.nama)
@@ -154,6 +175,32 @@ kelas Perintah {
         }
         diri._tujuan.tambah(arg.tujuan)
         kembalikan diri
+    }
+
+    # _pemilik_tujuan(t) -> perintah di jalur akar..diri atau di bawah diri
+    # yang sudah memakai nama atribut t, atau kosong.
+    _pemilik_tujuan(t) {
+        variabel p = diri._induk
+        selagi p bukan adalah kosong {
+            jika t dalam p._tujuan {
+                kembalikan p
+            }
+            p = p._induk
+        }
+        kembalikan diri._pemilik_di_bawah(t)
+    }
+
+    _pemilik_di_bawah(t) {
+        jika t dalam diri._tujuan {
+            kembalikan diri
+        }
+        untuk s dalam diri._subs {
+            variabel ketemu = s._pemilik_di_bawah(t)
+            jika ketemu bukan adalah kosong {
+                kembalikan ketemu
+            }
+        }
+        kembalikan kosong
     }
 
     # sub(nama, deskripsi, penangan) -> Perintah baru, anak perintah ini.
@@ -296,6 +343,24 @@ kelas Perintah {
         kembalikan diri._jalankan(daftar, kamus(), [])
     }
 
+    # _menelan_berikut(t) -> benar bila opsi t memakan token berikutnya
+    # sebagai nilainya. "--nama=x" tidak; "-vqn" (gugus bendera pendek)
+    # dipindai per huruf seperti opsi: huruf pertama yang butuh nilai
+    # memakan sisa gugus, atau token berikut bila ia huruf terakhir.
+    _menelan_berikut(t) {
+        jika t[1] == "-" {
+            kembalikan tidak ("=" dalam t) dan t dalam diri._perlu_nilai
+        }
+        variabel k = 1
+        selagi k < panjang(t) {
+            jika ("-" + t[k]) dalam diri._perlu_nilai {
+                kembalikan k == panjang(t) - 1
+            }
+            k += 1
+        }
+        kembalikan salah
+    }
+
     _jalankan(daftar, nilai, urutan) {
         # -h/--versi dicegat sebelum opsi.urai(): bantuan harus tetap muncul
         # walau argumen wajib belum diisi, dan opsi.urai() akan keluar().
@@ -313,15 +378,7 @@ kelas Perintah {
             jika _bentuk_opsi(t) {
                 # Opsi yang butuh nilai menelan token berikut, kecuali
                 # nilainya melekat (--nama=x atau -nX).
-                variabel kunci_opsi = t
-                variabel melekat = salah
-                jika t[1] == "-" dan "=" dalam t {
-                    melekat = benar
-                } jika_lain t[1] != "-" dan panjang(t) > 2 {
-                    kunci_opsi = t[:2]
-                    melekat = benar
-                }
-                jika tidak melekat dan kunci_opsi dalam diri._perlu_nilai {
+                jika diri._menelan_berikut(t) {
                     i += 1
                 }
             } jika_lain panjang(diri._subs) > 0 {

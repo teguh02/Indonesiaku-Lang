@@ -1,7 +1,7 @@
 penangan 'alat' harus mengembalikan kosong atau bulat 0..255, bukan "ok"
-[baris 387, kolom 131] dalam _panggil()
+[baris 444, kolom 131] dalam _panggil()
     … atau bulat 0..255, bukan {repr(balas)}")
                                              ^
-[baris 339, kolom 51] dalam _jalankan()
-[baris 296, kolom 54] dalam jalankan()
+[baris 396, kolom 51] dalam _jalankan()
+[baris 343, kolom 54] dalam jalankan()
 [baris 5, kolom 16] dalam skrip

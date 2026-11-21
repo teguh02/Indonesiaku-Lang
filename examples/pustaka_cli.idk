@@ -3,6 +3,7 @@
 # bisa menjadi golden; program sungguhan cukup memakai bawaannya (stderr).
 
 impor cli
+dari cli impor GalatCli
 
 fungsi galat_ke_stdout(t) {
     cetak("[galat] " + t)
@@ -91,6 +92,22 @@ fungsi utama() {
 }
 
 utama()
+
+# Gugus bendera pendek yang diakhiri opsi bernilai: -rn Budi = -r -n Budi,
+# jadi "Budi" adalah nilai --nama, bukan nama sub-perintah.
+variabel alat = cli.Perintah("alat")
+alat.argumen("--rinci", pendek = "-r", aksi = "benar")
+alat.argumen("--nama", pendek = "-n")
+variabel alat_cetak = alat.sub("cetak")
+alat_cetak.tangani(fungsi(a) { cetak("cetak:", a.rinci, a.nama) })
+cetak(alat.jalankan(["-rn", "Budi", "cetak"]))
+
+# Nama argumen yang sama di induk dan sub-perintah ditolak saat didaftarkan.
+coba {
+    alat_cetak.argumen("--rinci", aksi = "benar")
+} kecuali GalatCli sebagai e {
+    cetak("ditolak:", e.pesan)
+}
 
 cetak("--- autocomplete bash ---")
 cetak(app.skrip_lengkapi_bash())
