@@ -898,7 +898,7 @@ kalkulator-indonesiaku/
 
 ### Fase 15 — Debugger, embedding API dan FFI
 
-**Tujuan:** memperluas ekosistem tooling dan integrasi native secara aman. **Status:** ⬜ belum. **Pemetaan:** P4, P5.
+**Tujuan:** memperluas ekosistem tooling dan integrasi native secara aman. **Status:** 🟨 sebagian — debugger CLI `indk awakutu` + adapter DAP VS Code dan API embedding C (`libindk.a`) sudah ada; pause/variabel lokal/step asli, FFI, dan kebijakan ABI belum. **Pemetaan:** P4, P5.
 
 **Rekomendasi rilis fase: `v1.8.0` (minor), kandidat `v1.8.0-rc.1`; patch `v1.8.1` dan seterusnya jika hanya perbaikan kompatibel.** Ini target perencanaan, bukan janji jadwal atau tag yang sudah dibuat.
 
@@ -907,11 +907,11 @@ kalkulator-indonesiaku/
 
 **Langkah pengembangan:**
 
-1. [ ] Rancang debugger dalam docs/RENCANA_FITUR/debugger.md: metadata baris/kolom, breakpoint, pause/step, inspeksi frame/variabel, protokol komunikasi editor dan overhead saat debug nonaktif.
-2. [ ] Implementasikan eksekusi debugger terkontrol dan tes step in/over/out, exception, closure, generator, nested call, serta terminasi program.
-3. [ ] Buat docs/RENCANA_FITUR/embedding_ffi.md: ABI C publik, lifecycle VM, registrasi fungsi native, konversi Value, error, multi-instance dan rooting GC.
-4. [ ] Implementasikan API embedding terlebih dahulu; FFI umum menyusul hanya setelah batas keamanan, ownership memori dan sandbox disepakati.
-5. [ ] Sediakan header publik, contoh host C, dokumentasi API, tes sanitizer, kompatibilitas compiler serta prosedur pemeliharaan ABI.
+1. [ ] Rancang debugger dalam docs/RENCANA_FITUR/debugger.md: metadata baris/kolom, breakpoint, pause/step, inspeksi frame/variabel, protokol komunikasi editor dan overhead saat debug nonaktif. *(Sebagian: debugger CLI `indk awakutu` sudah ada dengan overhead satu tes boolean per instruksi saat nonaktif, dan protokol editor kini memakai teks stdin/stderr awakutu lewat adapter DAP — [rencana ekstensi](RENCANA_FITUR/pengembangan_ekstensi_vscode.md) §A. Belum ada: `debugger.md` itu sendiri, pause, inspeksi variabel lokal, breakpoint per berkas.)*
+2. [ ] Implementasikan eksekusi debugger terkontrol dan tes step in/over/out, exception, closure, generator, nested call, serta terminasi program. *(Sebagian: `indk awakutu` (`tests/test_awakutu.sh`) + adapter DAP VS Code (`editors/vscode-indonesiaku/test-dap.js`) menguji breakpoint, step over, step into/out tiruan adapter, nested call, galat runtime dan terminasi. Belum: step into/out asli di VM, berhenti pada exception, serta tes closure dan generator.)*
+3. [ ] Buat docs/RENCANA_FITUR/embedding_ffi.md: ABI C publik, lifecycle VM, registrasi fungsi native, konversi Value, error, multi-instance dan rooting GC. *(Sebagian: sisi embedding sudah dirancang di [`selesai/embedding_c.md`](RENCANA_FITUR/selesai/embedding_c.md) — permukaan API, lifecycle, registrasi fungsi, galat, dan keputusan satu runtime per proses (K22). Belum: rancangan FFI, konversi `Value` yang kaya, aturan rooting GC untuk host.)*
+4. [ ] Implementasikan API embedding terlebih dahulu; FFI umum menyusul hanya setelah batas keamanan, ownership memori dan sandbox disepakati. *(Sebagian: API embedding sudah ada — `src/indk.h`, `src/indk_api.c`, `make libindk.a`. FFI umum belum.)*
+5. [ ] Sediakan header publik, contoh host C, dokumentasi API, tes sanitizer, kompatibilitas compiler serta prosedur pemeliharaan ABI. *(Sebagian: header `src/indk.h`, contoh host C, panduan [`09_EMBEDDING.md`](../website/panduan/09_EMBEDDING.md), dan `tests/embedding.sh` sudah ada. Belum: kebijakan stabilitas/pemeliharaan ABI tertulis dan matriks kompatibilitas compiler.)*
 
 **Selesai jika:** debugging teruji tanpa merusak mode biasa, aplikasi C dapat memanggil Indonesiaku melalui API stabil yang terdokumentasi dan interaksi GC aman.
 
@@ -1076,19 +1076,19 @@ kalkulator-indonesiaku/
 
 ### Fase 22 — Observability, profiling, kompatibilitas dan kesiapan produksi
 
-**Status:** ⬜ belum. **Target RC rekomendasi:** `v1.17.0-rc.1`. **Target stabil rekomendasi:** `v1.17.0`. **Ketergantungan:** semua fase runtime, jaringan, database, web dan package manager yang relevan.
+**Status:** 🟨 sebagian (V1 observability web: log JSON, ID permintaan, health/ready/metrics). **Target RC rekomendasi:** `v1.17.0-rc.1`. **Target stabil rekomendasi:** `v1.17.0`. **Ketergantungan:** semua fase runtime, jaringan, database, web dan package manager yang relevan.
 
 **Tujuan:** aplikasi Indonesiaku mudah didiagnosis, diperbarui, diaudit dan dipelihara. Kualitas, keamanan dan kompatibilitas adalah kegiatan **lintas fase sejak sekarang**, bukan alasan untuk menunggu Fase 22.
 
-1. [x] Buat `docs/RENCANA_FITUR/observability_production.md` serta kebijakan tertulis support matrix, compatibility policy, deprecation, security disclosure dan release lifecycle. (rencana ditulis; implementasi paket A-D item 2-10 masih ⬜)
-2. [ ] Sediakan **structured logging**: timestamp, level, module, request/task correlation ID, format dapat dibaca mesin, masking rahasia secara default, rotasi atau integrasi collector.
-3. [ ] Sediakan **metrics dan tracing** dasar: latensi request, error rate, durasi query, queue depth, memori/GC, task/connections; tentukan pilihan interoperabilitas misalnya OpenTelemetry/Prometheus tanpa mengunci satu vendor.
+1. [x] Buat `docs/RENCANA_FITUR/selesai/observability_production.md` serta kebijakan tertulis support matrix, compatibility policy, deprecation, security disclosure dan release lifecycle. (rencana ditulis; V1 paket A.1–A.3 dan B.5 selesai, A.4/C/D ditunda — lihat §0 rencana)
+2. [ ] Sediakan **structured logging**: timestamp, level, module, request/task correlation ID, format dapat dibaca mesin, masking rahasia secara default, rotasi atau integrasi collector. *(🟨 sebagian — sudah: timestamp, level, modul, `request_id`, format JSON per baris lewat `log.atur(format="json")` + `data=`, field `request_id` di log `app.jalankan()`. **Sisa:** masking rahasia otomatis, rotasi berkas/integrasi collector, correlation ID untuk task non-HTTP.)*
+3. [ ] Sediakan **metrics dan tracing** dasar: latensi request, error rate, durasi query, queue depth, memori/GC, task/connections; tentukan pilihan interoperabilitas misalnya OpenTelemetry/Prometheus tanpa mengunci satu vendor. *(🟨 sebagian — sudah: latensi request (histogram) dan error rate (label `status`) di `/metrics` format Prometheus via `app.pantau()`. **Sisa:** durasi query DB, queue depth, memori/GC, task/connections, tracing (OpenTelemetry).)*
 4. [ ] Implementasikan **profiler** CPU/wall time, alokasi memori, GC pause, hot functions dan diagnostik kebocoran; jaga overhead profiling opt-in dan dokumentasikan akurasi pengukuran.
-5. [ ] Susun pedoman deployment **production readiness**: konfigurasi environment/secrets, health/readiness endpoint, graceful shutdown, reverse proxy, TLS, batas resource, backup/restore, observability, container isolation dan prosedur recovery.
+5. [ ] Susun pedoman deployment **production readiness**: konfigurasi environment/secrets, health/readiness endpoint, graceful shutdown, reverse proxy, TLS, batas resource, backup/restore, observability, container isolation dan prosedur recovery. *(🟨 sebagian — sudah: health/readiness endpoint (`app.pantau()`), observability dan reverse proxy untuk metrics/ID permintaan di `08_DEPLOYMENT.md` §8.10; reverse proxy, TLS, batas resource, container isolation sudah ada di §8.2–8.7. **Sisa:** graceful shutdown SIGTERM (butuh C), panduan environment/secrets, backup/restore, prosedur recovery.)*
 6. [ ] Tetapkan kompatibilitas API dan versioning: SemVer, stabil/eksperimental, minimum supported runtime, deprecation warning, jendela dukungan patch/LTS bila sumber daya tersedia, kebijakan minor vs major dan perubahan format paket.
 7. [ ] Tegakkan proses keamanan: `SECURITY.md`, pelaporan kerentanan privat, threat-model update, CI security scan/dependency audit, SBOM bila relevan, release provenance/checksums, penanganan CVE dan komunikasi advisory.
 8. [ ] Lakukan pengujian beban/stress, chaos/network failure, CPU/memory profiling, regresi lintas OS/arsitektur, canary RC, dan verifikasi installer/Docker/artefak sebelum rilis; publikasikan metodologi dan hasil.
-9. [ ] Tambahkan dokumentasi operasional dan referensi API untuk log/profiler/metrics; contoh dashboard/monitoring hanya jika sumber data yang mendasarinya telah diimplementasi.
+9. [ ] Tambahkan dokumentasi operasional dan referensi API untuk log/profiler/metrics; contoh dashboard/monitoring hanya jika sumber data yang mendasarinya telah diimplementasi. *(🟨 sebagian — sudah: referensi API log JSON dan metrics/health di `07_PUSTAKA_STANDAR.md`, panduan operasional §8.10 `08_DEPLOYMENT.md`. **Sisa:** referensi profiler, troubleshooting operasional.)*
 10. [ ] Audit *production readiness* secara jujur: tandai fitur yang masih eksperimen, tidak didukung, atau membutuhkan reverse proxy/isolasi; jangan menyebut runtime aman produksi tanpa bukti.
 
 **Gerbang rilis:** logging/metrics/profiler dapat digunakan dan diuji; compatibility/security policies tersedia; CI dan pengujian integrasi lulus; perubahan breaking teridentifikasi; panduan operasional dan troubleshooting dapat diikuti dari instalasi bersih.

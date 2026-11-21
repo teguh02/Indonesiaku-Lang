@@ -1,7 +1,7 @@
 {
   "name": "indonesiaku",
   "displayName": "Indonesiaku",
-  "description": "Language support for Indonesiaku (.idk): syntax highlighting, LSP diagnostics, completion, hover, go-to-definition, snippets, and formatting.",
+  "description": "Language support for Indonesiaku (.idk): syntax highlighting, LSP diagnostics, completion, hover, go-to-definition, snippets, formatting, and a debugger (indk awakutu).",
   "version": "1.7.0",
   "publisher": "teguh02",
   "license": "MIT",
@@ -10,7 +10,8 @@
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Debuggers"
   ],
   "keywords": [
     "indonesiaku",
@@ -26,6 +27,9 @@
   "files": [
     "extension.js",
     "server.js",
+    "debug-adapter.js",
+    "awakutu-proses.js",
+    "awakutu-sumber.js",
     "language-data.js",
     "language-configuration.json",
     "syntaxes",
@@ -36,7 +40,9 @@
     "LICENSE"
   ],
   "activationEvents": [
-    "onLanguage:indonesiaku"
+    "onLanguage:indonesiaku",
+    "onDebugResolve:indonesiaku",
+    "onDebugDynamicConfigurations:indonesiaku"
   ],
   "contributes": {
     "languages": [
@@ -80,6 +86,72 @@
       { "command": "indonesiaku.profil", "title": "Indonesiaku: Profil", "icon": "$(graph-line)" },
       { "command": "indonesiaku.awakutu", "title": "Indonesiaku: Debugger (Awakutu)", "icon": "$(debug)" }
     ],
+    "breakpoints": [
+      { "language": "indonesiaku" }
+    ],
+    "debuggers": [
+      {
+        "type": "indonesiaku",
+        "label": "Indonesiaku (awakutu)",
+        "languages": ["indonesiaku"],
+        "program": "./debug-adapter.js",
+        "runtime": "node",
+        "configurationAttributes": {
+          "launch": {
+            "required": ["program"],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Berkas .idk yang dijalankan di bawah indk awakutu.",
+                "default": "${file}"
+              },
+              "args": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Argumen program (global 'argumen').",
+                "default": []
+              },
+              "cwd": {
+                "type": "string",
+                "description": "Direktori kerja program. Bawaan: folder berkas program.",
+                "default": "${fileDirname}"
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Berhenti di baris pertama program.",
+                "default": false
+              },
+              "jalurIndk": {
+                "type": "string",
+                "description": "Jalur interpreter indk. Bawaan: setelan indonesiaku.jalurIndk."
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "indonesiaku",
+            "request": "launch",
+            "name": "Debug berkas Indonesiaku",
+            "program": "${file}",
+            "stopOnEntry": false
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Indonesiaku: Debug berkas",
+            "description": "Jalankan berkas .idk di bawah debugger awakutu",
+            "body": {
+              "type": "indonesiaku",
+              "request": "launch",
+              "name": "Debug berkas Indonesiaku",
+              "program": "^\"\\${file}\"",
+              "stopOnEntry": false
+            }
+          }
+        ]
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         { "id": "indonesiakuPanel", "title": "Indonesiaku", "icon": "icon.png" }
@@ -101,7 +173,7 @@
         "indonesiaku.jalurIndk": {
           "type": "string",
           "default": "indk",
-          "description": "Jalur ke interpreter indk yang dipakai untuk Format Document (indk rapikan)."
+          "description": "Jalur ke interpreter indk yang dipakai untuk Format Document (indk rapikan), LSP, dan debugger (indk awakutu)."
         }
       }
     }
@@ -109,6 +181,8 @@
   "scripts": {
     "test:lsp": "node test-lsp.js",
     "test:format": "node test-format.js",
+    "test:dap": "node test-dap.js",
+    "test": "node test-lsp.js && node test-format.js && node test-dap.js",
     "package": "npx @vscode/vsce package"
   }
 }

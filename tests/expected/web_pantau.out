@@ -1,0 +1,36 @@
+--- liveness & readiness
+200 application/json {"status":"ok"}
+200 {"status":"ok"}
+503 {"status":"tidak siap"}
+503
+--- X-Request-ID
+200 id 16 karakter 16
+dua permintaan, dua ID: benar
+nginx-abc.123
+salah
+salah
+400 16
+404
+405
+--- /metrics
+200 text/plain; version=0.0.4; charset=utf-8
+# HELP indk_http_permintaan_total Jumlah permintaan HTTP yang dijawab, per metode dan status.
+# TYPE indk_http_permintaan_total counter
+indk_http_permintaan_total{metode="GET",status="200"} 7
+indk_http_permintaan_total{metode="GET",status="404"} 1
+indk_http_permintaan_total{metode="GET",status="503"} 3
+indk_http_permintaan_total{metode="LAIN",status="400"} 2
+indk_http_permintaan_total{metode="LAIN",status="405"} 1
+# HELP indk_http_durasi_detik Durasi menangani permintaan HTTP, dalam detik.
+# TYPE indk_http_durasi_detik histogram
+indk_http_durasi_detik_bucket{le="+Inf"} 14
+indk_http_durasi_detik_count 14
+# HELP indk_mulai_detik Waktu pantau() dipanggil, detik sejak epoch.
+# TYPE indk_mulai_detik gauge
+indk_mulai_detik <waktu>
+--- aplikasi tanpa pantau() tidak berubah
+kosong 404
+GalatWeb: metrik belum aktif; panggil pantau() lebih dulu
+--- log
+PERINGATAN:web:kesiapan gagal: koneksi db terputus
+

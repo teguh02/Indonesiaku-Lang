@@ -165,11 +165,12 @@ jobs:
           make clean
           make
 
-      - name: Test LSP and formatter clients
+      - name: Test LSP, formatter and debugger clients
         working-directory: editors/vscode-indonesiaku
         run: |
           npm run test:lsp
           npm run test:format
+          npm run test:dap
 
   sanitizers:
     name: ASan + UBSan (stress GC)
@@ -466,6 +467,7 @@ jobs:
                    tests/web_csrf.sh \
                    tests/web_auth.sh \
                    tests/web_cors.sh \
+                   tests/web_pantau_server.sh \
                    tests/keamanan_app.sh \
                    tests/versi_konsisten.sh \
                    tests/http_pengalihan_server.sh \

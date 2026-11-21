@@ -10,6 +10,14 @@
 # (debug dan info tidak muncul sampai ambangnya diturunkan), format bawaan
 # "{level}:{nama}:{pesan}". Pencatat bernama bertingkat dengan titik:
 # "app.db" mewarisi ambang "app" bila ambangnya sendiri belum diatur.
+#
+# Log terstruktur (Fase 22): log.atur(format = "json") menulis SATU objek JSON
+# per baris -- {"waktu", "level", "modul", "pesan", ...data} -- supaya bisa
+# diurai Loki/ELK/jq. Setiap metode pencatat menerima `data` (kamus) opsional,
+# mis. p.info("tersimpan", {"request_id": req["id"]}). Mode teks mengabaikan
+# `data`, jadi format lama tidak berubah sedikit pun.
+
+impor json
 
 DEBUG = 10
 INFO = 20
@@ -35,18 +43,66 @@ fungsi nama_level(level) {
     kembalikan f"Level {level}"
 }
 
-fungsi _tulis(level, nama, pesan) {
+# Kunci yang selalu ditulis mode JSON; `data` tidak boleh menimpanya, kalau
+# tidak satu field kiriman pemanggil bisa memalsukan level atau waktu.
+_KUNCI_BAKU = ["waktu", "level", "modul", "pesan"]
+
+# _nilai_json(v) -> teks JSON untuk v, atau teks JSON dari ke_teks(v) bila v
+# tidak punya bentuk JSON (objek, nan). Mencatat tidak boleh gagal hanya
+# karena satu field-nya tidak bisa diserialkan.
+fungsi _nilai_json(v) {
+    coba {
+        kembalikan json.json_teks(v)
+    } kecuali e {
+        kembalikan json.json_teks(ke_teks(v))
+    }
+}
+
+fungsi _baris_json(level, nama, pesan, data) {
+    variabel bagian = [
+        "\"waktu\":" + json.json_teks(format_tanggal("%Y-%m-%dT%H:%M:%S")),
+        "\"level\":" + json.json_teks(nama_level(level)),
+        "\"modul\":" + json.json_teks(nama),
+        "\"pesan\":" + json.json_teks(ke_teks(pesan))
+    ]
+    jika data bukan adalah kosong {
+        untuk k dalam data {
+            jika tidak ke_teks(k) dalam _KUNCI_BAKU {
+                tambah(bagian, json.json_teks(ke_teks(k)) + ":" + _nilai_json(data[k]))
+            }
+        }
+    }
+    kembalikan "{" + teks_gabung(bagian, ",") + "}"
+}
+
+fungsi _periksa_data(data) {
+    jika data bukan adalah kosong dan jenis(data) != "kamus" {
+        naikkan GalatLog(f"data log harus kamus, bukan {jenis(data)}")
+    }
+}
+
+fungsi _tulis(level, nama, pesan, data = kosong) {
+    variabel baris = kosong
+    jika _atur["format"] == "json" {
+        baris = _baris_json(level, nama, pesan, data)
+    } selain {
+        baris = _baris_teks(level, nama, pesan)
+    }
+    jika _atur["berkas"] adalah kosong {
+        tulis_galat(baris + "\n")
+    } selain {
+        tambah_berkas(_atur["berkas"], baris + "\n")
+    }
+}
+
+fungsi _baris_teks(level, nama, pesan) {
     variabel baris = _atur["format"]
     baris = ganti(baris, "{level}", nama_level(level))
     baris = ganti(baris, "{nama}", nama)
     baris = ganti(baris, "{waktu}", format_tanggal("%Y-%m-%d %H:%M:%S"))
     # {pesan} terakhir: isi pesan sendiri boleh memuat "{level}" dst.
     baris = ganti(baris, "{pesan}", ke_teks(pesan))
-    jika _atur["berkas"] adalah kosong {
-        tulis_galat(baris + "\n")
-    } selain {
-        tambah_berkas(_atur["berkas"], baris + "\n")
-    }
+    kembalikan baris
 }
 
 kelas Pencatat {
@@ -83,30 +139,34 @@ kelas Pencatat {
         kembalikan level >= diri.ambang_efektif()
     }
 
-    catat(level, pesan) {
+    # catat(level, pesan, data) -> data (kamus, opsional) hanya tampil di
+    # mode JSON. Diperiksa walau levelnya tidak aktif, supaya salah pakai
+    # tidak tersembunyi sampai ambang diturunkan di produksi.
+    catat(level, pesan, data = kosong) {
+        _periksa_data(data)
         jika diri.aktif_untuk(level) {
-            _tulis(level, diri.nama, pesan)
+            _tulis(level, diri.nama, pesan, data)
         }
     }
 
-    debug(pesan) {
-        diri.catat(DEBUG, pesan)
+    debug(pesan, data = kosong) {
+        diri.catat(DEBUG, pesan, data)
     }
 
-    info(pesan) {
-        diri.catat(INFO, pesan)
+    info(pesan, data = kosong) {
+        diri.catat(INFO, pesan, data)
     }
 
-    peringatan(pesan) {
-        diri.catat(PERINGATAN, pesan)
+    peringatan(pesan, data = kosong) {
+        diri.catat(PERINGATAN, pesan, data)
     }
 
-    galat(pesan) {
-        diri.catat(GALAT, pesan)
+    galat(pesan, data = kosong) {
+        diri.catat(GALAT, pesan, data)
     }
 
-    kritis(pesan) {
-        diri.catat(KRITIS, pesan)
+    kritis(pesan, data = kosong) {
+        diri.catat(KRITIS, pesan, data)
     }
 
     _teks_() {
@@ -135,12 +195,16 @@ fungsi ambil_pencatat(nama = kosong) {
 
 # atur(ambang=, format=, berkas=) -> logging.basicConfig. Hanya argumen yang
 # diberikan yang diubah. `berkas` berupa jalur: catatan DITAMBAHKAN ke
-# berkas itu; berkas = "" kembali ke stderr.
+# berkas itu; berkas = "" kembali ke stderr. format = "json" menyalakan log
+# terstruktur; teks lain adalah templat {level} {nama} {waktu} {pesan}.
 fungsi atur(ambang = kosong, format = kosong, berkas = kosong) {
     jika ambang bukan adalah kosong {
         _akar.ambang = ambang
     }
     jika format bukan adalah kosong {
+        jika jenis(format) != "teks" {
+            naikkan GalatLog(f"format log harus teks, bukan {jenis(format)}")
+        }
         _atur["format"] = format
     }
     jika berkas bukan adalah kosong {
@@ -148,22 +212,22 @@ fungsi atur(ambang = kosong, format = kosong, berkas = kosong) {
     }
 }
 
-fungsi debug(pesan) {
-    _akar.debug(pesan)
+fungsi debug(pesan, data = kosong) {
+    _akar.debug(pesan, data)
 }
 
-fungsi info(pesan) {
-    _akar.info(pesan)
+fungsi info(pesan, data = kosong) {
+    _akar.info(pesan, data)
 }
 
-fungsi peringatan(pesan) {
-    _akar.peringatan(pesan)
+fungsi peringatan(pesan, data = kosong) {
+    _akar.peringatan(pesan, data)
 }
 
-fungsi galat(pesan) {
-    _akar.galat(pesan)
+fungsi galat(pesan, data = kosong) {
+    _akar.galat(pesan, data)
 }
 
-fungsi kritis(pesan) {
-    _akar.kritis(pesan)
+fungsi kritis(pesan, data = kosong) {
+    _akar.kritis(pesan, data)
 }

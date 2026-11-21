@@ -94,7 +94,7 @@ Ekstensi resmi sudah tersedia di Visual Studio Marketplace:
 
 Ekstensi ini menyediakan syntax highlighting, snippets, formatter, serta
 language server untuk diagnostics, completion, hover, dan go-to-definition
-lokal.
+lokal, serta debugger (breakpoint dan step) di atas `indk awakutu`.
 
 ### Pasang dari Marketplace (cara yang disarankan)
 
@@ -139,6 +139,32 @@ executable di pengaturan VS Code:
 Language server menggunakan `indk --dis` untuk menganalisis dokumen tanpa
 menjalankan program. Fitur diagnostics tetap bekerja pada dokumen belum
 tersimpan; hasil analisis usang dibatalkan saat dokumen berubah.
+
+### Debugger
+
+Ekstensi juga memasang debugger untuk berkas `.idk`. Klik di gutter kiri
+untuk memasang breakpoint, lalu tekan `F5`: berkas yang sedang terbuka
+dijalankan di bawah `indk awakutu`, dan program berhenti di breakpoint.
+Dari sana tersedia Continue, Step Over, Step Into, Step Out, Call Stack,
+panel Variables, serta hover pada nama variabel; keluaran `cetak` muncul
+di Debug Console.
+
+Untuk konfigurasi tetap, tambahkan ke `.vscode/launch.json`:
+
+```json
+{
+  "type": "indonesiaku",
+  "request": "launch",
+  "name": "Debug berkas Indonesiaku",
+  "program": "${file}"
+}
+```
+
+Debugger mewarisi batas `indk awakutu`: breakpoint hanya untuk berkas yang
+dijalankan (bukan modul yang di-`impor`), panel Variables hanya
+menampilkan variabel global dan parameter fungsi, Watch hanya menerima
+nama variabel (bukan ekspresi), dan program yang sedang berjalan tidak
+bisa di-*pause*. Daftar lengkapnya ada di README ekstensi.
 
 Detail extension dan tes lokal: [README ekstensi](https://github.com/teguh02/Indonesiaku-Lang/blob/main/editors/vscode-indonesiaku/README.md).
 

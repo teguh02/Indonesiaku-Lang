@@ -1,0 +1,46 @@
+# Log terstruktur (Fase 22): log.atur(format = "json") menulis satu objek
+# JSON per baris, siap diurai Loki/ELK/jq. Contoh ini menulis ke berkas lalu
+# mengurai tiap barisnya kembali; "waktu" dibuang karena berubah tiap jalan.
+impor "pustaka/json.idk"
+impor "pustaka/teks.idk"
+impor log
+
+berkas = "_contoh_log_json.txt"
+log.atur(format = "json", berkas = berkas)
+
+api = log.ambil_pencatat("api")
+api.atur_ambang(log.INFO)
+api.info("pesanan dibuat", {"request_id": "9f2c01", "pesanan": 42, "total": 15000.5})
+api.debug("tidak tampil: di bawah ambang", {"x": 1})
+# Field baku (waktu, level, modul, pesan) tidak bisa ditimpa lewat data.
+api.peringatan("stok menipis", {"level": "DEBUG", "sisa": [1, 2]})
+# Pesan dan nilai yang bukan JSON ditulis sebagai teks, bukan menggagalkan log.
+log.galat({"kode": 500}, {"pencatat": api, "baris\nbaru": "a\"b"})
+
+# Mode teks mengabaikan `data`: format lama tetap byte-identik.
+log.atur(format = "{level}:{nama}:{pesan}")
+api.info("baris teks", {"request_id": "9f2c01"})
+
+isi = baca_semua(berkas)
+hapus_berkas(berkas)
+untuk baris dalam teks_pisah(isi, "\n") {
+    jika baris == "" {
+        lanjut
+    }
+    jika baris[0] != "{" {
+        cetak("teks:", baris)
+        lanjut
+    }
+    objek = json_urai(baris)
+    cetak("waktu ISO-8601:", panjang(objek["waktu"]) == 19 dan objek["waktu"][10] == "T")
+    buang objek["waktu"]
+    cetak(json_teks(objek))
+}
+
+# data harus kamus; salah pakai ketahuan walau levelnya tidak aktif.
+dari log impor GalatLog
+coba {
+    api.debug("x", ["bukan", "kamus"])
+} kecuali GalatLog sebagai e {
+    cetak("GalatLog:", e.pesan)
+}

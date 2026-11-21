@@ -25,6 +25,20 @@ aktif untuk seluruh Explorer, bukan per-ekstensi berkas), bukan bug.
 ## 2. Backlog bertahap
 
 ### A — Debugging asli (DAP), bukan cuma jalankan `indk awakutu` di terminal
+**Status: ✅ selesai (belum dirilis).** Adapter DAP tanpa dependensi
+di `editors/vscode-indonesiaku/debug-adapter.js` (+ `awakutu-proses.js`
+untuk protokol stdin/stderr, `awakutu-sumber.js` untuk tebakan nama dari
+sumber), `contributes.debuggers`/`breakpoints` di `package.json`, dan
+`DebugAdapterInlineImplementation` di `extension.js` (tanpa `node` di
+PATH). Diuji `test-dap.js` (`npm run test:dap`, job CI `editor-lsp`):
+breakpoint, step over/into/out, variabel, evaluate, lanjut sampai
+selesai, galat runtime (exit 70), binari hilang, disconnect. **Tidak ada
+perubahan C.** Batas yang diwarisi awakutu (dicatat di README ekstensi):
+breakpoint hanya per nomor baris berkas utama, `lihat` hanya global +
+parameter, tidak ada pause, step into/out ditiru adapter. Menutup batas
+itu butuh kerja C (Fase 15 langkah 1–2), bukan adapter.
+
+Catatan audit awal (dipertahankan):
 `indk awakutu` sudah ada sebagai REPL CLI (breakpoint per baris, `lihat`,
 dll — lihat skill note "indk awakutu: debugger CLI"). Supaya breakpoint
 bisa diklik di gutter editor (bukan command CLI), ekstensi butuh **Debug
@@ -82,8 +96,8 @@ paket baru.
 
 ## 4. Dampak dokumentasi & tooling
 
-- [ ] `editors/vscode-indonesiaku/README.md` — dokumentasikan panel,
-      ikon, dan (nanti) debugging asli
+- [x] `editors/vscode-indonesiaku/README.md` — debugging asli (A)
+      sudah; panel dan ikon belum
 - [ ] `CHANGELOG.md` + `docs/ROADMAP.md` per item yang selesai
 - [ ] `tests/builtin_konsisten.sh` — sambungkan skrip B ke sini, jangan
       bikin job CI baru

@@ -1,0 +1,5 @@
+pantau() sudah dipanggil
+[baris 450, kolom 56] dalam pantau()
+    …kkan GalatWeb("pantau() sudah dipanggil")
+                                             ^
+[baris 5, kolom 12] dalam skrip

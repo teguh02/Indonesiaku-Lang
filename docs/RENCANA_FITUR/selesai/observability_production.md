@@ -1,8 +1,29 @@
 # Rencana Fitur: Kesiapan Produksi untuk REST API & Website SSR
 
-- **Status:** usulan
+- **Status:** selesai (V1 — lihat §0; sisanya ditunda, dicatat di §0 dan `docs/ROADMAP.md` Fase 22)
 - **Target versi:** v1.17.0 (Fase 22, lihat `docs/ROADMAP.md`)
 - **Pemilik:** Teguh R
+
+## 0. Cakupan V1 yang dikerjakan (tanpa C baru)
+
+V1 dipangkas menjadi bagian yang bisa dibangun murni di `.idk`, di atas
+`pustaka/web.idk` dan `pustaka/log.idk`, tanpa builtin baru:
+
+| Paket | Status V1 | Wujud |
+|---|---|---|
+| A.1 health/readiness | ✅ | `app.pantau(kesehatan="/health", kesiapan="/ready", periksa_siap=f, metrik="/metrics")` mendaftarkan rute GET; `/health` selalu 200 `{"status":"ok"}`, `/ready` 200 atau 503 `{"status":"tidak siap"}` dari `periksa_siap()` (galat di dalamnya → 503, detail hanya ke log). Dilayani lewat middleware biasa. |
+| A.2 log terstruktur | ✅ | `log.atur(format="json")`: satu objek JSON per baris (`waktu` lokal ISO-8601, `level`, `modul`, `pesan`, lalu field `data`). Semua metode pencatat menerima `data=` kamus opsional; mode teks mengabaikannya sehingga format lama byte-identik. `format` selain teks → `GalatLog`. |
+| A.3 correlation ID | ✅ | `req["id"]`: 16 heks dari `acak_bita(8)` per permintaan. `X-Request-ID` masuk dihormati HANYA dari `proxy_tepercaya()` dan bila 1–64 karakter `[A-Za-z0-9._-]` (anti injeksi log). Header `X-Request-ID` di respons dan field `request_id` di log `app.jalankan()` hanya bila `pantau()` aktif — respons aplikasi lama tidak berubah. |
+| B.5 metrics | ✅ | Counter in-process: `indk_http_permintaan_total{metode,status}`, histogram `indk_http_durasi_detik` (bucket bawaan Prometheus, `_sum`/`_count`; p50/p95 lewat `histogram_quantile`), gauge `indk_mulai_detik`. Format teks Prometheus 0.0.4. Path TIDAK dijadikan label (kardinalitas); metode di luar daftar baku → `LAIN`. |
+| A.4 graceful shutdown SIGTERM | ⏸ ditunda | Butuh C (`volatile sig_atomic_t` + builtin baru). `app.berhenti()` yang sudah ada tetap satu-satunya jalur berhenti anggun. |
+| B.6 tracing | ❌ tetap ditolak | lihat §2. |
+| C.7–9 SECURITY.md, tabel versi minimum | ⏸ ditunda | Dokumen kebijakan, bukan bagian stack web; kerjakan dalam PR dokumen tersendiri. Audit 08_DEPLOYMENT dilakukan sebagian (bagian observability + peringatan SIGTERM). |
+| D.10 uji beban | ⏸ ditunda | Belum ada angka; jangan klaim "siap produksi". |
+
+Batas V1 yang ditulis jujur di panduan: satu utas (endpoint `/metrics`
+dilayani bergiliran), counter hilang saat proses restart, dan `/metrics`
+harus dibatasi aksesnya (reverse proxy atau middleware) karena tidak ada
+autentikasi bawaan.
 
 ## 1. Masalah
 
