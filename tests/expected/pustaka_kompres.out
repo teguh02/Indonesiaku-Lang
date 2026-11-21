@@ -1,0 +1,43 @@
+== roundtrip ==
+[31, 139, 8, 0]
+benar benar
+120 benar
+benar
+0 benar benar benar
+1 benar benar benar
+6 benar benar benar
+9 benar benar benar
+[0, 0, 0, 1, 0, 255, 0]
+[] []
+benar
+== data dari Python ==
+"halo dari Python\n"
+240 indonesiaku 
+satu-halo dari Python
+
+== checksum ==
+907060870 103547413
+0 1
+benar
+benar
+== data rusak dan batas ==
+rusak -> kompres: data terkompresi rusak
+terpotong -> kompres: data terkompresi terpotong
+sisa -> kompres: ada data sisa setelah akhir gzip
+bukan gzip -> kompres: bukan data gzip (penanda 1f 8b tidak ada)
+adler32 -> kompres: data terkompresi rusak
+bom: benar
+bom -> kompres: hasil melebihi batas 1000 bita
+65535
+bita 300 -> kompres: elemen ke-1 bukan bita (bulat 0..255)
+tingkat 10 -> kompres.gzip: tingkat harus bulat 0..9, bukan 10
+batas -1 -> kompres.buka_gzip: batas harus bulat >= 0
+GalatTipe: kompres: data harus teks atau daftar bita (bulat 0..255)
+== berkas ==
+23000
+benar
+23000
+benar
+batas berkas -> kompres: hasil melebihi batas 100 bita
+salah
+GalatBita: bita: '_contoh_kompres_asli.bin' melebihi batas 10 bita

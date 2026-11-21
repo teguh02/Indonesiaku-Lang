@@ -577,7 +577,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 | 20 — Async/concurrency | `v1.13.0-rc.1` | `v1.13.0` | Event loop/cancellation/GC dan regresi I/O lulus |
 | 21 — Realtime, cache dan jobs | `v1.14.0-rc.1` | `v1.14.0` | WebSocket, Redis, SMTP, queue dan scheduler diuji |
 | 22 — Observability dan kesiapan produksi | `v1.15.0-rc.1` | `v1.15.0` | Logging/metrics/profiler, keamanan dan release policy teruji |
-| 23 — Data biner/arsip | `v1.16.0-rc.1` | `v1.16.0` | Binary/streaming dan ekstraksi arsip aman teruji |
+| 23 — Data biner/arsip | `v1.16.0-rc.1` | 🟨 V1 (`kompres`, `arsip`) di `[Belum dirilis]` | Binary/streaming dan ekstraksi arsip aman teruji |
 | 24 — Unicode/i18n/konfigurasi | `v1.17.0-rc.1` | 🟨 V1 (`konfigurasi`, `unicode`) di `[Belum dirilis]` | Unicode/locale/serialisasi dan parser aman lulus |
 | 25 — CLI, API testing, broker | `v1.18.0-rc.1` | `v1.18.0` | CLI/test client dan protokol broker opsional teruji |
 
@@ -1107,19 +1107,19 @@ kalkulator-indonesiaku/
 
 ### Fase 23 — Data biner, streaming, kompresi dan arsip
 
-**Status:** ⬜ belum. **Kandidat rilis rekomendasi:** `v1.18.0-rc.1`. **Rilis stabil rekomendasi:** `v1.18.0`. **Ketergantungan:** model nilai/GC, sistem berkas, HTTP Fase 11, SSH/SFTP Fase 17, dan kriptografi Fase 18.
+**Status:** 🟨 dikerjakan — V1 kompresi + arsip aman selesai (langkah 5); tipe `bita`, API stream dan integrasi (langkah 2–4, 6) belum. Rencana: [`selesai/data_biner_stream_arsip.md`](RENCANA_FITUR/selesai/data_biner_stream_arsip.md). **Kandidat rilis rekomendasi:** `v1.18.0-rc.1`. **Rilis stabil rekomendasi:** `v1.18.0`. **Ketergantungan:** model nilai/GC, sistem berkas, HTTP Fase 11, SSH/SFTP Fase 17, dan kriptografi Fase 18.
 
 **Tujuan:** memiliki abstraksi `byte`, buffer dan stream yang benar (bukan memaksakan teks UTF-8 untuk semua data), supaya pustaka jaringan, database BLOB, file besar, enkripsi, serta arsip dapat digunakan secara andal.
 
 **Langkah pengembangan:**
 
-1. [ ] Buat `docs/RENCANA_FITUR/data_biner_stream_arsip.md`. Audit tipe `Value`, `ObjString`, operasi file/soket, SQLite BLOB dan dukungan binary existing; tetapkan semantik bytes immutable/mutable buffer, slicing, equality, serta interoperabilitas native tanpa merusak kompatibilitas `teks`.
+1. [ ] **Sebagian:** rencana + audit dukungan biner sudah ada (V1 tetap memakai konvensi daftar bita 0..255); semantik tipe bytes/buffer belum ditetapkan. Buat `docs/RENCANA_FITUR/data_biner_stream_arsip.md`. Audit tipe `Value`, `ObjString`, operasi file/soket, SQLite BLOB dan dukungan binary existing; tetapkan semantik bytes immutable/mutable buffer, slicing, equality, serta interoperabilitas native tanpa merusak kompatibilitas `teks`.
 2. [ ] Implementasikan representasi data biner dengan batas panjang, pengecekan overflow, lifecycle/GC roots, dan konversi eksplisit `teks ↔ UTF-8 bytes` yang menolak data tidak valid bila perlu.
 3. [ ] Tambahkan API stream untuk baca/tulis bertahap, seek/tell bila didukung, flush, close idempoten, context manager, cancellation/timeouts yang relevan, serta bounded buffering/backpressure.
 4. [ ] Implementasikan operasi buffer dan encode/decode: biner ↔ hex, Base64, endian integer packing/unpacking, serta checksum/hash streaming menggunakan fungsi/library yang telah diverifikasi; hindari duplikasi API yang sudah tersedia.
-5. [ ] Tambahkan kompresi gzip/zlib serta arsip ZIP/TAR melalui pustaka terawat, mode streaming saat memungkinkan, inspeksi entri sebelum ekstraksi, batas ukuran/rasio/jumlah berkas, perlindungan path traversal, symlink dan decompression bomb.
+5. [x] **V1:** `pustaka/kompres.idk` (gzip/zlib/deflate, berkas→berkas per 64 KB, crc32/adler32) dan `pustaka/arsip.idk` (TAR, TAR.GZ, ZIP: `daftar_isi`, `ekstrak`, `buat`) di atas miniz 3.1.2 yang di-vendor; ekstraksi dua lintasan, menolak zip slip/absolut/tautan/tautan di tujuan, batas ukuran/entri/rasio. Tambahkan kompresi gzip/zlib serta arsip ZIP/TAR melalui pustaka terawat, mode streaming saat memungkinkan, inspeksi entri sebelum ekstraksi, batas ukuran/rasio/jumlah berkas, perlindungan path traversal, symlink dan decompression bomb.
 6. [ ] Integrasikan dengan download/upload HTTP, SFTP, BLOB database, kriptografi dan contoh backup agar berkas besar tidak dibaca penuh ke RAM.
-7. [ ] Tambahkan tes roundtrip byte acak, NUL embedded, Unicode/invalid UTF-8, data besar, korupsi arsip, zip slip, symlink, rasio kompresi ekstrem, resource limits, stress GC, ASan/UBSan dan tiga OS.
+7. [ ] **Sebagian:** golden `pustaka_kompres`/`pustaka_arsip`, `tests/galat`, `tests/test_arsip_tautan.{sh,ps1}`, stress GC + ASan/UBSan (Linux) untuk kompresi/arsip; tes tipe bita/stream menunggu langkah 2–3. Tambahkan tes roundtrip byte acak, NUL embedded, Unicode/invalid UTF-8, data besar, korupsi arsip, zip slip, symlink, rasio kompresi ekstrem, resource limits, stress GC, ASan/UBSan dan tiga OS.
 8. [ ] Perbarui pustaka, dokumentasi API, contoh, changelog, editor (bila sintaks baru), dan matriks platform/dependensi distribusi.
 
 **Contoh API ilustratif (belum tersedia):** `bita.dari_teks("halo", "utf-8")`, `berkas.buka_biner("data.bin")`, `arsip.ekstrak_aman("backup.zip", "hasil/", batas)`.
@@ -1217,7 +1217,7 @@ kalkulator-indonesiaku/
 | 20 | Async I/O, concurrency dan cancellation | ⬜ belum |
 | 21 | Redis/cache, WebSocket, SMTP, scheduler dan background jobs | ⬜ belum |
 | 22 | Logging, profiling, observability, kompatibilitas dan keamanan rilis | ⬜ belum |
-| 23 | Byte/buffer, streaming, ZIP/TAR/gzip dan keamanan arsip | ⬜ belum |
+| 23 | Byte/buffer, streaming, ZIP/TAR/gzip dan keamanan arsip | 🟨 sebagian — V1 gzip/zlib + TAR/TAR.GZ/ZIP dengan ekstraksi aman; tipe `bita`/stream belum |
 | 24 | Unicode, i18n, konfigurasi, YAML/TOML dan serialisasi | ⬜ belum |
 | 25 | CLI framework, HTTP test client, MQTT/RabbitMQ opsional | ⬜ belum |
 | Lintas fase | Validasi 3 aplikasi nyata (SSR, REST API, otomasi server) | ⬜ belum |
