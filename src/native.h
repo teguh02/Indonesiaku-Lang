@@ -199,6 +199,7 @@ Value nativeFnSoketDengar(int argCount, Value* args);  // soket_dengar(port)
 Value nativeFnSoketTerima(int argCount, Value* args);  // soket_terima(server)
 Value nativeFnSoketBaca(int argCount, Value* args);    // soket_baca(klien)
 Value nativeFnSoketBacaBita(int argCount, Value* args);
+Value nativeFnSoketBacaKepala(int argCount, Value* args);   // _soket_baca_kepala(soket, maks)
 Value nativeFnSoketTulis(int argCount, Value* args);   // soket_tulis(klien, teks)
 Value nativeFnSoketAlamatPeer(int argCount, Value* args); // soket_alamat_peer(soket)
 Value nativeFnSoketTutup(int argCount, Value* args);   // soket_tutup(soket)

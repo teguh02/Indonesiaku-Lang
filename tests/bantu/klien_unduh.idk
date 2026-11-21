@@ -1,0 +1,59 @@
+# Klien untuk tests/unduh_server.sh. Mencetak satu baris per kasus.
+
+impor jaringan
+dari jaringan impor GalatUnduhan
+impor berkas
+impor "tests/bantu/data_unduh.idk"
+
+variabel DASAR = "http://127.0.0.1:" + ambil_lingkungan("IDK_PORT")
+variabel D = berkas.direktori_sementara(awalan="unduh-uji-")
+variabel HARAPAN = sha256(data_unduh())
+
+fungsi galat_dari(url, tujuan, opsi_sha = kosong, maks = kosong, kemajuan = kosong, timpa = salah, detik = 30) {
+    coba {
+        jaringan.unduh(url, tujuan, sha256=opsi_sha, maks_ukuran=maks, kemajuan=kemajuan, timpa=timpa,
+                       batas_waktu=detik)
+        kembalikan "TIDAK GAGAL"
+    } kecuali GalatUnduhan sebagai e {
+        kembalikan "GalatUnduhan"
+    } kecuali GalatOS sebagai e {
+        kembalikan "GalatOS: " + e.pesan
+    } kecuali Galat sebagai e {
+        kembalikan "Galat: " + e.pesan
+    }
+}
+
+variabel t = D + "/arsip ☕.bin"
+variabel h = jaringan.unduh(DASAR + "/biner", t, sha256=HARAPAN)
+cetak("biner       :", h["ukuran"], h["sha256"] == HARAPAN, berkas.sha256(t) == HARAPAN, h["tipe"])
+
+variabel panggilan = [0]
+fungsi hitung(n, total) {
+    panggilan[0] = panggilan[0] + 1
+    kembalikan kosong
+}
+h = jaringan.unduh(DASAR + "/alih", D + "/alih.bin", kemajuan=hitung)
+cetak("pengalihan  :", h["url"] == DASAR + "/biner", h["ukuran"], panggilan[0] > 0)
+
+h = jaringan.unduh(DASAR + "/tanpa-panjang", D + "/kecil.txt")
+cetak("tanpa panjang:", baca_semua(D + "/kecil.txt"))
+
+cetak("sudah ada   :", galat_dari(DASAR + "/biner", t))
+h = jaringan.unduh(DASAR + "/tanpa-panjang", t, timpa=benar)
+cetak("timpa       :", h["ukuran"])
+cetak("404         :", galat_dari(DASAR + "/hilang", D + "/404.bin"))
+cetak("sha salah   :", galat_dari(DASAR + "/biner", D + "/sha.bin", "0" * 64))
+cetak("maks awal   :", galat_dari(DASAR + "/besar", D + "/besar.bin", kosong, 1000))
+cetak("maks aliran :", galat_dari(DASAR + "/tanpa-panjang", D + "/m.bin", kosong, 5))
+cetak("terpotong   :", galat_dari(DASAR + "/terpotong", D + "/potong.bin"))
+cetak("putar       :", galat_dari(DASAR + "/putar", D + "/putar.bin"))
+fungsi batal(n, total) {
+    kembalikan salah
+}
+cetak("batal       :", galat_dari(DASAR + "/biner", D + "/batal.bin", kosong, kosong, batal))
+
+cetak("batas waktu :", galat_dari(DASAR + "/diam", D + "/diam.bin", kosong, kosong, kosong, salah, 0.5))
+
+# Tidak boleh ada berkas parsial atau sementara yang tertinggal.
+cetak("isi akhir   :", isi_direktori(D))
+berkas.hapus_direktori_bertingkat(D)

@@ -249,7 +249,8 @@ Prioritas berdasarkan "apa yang dibutuhkan pemula dan aplikasi umum".
 | `string` | `teks` | 🟡 | 3 |
 | `json` | `json` | ✅ | — |
 | `time` / `datetime` | `waktu` / `tanggal_waktu` | 🟡 builtin `waktu`/`tanggal`/`format_tanggal` + `pustaka/tanggal_waktu.idk` (`TanggalWaktu`, ISO 8601, offset tetap; zona IANA/DST belum — Fase 19 V1) | 19 |
-| `os` / `os.path` / `pathlib` / `shutil` / `glob` | `os` / `jalur` | 🟡 `jalur` (persis `posixpath`, plus `ada`/`ukuran`/`absolut`), builtin `direktori_kini`/`isi_direktori`/`buat_direktori`/`lingkungan`; `pathlib`/`shutil`/`glob` belum | 6 |
+| `os` / `os.path` / `pathlib` / `glob` | `os` / `jalur` | 🟡 `jalur` (persis `posixpath`, plus `ada`/`ukuran`/`absolut`), builtin `direktori_kini`/`isi_direktori`/`buat_direktori`/`lingkungan`; `pathlib`/`glob` belum | 6 |
+| `shutil` / `tempfile` / `os.walk` / `os.rename` | `berkas` | ✅ `salin_berkas`/`salin_direktori`/`pindahkan`/`ganti_nama`/`hapus_direktori_bertingkat`/`jelajahi_direktori`/`berkas_sementara`/`direktori_sementara`/`info`/`sha256`, tanpa mengikuti tautan; `chmod`/`chown`/`symlink` belum (Fase 17 V1) | 17 |
 | `sys` | `sistem` (`argumen`, `keluar`, `versi`) | 🟡 `argumen`, `keluar`, `tulis_galat`, `jalur_indk` (builtin) | 3 |
 | `re` | `pola` (regex) | ✅ Pike VM linear; tanpa backreference/lookaround, kelas ASCII | 6 |
 | `collections` | `koleksi` (`Penghitung`, `Antrian`, `KamusBawaan`) | ✅ `pustaka/koleksi.idk` (gelombang A); `tupel_bernama` menunggu `*args` | 6 |
@@ -261,6 +262,7 @@ Prioritas berdasarkan "apa yang dibutuhkan pemula dan aplikasi umum".
 | `subprocess` | `proses` | ✅ `jalankan`/`keluaran`, tanpa shell, belum timeout | 6 |
 | `socket` | `soket` | ✅ (TCP, localhost) | — |
 | `http.server` / `urllib` | `http` | 🟡 server (parse/build) + klien `http_ambil` (`http://`); HTTPS belum | 6 |
+| `urllib.request.urlretrieve` | `jaringan.unduh` | 🟨 streaming ke disk, TLS terverifikasi, SHA-256, batas ukuran/waktu, rename atomik; `Range`/batas waktu connect belum (Fase 17 V1) | 17 |
 | `hashlib` / `base64` / `secrets` / `uuid` | `hash` / `base64` / `rahasia` / `uuid` | 🟡 `md5`/`sha*` builtin, `base64` ✅; `rahasia`/`uuid` belum | 6 |
 | `sqlite3` | `sqlite` (`db_*`) | ✅ | 3 — selesai; 10 fungsi, SQLite 3.50.4 vendored, parameter `?` wajib |
 | `threading` / `asyncio` | `utas` / `asinkron` | ❌ | 7 |

@@ -2293,6 +2293,88 @@ Value nativeFnSoketBacaBita(int argCount, Value* args) {
     return OBJ_VAL(hasil);
 }
 
+// _soket_baca_kepala(soket, maks) -> (kepala, sisa): membaca sampai "\r\n\r\n"
+// dan memisahkan kepala HTTP dari byte badan yang ikut terbaca, per BYTE.
+// Memisahkan di Indonesiaku dengan teks_cari + irisan bekerja per karakter
+// UTF-8, sehingga badan biner (arsip, gambar) yang terbaca dalam potongan
+// yang sama dengan kepala bisa rusak di batasnya. Dipakai jaringan.unduh().
+//
+// kosong bila koneksi ditutup sebelum kepala lengkap; salah bila kepala
+// melewati `maks` byte. Batas waktu soket menaikkan galat seperti soket_baca.
+Value nativeFnSoketBacaKepala(int argCount, Value* args) {
+    if (argCount != 2 || !IS_SOCKET(args[0]) || !IS_INT(args[1])) {
+        nativeRaiseKelas(vm.galatTipe, "_soket_baca_kepala() memerlukan (soket, bulat)");
+        return KOSONG_VAL;
+    }
+    ObjSocket* sock = AS_SOCKET(args[0]);
+    if (!sock->isOpen) {
+        nativeRaise("_soket_baca_kepala() pada soket yang sudah tertutup");
+        return KOSONG_VAL;
+    }
+    int64_t maks = AS_INT(args[1]);
+    if (maks < 4 || maks > 1048576) {
+        nativeRaiseKelas(vm.galatNilai, "_soket_baca_kepala(): maks harus 4..1048576");
+        return KOSONG_VAL;
+    }
+    size_t cap = (size_t)maks + 65536;
+    char* buf = (char*)malloc(cap);
+    if (buf == NULL) {
+        nativeRaise("_soket_baca_kepala(): kehabisan memori");
+        return KOSONG_VAL;
+    }
+    size_t len = 0;
+    for (;;) {
+        size_t ruang = cap - len;
+        if (ruang > 65536) ruang = 65536;
+        int received;
+        bool batasWaktu;
+        if (sock->tls != NULL) {
+            received = indkTlsBaca(sock->tls, buf + len, ruang);
+            batasWaktu = (received == -2);
+            if (received < 0) received = -1;
+        } else {
+            received = (int)recv((indk_socket_t)sock->fd, buf + len, (int)ruang, 0);
+            batasWaktu = (received < 0 && soketBatasWaktuTerlampaui());
+        }
+        if (received < 0) {
+            free(buf);
+            if (batasWaktu) {
+                nativeRaise("soket_baca() melewati batas waktu menunggu data");
+            } else {
+                nativeRaiseKelas(vm.galatOS, "soket_baca() gagal membaca dari soket");
+            }
+            return KOSONG_VAL;
+        }
+        if (received == 0) {
+            free(buf);
+            return KOSONG_VAL;
+        }
+        size_t awal = len >= 3 ? len - 3 : 0;
+        len += (size_t)received;
+        for (size_t i = awal; i + 4 <= len; i++) {
+            if (memcmp(buf + i, "\r\n\r\n", 4) != 0) continue;
+            if (i > (size_t)maks) break;
+            ObjTuple* hasil = newTuple();
+            push(OBJ_VAL(hasil));
+            Value kepala = OBJ_VAL(copyString(buf, (int)i));
+            push(kepala);
+            writeValueArray(&hasil->items, kepala);
+            pop();
+            Value sisa = OBJ_VAL(copyString(buf + i + 4, (int)(len - i - 4)));
+            push(sisa);
+            writeValueArray(&hasil->items, sisa);
+            pop();
+            pop();
+            free(buf);
+            return OBJ_VAL(hasil);
+        }
+        if (len >= (size_t)maks) {
+            free(buf);
+            return BOOL_VAL(false);
+        }
+    }
+}
+
 // soket_tulis(klien, teks | daftar bita) -> jumlah byte terkirim.
 //
 // Daftar bulat 0..255 dikirim sebagai byte mentah, konvensi yang sama dengan

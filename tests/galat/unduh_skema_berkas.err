@@ -1,0 +1,5 @@
+unduh(): url harus diawali http:// atau https://: "file:///etc/passwd"
+[baris 239, kolom 94] dalam unduh()
+    …wali http:// atau https://: {repr(url)}")
+                                             ^
+[baris 4, kolom 56] dalam skrip

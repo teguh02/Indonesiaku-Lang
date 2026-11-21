@@ -1,0 +1,95 @@
+# Modul `berkas` (Fase 17): salin, pindah, hapus bertingkat, jelajahi, dan
+# berkas sementara. Berada di subdirektori sendiri karena examples/berkas.idk
+# sudah ada: `impor berkas` mencari direktori skrip lebih dulu.
+#
+# Semua kerja dilakukan di direktori sementara baru, jadi keluarannya hanya
+# mencetak jalur RELATIF terhadapnya.
+
+impor berkas
+dari berkas impor GalatBerkas
+
+d = berkas.direktori_sementara(awalan="contoh-")
+
+fungsi rel(j) {
+    kembalikan j[panjang(d) + 1:]
+}
+
+fungsi pohon() {
+    untuk entri dalam berkas.jelajahi_direktori(d) {
+        dir, subdir, isi = entri
+        variabel nama = "." jika dir == d selain rel(dir)
+        cetak(" ", nama, subdir, isi)
+    }
+}
+
+fungsi coba_galat(f) {
+    coba {
+        f()
+        cetak("  (tidak gagal)")
+    } kecuali GalatOS sebagai e {
+        cetak("  GalatOS:", ganti(e.pesan, d + "/", ""))
+    }
+}
+
+# --- salin_berkas: isi dan nama non-ASCII ---------------------------------
+tulis_semua(d + "/catatan.txt", "baris satu\nbaris dua\n")
+berkas.salin_berkas(d + "/catatan.txt", d + "/salinan ☕.txt")
+cetak("salin       :", baca_semua(d + "/salinan ☕.txt") == baca_semua(d + "/catatan.txt"))
+cetak("sha256 sama :", berkas.sha256(d + "/salinan ☕.txt") == sha256("baris satu\nbaris dua\n"))
+
+cetak("tanpa timpa :")
+coba_galat(fungsi() { berkas.salin_berkas(d + "/catatan.txt", d + "/salinan ☕.txt") })
+cetak("ke diri sendiri:")
+coba_galat(fungsi() { berkas.salin_berkas(d + "/catatan.txt", d + "/catatan.txt", timpa=benar) })
+cetak("asal hilang :")
+coba_galat(fungsi() { berkas.salin_berkas(d + "/hilang.txt", d + "/x.txt") })
+
+tulis_semua(d + "/baru.txt", "versi baru")
+berkas.salin_berkas(d + "/baru.txt", d + "/catatan.txt", timpa=benar)
+cetak("timpa       :", baca_semua(d + "/catatan.txt"))
+
+# --- direktori bertingkat --------------------------------------------------
+buat_direktori(d + "/proyek")
+buat_direktori(d + "/proyek/src")
+tulis_semua(d + "/proyek/README", "baca aku")
+tulis_semua(d + "/proyek/src/utama.idk", "cetak(1)\n")
+berkas.salin_direktori(d + "/proyek", d + "/cadangan")
+cetak("pohon setelah salin_direktori:")
+pohon()
+
+cetak("salin ke dalam dirinya:")
+coba_galat(fungsi() { berkas.salin_direktori(d + "/proyek", d + "/proyek/src/lagi") })
+
+# --- ganti_nama dan pindahkan ---------------------------------------------
+berkas.ganti_nama(d + "/baru.txt", d + "/lama.txt")
+berkas.pindahkan(d + "/lama.txt", d + "/cadangan/lama.txt")
+berkas.pindahkan(d + "/cadangan/src", d + "/src-lama")
+cetak("tujuan direktori:")
+coba_galat(fungsi() { berkas.ganti_nama(d + "/catatan.txt", d + "/proyek") })
+
+# --- info -------------------------------------------------------------------
+variabel i = berkas.info(d + "/catatan.txt")
+cetak("info        :", i["jenis"], i["ukuran"], i["baca_saja"], jenis(i["waktu_ubah"]))
+cetak("info dir    :", berkas.info(d + "/proyek")["jenis"])
+
+# --- berkas sementara ------------------------------------------------------
+variabel t = berkas.berkas_sementara(awalan="laporan-", akhiran=".csv", direktori=d)
+cetak("sementara   :", rel(t)[:8], rel(t)[-4:], panjang(rel(t)), berkas.info(t)["ukuran"])
+cetak("awalan jahat:")
+coba {
+    berkas.berkas_sementara(awalan="../kabur-", direktori=d)
+} kecuali GalatNilai sebagai e {
+    cetak("  GalatNilai:", e.pesan)
+}
+hapus_berkas(t)
+
+# --- hapus bertingkat -------------------------------------------------------
+berkas.hapus_direktori_bertingkat(d + "/proyek")
+cetak("pohon akhir:")
+pohon()
+berkas.hapus_direktori_bertingkat(d)
+coba {
+    berkas.info(d)
+} kecuali GalatBerkas sebagai e {
+    cetak("bersih      :", ganti(e.pesan, d, "<d>"))
+}

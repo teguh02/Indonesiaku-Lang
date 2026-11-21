@@ -471,6 +471,8 @@ jobs:
                    tests/keamanan_app.sh \
                    tests/versi_konsisten.sh \
                    tests/http_pengalihan_server.sh \
+                   tests/unduh_server.sh \
+                   tests/berkas_tautan.sh \
                    tests/cakupan_lintas_os.sh; do
             echo "=== $t ==="
             if bash "$t"; then echo "  ok"; else echo "  GAGAL: $t"; gagal=1; fi

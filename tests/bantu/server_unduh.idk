@@ -1,0 +1,68 @@
+# Server untuk tests/unduh_server.sh: menyajikan badan biner dan respons
+# rusak agar jaringan.unduh() bisa diuji tanpa internet. Berhenti sendiri
+# setelah IDK_SISA permintaan.
+
+impor "pustaka/teks.idk"
+impor "tests/bantu/data_unduh.idk"
+
+variabel PORT = ke_bulat(ambil_lingkungan("IDK_PORT"))
+variabel SISA = ke_bulat(ambil_lingkungan("IDK_SISA"))
+variabel BADAN = data_unduh()
+
+fungsi kirim(klien, jalur) {
+    jika jalur == "/biner" {
+        soket_tulis(klien, "HTTP/1.0 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: "
+                    + ke_teks(panjang(BADAN)) + "\r\n\r\n")
+        soket_tulis(klien, BADAN)
+        kembalikan kosong
+    }
+    jika jalur == "/tanpa-panjang" {
+        soket_tulis(klien, "HTTP/1.0 200 OK\r\n\r\nisi tanpa panjang")
+        kembalikan kosong
+    }
+    jika jalur == "/alih" {
+        soket_tulis(klien, "HTTP/1.0 302 Found\r\nLocation: /biner\r\nContent-Length: 0\r\n\r\n")
+        kembalikan kosong
+    }
+    jika jalur == "/putar" {
+        soket_tulis(klien, "HTTP/1.0 302 Found\r\nLocation: /putar\r\nContent-Length: 0\r\n\r\n")
+        kembalikan kosong
+    }
+    jika jalur == "/terpotong" {
+        soket_tulis(klien, "HTTP/1.0 200 OK\r\nContent-Length: 1000\r\n\r\nhanya sepuluh")
+        kembalikan kosong
+    }
+    jika jalur == "/diam" {
+        henti(2)            # tidak mengirim apa pun: klien harus kena batas waktu
+        kembalikan kosong
+    }
+    jika jalur == "/besar" {
+        soket_tulis(klien, "HTTP/1.0 200 OK\r\nContent-Length: 5000000\r\n\r\n")
+        kembalikan kosong
+    }
+    soket_tulis(klien, "HTTP/1.0 404 Not Found\r\nContent-Length: 0\r\n\r\n")
+}
+
+variabel server = soket_dengar(PORT)
+variabel sisa = SISA
+selagi sisa > 0 {
+    variabel klien = soket_terima(server)
+    soket_batas_waktu(klien, 10)
+    coba {
+        variabel mentah = soket_baca(klien)
+        variabel jalur = "/"
+        jika mentah != "" {
+            variabel bagian = teks_pisah(teks_pisah(mentah, "\r\n")[0], " ")
+            jika panjang(bagian) >= 2 {
+                jalur = bagian[1]
+            }
+        }
+        kirim(klien, jalur)
+    } kecuali e {
+        # Klien yang membatalkan di tengah jalan menutup koneksinya lebih dulu.
+    } akhirnya {
+        soket_tutup(klien)
+    }
+    sisa = sisa - 1
+}
+soket_tutup(server)

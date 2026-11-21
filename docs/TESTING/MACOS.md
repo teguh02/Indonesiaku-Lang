@@ -1941,6 +1941,117 @@ baris 1, kolom 769: kedalaman elemen melebihi batas 256
 
 Dokumen dengan `<!DOCTYPE>` (XXE) dan entitas tak dikenal ditolak tanpa membaca berkas apa pun; 300 elemen bersarang melewati batas kedalaman 256.
 
+### BRK — Berkas dan unduhan (Fase 17)
+
+#### BRK-01 — Modul `berkas`: salin, pindah, jelajahi, hapus bertingkat
+
+Berkas `BRK-01.idk`:
+
+```indonesiaku
+# Modul berkas: salin, ganti nama, pindah, jelajahi, hapus bertingkat
+impor berkas
+d = berkas.direktori_sementara(direktori=".")
+tulis_semua(d + "/a.txt", "isi")
+berkas.salin_berkas(d + "/a.txt", d + "/b.txt")
+coba {
+    berkas.salin_berkas(d + "/a.txt", d + "/b.txt")
+} kecuali GalatOS sebagai e {
+    cetak(ganti(e.pesan, d + "/", ""))
+}
+buat_direktori(d + "/sub")
+berkas.pindahkan(d + "/b.txt", d + "/sub/c.txt")
+berkas.salin_direktori(d + "/sub", d + "/sub2")
+untuk entri dalam berkas.jelajahi_direktori(d) {
+    cetak(ganti(entri[0], d, "."), entri[1], entri[2])
+}
+cetak(berkas.sha256(d + "/sub2/c.txt") == sha256("isi"), berkas.info(d + "/sub")["jenis"])
+berkas.hapus_direktori_bertingkat(d)
+cetak(ada_berkas(d + "/a.txt"))
+```
+
+Jalankan `indk BRK-01.idk` di folder yang bisa ditulisi. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+salin_berkas(): 'b.txt' sudah ada
+. ["sub", "sub2"] ["a.txt"]
+./sub [] ["c.txt"]
+./sub2 [] ["c.txt"]
+benar direktori
+salah
+```
+
+stderr kosong. Tidak ada folder `indk-*` yang tertinggal.
+
+#### BRK-02 — `jaringan.unduh`: argumen diperiksa sebelum jaringan dan disk
+
+Berkas `BRK-02.idk`:
+
+```indonesiaku
+# jaringan.unduh: argumen diperiksa sebelum jaringan dan disk disentuh
+impor jaringan
+dari jaringan impor GalatUnduhan
+tulis_semua("ada.txt", "lama")
+untuk url dalam ["file:///etc/passwd", "http://contoh.invalid/x"] {
+    coba {
+        jaringan.unduh(url, "ada.txt")
+    } kecuali GalatUnduhan sebagai e {
+        cetak(e.pesan)
+    }
+}
+cetak(baca_semua("ada.txt"))
+hapus_berkas("ada.txt")
+```
+
+Jalankan `indk BRK-02.idk`. **Kode keluar: `0`.** Tidak butuh internet.
+
+stdout yang diharapkan:
+
+```text
+unduh(): url harus diawali http:// atau https://: "file:///etc/passwd"
+unduh(): 'ada.txt' sudah ada (pakai timpa=benar)
+lama
+```
+
+stderr kosong. Unduhan sungguhan (biner 300 KB, checksum, batas, batal,
+koneksi terputus, tanpa berkas parsial) diuji otomatis oleh
+`tests/unduh_server.sh` terhadap server lokal.
+
+#### BRK-03 — Menyalin berkas ke dirinya sendiri ditolak sebelum terpotong
+
+Berkas `BRK-03.idk`:
+
+```indonesiaku
+# Menyalin berkas ke dirinya sendiri ditolak sebelum isinya terpotong
+impor berkas
+tulis_semua("diri.txt", "penting")
+cetak("sebelum")
+berkas.salin_berkas("diri.txt", "diri.txt", timpa=benar)
+cetak("tidak tercetak")
+```
+
+Jalankan `indk BRK-03.idk`. **Kode keluar: `70`.**
+
+stdout yang diharapkan:
+
+```text
+sebelum
+```
+
+stderr yang diharapkan:
+
+```text
+salin_berkas(): 'diri.txt' berkas yang sama
+[baris 105, kolom 54] dalam salin_berkas()
+    …rkas(asal, tujuan, timpa, "salin_berkas")
+                                             ^
+[baris 5, kolom 56] dalam skrip
+```
+
+Setelahnya `diri.txt` masih berisi `penting` (hapus manual). Nomor baris pada
+jejak menunjuk `pustaka/berkas.idk`.
+
 <!-- BERSAMA:AKHIR -->
 
 ## 5. Suite otomatis dari tag rilis
@@ -1996,6 +2107,7 @@ menguji biner rilis jalankan bagian golden-nya dengan biner yang disalin
 | MAC-09 | Soket localhost | OTO-03, OTO-06 | Lulus; catat bila firewall macOS meminta izin |
 | MAC-10 | Proses anak | PUS-05 | `0 benar` |
 | MAC-11 | Shell zsh (bawaan) dan bash | CLI-04 dengan argumen bertanda kutip di kedua shell | `3 ["satu", "dua tiga", "3"]` |
+| MAC-12 | Modul `berkas`: symlink tidak diikuti, unduhan lokal (Fase 17) | `bash tests/berkas_tautan.sh` dan `bash tests/unduh_server.sh` dengan `indk` rilis di akar repo | `ok   berkas: tautan simbolik tidak diikuti` dan `ok   jaringan.unduh() terhadap server lokal` |
 
 ## 7. Hasil uji terakhir
 

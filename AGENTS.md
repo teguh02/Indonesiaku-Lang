@@ -553,6 +553,19 @@ allocates and can trigger a GC. Two rules follow, both learned from real bugs:
 - **Cryptography lives in `src/kripto.c` and is ALWAYS mbedTLS** (Fase 18 V1): the C side only validates lengths, copies VM bytes to malloc buffers via `hashInputBytes`, and `mbedtls_platform_zeroize`s secrets before `free`. Never write a primitive by hand. `_kripto_aead_buka` returns `kosong` on an authentication failure and `pustaka/kripto.idk` raises ONE `GalatKripto` message for every cause (tag/key/nonce/AAD/truncation) -- do not make the messages more specific, that is a decryption oracle. `tests/galat/kripto_*.err` contain line numbers from `pustaka/kripto.idk`, so editing that file means re-reading those fixtures.
 - **Archive extraction (`src/arsip.c`, Fase 23) is two-pass and never follows links.** Pass 1 reads and decompresses the whole archive and checks the existing destination, writing nothing; only then pass 2 writes. Every file an archive creates must go through `siapkanDirektori`/`bukaTujuanBerkas` (lstat each component via `sistemJenisTanpaTautan`, `O_NOFOLLOW` on POSIX) -- a plain `sistemBukaBerkas` there reopens zip slip through a symlink. Ratio limits are checked on the bytes actually inflated, not only on header sizes. Include miniz only with `MINIZ_NO_ZLIB_COMPATIBLE_NAMES`, and never hand it a NULL buffer even for size 0 (it calls `fwrite(NULL, ...)`, which UBSan flags).
 - **`app.tangani()` in `pustaka/web.idk` is a thin wrapper over `_tangani()`** (Fase 22): it mints the request id (`diri._id_terakhir`, also `req["id"]`), and when `app.pantau()` is on it records `/metrics` counters and appends `X-Request-ID`. Every early `return` inside `_tangani` is therefore counted for free -- add new response paths there, never in the wrapper. Without `pantau()` responses must stay byte-identical (existing web goldens depend on it), and metric labels must stay bounded: never label by path or raw client method.
+- **File transfer (Fase 17) lives in `pustaka/berkas.idk` + `pustaka/jaringan.idk`
+  over internal natives in `src/sistem.c`** (`_info_lengkap`, `_ganti_nama`,
+  `_salin_berkas`, `_buat_eksklusif`, `_hapus_tautan`, `_sha256_berkas`) and
+  `_soket_baca_kepala` in `src/native.c`. Each takes the PUBLIC function name as
+  its last argument, used in `GalatOS` messages and the sandbox refusal, so
+  users never see a `_native` name. Tree operations decide "is it a link?" with
+  `_info_lengkap` (lstat / reparse point) and never follow one; keep that when
+  adding tree code. `_soket_baca_kepala` exists because splitting HTTP headers
+  with `teks_cari` + slicing is per CHARACTER and corrupts binary bodies at the
+  boundary -- split bytes in C. `unduh()` must keep writing to a temp file in the
+  DESTINATION directory (rename is only atomic within one filesystem). A user
+  script named `berkas.idk` shadows the module (importer's dir first), which is
+  why the goldens live in `examples/berkas_lokal/`.
 - **`kecuali` takes a bare class name only**: `kecuali pola.GalatPola` is a compile error, so modules tell users to `dari pola impor GalatPola`. And `jenis()` returns `"angka"` for both bulat and desimal -- check for a whole number with `ke_bulat(x) adalah x` (identity distinguishes `1` from `1.0`).
 - **Fase 6 standard-library modules are namespace modules in `pustaka/`** (`koleksi`, `statistik`, `iterasi`, `fungsional`, `salin`), used as `impor koleksi` / `dari koleksi impor Penghitung`, and deliberately **unprefixed** — unlike the older `pustaka/*.idk` files (`mat_`, `teks_`) that exist only for the shared-namespace `impor "..."` form. Both styles coexist; do not convert the old ones without checking every `examples/pustaka_*.idk`. `test_panduan.sh` runs every ```indonesiaku block, so a new module needs a runnable guide section.
 

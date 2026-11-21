@@ -1,0 +1,4 @@
+# jaringan.unduh() hanya menerima http:// dan https://; file:// ditolak
+# sebelum berkas apa pun dibuat.
+impor jaringan
+jaringan.unduh("file:///etc/passwd", "_galat_unduh.txt")

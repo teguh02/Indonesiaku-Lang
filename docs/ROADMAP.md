@@ -571,7 +571,7 @@ Bagian ini menyatukan rencana P1–P7, WDB-01–05, WEB-01–07, DX-01–02, SSR
 | 14 — Package manager | — | 🟨 V1 lokal di `[Belum dirilis]` (`v1.7.0` terpakai untuk templat Fase 12) | Resolusi dependensi dan supply-chain checks lulus |
 | 15 — Debugger & FFI | `v1.8.0-rc.1` | `v1.8.0` | API native/GC dan debug tests lulus |
 | 16 — WASM & performa | `v1.9.0-rc.1` | `v1.9.0` | Uji browser/WASM dan benchmark yang relevan lulus |
-| 17 — Transfer file & SSH/SFTP/FTP | `v1.10.0-rc.1` | `v1.10.0` | Protokol aman, uji transfer, host key dan TLS lulus |
+| 17 — Transfer file & SSH/SFTP/FTP | `v1.10.0-rc.1` | 🟨 V1 (`berkas`, `jaringan.unduh`) di `[Belum dirilis]` | Protokol aman, uji transfer, host key dan TLS lulus |
 | 18 — Kriptografi & keamanan runtime | `v1.11.0-rc.1` | `v1.11.0` | Crypto KAT, fuzz/sanitizer, sandbox dan audit keamanan lulus |
 | 19 — Paritas kemampuan & referensi API | `v1.12.0-rc.1` | 🟨 V1 (`validasi`, `tanggal_waktu`, `xml`) di `[Belum dirilis]` | Katalog terverifikasi, XML/validasi aman, dokumentasi dan tes kategori lulus |
 | 20 — Async/concurrency | `v1.13.0-rc.1` | `v1.13.0` | Event loop/cancellation/GC dan regresi I/O lulus |
@@ -936,21 +936,21 @@ kalkulator-indonesiaku/
 
 ### Fase 17 — Pustaka transfer berkas, SSH/SFTP, FTP dan unduhan
 
-**Target kandidat:** `v1.12.0-rc.1`. **Rilis stabil rekomendasi:** `v1.12.0`, hanya bila seluruh acceptance tests fase ini lulus. **Status:** ⬜ belum.
+**Target kandidat:** `v1.12.0-rc.1`. **Rilis stabil rekomendasi:** `v1.12.0`, hanya bila seluruh acceptance tests fase ini lulus. **Status:** 🟨 sebagian — V1 operasi berkas lokal (modul `berkas`) dan unduhan HTTP/HTTPS (`jaringan.unduh`) selesai; FTP/FTPS, SSH, SFTP (langkah 4–6) ditunda karena butuh pustaka SSH yang di-vendor (lihat `docs/RENCANA_FITUR/selesai/file_transfer_remote.md`).
 
 **Tujuan:** menjadikan Indonesiaku berguna untuk otomasi server, manajemen file dan integrasi jaringan. Berikan API yang mudah dipakai layaknya `shutil`, `pathlib`, `urllib`, `ftplib` dan `paramiko` di ekosistem Python, tetapi tetap punya perilaku keamanan yang tegas. **Jangan menyatakan protokol tersedia hanya karena socket TCP sudah ada.**
 
 **Langkah pengembangan:**
 
-1. [ ] Tulis rencana `docs/RENCANA_FITUR/file_transfer_remote.md` dan inventarisasi fungsi `src/sistem.c`, `pustaka/jalur.idk`, `pustaka/http.idk`, serta builtin file I/O. Pilih konvensi error, path dan pengembalian nilai yang konsisten; hindari duplikasi fungsi yang sudah ada.
-2. [ ] Tambahkan operasi file lokal: `salin_berkas` (cp), `salin_direktori` (cp -r), `pindahkan`, `ganti_nama`, `hapus_berkas`, `hapus_direktori_bertingkat`, `jelajahi_direktori`, `berkas_sementara`, dan pemeriksaan metadata/izin sesuai OS. Sediakan pilihan overwrite eksplisit, perlindungan symlink, dan error jelas.
-3. [ ] Sediakan **download berkas HTTP/HTTPS**: fungsi target `unduh(url, tujuan, opsi)` dengan streaming (tanpa menampung semua data ke RAM), timeout, batas ukuran, progress callback jika aman, cancel, resume `Range` jika didukung server, redirect terkontrol, verifikasi TLS, checksum SHA-256 opsional, serta file sementara + atomic rename untuk mencegah file parsial. Bergantung pada HTTPS aman Fase 11.
+1. [x] Tulis rencana `docs/RENCANA_FITUR/selesai/file_transfer_remote.md` dan inventarisasi fungsi `src/sistem.c`, `pustaka/jalur.idk`, `pustaka/http.idk`, serta builtin file I/O. Pilih konvensi error, path dan pengembalian nilai yang konsisten; hindari duplikasi fungsi yang sudah ada.
+2. [x] Tambahkan operasi file lokal: `salin_berkas` (cp), `salin_direktori` (cp -r), `pindahkan`, `ganti_nama`, `hapus_berkas`, `hapus_direktori_bertingkat`, `jelajahi_direktori`, `berkas_sementara`, dan pemeriksaan metadata/izin sesuai OS. Sediakan pilihan overwrite eksplisit, perlindungan symlink, dan error jelas. (modul `berkas`; menghapus satu berkas memakai builtin `hapus_berkas` yang sudah ada; `info()` membaca mode/baca-saja, mengubah izin belum)
+3. [ ] Sediakan **download berkas HTTP/HTTPS**: fungsi target `unduh(url, tujuan, opsi)` dengan streaming (tanpa menampung semua data ke RAM), timeout, batas ukuran, progress callback jika aman, cancel, resume `Range` jika didukung server, redirect terkontrol, verifikasi TLS, checksum SHA-256 opsional, serta file sementara + atomic rename untuk mencegah file parsial. Bergantung pada HTTPS aman Fase 11. (sebagian: `jaringan.unduh` dengan streaming, batas waktu per operasi, `maks_ukuran`, kemajuan + batal, pengalihan terkontrol, TLS terverifikasi, SHA-256 dan rename atomik selesai; resume `Range`, batas waktu connect/total dan chunked belum)
 4. [ ] Implementasikan **FTP/FTPS client** dengan daftar direktori, upload/download, rename/hapus, passive mode dan timeout. FTP plaintext hanya untuk kompatibilitas dan harus diberi peringatan nyata; **FTPS dengan sertifikat terverifikasi** menjadi pilihan aman. FTP/FTPS **bukan** SFTP.
 5. [ ] Implementasikan **SSH client** memakai pustaka SSH terawat (mis. libssh2/libssh dengan review lisensi): koneksi, eksekusi perintah jarak jauh, exit status/stdout/stderr terpisah, autentikasi kunci dan password secara aman, timeout serta batas output; **validasi host key wajib secara default** (known_hosts/pinning), bukan auto-accept host tak dikenal.
 6. [ ] Tambahkan **SFTP** di atas SSH untuk list/upload/download/rename/hapus, streaming file besar, operasi path aman, transfer atomik jika server mendukung; sediakan utilitas **SCP hanya bila dibutuhkan** dan jangan menyamakannya dengan perintah cp lokal.
-7. [ ] Batasi fitur jaringan/file pada mode sandbox dan dokumentasikan kemampuan/profil izin secara eksplisit. Jangan eksekusi perintah shell otomatis untuk mengimplementasikan protokol; gunakan library native yang teruji.
+7. [ ] Batasi fitur jaringan/file pada mode sandbox dan dokumentasikan kemampuan/profil izin secara eksplisit. Jangan eksekusi perintah shell otomatis untuk mengimplementasikan protokol; gunakan library native yang teruji. (sebagian: operasi `berkas` yang membuat/memindah/menghapus dan `unduh` ditolak di `--sandbox`, diuji `tests/sandbox.sh`)
 8. [ ] Uji server dummy lokal dan container terisolasi untuk FTP, FTPS, SSH dan SFTP: auth salah, host key berubah, sertifikat kedaluwarsa, file besar, putus di tengah transfer, path traversal, symlink, kuota, timeout, penggunaan memori dan clean-up lintas platform. Pastikan tidak ada secret di log/error.
-9. [ ] Tambahkan contoh `.idk` untuk salin direktori, unduh file dengan checksum, remote command dan backup lewat SFTP; perbarui panduan API, CHANGELOG, Docker/installer serta matriks dependensi Windows/Linux/macOS.
+9. [ ] Tambahkan contoh `.idk` untuk salin direktori, unduh file dengan checksum, remote command dan backup lewat SFTP; perbarui panduan API, CHANGELOG, Docker/installer serta matriks dependensi Windows/Linux/macOS. (sebagian: contoh salin direktori dan unduhan berchecksum di panduan §2.33–2.34; remote command/SFTP menunggu langkah 5–6)
 
 **API target ilustratif (belum tersedia):** `berkas.salin("a.txt", "cadangan/a.txt")`; `jaringan.unduh("https://contoh.invalid/arsip.zip", "arsip.zip")`; `ssh.sambung(host, pengguna, kunci_privat)`; `sftp.unggah("lokal.txt", "/aman/lokal.txt")`. Nama dan desain final diputuskan pada dokumen rencana.
 
@@ -996,7 +996,7 @@ kalkulator-indonesiaku/
 | MySQL Database | ✅ SQLite, prepared parameters dasar | MySQL/MariaDB/PostgreSQL, transaksi, query berparameter, migrasi, error terstruktur | 10 |
 | PHP XML | 🟨 V1 `pustaka/xml.idk` (diaudit di `docs/ANALISIS/KATALOG_API_DAN_GAP_WEB.md`) | Parser XML aman, traversal DOM/SAX/streaming, pembuatan XML, namespace, encoding, pembatasan resource, **disable external entities/DTD by default** untuk mencegah XXE | 19 |
 | PHP AJAX | ✅ respons JSON dasar, REST server demo | Endpoint JSON produksi, query/form request, pagination/filter/search, CORS aman, status/headers, validation; browser memakai fetch JavaScript standar, tidak memerlukan sintaks AJAX khusus di bahasa | 11, 13, 19 |
-| PHP Filesystem/Directory | ✅ baca/tulis berkas dan jalur dasar | Copy/move/recursive, glob, metadata, permission, temporary file, streaming, upload/download, path safety | 17 |
+| PHP Filesystem/Directory | 🟨 baca/tulis berkas, jalur, copy/move/rename/recursive, temporary file, metadata, unduhan streaming (modul `berkas`, `jaringan.unduh`) | Copy/move/recursive, glob, metadata, permission, temporary file, streaming, upload/download, path safety | 17 |
 | PHP FTP | ❌ belum didukung | FTP/FTPS, SFTP/SSH dan validasi host key/TLS | 17 |
 | PHP Security / Filters / Hash | ✅ hash SHA/MD5 dan sebagian sandbox; belum AEAD/password hashing modern | CSPRNG, AEAD, Argon2id, HMAC, input validators, XSS/CSRF, TLS, sandbox dan runtime memory safety | 13, 18 |
 | PHP Reference | ✅ pustaka standar saat ini | Dokumentasi API terindeks per kategori, lengkap dengan parameter/tipe, return, exceptions, contoh runnable, batas platform dan peringatan keamanan | 19 |

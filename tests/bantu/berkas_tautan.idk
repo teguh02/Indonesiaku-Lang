@@ -1,0 +1,35 @@
+# Dipakai tests/berkas_tautan.sh (symlink POSIX) dan
+# tests/test_berkas_windows.ps1 (junction Windows). IDK_DIR berisi:
+#   pohon/a.txt, pohon/tautan -> luar, luar/penting.txt, akar_tautan -> pohon
+# Operasi pohon tidak boleh mengikuti tautan.
+
+impor berkas
+
+fungsi jalur_bersih(j) {
+    kembalikan ganti(j, "\\", "/")
+}
+
+variabel D = jalur_bersih(ambil_lingkungan("IDK_DIR"))
+
+fungsi rel(t) {
+    kembalikan ganti(jalur_bersih(t), D + "/", "")
+}
+
+fungsi galat(f) {
+    coba {
+        f()
+        kembalikan "(tidak gagal)"
+    } kecuali GalatOS sebagai e {
+        kembalikan rel(e.pesan)
+    }
+}
+
+variabel j = berkas.jelajahi_direktori(D + "/pohon")
+cetak("jelajahi    :", panjang(j), j[0][1], j[0][2])
+cetak("info tautan :", berkas.info(D + "/pohon/tautan")["jenis"])
+cetak("salin       :", galat(fungsi() { berkas.salin_direktori(D + "/pohon", D + "/salinan") }))
+berkas.salin_direktori(D + "/pohon", D + "/salinan2", lewati_tautan=benar)
+cetak("salin lewati:", isi_direktori(D + "/salinan2"))
+cetak("akar tautan :", galat(fungsi() { berkas.hapus_direktori_bertingkat(D + "/akar_tautan") }))
+berkas.hapus_direktori_bertingkat(D + "/pohon")
+cetak("hapus pohon :", isi_direktori(D + "/luar"), baca_semua(D + "/luar/penting.txt"))

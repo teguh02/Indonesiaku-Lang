@@ -1,0 +1,10 @@
+# Badan biner bersama server dan klien tests/unduh_server.sh: 300 KB yang
+# DIAWALI "\r\n\r\n" dan memuat semua nilai byte 0..255, supaya pemisahan
+# kepala/badan per karakter (bukan per byte) dan penulisan non-UTF-8 ketahuan.
+fungsi data_unduh() {
+    variabel b = [13, 10, 13, 10, 255, 0, 192, 128]
+    untuk i dalam rentang(300000) {
+        b.tambah((i * 7 + i // 256) % 256)
+    }
+    kembalikan b
+}

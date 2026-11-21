@@ -1,0 +1,29 @@
+salin       : benar
+sha256 sama : benar
+tanpa timpa :
+  GalatOS: salin_berkas(): 'salinan ☕.txt' sudah ada
+ke diri sendiri:
+  GalatOS: salin_berkas(): 'catatan.txt' berkas yang sama
+asal hilang :
+  GalatOS: salin_berkas(): 'hilang.txt' tidak ada
+timpa       : versi baru
+pohon setelah salin_direktori:
+  . ["cadangan", "proyek"] ["baru.txt", "catatan.txt", "salinan ☕.txt"]
+  cadangan ["src"] ["README"]
+  cadangan/src [] ["utama.idk"]
+  proyek ["src"] ["README"]
+  proyek/src [] ["utama.idk"]
+salin ke dalam dirinya:
+  GalatOS: salin_direktori(): 'proyek/src/lagi' berada di dalam 'proyek'
+tujuan direktori:
+  GalatOS: ganti_nama(): 'proyek' adalah direktori
+info        : berkas 10 salah angka
+info dir    : direktori
+sementara   : laporan- .csv 28 0
+awalan jahat:
+  GalatNilai: berkas_sementara(): awalan tidak boleh memuat pemisah jalur: "../kabur-"
+pohon akhir:
+  . ["cadangan", "src-lama"] ["catatan.txt", "salinan ☕.txt"]
+  cadangan [] ["README", "lama.txt"]
+  src-lama [] ["utama.idk"]
+bersih      : info(): '<d>' tidak ada

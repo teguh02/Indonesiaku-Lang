@@ -36,6 +36,7 @@
 #include "memory.h"
 #include "sistem.h"
 #include "vm.h"
+#include "mbedtls/sha256.h"
 
 #define KELUARAN_MAKS (64u * 1024u * 1024u)   // per stream captured from a child
 
@@ -85,6 +86,10 @@ typedef enum {
     ALASAN_AKSES_DITOLAK,
     ALASAN_SUDAH_ADA,
     ALASAN_TIDAK_KOSONG,
+    ALASAN_ADALAH_DIREKTORI,
+    ALASAN_BERKAS_SAMA,
+    ALASAN_TAUTAN,
+    ALASAN_BEDA_PERANGKAT,
     ALASAN_LAIN
 } Alasan;
 
@@ -95,6 +100,10 @@ static const char* teksAlasan(Alasan a) {
         case ALASAN_AKSES_DITOLAK: return "akses ditolak";
         case ALASAN_SUDAH_ADA: return "sudah ada";
         case ALASAN_TIDAK_KOSONG: return "direktori tidak kosong";
+        case ALASAN_ADALAH_DIREKTORI: return "adalah direktori";
+        case ALASAN_BERKAS_SAMA: return "berkas yang sama";
+        case ALASAN_TAUTAN: return "tautan simbolik";
+        case ALASAN_BEDA_PERANGKAT: return "beda perangkat";
         default: return "galat sistem";
     }
 }
@@ -112,6 +121,10 @@ static Alasan alasanTerakhir(void) {
         case ERROR_FILE_EXISTS:
             return ALASAN_SUDAH_ADA;
         case ERROR_DIR_NOT_EMPTY: return ALASAN_TIDAK_KOSONG;
+        case ERROR_NOT_SAME_DEVICE: return ALASAN_BEDA_PERANGKAT;
+        case ERROR_SHARING_VIOLATION:
+        case ERROR_LOCK_VIOLATION:
+            return ALASAN_AKSES_DITOLAK;
         default: return ALASAN_LAIN;
     }
 #else
@@ -123,6 +136,8 @@ static Alasan alasanTerakhir(void) {
             return ALASAN_AKSES_DITOLAK;
         case EEXIST: return ALASAN_SUDAH_ADA;
         case ENOTEMPTY: return ALASAN_TIDAK_KOSONG;
+        case EISDIR: return ALASAN_ADALAH_DIREKTORI;
+        case EXDEV: return ALASAN_BEDA_PERANGKAT;
         default: return ALASAN_LAIN;
     }
 #endif
@@ -761,6 +776,458 @@ Value nativeFnInfoJalur(int argCount, Value* args) {
     writeValueArray(&hasil->items, NUMBER_VAL(waktu));
     pop();
     return OBJ_VAL(hasil);
+}
+
+// ---------------------------------------------------------------------------
+// File operations for pustaka/berkas.idk and pustaka/jaringan.idk (Fase 17)
+//
+// All of these are internal ('_' prefix). Each takes the PUBLIC function
+// name as its last argument so errors read `salin_berkas(): 'x' sudah ada`
+// instead of naming the native. Everything that creates, moves or deletes is
+// refused under --sandbox; tree operations are refused already because they
+// need isi_direktori().
+// ---------------------------------------------------------------------------
+
+// Public name for messages: the last argument when it is a teks, else `bawaan`.
+static const char* namaPublik(int argCount, Value* args, int index, const char* bawaan) {
+    if (index < argCount && IS_STRING(args[index])) return AS_STRING(args[index])->chars;
+    return bawaan;
+}
+
+// What is at `jalur` WITHOUT following a link there: 0 nothing, 1 file,
+// 2 directory, 3 something else, 4 the path itself is a symbolic link
+// (POSIX) or reparse point (Windows symlink/junction), -1 error. `mode` is
+// the POSIX permission bits (-1 on Windows); `bacaSaja` the read-only flag.
+static int jenisTanpaIkut(const char* jalur, uint64_t* ukuran, double* waktu,
+                          int* mode, bool* bacaSaja, Alasan* alasan) {
+#ifdef _WIN32
+    wchar_t* w = keLebarJalur(jalur);
+    if (w == NULL) { *alasan = ALASAN_LAIN; return -1; }
+    // GetFileAttributesExW reports the reparse point itself, not its target.
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    BOOL ok = GetFileAttributesExW(w, GetFileExInfoStandard, &data);
+    free(w);
+    if (!ok) {
+        Alasan a = alasanTerakhir();
+        if (a == ALASAN_TIDAK_ADA || a == ALASAN_BUKAN_DIREKTORI) return 0;
+        *alasan = a;
+        return -1;
+    }
+    *ukuran = ((uint64_t)data.nFileSizeHigh << 32) | data.nFileSizeLow;
+    uint64_t ft = ((uint64_t)data.ftLastWriteTime.dwHighDateTime << 32) |
+                  data.ftLastWriteTime.dwLowDateTime;
+    *waktu = ((double)ft - 116444736000000000.0) / 1e7;
+    *mode = -1;
+    *bacaSaja = (data.dwFileAttributes & FILE_ATTRIBUTE_READONLY) != 0;
+    if (data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) return 4;
+    return (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? 2 : 1;
+#else
+    struct stat st;
+    if (lstat(jalur, &st) != 0) {
+        Alasan a = alasanTerakhir();
+        if (a == ALASAN_TIDAK_ADA || a == ALASAN_BUKAN_DIREKTORI) return 0;
+        *alasan = a;
+        return -1;
+    }
+    *ukuran = (uint64_t)st.st_size;
+    *waktu = (double)st.st_mtime;
+    *mode = (int)(st.st_mode & 07777);
+    *bacaSaja = (st.st_mode & 0222) == 0;
+    if (S_ISLNK(st.st_mode)) return 4;
+    if (S_ISDIR(st.st_mode)) return 2;
+    if (S_ISREG(st.st_mode)) return 1;
+    return 3;
+#endif
+}
+
+// jenisTanpaIkut() without the details nobody asked for.
+static int jenisSaja(const char* jalur, Alasan* alasan) {
+    uint64_t ukuran;
+    double waktu;
+    int mode;
+    bool bacaSaja;
+    return jenisTanpaIkut(jalur, &ukuran, &waktu, &mode, &bacaSaja, alasan);
+}
+
+static bool argumenDua(int argCount, Value* args, int perlu, const char* nama,
+                       const char** a, const char** b) {
+    if (argCount != perlu) {
+        nativeRaiseKelas(vm.galatTipe, "%s() memerlukan %d argumen", nama, perlu);
+        return false;
+    }
+    if (!teksArg(argCount, args, 0, nama, a)) return false;
+    if (b != NULL && !teksArg(argCount, args, 1, nama, b)) return false;
+    return true;
+}
+
+// _info_lengkap(jalur) -> (jenis, ukuran, waktu_ubah, mode, baca_saja) without
+// following a link at `jalur`; jenis is "berkas", "direktori", "tautan" or
+// "lain", mode is kosong on Windows. kosong when nothing is there.
+Value nativeFnInfoLengkap(int argCount, Value* args) {
+    const char* jalur;
+    if (!argumenDua(argCount, args, 1, "_info_lengkap", &jalur, NULL)) return KOSONG_VAL;
+    uint64_t ukuran = 0;
+    double waktu = 0;
+    int mode = -1;
+    bool bacaSaja = false;
+    Alasan alasan = ALASAN_LAIN;
+    int jenis = jenisTanpaIkut(jalur, &ukuran, &waktu, &mode, &bacaSaja, &alasan);
+    if (jenis < 0) {
+        galatOS("info", jalur, alasan);
+        return KOSONG_VAL;
+    }
+    if (jenis == 0) return KOSONG_VAL;
+    const char* nama = jenis == 1 ? "berkas" : jenis == 2 ? "direktori" : jenis == 4 ? "tautan" : "lain";
+    ObjTuple* hasil = newTuple();
+    push(OBJ_VAL(hasil));
+    Value v = teks(nama, strlen(nama));
+    push(v);
+    writeValueArray(&hasil->items, v);
+    pop();
+    writeValueArray(&hasil->items, INT_VAL(ukuran > (uint64_t)INT64_MAX ? INT64_MAX : (int64_t)ukuran));
+    writeValueArray(&hasil->items, NUMBER_VAL(waktu));
+    writeValueArray(&hasil->items, mode < 0 ? KOSONG_VAL : INT_VAL(mode));
+    writeValueArray(&hasil->items, BOOL_VAL(bacaSaja));
+    pop();
+    return OBJ_VAL(hasil);
+}
+
+// _ganti_nama(asal, tujuan, timpa, nama) -> benar, or salah when the two
+// paths are on different filesystems (the caller may then copy + delete).
+// A directory at `tujuan` is always refused: POSIX would replace an empty
+// one and Windows never does, and a rename that silently means "move into"
+// guesses the result path.
+Value nativeFnGantiNama(int argCount, Value* args) {
+    const char* nama = namaPublik(argCount, args, 3, "ganti_nama");
+    const char *asal, *tujuan;
+    if (!argumenDua(argCount, args, 4, nama, &asal, &tujuan)) return KOSONG_VAL;
+    if (ditolakSandbox(nama)) return KOSONG_VAL;
+    bool timpa = !isFalsey(args[2]);
+    Alasan alasan = ALASAN_LAIN;
+    int ja = jenisSaja(asal, &alasan);
+    if (ja <= 0) {
+        galatOS(nama, asal, ja == 0 ? ALASAN_TIDAK_ADA : alasan);
+        return KOSONG_VAL;
+    }
+    int jt = jenisSaja(tujuan, &alasan);
+    if (jt < 0) {
+        galatOS(nama, tujuan, alasan);
+        return KOSONG_VAL;
+    }
+    if (jt == 2) {
+        galatOS(nama, tujuan, ALASAN_ADALAH_DIREKTORI);
+        return KOSONG_VAL;
+    }
+    if (jt > 0 && !timpa) {
+        galatOS(nama, tujuan, ALASAN_SUDAH_ADA);
+        return KOSONG_VAL;
+    }
+#ifdef _WIN32
+    wchar_t* wa = keLebarJalur(asal);
+    wchar_t* wt = keLebarJalur(tujuan);
+    BOOL ok = wa != NULL && wt != NULL &&
+              MoveFileExW(wa, wt, timpa ? MOVEFILE_REPLACE_EXISTING : 0);
+    Alasan a = ok ? ALASAN_LAIN : alasanTerakhir();
+    free(wa);
+    free(wt);
+#else
+    bool ok = rename(asal, tujuan) == 0;
+    Alasan a = ok ? ALASAN_LAIN : alasanTerakhir();
+#endif
+    if (ok) return BOOL_VAL(true);
+    if (a == ALASAN_BEDA_PERANGKAT) return BOOL_VAL(false);
+    galatOS(nama, a == ALASAN_SUDAH_ADA ? tujuan : asal, a);
+    return KOSONG_VAL;
+}
+
+#ifdef _WIN32
+// Same file on disk (volume serial + file index), not the same path text.
+static bool berkasSamaWin(const wchar_t* a, const wchar_t* b) {
+    HANDLE ha = CreateFileW(a, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                            NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (ha == INVALID_HANDLE_VALUE) return false;
+    HANDLE hb = CreateFileW(b, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                            NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (hb == INVALID_HANDLE_VALUE) { CloseHandle(ha); return false; }
+    BY_HANDLE_FILE_INFORMATION ia, ib;
+    bool sama = GetFileInformationByHandle(ha, &ia) && GetFileInformationByHandle(hb, &ib) &&
+                ia.dwVolumeSerialNumber == ib.dwVolumeSerialNumber &&
+                ia.nFileIndexHigh == ib.nFileIndexHigh && ia.nFileIndexLow == ib.nFileIndexLow;
+    CloseHandle(ha);
+    CloseHandle(hb);
+    return sama;
+}
+#endif
+
+// _salin_berkas(asal, tujuan, timpa, nama) -> jumlah byte yang disalin.
+// Follows a link at `asal` (like cp), never at `tujuan`: writing through a
+// link there could land anywhere. Copying a file onto itself is refused
+// BEFORE the destination is truncated. Streams in 64 KB blocks; on failure
+// the half-written destination is removed. Permission bits (POSIX) and
+// attributes (Windows, via CopyFileW) are copied.
+Value nativeFnSalinBerkas(int argCount, Value* args) {
+    const char* nama = namaPublik(argCount, args, 3, "salin_berkas");
+    const char *asal, *tujuan;
+    if (!argumenDua(argCount, args, 4, nama, &asal, &tujuan)) return KOSONG_VAL;
+    if (ditolakSandbox(nama)) return KOSONG_VAL;
+    bool timpa = !isFalsey(args[2]);
+
+    uint64_t ukuran = 0;
+    double waktu = 0;
+    Alasan alasan = ALASAN_LAIN;
+    int ja = jenisJalur(asal, &ukuran, &waktu, &alasan);   // follows a link at asal
+    if (ja <= 0) {
+        galatOS(nama, asal, ja == 0 ? ALASAN_TIDAK_ADA : alasan);
+        return KOSONG_VAL;
+    }
+    if (ja == 2) {
+        galatOS(nama, asal, ALASAN_ADALAH_DIREKTORI);
+        return KOSONG_VAL;
+    }
+    int jt = jenisSaja(tujuan, &alasan);
+    if (jt < 0) {
+        galatOS(nama, tujuan, alasan);
+        return KOSONG_VAL;
+    }
+    if (jt == 4) {
+        galatOS(nama, tujuan, ALASAN_TAUTAN);
+        return KOSONG_VAL;
+    }
+    if (jt == 2) {
+        galatOS(nama, tujuan, ALASAN_ADALAH_DIREKTORI);
+        return KOSONG_VAL;
+    }
+
+#ifdef _WIN32
+    wchar_t* wa = keLebarJalur(asal);
+    wchar_t* wt = keLebarJalur(tujuan);
+    if (wa == NULL || wt == NULL) {
+        free(wa);
+        free(wt);
+        galatOS(nama, asal, ALASAN_LAIN);
+        return KOSONG_VAL;
+    }
+    if (jt > 0 && berkasSamaWin(wa, wt)) {
+        free(wa);
+        free(wt);
+        galatOS(nama, tujuan, ALASAN_BERKAS_SAMA);
+        return KOSONG_VAL;
+    }
+    if (jt > 0 && !timpa) {
+        free(wa);
+        free(wt);
+        galatOS(nama, tujuan, ALASAN_SUDAH_ADA);
+        return KOSONG_VAL;
+    }
+    BOOL ok = CopyFileW(wa, wt, timpa ? FALSE : TRUE);
+    Alasan a = ok ? ALASAN_LAIN : alasanTerakhir();
+    free(wa);
+    free(wt);
+    if (!ok) {
+        galatOS(nama, tujuan, a);
+        return KOSONG_VAL;
+    }
+    return INT_VAL(ukuran > (uint64_t)INT64_MAX ? INT64_MAX : (int64_t)ukuran);
+#else
+    int masuk = open(asal, O_RDONLY);
+    if (masuk < 0) {
+        galatOS(nama, asal, alasanTerakhir());
+        return KOSONG_VAL;
+    }
+    struct stat sa;
+    if (fstat(masuk, &sa) != 0) {
+        Alasan a = alasanTerakhir();
+        close(masuk);
+        galatOS(nama, asal, a);
+        return KOSONG_VAL;
+    }
+    if (jt > 0) {
+        struct stat st;
+        if (stat(tujuan, &st) == 0 && st.st_dev == sa.st_dev && st.st_ino == sa.st_ino) {
+            close(masuk);
+            galatOS(nama, tujuan, ALASAN_BERKAS_SAMA);
+            return KOSONG_VAL;
+        }
+        if (!timpa) {
+            close(masuk);
+            galatOS(nama, tujuan, ALASAN_SUDAH_ADA);
+            return KOSONG_VAL;
+        }
+    }
+    int bendera = O_WRONLY | O_CREAT | (timpa ? O_TRUNC : O_EXCL);
+#ifdef O_NOFOLLOW
+    bendera |= O_NOFOLLOW;
+#endif
+    int keluar = open(tujuan, bendera, 0600);
+    if (keluar < 0) {
+        Alasan a = alasanTerakhir();
+        close(masuk);
+        galatOS(nama, tujuan, a);
+        return KOSONG_VAL;
+    }
+    static char buf[65536];
+    int64_t total = 0;
+    bool gagal = false;
+    Alasan a = ALASAN_LAIN;
+    for (;;) {
+        ssize_t n = read(masuk, buf, sizeof(buf));
+        if (n < 0) {
+            if (errno == EINTR) continue;
+            a = alasanTerakhir();
+            gagal = true;
+            break;
+        }
+        if (n == 0) break;
+        ssize_t tulis = 0;
+        while (tulis < n) {
+            ssize_t m = write(keluar, buf + tulis, (size_t)(n - tulis));
+            if (m < 0) {
+                if (errno == EINTR) continue;
+                a = alasanTerakhir();
+                gagal = true;
+                break;
+            }
+            tulis += m;
+        }
+        if (gagal) break;
+        total += n;
+    }
+    if (!gagal && fchmod(keluar, sa.st_mode & 0777) != 0) {
+        a = alasanTerakhir();
+        gagal = true;
+    }
+    if (close(keluar) != 0 && !gagal) {
+        a = alasanTerakhir();
+        gagal = true;
+    }
+    close(masuk);
+    if (gagal) {
+        unlink(tujuan);
+        galatOS(nama, tujuan, a);
+        return KOSONG_VAL;
+    }
+    return INT_VAL(total);
+#endif
+}
+
+// _buat_eksklusif(jalur, direktori, nama) -> benar when this call created
+// it, salah when something already exists there (the caller picks another
+// random name). Files get 0600 and directories 0700 on POSIX, as mkstemp/
+// mkdtemp do, so other users cannot read a temporary file.
+Value nativeFnBuatEksklusif(int argCount, Value* args) {
+    const char* nama = namaPublik(argCount, args, 2, "berkas_sementara");
+    const char* jalur;
+    if (!argumenDua(argCount, args, 3, nama, &jalur, NULL)) return KOSONG_VAL;
+    if (ditolakSandbox(nama)) return KOSONG_VAL;
+    bool direktori = !isFalsey(args[1]);
+#ifdef _WIN32
+    wchar_t* w = keLebarJalur(jalur);
+    BOOL ok = FALSE;
+    if (w != NULL) {
+        if (direktori) {
+            ok = CreateDirectoryW(w, NULL);
+        } else {
+            HANDLE h = CreateFileW(w, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+            ok = h != INVALID_HANDLE_VALUE;
+            if (ok) CloseHandle(h);
+        }
+    }
+    Alasan a = ok ? ALASAN_LAIN : alasanTerakhir();
+    free(w);
+#else
+    bool ok;
+    if (direktori) {
+        ok = mkdir(jalur, 0700) == 0;
+    } else {
+        int fd = open(jalur, O_WRONLY | O_CREAT | O_EXCL, 0600);
+        ok = fd >= 0;
+        if (ok) close(fd);
+    }
+    Alasan a = ok ? ALASAN_LAIN : alasanTerakhir();
+#endif
+    if (ok) return BOOL_VAL(true);
+    if (a == ALASAN_SUDAH_ADA) return BOOL_VAL(false);
+    galatOS(nama, jalur, a);
+    return KOSONG_VAL;
+}
+
+// _hapus_tautan(jalur, nama): remove the link itself, never its target. On
+// Windows a directory symlink/junction is removed with RemoveDirectoryW,
+// which deletes the reparse point and leaves the target's contents alone.
+Value nativeFnHapusTautan(int argCount, Value* args) {
+    const char* nama = namaPublik(argCount, args, 1, "hapus_direktori_bertingkat");
+    const char* jalur;
+    if (!argumenDua(argCount, args, 2, nama, &jalur, NULL)) return KOSONG_VAL;
+    if (ditolakSandbox(nama)) return KOSONG_VAL;
+    Alasan alasan = ALASAN_LAIN;
+    int jenis = jenisSaja(jalur, &alasan);
+    if (jenis != 4) {
+        galatOS(nama, jalur, jenis == 0 ? ALASAN_TIDAK_ADA : jenis < 0 ? alasan : ALASAN_LAIN);
+        return KOSONG_VAL;
+    }
+#ifdef _WIN32
+    wchar_t* w = keLebarJalur(jalur);
+    BOOL ok = FALSE;
+    if (w != NULL) {
+        DWORD attr = GetFileAttributesW(w);
+        ok = (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY))
+                 ? RemoveDirectoryW(w)
+                 : DeleteFileW(w);
+    }
+    Alasan a = ok ? ALASAN_LAIN : alasanTerakhir();
+    free(w);
+#else
+    bool ok = unlink(jalur) == 0;
+    Alasan a = ok ? ALASAN_LAIN : alasanTerakhir();
+#endif
+    if (!ok) galatOS(nama, jalur, a);
+    return KOSONG_VAL;
+}
+
+// _sha256_berkas(jalur, nama) -> SHA-256 heksa of the file contents, read in
+// 64 KB blocks so a multi-gigabyte download is never held in memory.
+Value nativeFnSha256Berkas(int argCount, Value* args) {
+    const char* nama = namaPublik(argCount, args, 1, "sha256");
+    const char* jalur;
+    if (!argumenDua(argCount, args, 2, nama, &jalur, NULL)) return KOSONG_VAL;
+    uint64_t ukuran = 0;
+    double waktu = 0;
+    Alasan alasan = ALASAN_LAIN;
+    int jenis = jenisJalur(jalur, &ukuran, &waktu, &alasan);
+    if (jenis <= 0 || jenis == 2) {
+        galatOS(nama, jalur, jenis == 0 ? ALASAN_TIDAK_ADA : jenis == 2 ? ALASAN_ADALAH_DIREKTORI : alasan);
+        return KOSONG_VAL;
+    }
+    FILE* f = sistemBukaBerkas(jalur, "rb");
+    if (f == NULL) {
+        galatOS(nama, jalur, ALASAN_AKSES_DITOLAK);
+        return KOSONG_VAL;
+    }
+    mbedtls_sha256_context ctx;
+    mbedtls_sha256_init(&ctx);
+    mbedtls_sha256_starts(&ctx, 0);
+    static unsigned char buf[65536];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0) {
+        mbedtls_sha256_update(&ctx, buf, n);
+    }
+    bool gagal = ferror(f) != 0;
+    fclose(f);
+    unsigned char digest[32];
+    mbedtls_sha256_finish(&ctx, digest);
+    mbedtls_sha256_free(&ctx);
+    if (gagal) {
+        galatOS(nama, jalur, ALASAN_LAIN);
+        return KOSONG_VAL;
+    }
+    static const char heksa[] = "0123456789abcdef";
+    char hasil[65];
+    for (int i = 0; i < 32; i++) {
+        hasil[i * 2] = heksa[digest[i] >> 4];
+        hasil[i * 2 + 1] = heksa[digest[i] & 15];
+    }
+    hasil[64] = '\0';
+    return teks(hasil, 64);
 }
 
 // Copy `src` into `out` when it fits. The interpreter path is only useful

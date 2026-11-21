@@ -855,6 +855,16 @@ void initVM() {
     defineNative("_jalur_nyata", nativeFnJalurNyata);
     defineNative("_adalah_tautan", nativeFnAdalahTautan);
     defineNative("_jalankan_proses", nativeFnJalankanProses);
+    // Transfer berkas (Fase 17 V1). Internal: dibungkus pustaka/berkas.idk
+    // dan pustaka/jaringan.idk. Yang membuat/memindah/menghapus ditolak di
+    // --sandbox.
+    defineNative("_info_lengkap", nativeFnInfoLengkap);
+    defineNative("_ganti_nama", nativeFnGantiNama);
+    defineNative("_salin_berkas", nativeFnSalinBerkas);
+    defineNative("_buat_eksklusif", nativeFnBuatEksklusif);
+    defineNative("_hapus_tautan", nativeFnHapusTautan);
+    defineNative("_sha256_berkas", nativeFnSha256Berkas);
+    defineNative("_soket_baca_kepala", nativeFnSoketBacaKepala);
 
     // Atribut dinamis (setattr/getattr/hasattr).
     defineNative("atur_atribut", nativeFnAturAtribut);
