@@ -1,0 +1,5 @@
+kripto.aead_enkripsi(): kunci harus 32 bita, bukan 12
+[baris 207, kolom 83] dalam aead_enkripsi()
+    …a, _bita_kunci(kunci), nonce, pesan, aad)
+                                             ^
+[baris 3, kolom 94] dalam skrip

@@ -1,0 +1,172 @@
+# Perilaku modul kripto: putaran enkripsi, deteksi pemalsuan, CSPRNG,
+# kunci tersembunyi, dan hash kata sandi. Keluaran deterministik: nilai acak
+# tidak pernah dicetak, hanya sifat-sifatnya.
+impor kripto
+impor base64
+dari kripto impor GalatKripto
+
+# gagal(f) -> teks pesan GalatKripto bila f() gagal, atau "LOLOS" bila tidak.
+fungsi gagal(f) {
+    coba {
+        f()
+    } kecuali GalatKripto sebagai e {
+        kembalikan e.pesan
+    }
+    kembalikan "LOLOS"
+}
+
+fungsi balik_bit(data, i) {
+    variabel salinan = daftar(data)
+    salinan[i] = salinan[i] ^ 1
+    kembalikan salinan
+}
+
+fungsi uji_putaran() {
+    cetak("== putaran enkripsi ==")
+    variabel k = kripto.buat_kunci()
+    variabel kemasan = kripto.enkripsi(k, "halo, dunia — ünïcödé", "id-pengguna:42")
+    cetak("panjang kemasan:", panjang(kemasan), "(1 + 12 + pesan + 16)")
+    cetak("bita versi:", kemasan[0])
+    cetak("dekripsi:", kripto.dekripsi_teks(k, kemasan, "id-pengguna:42"))
+    variabel lagi = kripto.enkripsi(k, "halo, dunia — ünïcödé", "id-pengguna:42")
+    cetak("nonce berbeda tiap panggilan:", kemasan[1:13] != lagi[1:13])
+    cetak("pesan kosong:", kripto.dekripsi(k, kripto.enkripsi(k, "")))
+    variabel teks_b64 = base64.enkode(kemasan)
+    cetak("lewat base64:", kripto.dekripsi_teks(k, base64.dekode(teks_b64), "id-pengguna:42"))
+    cetak("kunci bita mentah:", kripto.dekripsi_teks(k.bita(), kemasan, "id-pengguna:42"))
+}
+
+fungsi uji_pemalsuan() {
+    cetak("== pemalsuan ditolak ==")
+    variabel k = kripto.buat_kunci()
+    variabel c = kripto.enkripsi(k, "transfer 100", "aad")
+    cetak("versi diubah:", gagal(fungsi() { kripto.dekripsi(k, balik_bit(c, 0), "aad") }))
+    cetak("nonce diubah:", gagal(fungsi() { kripto.dekripsi(k, balik_bit(c, 5), "aad") }))
+    cetak("sandi diubah:", gagal(fungsi() { kripto.dekripsi(k, balik_bit(c, 14), "aad") }))
+    cetak("tag diubah:", gagal(fungsi() { kripto.dekripsi(k, balik_bit(c, panjang(c) - 1), "aad") }))
+    cetak("aad salah:", gagal(fungsi() { kripto.dekripsi(k, c, "AAD") }))
+    cetak("kunci salah:", gagal(fungsi() { kripto.dekripsi(kripto.buat_kunci(), c, "aad") }))
+    cetak("terpotong:", gagal(fungsi() { kripto.dekripsi(k, c[:20], "aad") }))
+    cetak("kosong:", gagal(fungsi() { kripto.dekripsi(k, [], "aad") }))
+}
+
+fungsi uji_eksplisit() {
+    cetak("== AEAD nonce eksplisit ==")
+    untuk alg dalam [kripto.AES_256_GCM, kripto.CHACHA20_POLY1305] {
+        variabel k = kripto.buat_kunci()
+        variabel n = kripto.nonce_acak()
+        variabel ct = kripto.aead_enkripsi(alg, k, n, "pesan", "hdr")
+        cetak(alg, "panjang:", panjang(ct), "dekripsi:",
+              kripto.aead_dekripsi(alg, k, n, ct, "hdr") == [112, 101, 115, 97, 110])
+        variabel n2 = balik_bit(n, 0)
+        cetak(alg, "nonce salah:", gagal(fungsi() { kripto.aead_dekripsi(alg, k, n2, ct, "hdr") }))
+    }
+    variabel pn = kripto.PenghitungNonce()
+    variabel a = pn.berikutnya()
+    variabel b = pn.berikutnya()
+    cetak("PenghitungNonce: panjang", panjang(a), "awalan sama", a[:4] == b[:4],
+          "ekor", a[4:], b[4:])
+    coba {
+        kripto.aead_enkripsi(kripto.AES_256_GCM, [1, 2, 3], kripto.nonce_acak(), "x")
+    } kecuali GalatNilai sebagai e {
+        cetak("kunci pendek:", e.pesan)
+    }
+    coba {
+        kripto.aead_enkripsi(kripto.AES_256_GCM, kripto.buat_kunci(), [0] * 8, "x")
+    } kecuali GalatNilai sebagai e {
+        cetak("nonce pendek:", e.pesan)
+    }
+    coba {
+        kripto.aead_enkripsi("aes-128-cbc", kripto.buat_kunci(), kripto.nonce_acak(), "x")
+    } kecuali GalatNilai sebagai e {
+        cetak("algoritme:", e.pesan)
+    }
+}
+
+fungsi uji_acak() {
+    cetak("== CSPRNG ==")
+    variabel r = kripto.acak_aman(32)
+    variabel semua_bita = benar
+    untuk b dalam r {
+        jika b < 0 atau b > 255 {
+            semua_bita = salah
+        }
+    }
+    cetak("acak_aman(32):", panjang(r), "bita, rentang sah:", semua_bita)
+    cetak("dua panggilan berbeda:", kripto.acak_aman(16) != kripto.acak_aman(16))
+    cetak("token_heksa():", panjang(kripto.token_heksa()), "karakter")
+    cetak("token_url(16):", panjang(kripto.token_url(16)), "karakter")
+    variabel dalam_batas = benar
+    variabel terlihat = himpunan()
+    untuk i dalam rentang(300) {
+        variabel v = kripto.bulat_acak_aman(6)
+        jika v < 0 atau v >= 6 {
+            dalam_batas = salah
+        }
+        terlihat.tambah(v)
+    }
+    cetak("bulat_acak_aman(6) di 0..5:", dalam_batas, "semua nilai muncul:", panjang(terlihat) == 6)
+    cetak("bulat_acak_aman(1):", kripto.bulat_acak_aman(1))
+    coba {
+        kripto.bulat_acak_aman(0)
+    } kecuali GalatNilai sebagai e {
+        cetak("batas 0:", e.pesan)
+    }
+}
+
+fungsi uji_kunci() {
+    cetak("== kunci tidak tercetak ==")
+    variabel k = kripto.buat_kunci()
+    cetak(k)
+    cetak([k])
+    cetak("f-string:", f"{k}")
+    cetak("ekspor:", panjang(k.bita()), "bita")
+    coba {
+        kripto.Kunci([1, 2])
+    } kecuali GalatNilai sebagai e {
+        cetak(e.pesan)
+    }
+}
+
+fungsi uji_sandi() {
+    cetak("== hash kata sandi ==")
+    variabel h = kripto.hash_kata_sandi("rahasia-123", iterasi=10000)
+    variabel bagian = h[:22]
+    cetak("awalan:", bagian)
+    cetak("sandi benar:", kripto.verifikasi_kata_sandi("rahasia-123", h))
+    cetak("sandi salah:", kripto.verifikasi_kata_sandi("rahasia-124", h))
+    cetak("garam unik:", kripto.hash_kata_sandi("rahasia-123", iterasi=10000) != h)
+    cetak("perlu_hash_ulang (10000 < 600000):", kripto.perlu_hash_ulang(h))
+    cetak("perlu_hash_ulang (iterasi=10000):", kripto.perlu_hash_ulang(h, iterasi=10000))
+    cetak("format rusak:", gagal(fungsi() { kripto.verifikasi_kata_sandi("x", "$md5$abc") }))
+    cetak("iterasi rusak:", gagal(fungsi() { kripto.verifikasi_kata_sandi("x", "$pbkdf2-sha256$i=abc$AAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAA") }))
+    coba {
+        kripto.hash_kata_sandi("x", iterasi=1000)
+    } kecuali GalatNilai sebagai e {
+        cetak("iterasi lemah:", e.pesan)
+    }
+    # Hash bawaan (600000 iterasi) tetap bisa diverifikasi.
+    variabel kuat = kripto.hash_kata_sandi("sandi-kuat")
+    cetak("bawaan:", kuat[:23], kripto.verifikasi_kata_sandi("sandi-kuat", kuat))
+}
+
+fungsi uji_mac() {
+    cetak("== MAC dan perbandingan waktu-tetap ==")
+    variabel k = kripto.buat_kunci()
+    variabel tag = kripto.hmac_sha256(k, "pesan")
+    cetak("verifikasi_hmac:", kripto.verifikasi_hmac(k, "pesan", tag))
+    cetak("pesan diubah:", kripto.verifikasi_hmac(k, "Pesan", tag))
+    cetak("sama_aman:", kripto.sama_aman("abc", "abc"), kripto.sama_aman("abc", "abd"),
+          kripto.sama_aman("abc", "abcd"))
+    variabel k1 = kripto.hkdf_sha256(k, 32, "garam", "enkripsi")
+    variabel k2 = kripto.hkdf_sha256(k, 32, "garam", "mac")
+    cetak("hkdf info berbeda -> kunci berbeda:", k1 != k2, panjang(k1))
+}
+
+uji_putaran()
+uji_pemalsuan()
+uji_eksplisit()
+uji_acak()
+uji_kunci()
+uji_sandi()
+uji_mac()

@@ -1,0 +1,11 @@
+HMAC-SHA-256 RFC4231 TC2 cocok
+verifikasi_hmac benar: benar
+HKDF-SHA-256 RFC5869 TC1 cocok
+HKDF-SHA-256 RFC5869 TC3 cocok
+PBKDF2-HMAC-SHA-256 RFC7914 cocok
+AES-256-GCM TC13 cocok
+AES-256-GCM TC14 cocok
+AES-256-GCM TC16 cocok
+AES-256-GCM TC16 dekripsi cocok
+ChaCha20-Poly1305 RFC8439 cocok
+ChaCha20-Poly1305 RFC8439 dekripsi cocok

@@ -1,0 +1,56 @@
+== putaran enkripsi ==
+panjang kemasan: 56 (1 + 12 + pesan + 16)
+bita versi: 1
+dekripsi: halo, dunia — ünïcödé
+nonce berbeda tiap panggilan: benar
+pesan kosong: []
+lewat base64: halo, dunia — ünïcödé
+kunci bita mentah: halo, dunia — ünïcödé
+== pemalsuan ditolak ==
+versi diubah: dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+nonce diubah: dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+sandi diubah: dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+tag diubah: dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+aad salah: dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+kunci salah: dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+terpotong: dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+kosong: dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+== AEAD nonce eksplisit ==
+aes-256-gcm panjang: 21 dekripsi: benar
+aes-256-gcm nonce salah: dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+chacha20-poly1305 panjang: 21 dekripsi: benar
+chacha20-poly1305 nonce salah: dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+PenghitungNonce: panjang 12 awalan sama benar ekor [0, 0, 0, 0, 0, 0, 0, 0] [0, 0, 0, 0, 0, 0, 0, 1]
+kunci pendek: kripto.aead_enkripsi(): kunci harus 32 bita, bukan 3
+nonce pendek: kripto.aead_enkripsi(): nonce harus 12 bita, bukan 8
+algoritme: kripto.aead_enkripsi(): algoritme 'aes-128-cbc' tidak didukung (pakai "aes-256-gcm" atau "chacha20-poly1305")
+== CSPRNG ==
+acak_aman(32): 32 bita, rentang sah: benar
+dua panggilan berbeda: benar
+token_heksa(): 64 karakter
+token_url(16): 22 karakter
+bulat_acak_aman(6) di 0..5: benar semua nilai muncul: benar
+bulat_acak_aman(1): 0
+batas 0: bulat_acak_aman: batas harus 1..2**62
+== kunci tidak tercetak ==
+<Kunci 256-bit tersembunyi>
+[<Kunci 256-bit tersembunyi>]
+f-string: <Kunci 256-bit tersembunyi>
+ekspor: 32 bita
+Kunci: harus 32 bita, bukan 2
+== hash kata sandi ==
+awalan: $pbkdf2-sha256$i=10000
+sandi benar: benar
+sandi salah: salah
+garam unik: benar
+perlu_hash_ulang (10000 < 600000): benar
+perlu_hash_ulang (iterasi=10000): salah
+format rusak: format hash kata sandi tidak dikenali
+iterasi rusak: format hash kata sandi tidak dikenali
+iterasi lemah: hash_kata_sandi: iterasi harus 10000..10000000
+bawaan: $pbkdf2-sha256$i=600000 benar
+== MAC dan perbandingan waktu-tetap ==
+verifikasi_hmac: benar
+pesan diubah: salah
+sama_aman: benar salah salah
+hkdf info berbeda -> kunci berbeda: benar 32

@@ -1,0 +1,375 @@
+# pustaka/kripto.idk - Kriptografi modern (modul `kripto`, Fase 18 V1).
+# Pemakaian:
+#     impor kripto
+#     k = kripto.buat_kunci()
+#     kemasan = kripto.enkripsi(k, "rahasia")
+#     cetak(kripto.dekripsi_teks(k, kemasan))     # rahasia
+#
+# Semua primitif berasal dari mbedTLS yang di-vendor (src/kripto.c, native
+# internal `_kripto_*`) -- TIDAK ADA algoritme yang ditulis di sini. Modul ini
+# hanya menyusun API yang aman secara default:
+#   - enkripsi() membuat nonce acak SENDIRI, jadi nonce tidak bisa dipakai ulang
+#     tanpa sengaja;
+#   - kegagalan autentikasi apa pun (tag, kunci, nonce, AAD salah, data rusak
+#     atau terpotong) -> GalatKripto dengan SATU pesan yang sama (gagal
+#     tertutup, tanpa orakel);
+#   - Kunci tidak pernah tercetak isinya.
+#
+# Bita = daftar bulat 0..255 (lihat pustaka/bita.idk). Setiap masukan "data"
+# juga menerima teks, yang dienkode UTF-8.
+
+impor bita
+impor base64
+
+AES_256_GCM = "aes-256-gcm"
+CHACHA20_POLY1305 = "chacha20-poly1305"
+
+PANJANG_KUNCI = 32
+PANJANG_NONCE = 12
+PANJANG_TAG = 16
+
+# Iterasi PBKDF2-HMAC-SHA-256 bawaan: rekomendasi OWASP (2023). Argon2id belum
+# tersedia di mbedTLS; lihat docs/RENCANA_FITUR/selesai/kriptografi_keamanan_runtime.md.
+ITERASI_SANDI = 600000
+_ITERASI_SANDI_MIN = 10000
+_ITERASI_SANDI_MAKS = 10000000
+_GARAM_SANDI = 16
+_PANJANG_HASH_SANDI = 32
+_ALG_SANDI = "pbkdf2-sha256"
+
+# Bita versi format kemasan enkripsi(): 01 = AES-256-GCM, nonce 12, tag 16.
+_VERSI_KEMASAN = 1
+
+_PESAN_GAGAL = "dekripsi gagal: data rusak, atau kunci/nonce/AAD salah"
+
+# Simpan builtin sebelum nama yang sama didefinisikan ulang di modul ini.
+_hmac_bawaan = hmac_sha256
+
+kelas GalatKripto < Galat {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Utilitas internal
+# ---------------------------------------------------------------------------
+
+fungsi _ke_bita(data, nama) {
+    variabel j = jenis(data)
+    jika j == "teks" {
+        kembalikan bita.ke_bita(data)
+    }
+    jika j == "daftar" {
+        kembalikan data
+    }
+    jika j == "tupel" {
+        kembalikan daftar(data)
+    }
+    naikkan GalatTipe(format("{}: data harus teks atau daftar bita, bukan {}", nama, j))
+}
+
+fungsi _b64_tanpa_padding(data) {
+    kembalikan ganti(base64.enkode(data), "=", "")
+}
+
+fungsi _b64_dekode(t) {
+    variabel sisa = panjang(t) % 4
+    jika sisa == 1 {
+        naikkan GalatKripto("format hash kata sandi tidak dikenali")
+    }
+    jika sisa > 0 {
+        t = t + "=" * (4 - sisa)
+    }
+    coba {
+        kembalikan base64.dekode(t)
+    } kecuali e {
+        naikkan GalatKripto("format hash kata sandi tidak dikenali")
+    }
+}
+
+fungsi _belah(t, pemisah) {
+    variabel bagian = daftar()
+    variabel kini = daftar()
+    untuk c dalam t {
+        jika c == pemisah {
+            tambah(bagian, teks_gabung(kini, ""))
+            kini = daftar()
+        } selain {
+            tambah(kini, c)
+        }
+    }
+    tambah(bagian, teks_gabung(kini, ""))
+    kembalikan bagian
+}
+
+# ---------------------------------------------------------------------------
+# Bilangan acak kriptografis (CSPRNG). BUKAN acak(): acak() memakai rand()
+# yang bisa ditebak dan hanya untuk simulasi/permainan.
+# ---------------------------------------------------------------------------
+
+# acak_aman(n) -> daftar n bita dari CSPRNG sistem (mbedTLS CTR_DRBG +
+# entropi OS). Gagal -> GalatOS; tidak pernah jatuh ke rand().
+fungsi acak_aman(n) {
+    kembalikan acak_bita(n)
+}
+
+# token_heksa(n=32) -> teks heksa 2n karakter (mis. token reset sandi).
+fungsi token_heksa(n=32) {
+    kembalikan bita.ke_heksa(acak_bita(n))
+}
+
+# token_url(n=32) -> teks base64url tanpa padding, aman untuk URL/cookie.
+fungsi token_url(n=32) {
+    kembalikan ganti(base64.enkode_url(acak_bita(n)), "=", "")
+}
+
+# bulat_acak_aman(batas) -> bulat 0..batas-1 merata, tanpa bias modulo
+# (rejection sampling), seperti secrets.randbelow() di Python.
+fungsi bulat_acak_aman(batas) {
+    jika jenis(batas) != "angka" atau ke_bulat(batas) bukan adalah batas {
+        naikkan GalatTipe("bulat_acak_aman: batas harus bilangan bulat")
+    }
+    jika batas < 1 atau batas > 4611686018427387904 {
+        naikkan GalatNilai("bulat_acak_aman: batas harus 1..2**62")
+    }
+    jika batas == 1 {
+        kembalikan 0
+    }
+    variabel bit = 0
+    variabel m = batas - 1
+    selagi m > 0 {
+        bit += 1
+        m = m >> 1
+    }
+    variabel nbita = (bit + 7) // 8
+    variabel topeng = (1 << bit) - 1
+    selagi benar {
+        variabel v = 0
+        untuk b dalam acak_bita(nbita) {
+            v = (v << 8) | b
+        }
+        v = v & topeng
+        jika v < batas {
+            kembalikan v
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Kunci
+# ---------------------------------------------------------------------------
+
+# Kunci(bita) -> pembungkus 32 bita kunci simetris. cetak()/repr() TIDAK
+# menampilkan isinya, supaya kunci tidak bocor ke log. Ekspor eksplisit
+# dengan k.bita() (mis. untuk disimpan di secret store).
+kelas Kunci {
+    init(data) {
+        variabel b = _ke_bita(data, "Kunci")
+        jika panjang(b) != PANJANG_KUNCI {
+            naikkan GalatNilai(format("Kunci: harus {} bita, bukan {}", PANJANG_KUNCI, panjang(b)))
+        }
+        diri._bita = daftar(b)
+    }
+    bita() {
+        kembalikan daftar(diri._bita)
+    }
+    _teks_() {
+        kembalikan "<Kunci 256-bit tersembunyi>"
+    }
+    _repr_() {
+        kembalikan "<Kunci 256-bit tersembunyi>"
+    }
+}
+
+# buat_kunci() -> Kunci baru dari CSPRNG.
+fungsi buat_kunci() {
+    kembalikan Kunci(acak_bita(PANJANG_KUNCI))
+}
+
+fungsi _bita_kunci(kunci) {
+    jika adalah_instansi(kunci, Kunci) {
+        kembalikan kunci._bita
+    }
+    kembalikan kunci
+}
+
+# ---------------------------------------------------------------------------
+# AEAD tingkat rendah (nonce eksplisit). Untuk interoperabilitas dengan sistem
+# lain. ATURAN: satu nonce hanya untuk SATU pesan per kunci -- memakai ulang
+# nonce membocorkan plaintext dan memungkinkan pemalsuan. Bila tidak perlu
+# format tertentu, pakai enkripsi()/dekripsi() di bawah.
+# ---------------------------------------------------------------------------
+
+# aead_enkripsi(algoritma, kunci, nonce, pesan, aad="") -> daftar bita
+# sandi ‖ tag (tag = 16 bita terakhir).
+fungsi aead_enkripsi(algoritma, kunci, nonce, pesan, aad="") {
+    kembalikan _kripto_aead_segel(algoritma, _bita_kunci(kunci), nonce, pesan, aad)
+}
+
+# aead_dekripsi(algoritma, kunci, nonce, sandi_tag, aad="") -> daftar bita
+# pesan. GalatKripto bila tag tidak cocok (diperiksa dalam waktu tetap).
+fungsi aead_dekripsi(algoritma, kunci, nonce, sandi_tag, aad="") {
+    variabel hasil = _kripto_aead_buka(algoritma, _bita_kunci(kunci), nonce, sandi_tag, aad)
+    jika hasil adalah kosong {
+        naikkan GalatKripto(_PESAN_GAGAL)
+    }
+    kembalikan hasil
+}
+
+# nonce_acak() -> 12 bita acak. Aman sampai ~2**32 pesan per kunci.
+fungsi nonce_acak() {
+    kembalikan acak_bita(PANJANG_NONCE)
+}
+
+# PenghitungNonce() -> pembuat nonce berurutan: 4 bita awalan acak + penghitung
+# 8 bita. Setiap .berikutnya() dijamin berbeda untuk objek yang sama; pakai
+# SATU objek per kunci untuk volume pesan besar.
+kelas PenghitungNonce {
+    init() {
+        diri._awalan = acak_bita(4)
+        diri._hitung = 0
+    }
+    berikutnya() {
+        jika diri._hitung >= 9223372036854775807 {
+            naikkan GalatKripto("PenghitungNonce habis; ganti kunci")
+        }
+        variabel n = diri._hitung
+        diri._hitung = n + 1
+        variabel ekor = daftar()
+        untuk i dalam rentang(8) {
+            tambah(ekor, (n >> (8 * (7 - i))) & 255)
+        }
+        kembalikan diri._awalan + ekor
+    }
+}
+
+# ---------------------------------------------------------------------------
+# AEAD mudah: AES-256-GCM dengan nonce acak yang dibuat sendiri.
+# Kemasan = 01 ‖ nonce(12) ‖ sandi ‖ tag(16). Bita versi ikut diautentikasi.
+# ---------------------------------------------------------------------------
+
+# enkripsi(kunci, pesan, aad="") -> daftar bita kemasan. Simpan/kirim apa
+# adanya (atau base64.enkode(kemasan) untuk teks).
+fungsi enkripsi(kunci, pesan, aad="") {
+    variabel nonce = acak_bita(PANJANG_NONCE)
+    variabel aad_penuh = [_VERSI_KEMASAN] + _ke_bita(aad, "enkripsi")
+    variabel badan = _kripto_aead_segel(AES_256_GCM, _bita_kunci(kunci), nonce, pesan, aad_penuh)
+    kembalikan [_VERSI_KEMASAN] + nonce + badan
+}
+
+# dekripsi(kunci, kemasan, aad="") -> daftar bita pesan, atau GalatKripto.
+fungsi dekripsi(kunci, kemasan, aad="") {
+    variabel data = _ke_bita(kemasan, "dekripsi")
+    jika panjang(data) < 1 + PANJANG_NONCE + PANJANG_TAG atau data[0] != _VERSI_KEMASAN {
+        naikkan GalatKripto(_PESAN_GAGAL)
+    }
+    variabel nonce = data[1:1 + PANJANG_NONCE]
+    variabel badan = data[1 + PANJANG_NONCE:]
+    variabel aad_penuh = [_VERSI_KEMASAN] + _ke_bita(aad, "dekripsi")
+    kembalikan aead_dekripsi(AES_256_GCM, kunci, nonce, badan, aad_penuh)
+}
+
+# dekripsi_teks(kunci, kemasan, aad="") -> teks (pesan didekode UTF-8).
+fungsi dekripsi_teks(kunci, kemasan, aad="") {
+    kembalikan bita.ke_teks(dekripsi(kunci, kemasan, aad))
+}
+
+# ---------------------------------------------------------------------------
+# MAC, KDF dan perbandingan waktu-tetap
+# ---------------------------------------------------------------------------
+
+# sama_aman(a, b) -> logika. Bandingkan token/tag/hash dalam waktu yang tidak
+# bergantung pada isi. JANGAN pakai `==` untuk rahasia.
+fungsi sama_aman(a, b) {
+    kembalikan _kripto_sama(a, b)
+}
+
+# hmac_sha256(kunci, pesan) -> daftar 32 bita (sama dengan builtin).
+fungsi hmac_sha256(kunci, pesan) {
+    kembalikan _hmac_bawaan(_bita_kunci(kunci), pesan)
+}
+
+# verifikasi_hmac(kunci, pesan, tag) -> logika, perbandingan waktu-tetap.
+fungsi verifikasi_hmac(kunci, pesan, tag) {
+    kembalikan _kripto_sama(_hmac_bawaan(_bita_kunci(kunci), pesan), tag)
+}
+
+# hkdf_sha256(ikm, panjang, garam="", info="") -> daftar bita (RFC 5869).
+# Menurunkan beberapa kunci berbeda dari satu rahasia: bedakan lewat `info`.
+fungsi hkdf_sha256(ikm, panjang_keluaran, garam="", info="") {
+    kembalikan _kripto_hkdf_sha256(_bita_kunci(ikm), garam, info, panjang_keluaran)
+}
+
+# ---------------------------------------------------------------------------
+# Hash kata sandi: PBKDF2-HMAC-SHA-256 dengan garam acak, format PHC
+#   $pbkdf2-sha256$i=<iterasi>$<garam b64>$<hash b64>
+# ---------------------------------------------------------------------------
+
+fungsi _periksa_iterasi(iterasi, nama) {
+    jika jenis(iterasi) != "angka" atau ke_bulat(iterasi) bukan adalah iterasi {
+        naikkan GalatTipe(format("{}: iterasi harus bilangan bulat", nama))
+    }
+    jika iterasi < _ITERASI_SANDI_MIN atau iterasi > _ITERASI_SANDI_MAKS {
+        naikkan GalatNilai(format("{}: iterasi harus {}..{}", nama, _ITERASI_SANDI_MIN, _ITERASI_SANDI_MAKS))
+    }
+}
+
+# hash_kata_sandi(sandi, iterasi=600000) -> teks untuk disimpan di basis data.
+fungsi hash_kata_sandi(sandi, iterasi=ITERASI_SANDI) {
+    _periksa_iterasi(iterasi, "hash_kata_sandi")
+    jika jenis(sandi) != "teks" {
+        naikkan GalatTipe("hash_kata_sandi: sandi harus teks")
+    }
+    variabel garam = acak_bita(_GARAM_SANDI)
+    variabel h = pbkdf2_sha256(sandi, garam, iterasi, _PANJANG_HASH_SANDI)
+    kembalikan format("${}$i={}${}${}", _ALG_SANDI, iterasi,
+                      _b64_tanpa_padding(garam), _b64_tanpa_padding(h))
+}
+
+# _urai_hash(tersimpan) -> [iterasi, garam, hash]; GalatKripto bila rusak.
+fungsi _urai_hash(tersimpan) {
+    jika jenis(tersimpan) != "teks" {
+        naikkan GalatTipe("hash kata sandi tersimpan harus teks")
+    }
+    variabel bagian = _belah(tersimpan, "$")
+    jika panjang(bagian) != 5 atau bagian[0] != "" atau bagian[1] != _ALG_SANDI {
+        naikkan GalatKripto("format hash kata sandi tidak dikenali")
+    }
+    variabel it = bagian[2]
+    jika panjang(it) < 3 atau it[0:2] != "i=" {
+        naikkan GalatKripto("format hash kata sandi tidak dikenali")
+    }
+    variabel iterasi = kosong
+    coba {
+        iterasi = ke_bulat(ke_angka(it[2:]))
+    } kecuali e {
+        naikkan GalatKripto("format hash kata sandi tidak dikenali")
+    }
+    jika iterasi < 1 atau iterasi > _ITERASI_SANDI_MAKS {
+        naikkan GalatKripto("format hash kata sandi tidak dikenali")
+    }
+    variabel garam = _b64_dekode(bagian[3])
+    variabel h = _b64_dekode(bagian[4])
+    jika panjang(garam) < 8 atau panjang(h) < 16 {
+        naikkan GalatKripto("format hash kata sandi tidak dikenali")
+    }
+    kembalikan [iterasi, garam, h]
+}
+
+# verifikasi_kata_sandi(sandi, tersimpan) -> logika. Perbandingan waktu-tetap.
+# GalatKripto bila `tersimpan` bukan format yang dikenali (bukan sekadar salah).
+fungsi verifikasi_kata_sandi(sandi, tersimpan) {
+    variabel urai = _urai_hash(tersimpan)
+    jika jenis(sandi) != "teks" {
+        kembalikan salah
+    }
+    variabel h = pbkdf2_sha256(sandi, urai[1], urai[0], panjang(urai[2]))
+    kembalikan _kripto_sama(h, urai[2])
+}
+
+# perlu_hash_ulang(tersimpan, iterasi=600000) -> benar bila hash dibuat dengan
+# parameter lebih lemah; hash ulang setelah login berhasil.
+fungsi perlu_hash_ulang(tersimpan, iterasi=ITERASI_SANDI) {
+    kembalikan _urai_hash(tersimpan)[0] < iterasi
+}
