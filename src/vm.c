@@ -14,6 +14,8 @@
 #include "memory.h"
 #include "vm.h"
 #include "native.h"
+#include "arsip.h"
+#include "kompres.h"
 #include "pola.h"
 #include "sistem.h"
 
@@ -813,6 +815,19 @@ void initVM() {
 
     // Ekspresi reguler (Fase 6 gelombang C). Internal: dibungkus oleh
     // pustaka/pola.idk, yang menambah kelas Pola/Cocokan dan GalatPola.
+    // Fase 23: kompresi dan arsip (pustaka/kompres.idk, pustaka/arsip.idk).
+    defineNative("_kompres", nativeFnKompres);
+    defineNative("_dekompres", nativeFnDekompres);
+    defineNative("_kompres_berkas", nativeFnKompresBerkas);
+    defineNative("_dekompres_berkas", nativeFnDekompresBerkas);
+    defineNative("_crc32", nativeFnCrc32);
+    defineNative("_adler32", nativeFnAdler32);
+    defineNative("_baca_berkas_bita", nativeFnBacaBerkasBita);
+    defineNative("_tulis_berkas_bita", nativeFnTulisBerkasBita);
+    defineNative("_arsip_daftar", nativeFnArsipDaftar);
+    defineNative("_arsip_ekstrak", nativeFnArsipEkstrak);
+    defineNative("_arsip_buat", nativeFnArsipBuat);
+    defineNative("_arsip_jenis", nativeFnArsipJenis);
     defineNative("_pola_kompilasi", nativeFnPolaKompilasi);
     defineNative("_pola_cari", nativeFnPolaCari);
     defineNative("_pola_semua", nativeFnPolaSemua);

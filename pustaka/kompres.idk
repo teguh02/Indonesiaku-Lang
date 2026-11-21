@@ -1,0 +1,119 @@
+# pustaka/kompres.idk - Kompresi gzip/zlib (modul `kompres`), padanan
+# `gzip`/`zlib` Python.
+# Pemakaian:
+#     impor kompres
+#     variabel padat = kompres.gzip("halo " * 100)
+#     cetak(panjang(kompres.buka_gzip(padat)))      # 500
+#
+# Mesinnya miniz (src/vendor/miniz, lihat PROVENANCE.md) yang di-vendor;
+# tidak ada deflate buatan sendiri. Data biner memakai konvensi repo:
+# **daftar bulat 0..255** (modul `bita`). Masukan boleh teks (dibaca sebagai
+# bita UTF-8-nya) atau daftar bita; keluaran selalu daftar bita -- pakai
+# bita.ke_teks() untuk kembali ke teks.
+#
+# Dekompresi SELALU dibatasi (`batas`, bawaan 64 MiB): beberapa KB data gzip
+# bisa mengembang menjadi gigabita ("bom dekompresi"), jadi batas diperiksa
+# selagi data dibuka, bukan sesudahnya.
+
+kelas GalatKompres < GalatNilai {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+BATAS_BAWAAN = 67108864        # 64 MiB keluaran dekompresi
+TINGKAT_BAWAAN = 6
+
+fungsi _periksa_tingkat(nama, tingkat) {
+    jika jenis(tingkat) != "angka" atau ke_bulat(tingkat) bukan adalah tingkat {
+        naikkan GalatKompres(f"{nama}: tingkat harus bulat 0..9")
+    }
+    jika tingkat < 0 atau tingkat > 9 {
+        naikkan GalatKompres(f"{nama}: tingkat harus bulat 0..9, bukan {tingkat}")
+    }
+}
+
+fungsi _periksa_batas(nama, batas) {
+    jika jenis(batas) != "angka" atau ke_bulat(batas) bukan adalah batas atau batas < 0 {
+        naikkan GalatKompres(f"{nama}: batas harus bulat >= 0")
+    }
+}
+
+# _lindungi(f) -> f(), dengan GalatNilai dari native diterjemahkan menjadi
+# GalatKompres. GalatTipe (argumen salah) dan GalatOS (berkas) dibiarkan.
+fungsi _lindungi(f) {
+    coba {
+        kembalikan f()
+    } kecuali GalatKompres sebagai e {
+        naikkan e
+    } kecuali GalatNilai sebagai e {
+        naikkan GalatKompres(e.pesan)
+    }
+}
+
+fungsi _kompres_ke(format, nama, data, tingkat) {
+    _periksa_tingkat(nama, tingkat)
+    kembalikan _lindungi(fungsi() { kembalikan _kompres(data, format, tingkat) })
+}
+
+fungsi _buka_dari(format, nama, data, batas) {
+    _periksa_batas(nama, batas)
+    kembalikan _lindungi(fungsi() { kembalikan _dekompres(data, format, batas) })
+}
+
+# gzip(data, tingkat=6) -> daftar bita berformat gzip (RFC 1952).
+# Keluarannya deterministik (MTIME 0), jadi data sama -> bita sama.
+fungsi gzip(data, tingkat = TINGKAT_BAWAAN) {
+    kembalikan _kompres_ke("gzip", "kompres.gzip", data, tingkat)
+}
+
+# buka_gzip(data, batas=64 MiB) -> daftar bita. Menerima gzip multi-anggota
+# (`cat a.gz b.gz`); CRC-32 dan ukuran tiap anggota diperiksa.
+fungsi buka_gzip(data, batas = BATAS_BAWAAN) {
+    kembalikan _buka_dari("gzip", "kompres.buka_gzip", data, batas)
+}
+
+# zlib(data, tingkat=6) -> daftar bita berformat zlib (RFC 1950).
+fungsi zlib(data, tingkat = TINGKAT_BAWAAN) {
+    kembalikan _kompres_ke("zlib", "kompres.zlib", data, tingkat)
+}
+
+fungsi buka_zlib(data, batas = BATAS_BAWAAN) {
+    kembalikan _buka_dari("zlib", "kompres.buka_zlib", data, batas)
+}
+
+# deflate(data, tingkat=6) -> deflate mentah (RFC 1951) tanpa kepala/ekor,
+# seperti zlib.compressobj(wbits=-15) / Content-Encoding: deflate yang salah
+# kaprah di sebagian peramban.
+fungsi deflate(data, tingkat = TINGKAT_BAWAAN) {
+    kembalikan _kompres_ke("mentah", "kompres.deflate", data, tingkat)
+}
+
+fungsi buka_deflate(data, batas = BATAS_BAWAAN) {
+    kembalikan _buka_dari("mentah", "kompres.buka_deflate", data, batas)
+}
+
+# gzip_berkas(sumber, tujuan, tingkat=6) -> ukuran berkas hasil (bita).
+# Berkas diproses per potongan 64 KB: tidak pernah dibaca penuh ke RAM.
+fungsi gzip_berkas(sumber, tujuan, tingkat = TINGKAT_BAWAAN) {
+    _periksa_tingkat("kompres.gzip_berkas", tingkat)
+    kembalikan _lindungi(fungsi() { kembalikan _kompres_berkas(sumber, tujuan, "gzip", tingkat) })
+}
+
+# buka_gzip_berkas(sumber, tujuan, batas=64 MiB) -> ukuran hasil (bita).
+# Bila gagal (rusak / melewati batas) berkas tujuan dihapus.
+fungsi buka_gzip_berkas(sumber, tujuan, batas = BATAS_BAWAAN) {
+    _periksa_batas("kompres.buka_gzip_berkas", batas)
+    kembalikan _lindungi(fungsi() { kembalikan _dekompres_berkas(sumber, tujuan, "gzip", batas) })
+}
+
+# crc32(data, awal=0) -> bulat 0..2^32-1, sama dengan zlib.crc32 Python.
+# Sambungkan per potongan: crc32(b, crc32(a)) == crc32(a + b).
+fungsi crc32(data, awal = 0) {
+    kembalikan _lindungi(fungsi() { kembalikan _crc32(data, awal) })
+}
+
+# adler32(data, awal=1) -> bulat, sama dengan zlib.adler32 Python.
+fungsi adler32(data, awal = 1) {
+    kembalikan _lindungi(fungsi() { kembalikan _adler32(data, awal) })
+}

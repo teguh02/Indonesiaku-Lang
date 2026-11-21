@@ -1,0 +1,168 @@
+# pustaka/arsip.idk - Arsip TAR, TAR.GZ dan ZIP (modul `arsip`), padanan
+# `tarfile`/`zipfile` Python dengan ekstraksi yang AMAN secara bawaan.
+# Pemakaian:
+#     impor arsip
+#     arsip.buat("cadangan.tar.gz", ["data"])
+#     untuk e dalam arsip.daftar_isi("cadangan.tar.gz") {
+#         cetak(e["nama"], e["ukuran"])
+#     }
+#     arsip.ekstrak("cadangan.tar.gz", "pulih/")
+#
+# Mesinnya di C (src/arsip.c; ZIP lewat miniz yang di-vendor). Ekstraksi
+# memeriksa SELURUH arsip dulu, baru menulis -- arsip yang ditolak tidak
+# meninggalkan satu berkas pun di tujuan. Yang ditolak:
+#   * nama absolut, berisi '..', '\', ':' atau karakter kendali (zip slip);
+#   * tautan simbolik/keras (atau dilewati dengan lewati_tautan=benar) --
+#     modul ini tidak pernah membuat tautan;
+#   * melebihi batas_ukuran (total isi), batas_entri, atau batas_rasio
+#     (rasio kompresi; tanda bom dekompresi, diperiksa di atas 1 MiB);
+#   * tautan yang SUDAH ADA di bawah direktori tujuan: tidak pernah diikuti.
+# Hak akses (chmod) dan waktu ubah dari arsip tidak dipulihkan.
+
+kelas GalatArsip < GalatNilai {
+    init(pesan) {
+        diri.pesan = pesan
+    }
+}
+
+BATAS_UKURAN = 1073741824      # 1 GiB isi total
+BATAS_ENTRI = 10000
+BATAS_RASIO = 200
+
+fungsi _bulat_minimal(nama, x, minimal) {
+    jika jenis(x) != "angka" atau ke_bulat(x) bukan adalah x atau x < minimal {
+        naikkan GalatArsip(f"{nama}: harus bulat >= {minimal}")
+    }
+}
+
+fungsi _teks(nama, x) {
+    jika jenis(x) != "teks" {
+        naikkan GalatArsip(f"{nama}: harus teks, bukan {jenis(x)}")
+    }
+}
+
+# GalatNilai dari native -> GalatArsip; GalatOS/GalatTipe diteruskan.
+fungsi _lindungi(f) {
+    coba {
+        kembalikan f()
+    } kecuali GalatArsip sebagai e {
+        naikkan e
+    } kecuali GalatNilai sebagai e {
+        naikkan GalatArsip(e.pesan)
+    }
+}
+
+# daftar_isi(jalur, batas_entri=10000, batas_rasio=200) -> daftar kamus
+#     {"nama", "jenis", "ukuran", "terkompres"}
+# jenis: "berkas", "direktori", "tautan_simbolik", "tautan_keras", "lain".
+# Nama ditampilkan apa adanya (juga yang akan ditolak ekstrak()), jadi
+# fungsi ini cocok untuk memeriksa arsip yang mencurigakan. Format dikenali
+# dari isinya, bukan dari ekstensi. Untuk .tar.gz seluruh aliran dibuka,
+# jadi batas_rasio tetap berlaku agar bom kecil tidak memacetkan CPU.
+fungsi daftar_isi(jalur, batas_entri = BATAS_ENTRI, batas_rasio = BATAS_RASIO) {
+    _teks("arsip.daftar_isi: jalur", jalur)
+    _bulat_minimal("arsip.daftar_isi: batas_entri", batas_entri, 1)
+    _bulat_minimal("arsip.daftar_isi: batas_rasio", batas_rasio, 1)
+    variabel mentah = _lindungi(fungsi() { kembalikan _arsip_daftar(jalur, batas_entri, batas_rasio) })
+    kembalikan [{"nama": e[0], "jenis": e[1], "ukuran": e[2], "terkompres": e[3]} untuk e dalam mentah]
+}
+
+# ekstrak(jalur, tujuan, batas_ukuran=1 GiB, batas_entri=10000,
+#         batas_rasio=200, lewati_tautan=salah) -> daftar nama yang ditulis
+# Direktori `tujuan` dibuat bila belum ada. Berkas yang sudah ada ditimpa,
+# kecuali bila ia tautan (ditolak).
+fungsi ekstrak(jalur, tujuan, batas_ukuran = BATAS_UKURAN, batas_entri = BATAS_ENTRI,
+               batas_rasio = BATAS_RASIO, lewati_tautan = salah) {
+    _teks("arsip.ekstrak: jalur", jalur)
+    _teks("arsip.ekstrak: tujuan", tujuan)
+    _bulat_minimal("arsip.ekstrak: batas_ukuran", batas_ukuran, 0)
+    _bulat_minimal("arsip.ekstrak: batas_entri", batas_entri, 1)
+    _bulat_minimal("arsip.ekstrak: batas_rasio", batas_rasio, 1)
+    kembalikan _lindungi(fungsi() {
+        kembalikan _arsip_ekstrak(jalur, tujuan, batas_ukuran, batas_entri, batas_rasio, lewati_tautan)
+    })
+}
+
+# Format dari ekstensi nama arsip yang dibuat.
+fungsi _format_dari(jalur) {
+    variabel j = huruf_kecil(jalur)
+    jika j[-4:] == ".zip" {
+        kembalikan "zip"
+    }
+    jika j[-7:] == ".tar.gz" atau j[-4:] == ".tgz" {
+        kembalikan "tar.gz"
+    }
+    jika j[-4:] == ".tar" {
+        kembalikan "tar"
+    }
+    naikkan GalatArsip(f"arsip.buat: format tidak dapat ditebak dari '{jalur}' (pakai format=\"tar\", \"tar.gz\" atau \"zip\")")
+}
+
+fungsi _gabung(dasar, nama) {
+    jika dasar adalah kosong {
+        kembalikan nama
+    }
+    kembalikan dasar + "/" + nama
+}
+
+# Tambahkan berkas/direktori `nama` (relatif terhadap `dasar`) ke `entri`,
+# menelusuri direktori secara rekursif. Tautan simbolik dilewati: modul ini
+# tidak menyimpan tautan dan tidak mengikutinya keluar dari pohon sumber.
+fungsi _kumpulkan(dasar, nama, entri) {
+    variabel disk = _gabung(dasar, nama)
+    variabel j = _arsip_jenis(disk)
+    jika j adalah kosong {
+        naikkan GalatArsip(f"arsip.buat: '{disk}' tidak ada")
+    }
+    jika j == "berkas" {
+        tambah(entri, [nama, "berkas", disk, _info_jalur(disk)[2]])
+    } jika_lain j == "direktori" {
+        tambah(entri, [nama, "direktori", kosong, _info_jalur(disk)[2]])
+        untuk anak dalam isi_direktori(disk) {
+            _kumpulkan(dasar, nama + "/" + anak, entri)
+        }
+    }
+}
+
+# buat(jalur, isi, format=kosong, tingkat=6, dasar=kosong) -> jumlah entri
+# Tiap elemen `isi`:
+#   * teks  -> jalur berkas atau direktori (direktori diambil seluruhnya);
+#              nama di arsip = jalur itu, relatif terhadap `dasar` bila ada;
+#   * [nama, data] -> entri berkas berisi `data` (teks atau daftar bita).
+# Format ditebak dari ekstensi (.zip, .tar, .tar.gz/.tgz) kecuali diberikan.
+# Nama absolut atau berisi '..' ditolak sama seperti pada ekstrak().
+fungsi buat(jalur, isi, format = kosong, tingkat = 6, dasar = kosong) {
+    _teks("arsip.buat: jalur", jalur)
+    jika format adalah kosong {
+        format = _format_dari(jalur)
+    }
+    jika format != "tar" dan format != "tar.gz" dan format != "zip" {
+        naikkan GalatArsip(f"arsip.buat: format '{format}' tidak dikenal (tar, tar.gz, zip)")
+    }
+    _bulat_minimal("arsip.buat: tingkat", tingkat, 0)
+    jika tingkat > 9 {
+        naikkan GalatArsip("arsip.buat: tingkat harus 0..9")
+    }
+    jika jenis(isi) != "daftar" {
+        naikkan GalatArsip("arsip.buat: isi harus daftar")
+    }
+    jika dasar bukan adalah kosong {
+        _teks("arsip.buat: dasar", dasar)
+    }
+    variabel sekarang = ke_bulat(waktu())
+    variabel entri = []
+    untuk x dalam isi {
+        jika jenis(x) == "teks" {
+            variabel nama = ganti(x, "\\", "/")
+            selagi nama[0:2] == "./" {
+                nama = nama[2:]
+            }
+            _kumpulkan(dasar, nama, entri)
+        } jika_lain jenis(x) == "daftar" dan panjang(x) == 2 dan jenis(x[0]) == "teks" {
+            tambah(entri, [x[0], "data", x[1], sekarang])
+        } selain {
+            naikkan GalatArsip("arsip.buat: tiap isi harus jalur teks atau [nama, data]")
+        }
+    }
+    kembalikan _lindungi(fungsi() { kembalikan _arsip_buat(jalur, format, entri, tingkat) })
+}

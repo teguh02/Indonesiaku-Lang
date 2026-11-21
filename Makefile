@@ -18,7 +18,7 @@ ifeq ($(OS),Windows_NT)
     RM = del /Q
     RMDIR = rmdir /S /Q
     # On Windows, del requires backslash paths; / is parsed as a switch.
-    CLEAN = del /Q src\*.o src\vendor\mbedtls\library\*.o $(TARGET) 2>NUL & exit 0
+    CLEAN = del /Q src\*.o src\vendor\mbedtls\library\*.o src\vendor\miniz\*.o $(TARGET) 2>NUL & exit 0
     # Winsock for TCP sockets (soket_* natives).
     # bcrypt: mbedTLS mengambil entropi lewat BCryptGenRandom di Windows
     # (library/entropy_poll.c). Tanpa ini link gagal dengan
@@ -50,6 +50,9 @@ SOURCES = src/main.c \
           src/native.c \
           src/db.c \
           src/pola.c \
+          src/kompres.c \
+          src/arsip.c \
+          src/arsip_buat.c \
           src/sistem.c \
           src/sqlite3.c \
           src/tls.c \
@@ -59,7 +62,10 @@ SOURCES = src/main.c \
           src/value.c \
           src/vm.c
 
-OBJECTS = $(SOURCES:.c=.o) $(MBEDTLS_OBJECTS)
+# miniz (src/vendor/miniz, lihat PROVENANCE.md): zlib/gzip/ZIP untuk Fase 23.
+MINIZ_OBJECTS = src/vendor/miniz/miniz.o
+
+OBJECTS = $(SOURCES:.c=.o) $(MBEDTLS_OBJECTS) $(MINIZ_OBJECTS)
 
 # All headers. Because this project uses a single-pass, tightly-coupled design
 # where almost every .c includes many headers, treat every header as a
@@ -110,6 +116,10 @@ src/sqlite3.o: src/sqlite3.c src/sqlite3.h
 # diredam. Aturan ini TIDAK boleh ikut $(HEADERS) -- header kita tidak relevan
 # bagi mbedTLS dan akan memaksa 108 berkas dikompilasi ulang setiap edit.
 src/vendor/mbedtls/library/%.o: src/vendor/mbedtls/library/%.c
+	$(CC) $(filter-out -Wall -Wextra,$(CFLAGS)) -c $< -o $@
+
+# miniz: byte upstream dipertahankan, hanya warning vendor yang diredam.
+src/vendor/miniz/miniz.o: src/vendor/miniz/miniz.c src/vendor/miniz/miniz.h
 	$(CC) $(filter-out -Wall -Wextra,$(CFLAGS)) -c $< -o $@
 
 %.o: %.c $(HEADERS)

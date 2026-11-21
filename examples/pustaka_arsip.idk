@@ -1,0 +1,157 @@
+# Arsip TAR / TAR.GZ / ZIP (Fase 23): pustaka/arsip.idk. Ekstraksi aman
+# secara bawaan: zip slip, jalur absolut, tautan, dan bom dekompresi ditolak
+# SEBELUM satu berkas pun ditulis. Arsip "asing" di bawah dibuat dengan
+# tarfile/zipfile Python lalu disimpan sebagai heksa. Semua berkas sementara
+# berada di _contoh_arsip/ dan dihapus di akhir.
+impor arsip
+impor bita
+dari arsip impor GalatArsip
+
+AKAR = "_contoh_arsip"
+
+PERLENGKAPAN = {
+    "TGZ_PY": "1f8b08000000000002ffedd74f4b84401806f039f729de4fa0f34f3d152db4b09760e9d46d79979d5acb5c999dc86e7df39a2c8295a0930af9fc0e3a7a117c79e6d1c61f5edd632a8624a3dcdaee1cf5cfdd5ad94cdba290b6bb5f189509cac4089e8f817d7ca498a7e66bfe37cbc5d5f532096d9862fe5a9fce5f29a9a42089f90f6ec5d58176ec4b8aafe1aeacdc99801949d224bd5c73bb72bc737eb8fdff97dcffe45f1b7bd20531fc5a59412df23f3895e5d470d89f7f17c191eb7b0e9b86eb87b8da4c75f9d944d889c6ebff4107fb67ff9b5eff1bad7385fe1f43cd4f4c17a4a4a46d19982af7c281d68b5ba46f4ef9df96b5f3493c4ef3ff67fbdfff4a1ae47f14efe20d290000000000000000000000f85f3e007e15b20d00280000",
+    "TGZ_SLIP": "1f8b08000000000002ffedd43d0ac3300c86611da52770ec54aecfa3adf42781c4861ebf225bbb7472a0e47d107ca045d3277bda14eaab4a47d15d54b774dfe946499a472d25eab62f9a554e5176d0d66a8b9f94639aef82030b61f079345bfa7d81dffdcf9ffd4f319de9ff2e6e76b54a0d000000000000000000000000fed61baee2ca8500280000",
+    "TGZ_ABS": "1f8b08000000000002ffedd1410ac2301404d07f144f601349ec79b21341289a428f6fecd2bd82f8de6660560333f5db325ddba5f563df7a7c441acea5ec39bce75023977a2af39ccaabcfa9e61c87145fb03e7abb8f29f19ff6eb030000000000000000805ff3047b23eb5f00280000",
+    "TGZ_SYMLINK": "1f8b08000000000002ffedd3310ec2400c44511f252720bb96c39ec7022a4488b28ee0f8acd201055568f25f33d234538ddf7c3cc4336443a9399aadd97c66a3926d502b25d9da171b4cba247fb0d4f0b94dca3eddaf821d0b5fc2c76d377eff3fbdff3f672d2a9df69738f593d7fa38f37f000000000000000000000000e0db0b2e73e23c00280000",
+    "TGZ_HARDLINK": "1f8b08000000000002ffedd4310ac3300c85611d252728b291ebf368e814da80e3428e1fe3ad59322550fc7fcb032d6f7af2b77f1e75ab72216d9e663d9b63365182a56839abf57bb66432a9dce0bb562fad52c6b4cc8281cdafe2ebc51de7fbd7dffd074d1a640a7ec3731a7cff000000000000000000000000f86f3b416e457600280000",
+    "ZIP_SYMLINK": "504b0304140000000000000021000ab91f290b0000000b0000000600000074617574616e2f6574632f706173737764504b01021403140000000000000021000ab91f290b0000000b000000060000000000000000000000ffa10000000074617574616e504b05060000000001000100340000002f0000000000",
+    "ZIP_SLIP": "504b03041400000008006884755d8316dc8c030000000100000011000000612f2e2e2f2e2e2f6a616861742e747874ab0000504b010214001400000008006884755d8316dc8c0300000001000000110000000000000000000000800100000000612f2e2e2f2e2e2f6a616861742e747874504b050600000000010001003f000000320000000000",
+    "ZIP_GARIS": "504b03041400000008006884755d8316dc8c03000000010000000b000000615c6a616861742e747874ab0000504b010214001400000008006884755d8316dc8c03000000010000000b0000000000000000000000800100000000615c6a616861742e747874504b05060000000001000100390000002c0000000000",
+    "ZIP_DRIVE": "504b03041400000008006884755d8316dc8c03000000010000000c000000433a2f6a616861742e747874ab0000504b010214001400000008006884755d8316dc8c03000000010000000c0000000000000000000000800100000000433a2f6a616861742e747874504b050600000000010001003a0000002d0000000000",
+    "ZIP_RUSAK": "504b03041400000008006884755dbe849a791b0000006e000000070000006973692e747874cb2c9b54a84ccc4b5748cc4ecc5348c92c2a2d4ecc56c8a4912800504b010214001400000008006884755dbe849a791b0000006e0000000700000000000000000000008001000000006973692e747874504b0506000000000100010035000000400000000000"
+}
+
+fungsi hapus_pohon(j) {
+    variabel jenis_j = _arsip_jenis(j)
+    jika jenis_j == "direktori" {
+        untuk anak dalam isi_direktori(j) {
+            hapus_pohon(j + "/" + anak)
+        }
+        hapus_direktori(j)
+    } jika_lain jenis_j bukan adalah kosong {
+        hapus_berkas(j)
+    }
+}
+
+# Tulis perlengkapan `nama` ke berkas, kembalikan jalurnya.
+fungsi siapkan(nama, akhiran) {
+    variabel j = AKAR + "/" + nama + akhiran
+    bita.tulis_berkas(j, bita.dari_heksa(PERLENGKAPAN[nama]))
+    kembalikan j
+}
+
+fungsi bagian_buat_dan_ekstrak() {
+    cetak("== buat, daftar, ekstrak ==")
+    variabel sumber = AKAR + "/sumber"
+    buat_direktori(sumber)
+    buat_direktori(sumber + "/sub")
+    tulis_semua(sumber + "/catatan.txt", "halo arsip\n")
+    bita.tulis_berkas(sumber + "/sub/data.bin", [0, 1, 0, 255] + acak_bita(1000))
+    untuk akhiran dalam [".tar", ".tar.gz", ".zip"] {
+        variabel j = AKAR + "/cadangan" + akhiran
+        variabel n = arsip.buat(j, ["sumber", ["info/versi.txt", "1.0\n"], ["nol.bin", [0, 0, 0]]], dasar=AKAR)
+        cetak(akhiran, n, "entri")
+        untuk e dalam arsip.daftar_isi(j) {
+            cetak("   ", e["nama"], e["jenis"], e["ukuran"])
+        }
+        variabel tujuan = AKAR + "/pulih" + akhiran
+        cetak("   ditulis:", panjang(arsip.ekstrak(j, tujuan)))
+        cetak("   sama:", baca_semua(tujuan + "/sumber/catatan.txt") == "halo arsip\n",
+              bita.baca_berkas(tujuan + "/sumber/sub/data.bin") == bita.baca_berkas(sumber + "/sub/data.bin"),
+              bita.baca_berkas(tujuan + "/nol.bin"))
+    }
+    # Ekstrak ulang ke tujuan yang sama: berkas lama ditimpa.
+    tulis_semua(AKAR + "/pulih.zip/info/versi.txt", "lama")
+    arsip.ekstrak(AKAR + "/cadangan.zip", AKAR + "/pulih.zip")
+    cetak("ditimpa:", repr(baca_semua(AKAR + "/pulih.zip/info/versi.txt")))
+}
+
+fungsi bagian_asing() {
+    cetak("== arsip dari Python (PAX, nama panjang, biner) ==")
+    variabel j = siapkan("TGZ_PY", ".tar.gz")
+    untuk e dalam arsip.daftar_isi(j) {
+        cetak("   ", e["nama"][0:40], e["jenis"], e["ukuran"])
+    }
+    variabel hasil = arsip.ekstrak(j, AKAR + "/py")
+    cetak(panjang(hasil), repr(baca_semua(AKAR + "/py/proyek/README.txt")))
+    cetak(bita.baca_berkas(AKAR + "/py/proyek/biner.bin"))
+}
+
+fungsi tolak(nama, akhiran) {
+    variabel j = siapkan(nama, akhiran)
+    variabel tujuan = AKAR + "/tolak_" + nama
+    coba {
+        arsip.ekstrak(j, tujuan)
+        cetak(nama, "-> TIDAK DITOLAK")
+    } kecuali GalatArsip sebagai e {
+        # Arsip yang ditolak tidak membuat apa pun di tujuan.
+        cetak(nama, "->", e.pesan, "| tujuan ada:", _arsip_jenis(tujuan) bukan adalah kosong)
+    }
+}
+
+fungsi bagian_tolak() {
+    cetak("== ekstraksi yang ditolak ==")
+    tolak("TGZ_SLIP", ".tar.gz")
+    tolak("TGZ_ABS", ".tar.gz")
+    tolak("TGZ_SYMLINK", ".tar.gz")
+    tolak("TGZ_HARDLINK", ".tar.gz")
+    tolak("ZIP_SLIP", ".zip")
+    tolak("ZIP_GARIS", ".zip")
+    tolak("ZIP_DRIVE", ".zip")
+    tolak("ZIP_SYMLINK", ".zip")
+    tolak("ZIP_RUSAK", ".zip")
+    # daftar_isi() tetap memperlihatkan nama aslinya untuk diperiksa.
+    untuk e dalam arsip.daftar_isi(AKAR + "/TGZ_SLIP.tar.gz") {
+        cetak("   ", e["nama"], e["jenis"])
+    }
+    # lewati_tautan=benar: tautan dilewati, sisanya diekstrak.
+    cetak(arsip.ekstrak(AKAR + "/TGZ_SYMLINK.tar.gz", AKAR + "/lewati", lewati_tautan=benar))
+}
+
+fungsi bagian_batas() {
+    cetak("== batas: bom dekompresi, ukuran, jumlah entri ==")
+    variabel nol = "a" * 65535
+    untuk i dalam rentang(5) {
+        nol = nol + nol                               # 2 MiB huruf 'a'
+    }
+    untuk akhiran dalam [".zip", ".tar.gz"] {
+        variabel j = AKAR + "/bom" + akhiran
+        arsip.buat(j, [["nol.txt", nol]], tingkat=9)
+        coba {
+            arsip.ekstrak(j, AKAR + "/bom")
+        } kecuali GalatArsip sebagai e {
+            cetak(akhiran, "->", e.pesan)
+        }
+        cetak(akhiran, "dengan batas_rasio=100000:", arsip.ekstrak(j, AKAR + "/bom_izin" + akhiran, batas_rasio=100000))
+    }
+    variabel j = AKAR + "/cadangan.tar"
+    coba { arsip.ekstrak(j, AKAR + "/x", batas_ukuran=10) } kecuali GalatArsip sebagai e { cetak(e.pesan) }
+    coba { arsip.ekstrak(j, AKAR + "/x", batas_entri=3) } kecuali GalatArsip sebagai e { cetak(e.pesan) }
+    coba { arsip.daftar_isi(j, batas_entri=2) } kecuali GalatArsip sebagai e { cetak(e.pesan) }
+}
+
+fungsi bagian_galat() {
+    cetak("== galat lain ==")
+    tulis_semua(AKAR + "/bukan.zip", "ini teks biasa")
+    coba { arsip.daftar_isi(AKAR + "/bukan.zip") } kecuali GalatArsip sebagai e { cetak(e.pesan) }
+    variabel isi = bita.baca_berkas(AKAR + "/cadangan.tar")
+    bita.tulis_berkas(AKAR + "/terpotong.tar", isi[0:700])
+    coba { arsip.ekstrak(AKAR + "/terpotong.tar", AKAR + "/x") } kecuali GalatArsip sebagai e { cetak(e.pesan) }
+    coba { arsip.buat(AKAR + "/x.tar", [["../luar.txt", "x"]]) } kecuali GalatArsip sebagai e { cetak(e.pesan) }
+    coba { arsip.buat(AKAR + "/x.tar", [["/abs.txt", "x"]]) } kecuali GalatArsip sebagai e { cetak(e.pesan) }
+    coba { arsip.buat(AKAR + "/x.rar", []) } kecuali GalatArsip sebagai e { cetak(e.pesan) }
+    coba { arsip.buat(AKAR + "/x.tar", ["tidak_ada"], dasar=AKAR) } kecuali GalatArsip sebagai e { cetak(e.pesan) }
+    cetak("x.tar tertinggal:", ada_berkas(AKAR + "/x.tar"))
+    coba { arsip.daftar_isi(AKAR + "/tidak_ada.zip") } kecuali GalatOS sebagai e { cetak("GalatOS:", e.pesan) }
+}
+
+hapus_pohon(AKAR)
+buat_direktori(AKAR)
+bagian_buat_dan_ekstrak()
+bagian_asing()
+bagian_tolak()
+bagian_batas()
+bagian_galat()
+hapus_pohon(AKAR)
+cetak("bersih:", _arsip_jenis(AKAR) adalah kosong)
