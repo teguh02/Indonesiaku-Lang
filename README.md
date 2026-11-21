@@ -191,7 +191,8 @@ merusak kompatibilitas sampai 2.0.
   bernamespace `koleksi`, `statistik`, `iterasi`, `fungsional`, `salin`,
   `jalur`, `pola` (ekspresi reguler), `opsi` (argumen baris perintah), `log`,
   `proses` (menjalankan program lain), `bita`, `base64`, `csv`, dan `kura`
-  (grafika kura-kura ke SVG) (Fase 6); `migrasi` (migrasi skema basis data)
+  (grafika kura-kura ke SVG) (Fase 6); `konfigurasi` (`.env`/INI,
+  lingkungan, skema) dan `unicode` (huruf besar/kecil dan spasi Unicode); `migrasi` (migrasi skema basis data)
   dan `templat` (templat HTML server-side dengan auto-escaping); mode
   `indk --sandbox`
 - **Mesin** — *garbage collector* mark-sweep dan REPL interaktif
