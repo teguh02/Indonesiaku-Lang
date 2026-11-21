@@ -618,6 +618,18 @@ if [ -f tests/web_jalankan_server.sh ]; then
     TOTAL=$((TOTAL+1))
 fi
 
+# Observability (Fase 22): app.pantau() -> /health, /ready, /metrics, dan
+# X-Request-ID yang sama dengan request_id di log JSON.
+if [ -f tests/web_pantau_server.sh ]; then
+    echo ""
+    if bash tests/web_pantau_server.sh; then
+        PASSED=$((PASSED+1))
+    else
+        FAILED=$((FAILED+1)); FAILURES="$FAILURES web-pantau"
+    fi
+    TOTAL=$((TOTAL+1))
+fi
+
 # Batas waktu soket: satu klien yang diam tidak boleh membekukan server.
 # Hanya bisa dibuktikan dengan koneksi sungguhan yang sengaja tidak
 # mengirim apa pun.

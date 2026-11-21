@@ -1,0 +1,8 @@
+waktu ISO-8601: benar
+{"level":"INFO","modul":"api","pesan":"pesanan dibuat","request_id":"9f2c01","pesanan":42,"total":15000.5}
+waktu ISO-8601: benar
+{"level":"PERINGATAN","modul":"api","pesan":"stok menipis","sisa":[1,2]}
+waktu ISO-8601: benar
+{"level":"GALAT","modul":"akar","pesan":"{\"kode\": 500}","pencatat":"<Pencatat api (INFO)>","baris\nbaru":"a\"b"}
+teks: INFO:api:baris teks
+GalatLog: data log harus kamus, bukan daftar

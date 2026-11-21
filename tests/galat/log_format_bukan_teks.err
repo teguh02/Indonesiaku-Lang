@@ -1,0 +1,5 @@
+format log harus teks, bukan angka
+[baris 206, kolom 77] dalam atur()
+    …t log harus teks, bukan {jenis(format)}")
+                                             ^
+[baris 4, kolom 20] dalam skrip
