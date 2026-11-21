@@ -3594,7 +3594,7 @@ static void sha512Digest(const uint8_t* data, size_t len, uint8_t out[64]) {
 // Kumpulkan byte masukan dari teks (UTF-8 apa adanya) atau daftar/tupel byte.
 // Memakai malloc/free biasa: buffer ini sementara dan tidak boleh memicu GC
 // di tengah pembacaan argumen.
-static bool hashInputBytes(Value v, const char* nama, uint8_t** out, size_t* outLen) {
+bool hashInputBytes(Value v, const char* nama, uint8_t** out, size_t* outLen) {
     if (IS_STRING(v)) {
         ObjString* s = AS_STRING(v);
         size_t n = (size_t)s->length;

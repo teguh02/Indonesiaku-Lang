@@ -1,0 +1,6 @@
+dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+[baris 215, kolom 41] dalam aead_dekripsi()
+            naikkan GalatKripto(_PESAN_GAGAL)
+                                            ^
+[baris 270, kolom 73] dalam dekripsi()
+[baris 7, kolom 27] dalam skrip

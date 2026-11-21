@@ -50,6 +50,7 @@ SOURCES = src/main.c \
           src/native.c \
           src/db.c \
           src/pola.c \
+          src/kripto.c \
           src/sistem.c \
           src/sqlite3.c \
           src/tls.c \

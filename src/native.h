@@ -249,6 +249,10 @@ Value nativeFnSha256(int argCount, Value* args);   // sha256(...)
 Value nativeFnSha512(int argCount, Value* args);
 Value nativeFnHmacSha256(int argCount, Value* args);
 Value nativeFnPbkdf2Sha256(int argCount, Value* args);   // sha512(...)
+// Salin teks (UTF-8) atau daftar/tupel bita ke buffer malloc baru (*out,
+// pemanggil wajib free). false + galat tertunda bila tipenya salah. Dipakai
+// juga oleh src/kripto.c.
+bool hashInputBytes(Value v, const char* nama, uint8_t** out, size_t* outLen);
 
 Value nativeFnSoketSambung(int argCount, Value* args);   // soket_sambung(host, port)
 Value nativeFnTlsMulai(int argCount, Value* args);       // tls_mulai(soket, host)
