@@ -1,0 +1,5 @@
+  GAGAL  uji_header_tidak_ada: header X-Tidak-Ada tidak ada [GET /ok -> 200; badan: "ok"]
+  LULUS  uji_lulus
+  GAGAL  uji_status_salah: status diharapkan 201, didapat 200 [GET /ok -> 200; badan: "ok"]
+
+1/3 uji lulus

@@ -2980,6 +2980,144 @@ didukung. Jangan mengekstrak ke direktori yang pada saat yang sama dapat
 ditulis pihak lain yang tidak tepercaya: pemeriksaan tautan dan pembukaan
 berkas bukan satu operasi atomik di semua OS.
 
+### 2.28 `pustaka/cli.idk` — aplikasi baris perintah dengan sub-perintah
+
+`cli` adalah kerangka CLI di atas [`opsi`](#215-pustakaopsiidk--argumen-baris-perintah):
+setiap tingkat perintah memakai satu `opsi.PenguraiArgumen`, jadi parameter
+`argumen()` sama persis dengan `tambah_argumen()` (jenis nilai, pilihan,
+wajib, bawaan, bendera). Yang ditambahkan: sub-perintah bertingkat, bantuan
+otomatis per tingkat, `--versi`, validasi khusus, kode keluar yang tetap, dan
+skrip autocomplete Bash. `opsi` tetap bisa dipakai langsung tanpa kerangka.
+
+```indonesiaku
+impor cli
+
+variabel app = cli.Perintah("siswa", "Mengelola data siswa.", versi = "1.0")
+app.argumen("--rinci", pendek = "-r", aksi = "benar")
+
+fungsi nilai_sah(n) {
+    jika n < 0 atau n > 100 {
+        kembalikan "harus 0..100"     # teks = pesan galat pemakaian
+    }
+    kembalikan kosong                 # kosong/benar = sah
+}
+
+variabel tambah_siswa = app.sub("tambah", "tambahkan siswa")
+tambah_siswa.argumen("nama", bantuan = "nama siswa")
+tambah_siswa.argumen("--nilai", pendek = "-n", bawaan = 0, jenis_nilai = "bulat",
+                     validasi = nilai_sah)
+tambah_siswa.tangani(fungsi(a) {
+    # `a` berisi argumen SEMUA tingkat, ditambah a.perintah = "tambah"
+    cetak(f"{a.perintah}: {a.nama} = {a.nilai} (rinci: {a.rinci})")
+})
+
+app.sub("hapus", "hapus siswa").argumen("nama").tangani(fungsi(a) {
+    naikkan cli.GalatCli(f"siswa {repr(a.nama)} tidak ada")
+})
+
+cetak(app.jalankan(["-r", "tambah", "Siti", "-n", "92"]))   # tambah: Siti = 92 (rinci: benar), lalu 0
+cetak(app.jalankan(["tambah", "-h"]))                      # bantuan sub-perintah, lalu 0
+```
+
+Pada program sungguhan, akhiri skrip dengan `app.utama()`: ia mengurai
+`argumen` lalu memanggil `keluar(kode)`. `jalankan()` **tidak pernah**
+memanggil `keluar()`, jadi alur perintah bisa diuji dalam satu proses.
+Pesan galat ditulis ke stderr; `Perintah(..., keluaran=f, galat=f)` mengalihkan
+keduanya (fungsi menerima satu baris tanpa `"\n"`).
+
+| Kode keluar | Arti |
+|------|-----------|
+| `0` | Sukses, termasuk `-h`/`--bantuan` dan `--versi` |
+| `1` | Penangan menaikkan `cli.GalatCli(pesan)` — dicetak sebagai `<program>: galat: <pesan>`; `GalatCli(pesan, kode=3)` memilih kode lain |
+| `2` | Pemakaian salah: argumen salah/kurang, validasi gagal, sub-perintah tidak dikenal atau tidak diberikan (sama dengan `argparse`) |
+| `n` | Bilangan bulat 0..255 yang dikembalikan penangan (`kosong` = 0) |
+
+| Nama | Deskripsi |
+|------|-----------|
+| `Perintah(nama, deskripsi="", versi=kosong, penangan=kosong, keluaran=kosong, galat=kosong)` | Perintah akar; `versi` menambah opsi `--versi` |
+| `.argumen(nama, ..., validasi=kosong)` | Parameter `opsi.tambah_argumen()` ditambah `validasi(nilai)`; mengembalikan perintahnya (bisa dirantai pada satu baris). Nama `perintah` dicadangkan |
+| `.sub(nama, deskripsi="", penangan=kosong)` | Sub-perintah baru (boleh bertingkat: `siswa ekspor csv`) |
+| `.tangani(f)` | Penangan `f(a)`; `a` adalah `opsi.Hasil` |
+| `.jalankan(daftar=argumen)` / `.utama(daftar=argumen)` | Kembalikan kode keluar / keluar dengan kode itu |
+| `.bantuan()` / `.pemakaian()` | Teks bantuan / baris pemakaian |
+| `.skrip_lengkapi_bash()` | Skrip autocomplete Bash: simpan, lalu `source` dari `~/.bashrc` |
+| `GalatCli(pesan, kode=1)` | Kegagalan wajar dari penangan; juga dinaikkan untuk pendaftaran yang salah |
+
+Opsi milik perintah induk ditulis **sebelum** nama sub-perintah
+(`siswa -r tambah ...`, seperti `git -C dir status`). `-h`/`--versi` dilayani
+walau argumen wajib belum diisi. Galat lain dari penangan (bug) tidak
+ditelan. Belum tersedia: autocomplete zsh/fish/PowerShell, konfigurasi dari
+berkas/lingkungan, dan generator proyek `indk buat`.
+
+### 2.29 `pustaka/uji_http.idk` — klien uji untuk aplikasi `web`
+
+`uji_http.klien(app)` mengirim permintaan ke aplikasi `web.Aplikasi`
+**tanpa membuka port**: klien memanggil `app.tangani()` langsung di proses
+yang sama, lalu mengurai teks responsnya. Tes jadi cepat, deterministik, dan
+tetap jalan di CI tanpa jaringan.
+
+```indonesiaku
+impor web
+impor uji_http
+impor "pustaka/json.idk"
+
+variabel app = web.Aplikasi()
+app.rute("POST", "/masuk", fungsi(req) {
+    jika req["form"]["sandi"] != "rahasia" {
+        kembalikan web.teks(401, "sandi salah")
+    }
+    kembalikan web.set_kuki(web.teks(200, "ok"), "sesi", "abc123")
+})
+app.rute("GET", "/profil", fungsi(req) {
+    kembalikan web.json(200, json_teks({"sesi": web.baca_kuki(req)["sesi"]}))
+})
+
+variabel k = uji_http.klien(app)
+k.kirim("/masuk", form = {"sandi": "salah"}).pastikan_status(401)
+k.kirim("/masuk", form = {"sandi": "rahasia"}).pastikan_status(200).pastikan_kuki("sesi", "abc123")
+variabel r = k.ambil("/profil")          # kuki "sesi" dikirim balik otomatis
+r.pastikan_status(200).pastikan_kepala("Content-Type", "application/json")
+r.pastikan_json({"sesi": "abc123"})
+cetak(r, r.json())                       # <ResponsUji 200 OK> {"sesi": "abc123"}
+```
+
+Bersama `indk uji`, tulis asersinya di fungsi `uji_*`. Asersi yang gagal
+menaikkan `GalatUjiHttp` (turunan `GalatPenegasan`) dan pesannya muncul di
+laporan, lengkap dengan ringkasan respons:
+
+```indonesiaku-takjalan
+$ indk uji uji_app.idk
+  LULUS  uji_lulus
+  GAGAL  uji_status_salah: status diharapkan 201, didapat 200 [GET /ok -> 200; badan: "ok"]
+
+1/2 uji lulus
+```
+
+Contoh lengkap: `examples/uji_api_siswa.idk` menguji CRUD REST
+`examples/api_siswa.idk` (SQLite) lewat `impor api_siswa`. Agar aplikasi
+bisa diimpor tanpa menyalakan server, panggil `app.jalankan()` hanya di
+dalam `jika __nama__ == "__utama__" { ... }`.
+
+| Nama | Deskripsi |
+|------|-----------|
+| `klien(app, peer=kosong)` | `KlienUji`; `peer` = alamat klien palsu (untuk `proxy_tepercaya()`) |
+| `k.minta(metode, jalur, json=, form=, badan="", kepala=, kuki=)` | Permintaan apa pun; `json=` mengisi badan + `Content-Type: application/json`, `form=` (kamus) badan urlencoded |
+| `k.ambil` / `k.kirim` / `k.perbarui` / `k.tambal` / `k.hapus` | GET / POST / PUT / PATCH / DELETE |
+| `k.kuki` / `k.kepala` | Toples kuki (dikirim balik otomatis; `Max-Age=0` menghapus) / header bawaan setiap permintaan |
+| `r.status`, `r.alasan`, `r.kepala`, `r.kepala_semua`, `r.badan`, `r.kuki` | Respons terurai; nama di `r.kepala` huruf kecil, `kepala_semua` memuat header ganda |
+| `r.json()` | Badan sebagai JSON |
+| `r.pastikan_status(kode)` | Asersi status |
+| `r.pastikan_kepala(nama, nilai=kosong)` / `r.pastikan_kepala_berisi(nama, potongan)` / `r.pastikan_tanpa_kepala(nama)` | Asersi header |
+| `r.pastikan_json(harapan)` / `r.pastikan_json_berisi(sebagian)` | Seluruh JSON sama / objek memuat kunci-kunci ini |
+| `r.pastikan_kuki(nama, nilai=kosong)` / `r.pastikan_badan_berisi(potongan)` | Asersi `Set-Cookie` / isi badan |
+| `permintaan_mentah(metode, jalur, json=, form=, badan="", kepala=)` | Teks request HTTP/1.1 untuk `app.tangani()` langsung |
+| `GalatUjiHttp` / `GalatUji` | Asersi gagal / pemakaian klien salah (jalur tanpa `/`, header berisi baris baru) |
+
+Semua asersi mengembalikan responsnya, jadi bisa dirantai pada satu baris.
+Toples kuki satu-domain: atribut `Path`/`Domain`/`Expires` diabaikan. Belum
+tersedia: helper autentikasi, unggah multipart, snapshot respons, dan
+mock/fake untuk database, SMTP, waktu, atau filesystem.
+
 ## 3. Aplikasi Contoh: Todo-list JSON DB
 
 Dua aplikasi contoh lengkap menunjukkan penggunaan pustaka standar untuk

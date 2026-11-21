@@ -1,0 +1,113 @@
+# pustaka/cli.idk - kerangka CLI dengan sub-perintah di atas `opsi`.
+# Keluaran galat dialihkan ke stdout (awalan "[galat] ") supaya contoh ini
+# bisa menjadi golden; program sungguhan cukup memakai bawaannya (stderr).
+
+impor cli
+dari cli impor GalatCli
+
+fungsi galat_ke_stdout(t) {
+    cetak("[galat] " + t)
+}
+
+data_siswa = {"Budi": 85}
+
+variabel app = cli.Perintah("siswa", "Mengelola data siswa.", versi = "1.2.0",
+                            galat = galat_ke_stdout)
+app.argumen("--rinci", pendek = "-r", aksi = "benar", bantuan = "keluaran rinci")
+
+fungsi nilai_sah(n) {
+    jika n < 0 atau n > 100 {
+        kembalikan "harus 0..100"
+    }
+    kembalikan kosong
+}
+
+# argumen() mengembalikan perintahnya sendiri, jadi boleh dirantai pada
+# satu baris; pada baris terpisah, simpan perintahnya di variabel.
+variabel tambah_siswa = app.sub("tambah", "tambahkan siswa")
+tambah_siswa.argumen("nama", bantuan = "nama siswa")
+tambah_siswa.argumen("--nilai", pendek = "-n", bawaan = 0, jenis_nilai = "bulat",
+                     bantuan = "nilai 0..100", validasi = nilai_sah)
+tambah_siswa.tangani(fungsi(a) {
+    data_siswa[a.nama] = a.nilai
+    jika a.rinci {
+        cetak(f"[{a.perintah}] {a.nama} = {a.nilai}")
+    } selain {
+        cetak(f"ditambahkan: {a.nama}")
+    }
+})
+
+app.sub("daftar", "tampilkan semua siswa").tangani(fungsi(a) {
+    untuk nama dalam terurut(kunci(data_siswa)) {
+        cetak(f"  {nama}: {data_siswa[nama]}")
+    }
+})
+
+app.sub("hapus", "hapus siswa").argumen("nama").tangani(fungsi(a) {
+    jika a.nama tidak dalam data_siswa {
+        naikkan cli.GalatCli(f"siswa {repr(a.nama)} tidak ada")
+    }
+    buang data_siswa[a.nama]
+    kembalikan 0
+})
+
+# Sub-perintah bertingkat: siswa ekspor csv
+variabel ekspor = app.sub("ekspor", "ekspor data")
+ekspor.sub("csv", "sebagai CSV").tangani(fungsi(a) {
+    cetak("nama,nilai")
+    untuk nama dalam terurut(kunci(data_siswa)) {
+        cetak(f"{nama},{data_siswa[nama]}")
+    }
+    kembalikan 3                 # kode keluar khusus dari penangan
+})
+
+fungsi coba_jalankan(token) {
+    cetak("$ " + teks_gabung_spasi(["siswa"] + token))
+    variabel kode = app.jalankan(token)
+    cetak(f"-> kode keluar {kode}")
+}
+
+fungsi teks_gabung_spasi(d) {
+    variabel h = ""
+    untuk i dalam rentang(panjang(d)) {
+        h = h + (" " jika i > 0 selain "") + d[i]
+    }
+    kembalikan h
+}
+
+fungsi utama() {
+    coba_jalankan(["-h"])
+    coba_jalankan(["--versi"])
+    coba_jalankan(["tambah", "Siti", "-n", "92"])
+    coba_jalankan(["-r", "tambah", "Andi", "--nilai=70"])
+    coba_jalankan(["tambah", "-h"])
+    coba_jalankan(["daftar"])
+    coba_jalankan(["hapus", "Joko"])
+    coba_jalankan(["hapus", "Andi"])
+    coba_jalankan(["ekspor", "csv"])
+    coba_jalankan(["tambah", "Rina", "--nilai", "150"])
+    coba_jalankan(["tambah"])
+    coba_jalankan(["pindah"])
+    coba_jalankan([])
+}
+
+utama()
+
+# Gugus bendera pendek yang diakhiri opsi bernilai: -rn Budi = -r -n Budi,
+# jadi "Budi" adalah nilai --nama, bukan nama sub-perintah.
+variabel alat = cli.Perintah("alat")
+alat.argumen("--rinci", pendek = "-r", aksi = "benar")
+alat.argumen("--nama", pendek = "-n")
+variabel alat_cetak = alat.sub("cetak")
+alat_cetak.tangani(fungsi(a) { cetak("cetak:", a.rinci, a.nama) })
+cetak(alat.jalankan(["-rn", "Budi", "cetak"]))
+
+# Nama argumen yang sama di induk dan sub-perintah ditolak saat didaftarkan.
+coba {
+    alat_cetak.argumen("--rinci", aksi = "benar")
+} kecuali GalatCli sebagai e {
+    cetak("ditolak:", e.pesan)
+}
+
+cetak("--- autocomplete bash ---")
+cetak(app.skrip_lengkapi_bash())

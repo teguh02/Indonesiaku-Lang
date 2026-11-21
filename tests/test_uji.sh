@@ -5,10 +5,15 @@ cd "$(dirname "$0")/.." || exit 1
 BIN=./indk
 [ -x "$BIN" ] || BIN=./indk.exe   # Windows (Git Bash): make menghasilkan indk.exe
 pass=0; fail=0
-for src in tests/uji/*.idk; do
-    [ -e "$src" ] || continue
-    expected="${src%.idk}.uji"
+# Sumbernya tests/uji/<nama>.idk, atau examples/<nama>.idk untuk berkas uji
+# yang sengaja diletakkan di samping aplikasi yang diujinya (mis.
+# examples/uji_api_siswa.idk mengimpor examples/api_siswa.idk).
+for expected in tests/uji/*.uji; do
     [ -e "$expected" ] || continue
+    nama=$(basename "$expected" .uji)
+    src="tests/uji/$nama.idk"
+    [ -e "$src" ] || src="examples/$nama.idk"
+    [ -e "$src" ] || { fail=$((fail+1)); echo "GAGAL: $expected (sumber tidak ada)"; continue; }
     actual=$("$BIN" uji "$src" 2>/dev/null)
     rc=$?
     want=$(cat "$expected")

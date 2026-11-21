@@ -1,0 +1,14 @@
+<ResponsUji 200 OK>
+json: {"pesan": "halo budi"}
+gema json: {"nama": "Andé", "nilai": [1, 2]}
+gema form: {"nama": "Andi Putra", "kota": "a&b=c%"}
+kuki klien: {"sesi": "abc123"}
+kuki setelah keluar: {}
+gagal: status diharapkan 201, didapat 200 [GET /halo/siti -> 200; badan: "{\"pesan\":\"halo siti\"}"]
+gagal: JSON["pesan"] diharapkan "halo budi", didapat "halo siti" [GET /halo/siti -> 200; badan: "{\"pesan\":\"halo siti\"}"]
+POST /gema HTTP/1.1\r
+Host: uji.lokal\r
+Content-Type: application/json\r
+Content-Length: 3\r
+\r
+[1]
