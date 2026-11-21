@@ -54,6 +54,15 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `indonesiaku.toml`). Langkah ini paling akhir, sesudah pustaka standar, jadi
   impor yang dulu berhasil tidak berubah artinya dan paket tidak pernah
   membayangi modul standar.
+- **Modul `kripto` — kriptografi modern V1** (Fase 18): AEAD AES-256-GCM
+  dan ChaCha20-Poly1305 (`enkripsi`/`dekripsi` dengan nonce acak otomatis,
+  `aead_enkripsi`/`aead_dekripsi` dengan nonce eksplisit, `PenghitungNonce`),
+  HKDF-SHA-256, `verifikasi_hmac`/`sama_aman` waktu-tetap, CSPRNG
+  (`acak_aman`, `token_url`, `bulat_acak_aman`), kunci yang tidak tercetak,
+  dan `hash_kata_sandi`/`verifikasi_kata_sandi` (PBKDF2-HMAC-SHA-256 600.000
+  iterasi, format PHC; Argon2id belum tersedia di mbedTLS). Semua primitif
+  dari mbedTLS yang sudah di-vendor (`src/kripto.c` baru). Diuji KAT RFC
+  4231/5869/7914/8439 dan spesifikasi GCM. Builtin lama tidak berubah.
 - **Kompresi dan arsip V1 (Fase 23)** — modul `kompres` (gzip/zlib/deflate,
   `gzip_berkas` berkas→berkas per 64 KB, `crc32`/`adler32`) dan `arsip`
   (`daftar_isi`, `ekstrak`, `buat` untuk TAR, TAR.GZ, ZIP) di atas miniz 3.1.2

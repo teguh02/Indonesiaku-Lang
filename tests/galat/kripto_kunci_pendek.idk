@@ -1,0 +1,3 @@
+# Kunci AEAD wajib 32 bita; kunci pendek ditolak sebelum enkripsi.
+impor kripto
+cetak(kripto.aead_enkripsi(kripto.CHACHA20_POLY1305, "kunci-pendek", kripto.nonce_acak(), "x"))

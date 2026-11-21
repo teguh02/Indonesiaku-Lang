@@ -869,6 +869,9 @@ menerima argumennya sendiri yang kebetulan bernama `--sandbox`.
 | `pbkdf2_sha256(sandi, garam, iterasi, panjang)` | Turunkan kunci → daftar bita. Iterasi dibatasi 1..10.000.000 karena nilainya bisa datang dari server |
 | `sha512(data)` | Hash SHA-512, 128 karakter heksa |
 
+Untuk enkripsi, hash kata sandi, HKDF, dan perbandingan waktu-tetap, pakai
+modul [`kripto`](#225-pustakakriptoidk--kriptografi-modern) (bagian 2.25).
+
 Padanan `hashlib` Python, tetapi langsung mengembalikan **teks heksa huruf
 kecil** (seperti `.hexdigest()`). `data` berupa teks (di-hash sebagai UTF-8)
 atau daftar byte `0..255`; keduanya memberi hasil yang sama untuk isi yang
@@ -2745,7 +2748,126 @@ locale (huruf i Turki) tidak diterapkan, sama seperti Python. `panjang()`
 tetap menghitung code point: `panjang("e" + chr(769))` adalah 2. Normalisasi
 NFC/NFD dan kategori Unicode **belum tersedia**.
 
-### 2.25 `pustaka/kompres.idk` — gzip, zlib, deflate
+### 2.25 `pustaka/kripto.idk` — kriptografi modern
+
+Enkripsi terautentikasi, penurunan kunci, hash kata sandi, dan bilangan acak
+aman, semuanya dari mbedTLS yang sama dengan HTTPS — **tidak ada algoritme
+yang ditulis sendiri**. Tersedia sejak versi setelah 1.7.0 (Fase 18 V1).
+Bita adalah daftar bulat `0..255`; setiap masukan data juga menerima teks
+(dienkode UTF-8).
+
+**Enkripsi data** (AES-256-GCM). `enkripsi()` membuat nonce acak sendiri,
+jadi nonce tidak mungkin terpakai ulang tanpa sengaja. `aad` (data tambahan
+terautentikasi) tidak dienkripsi tetapi ikut dikunci: dekripsi gagal bila
+nilainya berbeda — cocok untuk mengikat sandi ke ID pengguna.
+
+```indonesiaku
+impor kripto
+impor base64
+dari kripto impor GalatKripto   # `kecuali` butuh nama kelas polos
+
+k = kripto.buat_kunci()
+cetak(k)                                   # <Kunci 256-bit tersembunyi>
+
+kemasan = kripto.enkripsi(k, "nomor kartu 4111", "pengguna:42")
+disimpan = base64.enkode(kemasan)          # teks untuk basis data/cookie
+cetak(kripto.dekripsi_teks(k, base64.dekode(disimpan), "pengguna:42"))
+
+coba {
+    kripto.dekripsi(k, base64.dekode(disimpan), "pengguna:43")
+} kecuali GalatKripto sebagai e {
+    cetak(e.pesan)   # dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+}
+```
+
+Setiap kegagalan — tag, kunci, nonce, AAD salah, data rusak atau terpotong —
+menaikkan `GalatKripto` dengan **pesan yang sama**, supaya penyerang tidak
+mendapat petunjuk bagian mana yang salah. Tag diperiksa dalam waktu tetap
+oleh mbedTLS sebelum satu bita pun plaintext dikembalikan.
+
+**Hash kata sandi.** Simpan hasil `hash_kata_sandi()`, jangan `sha256()`:
+
+```indonesiaku
+impor kripto
+
+h = kripto.hash_kata_sandi("rahasia-123")
+cetak(h[:23])            # $pbkdf2-sha256$i=600000
+cetak(kripto.verifikasi_kata_sandi("rahasia-123", h))   # benar
+cetak(kripto.verifikasi_kata_sandi("rahasia-124", h))   # salah
+jika kripto.perlu_hash_ulang(h) {
+    h = kripto.hash_kata_sandi("rahasia-123")   # setelah login berhasil
+}
+```
+
+Algoritmenya PBKDF2-HMAC-SHA-256, 600.000 iterasi (rekomendasi OWASP),
+garam acak 16 bita, dalam format PHC
+`$pbkdf2-sha256$i=<iterasi>$<garam>$<hash>` (base64 tanpa padding) — dapat
+diverifikasi oleh `hashlib.pbkdf2_hmac` Python. **Argon2id belum tersedia**
+karena mbedTLS tidak menyediakannya; PBKDF2 tidak *memory-hard* sehingga lebih
+murah dipecahkan dengan GPU. Format yang memuat nama algoritme membuat migrasi
+ke Argon2id kelak cukup lewat `perlu_hash_ulang()`. MD5/SHA-1/SHA-256 polos
+**tidak boleh** dipakai untuk sandi.
+
+**Token, MAC, dan kunci turunan:**
+
+```indonesiaku
+impor kripto
+
+cetak(panjang(kripto.token_url()))          # 43  (32 bita acak, aman-URL)
+dadu = kripto.bulat_acak_aman(6) + 1         # 1..6 tanpa bias modulo
+
+k = kripto.buat_kunci()
+tag = kripto.hmac_sha256(k, "id=42")
+cetak(kripto.verifikasi_hmac(k, "id=42", tag))       # benar, waktu-tetap
+k_enkripsi = kripto.hkdf_sha256(k, 32, "garam-app", "enkripsi")
+k_mac = kripto.hkdf_sha256(k, 32, "garam-app", "mac")
+cetak(k_enkripsi != k_mac)                            # benar
+```
+
+**AEAD dengan nonce eksplisit** — hanya untuk interoperabilitas dengan sistem
+lain yang menentukan formatnya. **Satu nonce hanya untuk satu pesan per
+kunci**: memakai ulang nonce membocorkan isi pesan dan memungkinkan pemalsuan.
+Nonce acak 12 bita aman sampai sekitar 2³² pesan per kunci; untuk volume
+lebih besar pakai `PenghitungNonce` atau ganti kunci.
+
+```indonesiaku
+impor kripto
+
+k = kripto.buat_kunci()
+pn = kripto.PenghitungNonce()          # satu objek per kunci
+n = pn.berikutnya()                    # 12 bita, tidak pernah berulang
+ct = kripto.aead_enkripsi(kripto.CHACHA20_POLY1305, k, n, "halo", "hdr")
+cetak(panjang(ct))                     # 20 = 4 bita sandi + 16 bita tag
+cetak(kripto.aead_dekripsi(kripto.CHACHA20_POLY1305, k, n, ct, "hdr"))
+# [104, 97, 108, 111]
+```
+
+| Nama | Deskripsi |
+|------|-----------|
+| `acak_aman(n)` | `n` bita dari CSPRNG sistem (sama dengan `acak_bita`); gagal → `GalatOS`, tidak pernah turun ke `acak()` |
+| `token_heksa(n=32)` / `token_url(n=32)` | Token acak heksa / base64url tanpa padding |
+| `bulat_acak_aman(batas)` | Bulat `0..batas-1` merata (`secrets.randbelow`) |
+| `buat_kunci()` / `Kunci(bita)` / `k.bita()` | Kunci 32 bita; isi tidak tampil di `cetak`/`repr`/f-string |
+| `enkripsi(kunci, pesan, aad="")` | AES-256-GCM, nonce acak otomatis → kemasan `01 ‖ nonce(12) ‖ sandi ‖ tag(16)` |
+| `dekripsi(kunci, kemasan, aad="")` / `dekripsi_teks(...)` | Buka kemasan → bita / teks; `GalatKripto` bila gagal |
+| `aead_enkripsi(alg, kunci, nonce, pesan, aad="")` | `alg` = `AES_256_GCM` atau `CHACHA20_POLY1305`; hasil `sandi ‖ tag` |
+| `aead_dekripsi(alg, kunci, nonce, sandi_tag, aad="")` | Kebalikannya; `GalatKripto` bila tag tidak cocok |
+| `nonce_acak()` / `PenghitungNonce()` | Nonce 12 bita acak / berurutan |
+| `hkdf_sha256(ikm, panjang, garam="", info="")` | HKDF RFC 5869 |
+| `hmac_sha256(kunci, pesan)` / `verifikasi_hmac(kunci, pesan, tag)` | HMAC-SHA-256; verifikasi waktu-tetap |
+| `sama_aman(a, b)` | Bandingkan rahasia (token, tag) dalam waktu tetap — jangan pakai `==` |
+| `hash_kata_sandi(sandi, iterasi=600000)` | Hash sandi format PHC; iterasi `10.000..10.000.000` |
+| `verifikasi_kata_sandi(sandi, tersimpan)` | `benar`/`salah`; `GalatKripto` bila format tersimpan rusak |
+| `perlu_hash_ulang(tersimpan, iterasi=600000)` | `benar` bila hash dibuat dengan parameter lebih lemah |
+| `GalatKripto` | Autentikasi gagal atau format hash rusak |
+
+> **Batas jaminan.** Kunci yang masih berupa daftar bita di memori VM tidak
+> bisa dihapus secara terjamin (salinan di C dihapus). Modul ini melindungi
+> data aplikasi Anda; ia **tidak** membuat aman menjalankan kode `.idk` tak
+> tepercaya — itu tugas isolasi container (lihat `--sandbox` di atas). Belum
+> tersedia: Argon2id, tanda tangan Ed25519, XChaCha20.
+
+### 2.26 `pustaka/kompres.idk` — gzip, zlib, deflate
 
 Padanan modul `gzip`/`zlib` Python, di atas **miniz** yang di-vendor (bukan
 deflate buatan sendiri). Masukan boleh teks (dikompresi sebagai bita
@@ -2790,7 +2912,7 @@ berupa daftar bita dibatasi 256 MiB apa pun `batas`-nya (satu nilai per bita
 memakan memori); data sebesar itu proses lewat `gzip_berkas`/
 `buka_gzip_berkas`.
 
-### 2.26 `pustaka/arsip.idk` — TAR, TAR.GZ dan ZIP
+### 2.27 `pustaka/arsip.idk` — TAR, TAR.GZ dan ZIP
 
 Padanan `tarfile`/`zipfile` Python, dengan **ekstraksi yang aman secara
 bawaan**. Format dikenali dari isinya, bukan dari ekstensi.

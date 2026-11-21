@@ -50,6 +50,7 @@ SOURCES = src/main.c \
           src/native.c \
           src/db.c \
           src/pola.c \
+          src/kripto.c \
           src/kompres.c \
           src/arsip.c \
           src/arsip_buat.c \

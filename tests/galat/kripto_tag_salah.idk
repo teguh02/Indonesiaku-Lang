@@ -1,0 +1,8 @@
+# Kegagalan autentikasi yang tidak ditangkap harus menghentikan program
+# (gagal tertutup), bukan mengembalikan data rusak.
+impor kripto
+k = kripto.buat_kunci()
+c = kripto.enkripsi(k, "rahasia")
+c[panjang(c) - 1] = c[panjang(c) - 1] ^ 1
+cetak(kripto.dekripsi(k, c))
+cetak("TIDAK BOLEH TERCETAK")

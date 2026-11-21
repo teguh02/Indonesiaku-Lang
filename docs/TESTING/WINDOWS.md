@@ -1535,6 +1535,115 @@ benar
 
 Yang diperiksa: `/health` menjawab 200 `{"status":"ok"}` dengan header `X-Request-ID`, `/ready` menjadi 503 saat `periksa_siap()` salah, dan counter/histogram `/metrics` naik sesuai permintaan. Perilaku yang sama lewat soket sungguhan diuji `tests/web_pantau_server.sh` (bagian 5).
 
+#### PUS-10 — Modul `kripto`: vektor uji resmi
+
+Berkas `PUS-10.idk`:
+
+```indonesiaku
+# Modul kripto: vektor uji resmi (RFC 4231, RFC 5869, spesifikasi GCM, RFC 8439)
+impor kripto
+dari bita impor dari_heksa, ke_heksa
+cetak(ke_heksa(kripto.hmac_sha256("Jefe", "what do ya want for nothing?")))
+ikm = dari_heksa("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b")
+cetak(ke_heksa(kripto.hkdf_sha256(ikm, 42, dari_heksa("000102030405060708090a0b0c"), dari_heksa("f0f1f2f3f4f5f6f7f8f9"))))
+nol = [0] * 32
+cetak(ke_heksa(kripto.aead_enkripsi(kripto.AES_256_GCM, nol, [0] * 12, [0] * 16)))
+k = dari_heksa("808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f")
+ct = kripto.aead_enkripsi(kripto.CHACHA20_POLY1305, k, dari_heksa("070000004041424344454647"), "Ladies and Gentlemen", dari_heksa("50515253c0c1c2c3c4c5c6c7"))
+cetak(panjang(ct), ke_heksa(ct[:20]))
+```
+
+Jalankan `indk PUS-10.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843
+3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865
+cea7403d4d606b6e074ec5d3baf39d18d0d1c8a799996bf0265b98b5d48ab919
+36 d31a8d34648e60db7b86afbc53ef7ec2a4aded51
+```
+
+Nilai heksa adalah vektor resmi HMAC-SHA-256 RFC 4231 TC2, HKDF-SHA-256 RFC 5869 TC1,
+AES-256-GCM (spesifikasi GCM TC14) dan awal ChaCha20-Poly1305 RFC 8439 §2.8.2;
+berbeda satu karakter pun berarti primitif kriptografi salah.
+
+#### PUS-11 — Modul `kripto`: enkripsi, pemalsuan, kunci tersembunyi, hash sandi
+
+Berkas `PUS-11.idk`:
+
+```indonesiaku
+# Modul kripto: enkripsi, pemalsuan ditolak, kunci tersembunyi, hash kata sandi
+impor kripto
+dari kripto impor GalatKripto
+k = kripto.buat_kunci()
+c = kripto.enkripsi(k, "halo ☕", "pengguna:42")
+cetak(panjang(c), kripto.dekripsi_teks(k, c, "pengguna:42"))
+c2 = daftar(c)
+c2[20] = c2[20] ^ 1
+coba {
+    kripto.dekripsi(k, c2, "pengguna:42")
+} kecuali GalatKripto sebagai e {
+    cetak("ditolak:", e.pesan)
+}
+coba {
+    kripto.dekripsi(k, c, "pengguna:43")
+} kecuali GalatKripto sebagai e {
+    cetak("aad salah ditolak")
+}
+cetak(k, panjang(kripto.acak_aman(16)), panjang(kripto.token_url()))
+h = kripto.hash_kata_sandi("rahasia", iterasi=10000)
+cetak(h[:22], kripto.verifikasi_kata_sandi("rahasia", h), kripto.verifikasi_kata_sandi("Rahasia", h))
+```
+
+Jalankan `indk PUS-11.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+
+```
+
+Nilai acak tidak dicetak, hanya panjangnya. Kemasan 37 bita = 1 versi + 12
+nonce + 8 bita pesan UTF-8 + 16 tag. Kunci tidak boleh tampil isinya.
+
+#### GALAT-05 — Data terenkripsi yang dirusak tidak didekripsi diam-diam
+
+Berkas `GALAT-05.idk`:
+
+```indonesiaku
+# Data terenkripsi yang dirusak tidak boleh diam-diam didekripsi
+impor kripto
+k = kripto.buat_kunci()
+c = kripto.enkripsi(k, "rahasia")
+c[panjang(c) - 1] = c[panjang(c) - 1] ^ 1
+cetak("sebelum")
+cetak(kripto.dekripsi(k, c))
+cetak("tidak tercetak")
+```
+
+Jalankan `indk GALAT-05.idk`. **Kode keluar: `70`.**
+
+stdout yang diharapkan:
+
+```text
+sebelum
+```
+
+stderr yang diharapkan:
+
+```text
+dekripsi gagal: data rusak, atau kunci/nonce/AAD salah
+[baris 215, kolom 41] dalam aead_dekripsi()
+            naikkan GalatKripto(_PESAN_GAGAL)
+                                            ^
+[baris 270, kolom 73] dalam dekripsi()
+[baris 7, kolom 27] dalam skrip
+```
+
+Satu bit tag yang dibalik harus menghentikan program (gagal tertutup);
+nomor baris pada jejak menunjuk `pustaka/kripto.idk`.
+
 ### ARS — Kompresi dan arsip (Fase 23)
 
 #### ARS-01 — `kompres`: gzip/zlib, NUL di tengah data, bom dekompresi dibatasi

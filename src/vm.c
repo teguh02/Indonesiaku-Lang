@@ -17,6 +17,7 @@
 #include "arsip.h"
 #include "kompres.h"
 #include "pola.h"
+#include "kripto.h"
 #include "sistem.h"
 
 VM vm;
@@ -831,6 +832,13 @@ void initVM() {
     defineNative("_pola_kompilasi", nativeFnPolaKompilasi);
     defineNative("_pola_cari", nativeFnPolaCari);
     defineNative("_pola_semua", nativeFnPolaSemua);
+
+    // Kriptografi modern (Fase 18 V1, src/kripto.c). Internal: dibungkus oleh
+    // pustaka/kripto.idk (AEAD, HKDF, perbandingan waktu-tetap).
+    defineNative("_kripto_aead_segel", nativeFnKriptoAeadSegel);
+    defineNative("_kripto_aead_buka", nativeFnKriptoAeadBuka);
+    defineNative("_kripto_hkdf_sha256", nativeFnKriptoHkdfSha256);
+    defineNative("_kripto_sama", nativeFnKriptoSama);
 
     // Sistem operasi (Fase 6 gelombang C2, src/sistem.c). lingkungan,
     // isi_direktori, dan _jalankan_proses ditolak di `indk --sandbox`.
