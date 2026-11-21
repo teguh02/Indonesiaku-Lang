@@ -1,0 +1,113 @@
+# Observability minimum untuk server web (Fase 22): app.pantau() memberi
+# /health, /ready, /metrics (format teks Prometheus), dan X-Request-ID.
+# app.tangani() dipakai langsung, jadi contoh ini tidak membuka soket.
+impor "pustaka/teks.idk"
+impor web
+impor log
+dari web impor GalatWeb
+
+# Readiness gagal dicatat lewat modul log; arahkan ke berkas supaya stderr
+# golden test tetap kosong, lalu tampilkan isinya di akhir.
+berkas_log = "_contoh_web_pantau.log"
+log.atur(berkas = berkas_log)
+
+siap = {"db": benar}
+
+fungsi periksa_db() {
+    jika siap["db"] == "rusak" {
+        naikkan "koneksi db terputus"
+    }
+    kembalikan siap["db"]
+}
+
+app = web.Aplikasi()
+app.proxy_tepercaya(["10.0.0.1"])
+app.pantau(periksa_siap = periksa_db)
+app.rute("GET", "/halo", fungsi(req) {
+    # req["id"] tersedia untuk penangan, mis. untuk dicatat sendiri.
+    kembalikan web.teks(200, "id " + ke_teks(panjang(req["id"])) + " karakter")
+})
+
+fungsi minta(path, tambahan = "", peer = kosong) {
+    kembalikan app.tangani("GET " + path + " HTTP/1.1\r\nHost: x\r\n" + tambahan + "\r\n", peer)
+}
+
+fungsi status(res) {
+    kembalikan potong(res, 9, 3)
+}
+
+fungsi badan(res) {
+    variabel i = teks_cari(res, "\r\n\r\n")
+    kembalikan potong(res, i + 4, panjang(res) - i - 4)
+}
+
+fungsi header(res, nama) {
+    untuk baris dalam teks_pisah(res, "\r\n") {
+        jika baris == "" {
+            hentikan
+        }
+        jika teks_mulai_dengan(huruf_kecil(baris), huruf_kecil(nama) + ": ") {
+            kembalikan potong(baris, panjang(nama) + 2, panjang(baris) - panjang(nama) - 2)
+        }
+    }
+    kembalikan kosong
+}
+
+cetak("--- liveness & readiness")
+res = minta("/health")
+cetak(status(res), header(res, "Content-Type"), badan(res))
+res = minta("/ready")
+cetak(status(res), badan(res))
+siap["db"] = salah
+cetak(status(minta("/ready")), badan(minta("/ready")))
+siap["db"] = "rusak"
+cetak(status(minta("/ready")))
+siap["db"] = benar
+
+cetak("--- X-Request-ID")
+res = minta("/halo")
+rid = header(res, "X-Request-ID")
+cetak(status(res), badan(res), panjang(rid))
+cetak("dua permintaan, dua ID:", rid != header(minta("/halo"), "X-Request-ID"))
+# Dari proxy tepercaya, X-Request-ID kiriman proxy dipakai apa adanya...
+cetak(header(minta("/halo", "X-Request-ID: nginx-abc.123\r\n", "10.0.0.1"), "X-Request-ID"))
+# ...tetapi tidak dari klien biasa, dan tidak bila bentuknya berbahaya.
+cetak(header(minta("/halo", "X-Request-ID: palsu\r\n", "192.0.2.9"), "X-Request-ID") == "palsu")
+cetak(header(minta("/halo", "X-Request-ID: a b\r\n", "10.0.0.1"), "X-Request-ID") == "a b")
+# Permintaan rusak (400) pun mendapat ID.
+cetak(status(app.tangani("rusak\r\n\r\n")), panjang(header(app.tangani("rusak\r\n\r\n"), "X-Request-ID")))
+cetak(status(minta("/tidak-ada")))
+cetak(status(app.tangani("BREW /halo HTTP/1.1\r\nHost: x\r\n\r\n")))
+
+cetak("--- /metrics")
+res = minta("/metrics")
+cetak(status(res), header(res, "Content-Type"))
+# Durasi dan waktu mulai berubah tiap jalan; tampilkan baris yang tetap.
+untuk baris dalam teks_pisah(badan(res), "\n") {
+    jika baris == "" atau teks_mulai_dengan(baris, "indk_http_durasi_detik_sum") {
+        lanjut
+    }
+    jika teks_mulai_dengan(baris, "indk_mulai_detik ") {
+        cetak("indk_mulai_detik <waktu>")
+        lanjut
+    }
+    jika teks_mulai_dengan(baris, "indk_http_durasi_detik_bucket") dan tidak "+Inf" dalam baris {
+        lanjut
+    }
+    cetak(baris)
+}
+
+cetak("--- aplikasi tanpa pantau() tidak berubah")
+polos = web.Aplikasi()
+polos.rute("GET", "/x", fungsi(req) { kembalikan web.teks(200, "x") })
+res = polos.tangani("GET /x HTTP/1.1\r\nHost: x\r\n\r\n")
+cetak(header(res, "X-Request-ID"), status(polos.tangani("GET /health HTTP/1.1\r\n\r\n")))
+coba {
+    polos.metrik_teks()
+} kecuali GalatWeb sebagai e {
+    cetak("GalatWeb:", e.pesan)
+}
+
+cetak("--- log")
+cetak(baca_semua(berkas_log))
+hapus_berkas(berkas_log)

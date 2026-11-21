@@ -1,0 +1,4 @@
+# log.atur(format=...) harus teks; selain itu ditolak saat diatur, bukan
+# meledak di tengah pencatatan nanti.
+impor log
+log.atur(format = 1)

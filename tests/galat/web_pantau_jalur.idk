@@ -1,0 +1,4 @@
+# pantau(): jalur endpoint harus diawali "/"; salah ketik tidak boleh
+# diam-diam membuat /health tidak terdaftar.
+impor web
+web.Aplikasi().pantau(kesehatan = "health")

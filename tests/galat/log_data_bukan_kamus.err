@@ -1,0 +1,8 @@
+data log harus kamus, bukan daftar
+[baris 80, kolom 70] dalam _periksa_data()
+    …ta log harus kamus, bukan {jenis(data)}")
+                                             ^
+[baris 146, kolom 27] dalam catat()
+[baris 161, kolom 43] dalam peringatan()
+[baris 224, kolom 33] dalam peringatan()
+[baris 3, kolom 39] dalam skrip

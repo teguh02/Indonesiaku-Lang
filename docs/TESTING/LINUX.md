@@ -1460,6 +1460,82 @@ dipangkas, *zero width space* (U+200B) bukan spasi, dan `panjang()` tetap
 menghitung code point. Di konsol Windows, karakter non-ASCII harus tampil
 utuh (bukan `?` atau mojibake).
 
+### OBS — Observability (Fase 22)
+
+#### OBS-01 — Log JSON: satu objek per baris, field baku tidak bisa ditimpa data
+
+Berkas `OBS-01.idk`:
+
+```indonesiaku
+# Log JSON: satu objek per baris, field baku tidak bisa ditimpa data
+impor "pustaka/json.idk"
+impor "pustaka/teks.idk"
+impor log
+log.atur(format = "json", berkas = "uji_log.txt")
+log.peringatan("stok menipis", {"request_id": "abc", "level": "palsu", "sisa": 3})
+log.atur(format = "{level}:{nama}:{pesan}")
+log.peringatan("teks", {"request_id": "abc"})
+isi = baca_semua("uji_log.txt")
+hapus_berkas("uji_log.txt")
+baris = potong(isi, 0, teks_cari(isi, "\n"))
+objek = json_urai(baris)
+cetak(objek["level"], objek["modul"], objek["pesan"], objek["request_id"], objek["sisa"])
+cetak(panjang(objek["waktu"]), objek["waktu"][10])
+cetak(potong(isi, teks_cari(isi, "\n") + 1, panjang(isi)))
+```
+
+Jalankan `indk OBS-01.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+PERINGATAN akar stok menipis abc 3
+19 T
+PERINGATAN:akar:teks
+
+```
+
+Yang diperiksa: `log.atur(format = "json")` menulis satu objek JSON per baris yang bisa diurai kembali, kunci baku (`level`) tidak tertimpa `data`, `waktu` berbentuk ISO-8601 lokal 19 karakter, dan mode teks mengabaikan `data` sehingga format lama tidak berubah. Folder kerja harus bisa ditulisi.
+
+#### OBS-02 — app.pantau(): /health, /ready (503 saat tidak siap), /metrics, X-Request-ID
+
+Berkas `OBS-02.idk`:
+
+```indonesiaku
+# app.pantau(): /health, /ready (503 saat tidak siap), /metrics, X-Request-ID
+impor web
+siap = [benar]
+app = web.Aplikasi()
+app.pantau(periksa_siap = fungsi() { kembalikan siap[0] })
+fungsi minta(path) {
+    kembalikan app.tangani("GET " + path + " HTTP/1.1\r\nHost: x\r\n\r\n")
+}
+res = minta("/health")
+cetak(potong(res, 9, 3), "X-Request-ID: " dalam res, "{\"status\":\"ok\"}" dalam res)
+siap[0] = salah
+cetak(potong(minta("/ready"), 9, 3))
+cetak(potong(minta("/tidak-ada"), 9, 3))
+m = app.metrik_teks()
+cetak("indk_http_permintaan_total{metode=\"GET\",status=\"200\"} 1" dalam m)
+cetak("indk_http_permintaan_total{metode=\"GET\",status=\"503\"} 1" dalam m)
+cetak("indk_http_durasi_detik_count 3" dalam m)
+```
+
+Jalankan `indk OBS-02.idk`. **Kode keluar: `0`.**
+
+stdout yang diharapkan:
+
+```text
+200 benar benar
+503
+404
+benar
+benar
+benar
+```
+
+Yang diperiksa: `/health` menjawab 200 `{"status":"ok"}` dengan header `X-Request-ID`, `/ready` menjadi 503 saat `periksa_siap()` salah, dan counter/histogram `/metrics` naik sesuai permintaan. Perilaku yang sama lewat soket sungguhan diuji `tests/web_pantau_server.sh` (bagian 5).
+
 ### ARS — Kompresi dan arsip (Fase 23)
 
 #### ARS-01 — `kompres`: gzip/zlib, NUL di tengah data, bom dekompresi dibatasi

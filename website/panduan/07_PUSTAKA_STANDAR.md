@@ -1197,6 +1197,8 @@ gelung soket yang sudah ada tetap dipakai.
 | `app.tangani(mentah)` | Teks request → teks respons |
 | `app.jalankan(port, batas_waktu, maks_permintaan, catat)` | Gelung server lengkap; mengembalikan jumlah koneksi yang dilayani |
 | `app.berhenti()` | Hentikan gelung **setelah** balasan saat ini terkirim |
+| `app.pantau(kesehatan, kesiapan, periksa_siap, metrik)` | Rute `/health`, `/ready`, `/metrics` (Prometheus) dan header `X-Request-ID`; lihat *Observability* di bawah |
+| `app.metrik_teks()` | Teks metrics format Prometheus (setelah `pantau()`) |
 | `web.teks(kode, isi)`, `web.json(kode, isi)`, `web.html(kode, isi)` | Pembantu respons |
 
 #### Menjalankan server: `app.jalankan()`
@@ -1635,6 +1637,67 @@ koneksi, dan inilah yang membuat pemeriksaan di atas mungkin.
 **Yang sengaja tidak ada:** pola wildcard asal (`https://*.situs.id`) dan
 rentang CIDR untuk proxy. Pencocokan subdomain mudah salah tulis dan menjadi
 lubang; daftar eksplisit cukup sampai ada kebutuhan nyata.
+
+#### Observability: health, readiness, metrics, ID permintaan
+
+`app.pantau()` menyalakan observability minimum untuk server yang jalan
+24/7 di belakang reverse proxy atau orchestrator:
+
+```indonesiaku
+impor web
+
+app = web.Aplikasi()
+app.pantau(periksa_siap = fungsi() { kembalikan benar })   # mis. db "SELECT 1"
+app.rute("GET", "/", fungsi(req) {
+    kembalikan web.teks(200, "permintaan " + req["id"])
+})
+
+res = app.tangani("GET /health HTTP/1.1\r\nHost: x\r\n\r\n")
+cetak(potong(res, 0, 15))                     # HTTP/1.1 200 OK
+cetak("X-Request-ID" dalam res)               # benar
+cetak("indk_http_permintaan_total" dalam app.metrik_teks())   # benar
+```
+
+| Rute (bawaan) | Jawaban |
+|---|---|
+| `GET /health` | Liveness: selalu `200` `{"status":"ok"}` selama gelung melayani. Sengaja tidak memeriksa apa pun yang mahal |
+| `GET /ready` | Readiness: `200` `{"status":"ok"}` bila `periksa_siap()` bernilai benar (atau tidak diberikan), `503` `{"status":"tidak siap"}` bila salah **atau menaikkan galat** — detail galat hanya ke log pencatat `web`, tidak ke klien |
+| `GET /metrics` | Format teks Prometheus 0.0.4 |
+
+Jalur bisa diganti (`pantau(kesehatan = "/hidup")`) atau dimatikan dengan
+`kosong`; jalur yang tidak diawali `/` dan pemanggilan `pantau()` kedua kali
+ditolak dengan `GalatWeb`.
+
+**Metrics** yang tersedia:
+
+| Nama | Jenis | Isi |
+|---|---|---|
+| `indk_http_permintaan_total{metode,status}` | counter | Permintaan yang dijawab. Metode di luar GET/HEAD/POST/PUT/PATCH/DELETE/OPTIONS digabung jadi `LAIN` |
+| `indk_http_durasi_detik` | histogram | Durasi `tangani()`, bucket bawaan Prometheus (5 ms – 10 s); p50/p95 lewat `histogram_quantile()` |
+| `indk_mulai_detik` | gauge | Waktu `pantau()` dipanggil — tanda proses baru restart |
+
+Path **tidak** dijadikan label: tiap `/todos/123` akan menjadi deret waktu
+baru tanpa batas. Error rate dihitung dari label `status` (mis. `5..`).
+
+**ID permintaan.** Setiap permintaan mendapat `req["id"]` (16 digit heks
+dari `acak_bita`) — juga tanpa `pantau()`, jadi penangan selalu bisa
+mencatatnya. Dengan `pantau()`, ID itu dikirim balik sebagai header
+`X-Request-ID`, dan baris log `app.jalankan()` membawa field `request_id`.
+`X-Request-ID` kiriman luar dipakai **hanya** dari `proxy_tepercaya()` dan
+hanya bila 1–64 karakter `[A-Za-z0-9._-]`, sehingga nginx dapat meneruskan
+`$request_id`-nya tetapi klien tidak dapat menyuntikkan baris log.
+
+**Batas yang jujur:**
+
+- Rute ini rute biasa, jadi middleware ikut berlaku — dan `/metrics` **tidak
+  punya autentikasi sendiri**. Batasi lewat reverse proxy
+  (`location /metrics { allow 10.0.0.0/8; deny all; }`) atau middleware.
+- Satu utas: `/metrics` dan `/ready` dilayani bergiliran dengan permintaan
+  pengguna, jadi `periksa_siap` harus cepat.
+- Counter ada di memori proses: hilang saat restart (Prometheus menangani ini
+  lewat `rate()`).
+- Belum ada graceful shutdown lewat SIGTERM dan belum ada tracing
+  terdistribusi.
 
 #### Contoh utuh: `examples/catatan_app.idk`
 
@@ -2142,7 +2205,28 @@ hapus_berkas("_panduan_log_sementara.txt")
 | `DEBUG`, `INFO`, `PERINGATAN`, `GALAT`, `KRITIS` | Level: 10, 20, 30, 40, 50 |
 | `ambil_pencatat(nama)` | `Pencatat` bernama; nama sama → objek sama. Bertingkat dengan titik: `"app.db"` mewarisi ambang `"app"` bila ambangnya sendiri belum diatur |
 | `Pencatat.atur_ambang(level)` | Ambang khusus pencatat itu |
-| `atur(ambang, format, berkas)` | Pengaturan bersama; `berkas = ""` kembali ke stderr |
+| `atur(ambang, format, berkas)` | Pengaturan bersama; `berkas = ""` kembali ke stderr; `format = "json"` untuk log terstruktur. Format bukan teks → `GalatLog` |
+| `debug(pesan, data)` … `kritis(pesan, data)` | `data` (kamus, opsional) menjadi field tambahan di mode JSON; mode teks mengabaikannya. Bukan kamus → `GalatLog` |
+
+**Log terstruktur (JSON).** `log.atur(format = "json")` menulis satu objek
+JSON per baris — siap diurai Loki, ELK, atau `jq`. Kunci baku `waktu`
+(waktu lokal `YYYY-MM-DDTHH:MM:SS`), `level`, `modul`, `pesan` selalu ada dan
+tidak bisa ditimpa lewat `data`; nilai yang tidak punya bentuk JSON ditulis
+sebagai teks alih-alih menggagalkan pencatatan.
+
+```indonesiaku
+impor log
+
+log.atur(format = "json", berkas = "_panduan_log_json.txt")
+log.peringatan("stok menipis", {"request_id": "9f2c01", "sisa": 3})
+cetak(baca_semua("_panduan_log_json.txt"))
+# {"waktu":"2026-11-21T10:00:00","level":"PERINGATAN","modul":"akar","pesan":"stok menipis","request_id":"9f2c01","sisa":3}
+hapus_berkas("_panduan_log_json.txt")
+```
+
+Baris permintaan `app.jalankan()` membawa field `request_id`, `metode`,
+`path`, `status`, dan `durasi_ms`. Header dan badan tetap tidak pernah
+dicatat.
 
 ### 2.17 `pustaka/proses.idk` — menjalankan program lain
 

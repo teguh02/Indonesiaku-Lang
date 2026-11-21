@@ -1,0 +1,32 @@
+# Server uji untuk tests/web_pantau_server.sh: app.pantau() lewat gelung
+# server bawaan (app.jalankan), dengan log JSON ke stderr.
+
+impor web
+impor log
+
+variabel PORT = ke_bulat(ambil_lingkungan("IDK_PORT"))
+variabel SISA = ke_bulat(ambil_lingkungan("IDK_SISA"))
+
+log.atur(format = "json")
+
+variabel siap = [benar]
+variabel app = web.Aplikasi()
+app.proxy_tepercaya(["127.0.0.1"])
+app.pantau(periksa_siap = fungsi() { kembalikan siap[0] })
+
+app.rute("GET", "/halo", fungsi(req) {
+    kembalikan web.teks(200, "halo")
+})
+app.rute("GET", "/meledak", fungsi(req) {
+    naikkan web.GalatWeb("sengaja meledak")
+})
+app.rute("POST", "/tidak-siap", fungsi(req) {
+    siap[0] = salah
+    kembalikan web.teks(200, "ok")
+})
+app.rute("GET", "/matikan", fungsi(req) {
+    app.berhenti()
+    kembalikan web.teks(200, "berhenti")
+})
+
+app.jalankan(PORT, 2, SISA)

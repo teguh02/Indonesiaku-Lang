@@ -60,7 +60,7 @@ Menjadi bahasa pemrograman pertama yang fully mendukung pemrograman dalam Bahasa
 
 **Perkakas**
 - ✅ `indk periksa` (linter), `indk rapikan` (formatter), `indk uji` (test runner), `indk --dis` (disassembler)
-- ✅ **Ekstensi VS Code resmi** dengan LSP: diagnostics, completion, hover, go-to-definition
+- ✅ **Ekstensi VS Code resmi** dengan LSP: diagnostics, completion, hover, go-to-definition, serta debugger (F5)
 - ✅ Mode `--sandbox` dan `indk --periksa-pembaruan`
 
 **Infrastruktur**
