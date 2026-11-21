@@ -909,6 +909,7 @@ kalkulator-indonesiaku/
 
 1. [ ] Rancang debugger dalam docs/RENCANA_FITUR/debugger.md: metadata baris/kolom, breakpoint, pause/step, inspeksi frame/variabel, protokol komunikasi editor dan overhead saat debug nonaktif.
 2. [ ] Implementasikan eksekusi debugger terkontrol dan tes step in/over/out, exception, closure, generator, nested call, serta terminasi program.
+   - 🟨 Sebagian: adapter DAP VS Code di atas `indk awakutu` (breakpoint, step over/into/out tiruan, variabel global/parameter, terminasi) sudah ada — lihat [rencana ekstensi](RENCANA_FITUR/pengembangan_ekstensi_vscode.md) §A. Pause, variabel lokal dan breakpoint per berkas masih butuh kerja C.
 3. [ ] Buat docs/RENCANA_FITUR/embedding_ffi.md: ABI C publik, lifecycle VM, registrasi fungsi native, konversi Value, error, multi-instance dan rooting GC.
 4. [ ] Implementasikan API embedding terlebih dahulu; FFI umum menyusul hanya setelah batas keamanan, ownership memori dan sandbox disepakati.
 5. [ ] Sediakan header publik, contoh host C, dokumentasi API, tes sanitizer, kompatibilitas compiler serta prosedur pemeliharaan ABI.

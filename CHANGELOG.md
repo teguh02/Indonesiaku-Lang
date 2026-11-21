@@ -9,6 +9,13 @@ dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Ditambahkan
 
+- **Debugger VS Code (F5)** di atas `indk awakutu`: adapter Debug Adapter
+  Protocol tanpa dependensi (`editors/vscode-indonesiaku/debug-adapter.js`)
+  dengan breakpoint di gutter, step over/into/out, call stack, Variables
+  (global dan parameter), hover, serta keluaran program di Debug Console.
+  Tanpa perubahan interpreter; batas awakutu (breakpoint hanya berkas
+  utama, tanpa pause, tanpa variabel lokal) dicatat di README ekstensi.
+  Diuji `npm run test:dap`.
 - **Bundel executable AOT V1** (`indk` tanpa argumen menjalankan skrip yang
   ditempel ke akhir biner lewat `scripts/bangun_bundel.sh`) — distribusi
   satu-file untuk skrip tunggal (Fase 8). Argumen bundel sendiri diteruskan

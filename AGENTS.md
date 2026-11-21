@@ -493,6 +493,14 @@ allocates and can trigger a GC. Two rules follow, both learned from real bugs:
   `npm run test:format` in `editors/vscode-indonesiaku/`.
 - `tests/test.yml` job `editor-lsp` runs these Node integration tests and formatter
   tests on Linux/macOS/Windows.
+- **The awakutu text format is a protocol now.** The VS Code debugger
+  (`editors/vscode-indonesiaku/debug-adapter.js`) drives `indk awakutu` over
+  stdin and parses its stderr: the `(awakutu) ` prompt, the stop header
+  `[baris N] <fungsi>`, `  #i [baris N] <fungsi>` from `tumpukan` and
+  `  <nama> = <nilai>` from `lihat` (`awakutu-proses.js`). Changing any of
+  those strings in `src/vm.c` breaks the debugger silently -- run
+  `npm run test:dap` (also in the `editor-lsp` CI job). Step into/out are
+  emulated in the adapter because awakutu only has `langkah` (step over).
 - `allowTupleRHS` in `compiler.c` gates the bare-comma tupel (`x = 1, 2`). It is enabled by
   exactly four callers — `expressionStatement`, `varDeclaration`, `returnStatement` (both
   branches), and the `OP_INDEX_SET` path — and `maybeTupleTail` additionally requires
