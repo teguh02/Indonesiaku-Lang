@@ -490,6 +490,8 @@ hasil3 = 10 > 5 dan 3 < 2 atau 4 == 4  # benar
 
 ## Percabangan
 
+https://youtu.be/nYo6Ij5tqYM
+
 ### If Statement
 
 Struktur dasar percabangan:
