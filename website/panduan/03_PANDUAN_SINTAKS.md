@@ -190,6 +190,8 @@ test()
 
 ## Operator
 
+https://youtu.be/sfCyYPZp_D8
+
 ### Tipe Angka: `bulat` dan `desimal`
 
 Seperti Python, ada dua tipe angka:
