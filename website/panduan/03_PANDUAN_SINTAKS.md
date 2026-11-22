@@ -636,6 +636,8 @@ jika (x > 0 dan x < 100) atau x == 0 {
 
 ## Perulangan
 
+https://youtu.be/Joj1FnWlRdM
+
 ### While Loop
 
 Struktur dasar loop:
