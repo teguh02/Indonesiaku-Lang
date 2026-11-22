@@ -130,6 +130,8 @@ hasil = kosong
 
 ## Variabel
 
+https://youtu.be/wOZu5akYyYY
+
 Variabel adalah tempat menyimpan data yang dapat berubah nilainya.
 
 ### Deklarasi dan Assignment
