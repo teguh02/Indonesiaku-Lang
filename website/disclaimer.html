@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full scroll-pt-24">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disclaimer — Indonesiaku</title>
+  <meta name="description" content="Disclaimer resmi proyek Indonesiaku: bahasa pemrograman independen, tidak berafiliasi dengan Pemerintah Republik Indonesia. / Official Indonesiaku disclaimer: an independent programming language, not affiliated with the Government of the Republic of Indonesia." />
+  <link rel="icon" href="assets/favicon.ico?v=1.8.0" sizes="any" />
+  <link rel="icon" type="image/png" href="assets/logo-idk-square.png?v=1.8.0" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=1.8.0" />
+  <meta property="og:title" content="Disclaimer — Indonesiaku" />
+  <meta property="og:description" content="Indonesiaku adalah nama proyek bahasa pemrograman, bukan representasi Negara Republik Indonesia." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://idk-lang.web.id/assets/logo-idk-lang.png?v=1.8.0" />
+  <meta property="og:image:alt" content="Idk-Lang — Bahasa Pemrograman Indonesiaku" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="color-scheme" content="light dark" />
+
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script src="assets/tailwind-config.js?v=1.8.0"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/site.css?v=1.8.0" />
+
+  <script>
+    (function () {
+      try {
+        var tema = localStorage.getItem("indk-theme");
+        if (!tema) tema = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        if (tema === "dark") document.documentElement.classList.add("dark");
+      } catch (e) {}
+    })();
+  </script>
+  <script src="assets/app.js?v=1.8.0"></script>
+</head>
+
+<body x-data="shell" class="min-h-full bg-paper font-sans text-ink antialiased dark:bg-night dark:text-paper">
+  <div id="konten">
+  <a href="#utama" data-senna-off class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-white">Lewati ke konten</a>
+
+  <header class="sticky top-0 z-50 border-b border-ink/10 bg-paper/85 backdrop-blur-md dark:border-white/10 dark:bg-night/85">
+    <div class="mx-auto flex h-16 max-w-wrap items-center gap-1 px-5">
+      <a href="index.html" class="mr-4 flex items-center gap-2.5 text-[15px] font-extrabold tracking-tight">
+        <span class="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 font-mono text-[13px] font-bold text-white shadow-sm">In</span>
+        <span>Indonesiaku<span class="text-brand-600 dark:text-brand-400">.</span></span>
+      </a>
+      <nav class="hidden items-center gap-0.5 lg:flex" aria-label="Navigasi utama">
+        <a href="index.html" class="rounded-lg px-3 py-2 text-sm font-medium text-ink-2 hover:bg-ink/[0.04] hover:text-ink dark:text-paper/70 dark:hover:bg-white/5 dark:hover:text-paper" x-text="t('nav_home')">Beranda</a>
+        <a href="about.html" class="rounded-lg px-3 py-2 text-sm font-medium text-ink-2 hover:bg-ink/[0.04] hover:text-ink dark:text-paper/70 dark:hover:bg-white/5 dark:hover:text-paper" x-text="t('nav_about')">Tentang</a>
+        <a href="author.html" class="rounded-lg px-3 py-2 text-sm font-medium text-ink-2 hover:bg-ink/[0.04] hover:text-ink dark:text-paper/70 dark:hover:bg-white/5 dark:hover:text-paper" x-text="t('nav_author')">Penulis</a>
+        <a href="docs.html" class="rounded-lg px-3 py-2 text-sm font-medium text-ink-2 hover:bg-ink/[0.04] hover:text-ink dark:text-paper/70 dark:hover:bg-white/5 dark:hover:text-paper" x-text="t('nav_docs')">Dokumentasi</a>
+        <a href="playground/" class="rounded-lg px-3 py-2 text-sm font-medium text-ink-2 hover:bg-ink/[0.04] hover:text-ink dark:text-paper/70 dark:hover:bg-white/5 dark:hover:text-paper" x-text="t('nav_playground')">Playground</a>
+      </nav>
+      <div class="ml-auto flex items-center gap-1.5">
+        <button type="button" @click="toggleTheme()" :aria-label="t('ui_theme')" :title="t('ui_theme')" class="grid h-9 w-9 place-items-center rounded-full border border-ink/10 text-ink-2 transition hover:bg-ink/[0.04] dark:border-white/15 dark:text-paper/70 dark:hover:bg-white/5">
+          <svg x-show="!dark" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" /></svg>
+          <svg x-show="dark" x-cloak class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+        </button>
+        <a href="https://github.com/teguh02/Indonesiaku-Lang" target="_blank" rel="noopener" class="hidden items-center gap-2 rounded-full border border-ink/10 px-3.5 py-1.5 text-sm font-semibold text-ink-2 transition hover:border-ink/25 hover:text-ink dark:border-white/15 dark:text-paper/70 dark:hover:border-white/30 dark:hover:text-paper md:flex">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.6 18.3 5 18.3 5c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5Z"/></svg>
+          GitHub
+        </a>
+        <button type="button" @click="menu = !menu" :aria-expanded="menu" :aria-label="t('nav_menu')" class="grid h-9 w-9 place-items-center rounded-full border border-ink/10 text-ink-2 dark:border-white/15 dark:text-paper/70 lg:hidden">
+          <svg x-show="!menu" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          <svg x-show="menu" x-cloak class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div x-show="menu" x-cloak x-transition.opacity.duration.150ms class="border-t border-ink/10 bg-paper px-5 pb-4 pt-2 dark:border-white/10 dark:bg-night lg:hidden">
+      <nav class="grid gap-1" aria-label="Navigasi mobile">
+        <a href="index.html" class="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-2 hover:bg-ink/[0.04] dark:text-paper/80 dark:hover:bg-white/5" x-text="t('nav_home')">Beranda</a>
+        <a href="author.html" class="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-2 hover:bg-ink/[0.04] dark:text-paper/80 dark:hover:bg-white/5" x-text="t('nav_author')">Penulis</a>
+        <a href="docs.html" class="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-2 hover:bg-ink/[0.04] dark:text-paper/80 dark:hover:bg-white/5" x-text="t('nav_docs')">Dokumentasi</a>
+        <a href="playground/" class="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-2 hover:bg-ink/[0.04] dark:text-paper/80 dark:hover:bg-white/5" x-text="t('nav_playground')">Playground</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="utama" class="mx-auto max-w-wrap px-5 py-14 sm:py-20">
+    <div class="mx-auto max-w-3xl">
+      <p class="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-brand-700 dark:text-brand-300">Disclaimer</p>
+      <h1 class="mt-4 text-4xl font-extrabold tracking-tight sm:text-5xl">Disclaimer</h1>
+      <p class="mt-5 text-lg leading-relaxed text-ink-2 dark:text-paper/70">
+        Halaman ini berlaku untuk seluruh konten yang membahas Indonesiaku di kanal resmi:
+        Instagram <a href="https://instagram.com/teguhrijanandi" target="_blank" rel="noopener" class="text-brand-700 underline dark:text-brand-300">@teguhrijanandi</a> dan
+        <a href="https://instagram.com/indonesiaku_lang" target="_blank" rel="noopener" class="text-brand-700 underline dark:text-brand-300">@indonesiaku_lang</a>,
+        TikTok <a href="https://tiktok.com/@sharing.teguh" target="_blank" rel="noopener" class="text-brand-700 underline dark:text-brand-300">@sharing.teguh</a>,
+        website <a href="https://teguhrijanandi.web.id/" target="_blank" rel="noopener" class="text-brand-700 underline dark:text-brand-300">teguhrijanandi.web.id</a>,
+        repositori GitHub, dan situs ini sendiri.<br />
+        This page applies to all content discussing Indonesiaku on the official channels above, the GitHub repository, and this site itself.
+      </p>
+
+      <!-- ================= INDONESIA ================= -->
+      <article class="mt-12 rounded-xl2 border border-ink/10 bg-white p-6 shadow-card dark:border-white/10 dark:bg-night-2 sm:p-8">
+        <h2 class="text-2xl font-bold tracking-tight">🇮🇩 Bahasa Indonesia</h2>
+        <p class="mt-4 text-ink-2 dark:text-paper/70">
+          <strong>Indonesiaku</strong> merupakan proyek bahasa pemrograman open source independen yang
+          dikembangkan sebagai kontribusi terhadap perkembangan teknologi dan ekosistem pemrograman.
+        </p>
+        <p class="mt-4 text-ink-2 dark:text-paper/70">
+          Proyek ini <strong>tidak berafiliasi, tidak disponsori, dan tidak mewakili</strong>
+          Pemerintah Republik Indonesia maupun lembaga pemerintahan lainnya.
+        </p>
+        <p class="mt-4 text-ink-2 dark:text-paper/70">
+          Kata "Indonesiaku" yang muncul di judul konten, repositori, maupun video sosial media
+          (termasuk konten perbandingan performa dengan bahasa pemrograman lain seperti Python, PHP,
+          atau Go) merujuk pada <strong>nama proyek bahasa pemrograman</strong> — bukan Negara Republik
+          Indonesia, lembaganya, atau simbol kenegaraannya. "Mengadu" atau "membandingkan" dalam konteks
+          ini artinya membandingkan performa/fitur bahasa pemrograman, tidak ada kaitan dengan isu
+          kenegaraan, politik, atau kebangsaan.
+        </p>
+        <p class="mt-4 text-ink-2 dark:text-paper/70">
+          Indonesiaku dikembangkan untuk kepentingan edukasi, eksplorasi teknologi, dan kolaborasi
+          komunitas pengembang. Nama "Indonesiaku" digunakan sebagai identitas proyek bahasa pemrograman
+          dan tidak dimaksudkan untuk menyatakan kepemilikan, kewenangan, atau representasi resmi atas
+          Negara Republik Indonesia.
+        </p>
+        <p class="mt-4 text-ink-2 dark:text-paper/70">
+          Pengembangan proyek dilakukan secara terbuka dan nonkomersial. Partisipasi serta kontribusi
+          komunitas bersifat sukarela tanpa adanya kewajiban atau janji pemberian imbalan finansial.
+          Proyek ini tidak menggunakan lambang negara, identitas kementerian, atau atribut lain yang
+          dapat memberikan kesan proyek resmi pemerintah.
+        </p>
+      </article>
+
+      <!-- ================= ENGLISH ================= -->
+      <article class="mt-8 rounded-xl2 border border-ink/10 bg-white p-6 shadow-card dark:border-white/10 dark:bg-night-2 sm:p-8">
+        <h2 class="text-2xl font-bold tracking-tight">🌐 English</h2>
+        <p class="mt-4 text-ink-2 dark:text-paper/70">
+          <strong>Indonesiaku</strong> is an independent, open source programming language project
+          developed as a contribution to technology and the programming ecosystem.
+        </p>
+        <p class="mt-4 text-ink-2 dark:text-paper/70">
+          This project is <strong>not affiliated with, sponsored by, or representing</strong> the
+          Government of the Republic of Indonesia or any other government institution.
+        </p>
+        <p class="mt-4 text-ink-2 dark:text-paper/70">
+          The word "Indonesiaku" used in content titles, the repository, or social media videos
+          (including content that compares performance against other programming languages such as
+          Python, PHP, or Go) refers to the <strong>name of the programming language project</strong> —
+          not the Republic of Indonesia, its institutions, or its state symbols. Any "pitting against"
+          or "comparison" in this context means comparing programming language performance/features,
+          with no relation to state, political, or national issues.
+        </p>
+        <p class="mt-4 text-ink-2 dark:text-paper/70">
+          Indonesiaku is developed for educational purposes, technology exploration, and developer
+          community collaboration. The name "Indonesiaku" is used as the identity of a programming
+          language project and is not intended to claim ownership, authority, or official
+          representation of the Republic of Indonesia.
+        </p>
+        <p class="mt-4 text-ink-2 dark:text-paper/70">
+          Development is conducted openly and non-commercially. Community participation and
+          contributions are voluntary, with no obligation or promise of financial compensation. This
+          project does not use state emblems, ministry identities, or other attributes that could give
+          the impression of an official government project.
+        </p>
+      </article>
+
+      <p class="mt-8 text-sm text-ink-3 dark:text-paper/45">
+        Sumber resmi / Official source:
+        <a href="https://github.com/teguh02/Indonesiaku-Lang#%E2%84%B9%EF%B8%8F-independensi-proyek--disclaimer" target="_blank" rel="noopener" class="text-brand-700 underline dark:text-brand-300">README.md § Independensi Proyek &amp; Disclaimer</a>.
+      </p>
+    </div>
+  </main>
+
+  <footer class="border-t border-ink/10 bg-white dark:border-white/10 dark:bg-night-2">
+    <div class="mx-auto grid max-w-wrap gap-10 px-5 py-14 sm:grid-cols-2 lg:grid-cols-12">
+      <div class="lg:col-span-5">
+        <a href="index.html" class="flex items-center gap-2.5 text-[15px] font-extrabold tracking-tight">
+          <span class="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 font-mono text-[13px] font-bold text-white">In</span>
+          <span>Indonesiaku<span class="text-brand-600 dark:text-brand-400">.</span></span>
+        </a>
+        <p class="mt-4 max-w-xs text-sm text-ink-2 dark:text-paper/60" x-text="t('foot_tagline')">Bahasa pemrograman dengan sintaks Bahasa Indonesia.</p>
+        <div class="mt-5 flex items-center gap-2 font-mono text-[11px] text-ink-3 dark:text-paper/45">
+          <span class="rounded-full border border-ink/10 px-2 py-0.5 dark:border-white/15" data-indk-versi>v1.8.0</span>
+          <span class="rounded-full border border-ink/10 px-2 py-0.5 dark:border-white/15">MIT</span>
+          <span class="rounded-full border border-ink/10 px-2 py-0.5 dark:border-white/15">C11</span>
+        </div>
+      </div>
+      <div class="lg:col-span-2">
+        <h3 class="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-3 dark:text-paper/40" x-text="t('foot_product')">Produk</h3>
+        <ul class="mt-3 space-y-2 text-sm">
+          <li><a href="docs.html" class="text-ink-2 hover:text-brand-700 dark:text-paper/65 dark:hover:text-brand-300" x-text="t('foot_docs')">Dokumentasi</a></li>
+          <li><a href="docs.html#panduan/03_PANDUAN_SINTAKS.md" class="text-ink-2 hover:text-brand-700 dark:text-paper/65 dark:hover:text-brand-300" x-text="t('foot_syntax')">Panduan sintaks</a></li>
+          <li><a href="docs.html#panduan/07_PUSTAKA_STANDAR.md" class="text-ink-2 hover:text-brand-700 dark:text-paper/65 dark:hover:text-brand-300" x-text="t('foot_stdlib')">Pustaka standar</a></li>
+          <li><a href="playground/" class="text-ink-2 hover:text-brand-700 dark:text-paper/65 dark:hover:text-brand-300" x-text="t('foot_playground')">Playground</a></li>
+        </ul>
+      </div>
+      <div class="lg:col-span-3">
+        <h3 class="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-3 dark:text-paper/40" x-text="t('foot_source')">Sumber</h3>
+        <ul class="mt-3 space-y-2 text-sm">
+          <li><a href="https://github.com/teguh02/Indonesiaku-Lang" target="_blank" rel="noopener" class="text-ink-2 hover:text-brand-700 dark:text-paper/65 dark:hover:text-brand-300">GitHub ↗</a></li>
+          <li><a href="https://hub.docker.com/r/teguh02/indonesiaku" target="_blank" rel="noopener" class="text-ink-2 hover:text-brand-700 dark:text-paper/65 dark:hover:text-brand-300">Docker Hub ↗</a></li>
+          <li><a href="https://github.com/teguh02/Indonesiaku-Lang/blob/main/CHANGELOG.md" target="_blank" rel="noopener" class="text-ink-2 hover:text-brand-700 dark:text-paper/65 dark:hover:text-brand-300" x-text="t('foot_changelog')">Catatan rilis</a></li>
+          <li><a href="https://github.com/teguh02/Indonesiaku-Lang/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener" class="text-ink-2 hover:text-brand-700 dark:text-paper/65 dark:hover:text-brand-300" x-text="t('foot_roadmap')">Roadmap</a></li>
+        </ul>
+      </div>
+      <div class="lg:col-span-2">
+        <h3 class="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-3 dark:text-paper/40" x-text="t('foot_contact')">Kontak</h3>
+        <ul class="mt-3 space-y-2 text-sm">
+          <li><a href="author.html" class="text-ink-2 hover:text-brand-700 dark:text-paper/65 dark:hover:text-brand-300" x-text="t('foot_author')">Penulis</a></li>
+          <li><a href="mailto:teguhrijanandi02@gmail.com" class="text-ink-2 hover:text-brand-700 dark:text-paper/65 dark:hover:text-brand-300">Email</a></li>
+          <li><span class="text-ink-2 dark:text-paper/65" x-text="t('foot_license')">Lisensi MIT</span></li>
+          <li><a href="disclaimer.html" class="text-ink-2 hover:text-brand-700 dark:text-paper/65 dark:hover:text-brand-300">Disclaimer</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-ink/10 dark:border-white/10">
+      <div class="mx-auto flex max-w-wrap flex-wrap items-center justify-between gap-3 px-5 py-5 text-xs text-ink-3 dark:text-paper/45">
+        <p>© 2026 Indonesiaku · <span x-text="t('foot_rights')">Dibuat di Indonesia</span> 🇮🇩</p>
+        <p class="font-mono">indk 1.8.0</p>
+      </div>
+    </div>
+  </footer>
+  </div><!-- /#konten -->
+
+  <!-- ================= Senna.js: navigasi SPA ================= -->
+  <script src="https://cdn.jsdelivr.net/npm/senna@2.7.3/build/globals/senna.min.js" defer></script>
+  <script>
+    window.addEventListener("load", function () {
+      if (!window.senna) return;
+      var app = new senna.App();
+      window.__indkApp = app;
+      app.setBasePath("/");
+      app.addSurfaces("konten");
+      app.addRoutes(new senna.Route(/.*/, senna.HtmlScreen));
+    });
+  </script>
+</body>
+</html>
