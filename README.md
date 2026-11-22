@@ -280,26 +280,43 @@ Panduan lengkapnya di **[04_KONTRIBUSI](website/panduan/04_KONTRIBUSI.md)**.
 
 ## ℹ️ Independensi Proyek & Disclaimer
 
+> Versi lengkap bilingual (ID/EN) ada di
+> **[idk-lang.web.id/disclaimer.html](https://idk-lang.web.id/disclaimer.html)**.
+> Berlaku untuk semua konten Indonesiaku / Indonesiaku-Lang di TikTok
+> [@sharing.teguh](https://tiktok.com/@sharing.teguh), Instagram
+> [@teguhrijanandi](https://instagram.com/teguhrijanandi) &
+> [@indonesiaku_lang](https://instagram.com/indonesiaku_lang),
+> [teguhrijanandi.web.id](https://teguhrijanandi.web.id/),
+> [idk-lang.web.id](https://idk-lang.web.id/), GitHub, Medium
+> [@teguhrijanandi02](https://medium.com/@teguhrijanandi02), maupun situs/media
+> lain mana pun yang membahas Indonesiaku.
+
 Indonesiaku merupakan proyek bahasa pemrograman open source independen yang
 dikembangkan sebagai kontribusi terhadap perkembangan teknologi dan ekosistem
 pemrograman.
 
-Proyek ini **tidak berafiliasi, tidak disponsori, dan tidak mewakili**
-Pemerintah Republik Indonesia maupun lembaga pemerintahan lainnya.
-
-Indonesiaku dikembangkan untuk kepentingan edukasi, eksplorasi teknologi, dan
-kolaborasi komunitas pengembang. Nama "Indonesiaku" digunakan sebagai identitas
-proyek bahasa pemrograman dan tidak dimaksudkan untuk menyatakan kepemilikan,
-kewenangan, atau representasi resmi atas Negara Republik Indonesia.
-
-Pengembangan proyek dilakukan secara terbuka dan nonkomersial. Partisipasi serta
-kontribusi komunitas bersifat sukarela tanpa adanya kewajiban atau janji
-pemberian imbalan finansial.
-
-Proyek ini tidak menggunakan lambang negara, identitas kementerian, atau atribut
-lain yang dapat memberikan kesan proyek resmi pemerintah.
+- **Bukan representasi negara.** Tidak berafiliasi, tidak disponsori, dan
+  tidak mewakili Pemerintah Republik Indonesia maupun lembaga pemerintahan
+  lainnya. Tidak ada lambang negara, identitas kementerian, atau atribut resmi
+  pemerintah yang digunakan.
+- **Arti kata "Indonesiaku".** Merujuk pada nama proyek bahasa pemrograman
+  dengan sintaks Bahasa Indonesia ("bahasa kita") — bukan Negara Republik
+  Indonesia, lembaganya, atau simbol kenegaraannya.
+- **Konten perbandingan/benchmark.** Saat ada konten yang "mengadu" atau
+  membandingkan Indonesiaku dengan bahasa lain (Python, PHP, Go, dsb.),
+  maksudnya murni membandingkan performa/fitur bahasa pemrograman — tidak ada
+  kaitan dengan isu kenegaraan, politik, atau kebangsaan.
+- **Tujuan proyek.** Dikembangkan untuk edukasi, eksplorasi teknologi, dan
+  kolaborasi komunitas pengembang secara terbuka dan nonkomersial. Partisipasi
+  bersifat sukarela, tanpa kewajiban atau janji imbalan finansial.
+- **Penyalahgunaan konten pihak ketiga.** Jika ada pihak yang dengan sengaja
+  memotong, menyunting, atau mengambil sepotong video/artikel/karya penulis
+  yang membahas Indonesiaku lalu menyebarkannya ulang untuk tujuan fitnah,
+  ujaran kebencian, atau provokasi, maka hal tersebut sepenuhnya **di luar
+  kendali dan tanggung jawab penulis**.
 
 ---
+
 
 ## 📝 Lisensi
 
