@@ -2,6 +2,8 @@
 
 Panduan lengkap untuk memahami dan menggunakan sintaks Bahasa Pemrograman Indonesiaku dengan contoh-contoh praktis.
 
+https://youtu.be/EGujulEgu0E
+
 ---
 
 ## Dua hal yang membedakan Indonesiaku dari Python
