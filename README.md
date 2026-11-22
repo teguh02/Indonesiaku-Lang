@@ -305,7 +305,8 @@ pemrograman.
 - **Konten perbandingan/benchmark.** Saat ada konten yang "mengadu" atau
   membandingkan Indonesiaku dengan bahasa lain (Python, PHP, Go, dsb.),
   maksudnya murni membandingkan performa/fitur bahasa pemrograman — tidak ada
-  kaitan dengan isu kenegaraan, politik, atau kebangsaan.
+  kaitan dengan isu kenegaraan, politik, atau kebangsaan. Contoh:
+  [reel Instagram benchmark Indonesiaku vs Python/PHP/Go](https://www.instagram.com/reel/DgCmyrlzMrd/).
 - **Tujuan proyek.** Dikembangkan untuk edukasi, eksplorasi teknologi, dan
   kolaborasi komunitas pengembang secara terbuka dan nonkomersial. Partisipasi
   bersifat sukarela, tanpa kewajiban atau janji imbalan finansial.
