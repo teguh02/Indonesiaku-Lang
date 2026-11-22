@@ -59,6 +59,8 @@ variabel, model galat), tetapi menulisnya berbeda:
 
 ## Tipe Data
 
+https://youtu.be/OlwaJbsE4O4
+
 Bahasa Pemrograman Indonesiaku mendukung 4 tipe data utama:
 
 ### 1. Numbers (Angka)
