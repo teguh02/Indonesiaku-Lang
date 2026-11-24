@@ -2872,6 +2872,19 @@ cetak(benar)        # Boolean
 cetak(kosong)       # Null
 ```
 
+### input() - Baca Masukan dari Pengguna
+
+Membaca satu baris teks dari keyboard (stdin). Argumen opsional dicetak dulu
+sebagai prompt (tanpa baris baru). Hasilnya selalu **teks**, jadi pakai
+`ke_angka()` kalau butuh angka.
+
+```indonesiaku-takjalan
+# takjalan: contoh ini butuh input interaktif, tidak bisa dites non-interaktif
+nama = input("Siapa nama kamu? ")
+umur = ke_angka(input("Berapa umur kamu? "))
+cetak("Halo " + nama + ", umur kamu " + ke_teks(umur) + " tahun")
+```
+
 ### jam() — Waktu Saat Ini
 
 Mendapatkan waktu saat ini (dalam detik sejak epoch).
