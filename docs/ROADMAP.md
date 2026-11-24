@@ -1063,12 +1063,14 @@ kalkulator-indonesiaku/
 
 **Tujuan:** aplikasi nyata memiliki WebSocket, Redis/cache, email, antrean tugas dan scheduler. Utamakan library `.idk` di atas primitive native yang sudah teruji; **tidak semua fitur harus dibuat di C atau menjadi keyword compiler**.
 
+**Urutan prioritas pengerjaan (termurah/ternilai tertinggi dulu):** SMTP (langkah 4, paling murah — murni di atas socket yang sudah ada) → Redis (langkah 3) → scheduler (langkah 6) → WebSocket (langkah 2, paling kompleks: handshake + frame parsing + backpressure, bisa jalan tanpa menunggu Fase 20 lebih dulu).
+
 1. [ ] Buat rencana terpisah: `docs/RENCANA_FITUR/websocket.md`, `redis_cache.md`, `email_smtp.md`, `background_jobs_scheduler.md` dan matriks dependensi native vs `.idk`.
-2. [ ] Implementasikan **WebSocket** untuk server dan klien: handshake, frame text/binary, ping/pong, close, batas ukuran pesan, autentikasi/origin yang aman, backpressure dan integrasi async. Uji malformed frame serta klien terputus.
-3. [ ] Implementasikan **Redis** client beserta pooling yang terukur, timeout/TLS/auth, TTL, namespace key, cache-aside dan opsi session store. Hindari cache secrets sembarangan; uji gagal koneksi dan invalidasi.
-4. [ ] Implementasikan **email SMTP** dengan STARTTLS/SMTP TLS, validasi sertifikat, auth aman, MIME/multipart, lampiran, batas ukuran, dan pencegahan header injection. Sediakan contoh notifikasi dan reset password tanpa menyimpan rahasia di kode.
+2. [ ] **(prioritas 4 — terakhir)** Implementasikan **WebSocket** untuk server dan klien: handshake, frame text/binary, ping/pong, close, batas ukuran pesan, autentikasi/origin yang aman, backpressure dan integrasi async. Uji malformed frame serta klien terputus.
+3. [ ] **(prioritas 2)** Implementasikan **Redis** client beserta pooling yang terukur, timeout/TLS/auth, TTL, namespace key, cache-aside dan opsi session store. Hindari cache secrets sembarangan; uji gagal koneksi dan invalidasi.
+4. [ ] **(prioritas 1 — mulai dulu)** Implementasikan **email SMTP** dengan STARTTLS/SMTP TLS, validasi sertifikat, auth aman, MIME/multipart, lampiran, batas ukuran, dan pencegahan header injection. Sediakan contoh notifikasi dan reset password tanpa menyimpan rahasia di kode.
 5. [ ] Implementasikan **background job queue**: enqueue, worker, retry dengan exponential backoff, idempotency key, dead-letter/error handling, concurrency limit dan shutdown. Bedakan pengiriman *at least once* dari klaim *exactly once*; gunakan Redis/DB sebagai backend sesuai kebutuhan.
-6. [ ] Implementasikan **scheduler** untuk tugas sekali jalan/berulang, timezone dan DST, locking bila lebih dari satu worker, kebijakan misfire, retry serta graceful shutdown.
+6. [ ] **(prioritas 3)** Implementasikan **scheduler** untuk tugas sekali jalan/berulang, timezone dan DST, locking bila lebih dari satu worker, kebijakan misfire, retry serta graceful shutdown.
 7. [ ] Buat contoh teruji: chat WebSocket minimal, cache CRUD, email notifikasi, import data dalam job, dan backup terjadwal. Masukkan tes integrasi container terisolasi untuk Redis/SMTP serta negative/security tests.
 8. [ ] Dokumentasikan batas dukungan produksi, konfigurasi environment, deployment worker terpisah dari web server, monitoring antrean dan batas resource.
 
@@ -1211,19 +1213,19 @@ kalkulator-indonesiaku/
 | 9 | LSP dan dukungan editor | ✅ selesai (v1.4.0) |
 | 10 | SQLite, MySQL/MariaDB, PostgreSQL | 🟨 sebagian — SQLite lengkap; **PostgreSQL** (wire protocol v3 + SCRAM-SHA-256) dan **MySQL/MariaDB** (prepared statement) jalan, diuji ke PG 16 dan MariaDB 11 sungguhan. MySQL 8 tak terverifikasi (CPU tanpa x86-64-v2). WDB-04 (`db.idk`) dan WDB-05 migrasi skema (`migrasi.idk`) selesai; query builder ditunda sengaja |
 | 11 | HTTP/HTTPS dan backend server | 🟨 sebagian — langkah 1–6 dan 8 `[x]`; langkah 7 tinggal **race** saja (butuh worker/thread, Fase 20). CRUD di atas DB Fase 10 sudah terpenuhi lewat `examples/api_siswa_pg.idk` |
-| 12 | Server-Side Rendering / HTML template | ⬜ belum |
-| 13 | Session, keamanan, login dan otorisasi | ⬜ belum |
-| 14 | Package manager dan developer tooling | ⬜ belum |
-| 15 | Debugger, embedding C, FFI | ⬜ belum |
+| 12 | Server-Side Rendering / HTML template | 🟨 sebagian — mesin render (`templat.idk`, 1600+ baris) dipakai luas di contoh/pustaka lain; belum diverifikasi cakupan penuh terhadap rencana fase (layout warisan, cache, dsb sudah ada tapi belum diaudit satu-satu) |
+| 13 | Session, keamanan, login dan otorisasi | 🟨 sebagian — sesi (`TokoSesi`, rotasi ID saat login) dan proteksi CSRF (WEB-04/WEB-05) selesai di `web.idk`; belum ada helper login/user store atau otorisasi berbasis peran (RBAC) siap pakai — itu masih tanggung jawab aplikasi |
+| 14 | Package manager dan developer tooling | 🟨 sebagian — manajer paket V1 lokal (`indk paket`) selesai (lihat baris 839); registri dan scaffolding proyek belum |
+| 15 | Debugger, embedding C, FFI | 🟨 sebagian — Debugger VS Code (F5) dan `indk awakutu` CLI selesai (v1.8.0); embedding C dan FFI belum dikerjakan sama sekali |
 | 16 | WASM playground dan optimasi lanjut | ⬜ belum |
-| 17 | cp/file, FTP/FTPS, SSH/SFTP dan download HTTP(S) | ⬜ belum |
-| 18 | Enkripsi/kriptografi dan keamanan interpreter/VM | ⬜ belum |
-| 19 | Kelengkapan pustaka, XML, validasi, dokumentasi ala kategori W3Schools | ⬜ belum |
-| 20 | Async I/O, concurrency dan cancellation | ⬜ belum |
-| 21 | Redis/cache, WebSocket, SMTP, scheduler dan background jobs | ⬜ belum |
-| 22 | Logging, profiling, observability, kompatibilitas dan keamanan rilis | ⬜ belum |
+| 17 | cp/file, FTP/FTPS, SSH/SFTP dan download HTTP(S) | 🟨 sebagian — V1 selesai: `berkas` (salin/pindah/hapus pohon, aman dari symlink) dan `jaringan.unduh` (streaming, checksum); **belum ada**: resume Range, FTP/FTPS, SSH/SFTP |
+| 18 | Enkripsi/kriptografi dan keamanan interpreter/VM | 🟨 sebagian — modul `kripto` V1 selesai (AES-256-GCM, ChaCha20-Poly1305, HKDF, CSPRNG, hash kata sandi PBKDF2); Argon2id belum tersedia (mbedTLS belum mendukung); keamanan runtime/VM (sandbox lanjutan) belum diaudit terpisah |
+| 19 | Kelengkapan pustaka, XML, validasi, dokumentasi ala kategori W3Schools | 🟨 sebagian — modul `validasi`, `tanggal_waktu`, `xml` V1 selesai; dokumentasi gaya W3Schools (per-kategori interaktif) belum dikerjakan |
+| 20 | Async I/O, concurrency dan cancellation | ⬜ belum — belum ada primitif async/concurrency sama sekali; ini perubahan level VM (butuh event loop/threading di C), bukan sekadar pustaka `.idk` |
+| 21 | Redis/cache, WebSocket, SMTP, scheduler dan background jobs | ⬜ belum — kosong total, peluang terbesar untuk pustaka baru (lihat rekomendasi) |
+| 22 | Logging, profiling, observability, kompatibilitas dan keamanan rilis | 🟨 sebagian — Observability V1 selesai (`app.pantau()`: /health, /ready, /metrics Prometheus; `log.idk` format JSON + request_id); profiling (`indk profil`) sudah ada dari fase sebelumnya; kompatibilitas rilis lintas-OS belum diaudit penuh |
 | 23 | Byte/buffer, streaming, ZIP/TAR/gzip dan keamanan arsip | 🟨 sebagian — V1 gzip/zlib + TAR/TAR.GZ/ZIP dengan ekstraksi aman; tipe `bita`/stream belum |
-| 24 | Unicode, i18n, konfigurasi, YAML/TOML dan serialisasi | ⬜ belum |
+| 24 | Unicode, i18n, konfigurasi, YAML/TOML dan serialisasi | 🟨 sebagian — modul `konfigurasi` (.env/INI) dan `unicode` (huruf besar/kecil/lipat Latin-Yunani-Sirilik) V1 selesai; **TOML dan YAML belum ada modul publik** meski parser TOML privat sudah ada di `paket.idk` (lihat rekomendasi — tinggal diekstrak)
 | 25 | CLI framework, HTTP test client, MQTT/RabbitMQ opsional | 🟨 sebagian — V1: `cli` (sub-perintah, bantuan, validasi, kode keluar, autocomplete Bash) dan `uji_http` (klien uji in-process + asersi, terpadu `indk uji`); broker MQTT/AMQP ditunda |
 | Lintas fase | Validasi 3 aplikasi nyata (SSR, REST API, otomasi server) | ⬜ belum |
 
